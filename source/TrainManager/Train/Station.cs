@@ -83,7 +83,10 @@ namespace TrainManager.Trains
 						StationState = TrainStopState.Pending;
 					}
 
-					SafetySystems.PassAlarm.Halt();
+					if (SafetySystems.PassAlarm != null)
+					{
+						SafetySystems.PassAlarm.Halt();
+					}
 				}
 			}
 		}
