@@ -1147,7 +1147,7 @@ namespace TrainManager.Car
 
 			if (DecelerationDueToMotor == 0.0)
 			{
-				double a;
+				double a = 0.0;
 				if (Specs.IsMotorCar)
 				{
 					if (DecelerationDueToMotor == 0.0)
@@ -1157,20 +1157,19 @@ namespace TrainManager.Car
 						    !baseTrain.Handles.EmergencyBrake.Actual)
 						{
 							// target acceleration
-							if (Specs.AccelerationCurves != null && baseTrain.Handles.Power.Actual - 1 < Specs.AccelerationCurves.Length)
+							if (Specs.AccelerationCurves != null)
 							{
-								// Load factor is a constant 1.0 for anything prior to BVE5
-								// This will need to be changed when the relevant branch is merged in
-								a = Specs.AccelerationCurves[baseTrain.Handles.Power.Actual - 1]
-									.GetAccelerationOutput(
-										(double) baseTrain.Handles.Reverser.Actual * CurrentSpeed,
-										1.0);
+								if (Specs.AccelerationCurves[0] is BveAccelerationCurve && baseTrain.Handles.Power.Actual - 1 < Specs.AccelerationCurves.Length)
+								{
+									a = Specs.AccelerationCurves[baseTrain.Handles.Power.Actual - 1]
+										.GetAccelerationOutput((double) baseTrain.Handles.Reverser.Actual * CurrentSpeed);
+								}
+								else if (Specs.AccelerationCurves[0] is MSTSAccelerationCurve)
+								{
+									a = Specs.AccelerationCurves[0].GetAccelerationOutput((double)baseTrain.Handles.Reverser.Actual * CurrentSpeed);
+								}
 							}
-							else
-							{
-								a = 0.0;
-							}
-
+							
 							// readhesion device
 							if (ReAdhesionDevice != null && a > ReAdhesionDevice.MaximumAccelerationOutput)
 							{
