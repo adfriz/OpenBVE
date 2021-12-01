@@ -90,6 +90,24 @@ namespace Plugin
 			internal int numVerticies;
 		}
 
+		struct Animation
+		{
+			internal List<AnimationNode> Nodes;
+			/*
+			 * WARNING: MSTS glitch / 'feature':
+			 * This FPS number is divided by 30 for interior view objects
+			 * http://www.elvastower.com/forums/index.php?/topic/29692-animations-in-the-passenger-view-too-fast/page__p__213634
+			 */
+			internal double Framerate;
+		}
+
+		class AnimationNode
+		{
+			internal string Subject;
+			internal int[] Controllers;
+			internal Matrix4D[] Frames;
+		}
+
 		class Vertex
 		{
 			internal Vector3 Coordinates;
@@ -136,6 +154,7 @@ namespace Plugin
 				prim_states = new List<PrimitiveState>();
 				vtx_states = new List<VertexStates>();
 				LODs = new List<LOD>();
+				Animations = new List<Animation>();
 			}
 
 			// Global variables used by all LODs
@@ -159,6 +178,8 @@ namespace Plugin
 
 			internal readonly List<VertexStates> vtx_states;
 
+			internal readonly List<Animation> Animations;
+
 			// The list of LODs actually containing the objects
 
 			/// <summary>The list of all LODs from the model</summary>
@@ -168,6 +189,7 @@ namespace Plugin
 
 			internal int currentPrimitiveState = -1;
 			internal int totalObjects = 0;
+			internal int currentFrame = 0;
 		}
 
 		private class LOD
@@ -455,23 +477,33 @@ namespace Plugin
 		{
 			Vertex v = null; //Crappy, but there we go.....
 			int[] t = null;
-			ParseBlock(block, ref shape, ref v, ref t);
+			AnimationNode node = null;
+			ParseBlock(block, ref shape, ref v, ref t, ref node);
 		}
 
 		private static void ParseBlock(Block block, ref MsTsShape shape, ref int[] array)
 		{
 			Vertex v = null; //Crappy, but there we go.....
-			ParseBlock(block, ref shape, ref v, ref array);
+			AnimationNode node = null;
+			ParseBlock(block, ref shape, ref v, ref array, ref node);
 		}
 
 		private static void ParseBlock(Block block, ref MsTsShape shape, ref Vertex v)
 		{
 			int[] t = null;
-			ParseBlock(block, ref shape, ref v, ref t);
+			AnimationNode node = null;
+			ParseBlock(block, ref shape, ref v, ref t, ref node);
+		}
+
+		private static void ParseBlock(Block block, ref MsTsShape shape, ref AnimationNode n)
+		{
+			Vertex v = null;
+			int[] t = null;
+			ParseBlock(block, ref shape, ref v, ref t, ref n);
 		}
 		
 
-		private static void ParseBlock(Block block, ref MsTsShape shape, ref Vertex vertex, ref int[] intArray)
+		private static void ParseBlock(Block block, ref MsTsShape shape, ref Vertex vertex, ref int[] intArray, ref AnimationNode animationNode)
 		{
 			float x, y, z;
 			Vector3 point;
@@ -515,6 +547,8 @@ namespace Plugin
 					newBlock = block.ReadSubBlock(KujuTokenID.prim_states);
 					ParseBlock(newBlock, ref shape);
 					newBlock = block.ReadSubBlock(KujuTokenID.lod_controls);
+					ParseBlock(newBlock, ref shape);
+					newBlock = block.ReadSubBlock(KujuTokenID.animations);
 					ParseBlock(newBlock, ref shape);
 					break;
 				case KujuTokenID.shape_header:
@@ -1058,6 +1092,89 @@ namespace Plugin
 
 					//Looks as if vertex_uvs should always be of length 1, thus:
 					vertex.TextureCoordinates = shape.uv_points[vertex_uvs[0]];
+					break;
+
+				/*
+				 * ANIMATION CONTROLLERS AND RELATED STUFF
+				 */
+
+				case KujuTokenID.animations:
+					int numAnimations = block.ReadInt32();
+					for (int i = 0; i < numAnimations; i++)
+					{
+						newBlock = block.ReadSubBlock(KujuTokenID.animation);
+						ParseBlock(newBlock, ref shape);
+					}
+					break;
+				case KujuTokenID.animation:
+					//ignore index value
+					int animationIndex = block.ReadInt32();
+					Animation animation = new Animation
+					{
+						Framerate = block.ReadInt32(),
+						Nodes = new List<AnimationNode>()
+					};
+					shape.Animations.Add(animation);
+					newBlock = block.ReadSubBlock(KujuTokenID.anim_nodes);
+					ParseBlock(newBlock, ref shape);
+					break;
+				case KujuTokenID.anim_nodes:
+					int numNodes = block.ReadInt32();
+					for (int i = 0; i < numNodes; i++)
+					{
+						newBlock = block.ReadSubBlock(KujuTokenID.anim_node);
+						ParseBlock(newBlock, ref shape);
+					}
+					break;
+				case KujuTokenID.anim_node:
+					AnimationNode currentNode = new AnimationNode
+					{
+						Subject = block.Label
+					};
+					newBlock = block.ReadSubBlock(KujuTokenID.controllers);
+					ParseBlock(newBlock, ref shape, ref currentNode);
+					shape.Animations[shape.Animations.Count - 1].Nodes.Add(currentNode);
+					break;
+				case KujuTokenID.controllers:
+					int numControllers = block.ReadInt32();
+					for (int i = 0; i < numControllers; i++)
+					{
+						newBlock = block.ReadSubBlock(new[] { KujuTokenID.tcb_rot, KujuTokenID.linear_pos });
+						ParseBlock(newBlock, ref shape, ref animationNode);
+					}
+					break;
+				case KujuTokenID.tcb_rot:
+					int numFrames = block.ReadInt32();
+					animationNode.Frames = new Matrix4D[numFrames];
+					for (int i = 0; i < numFrames; i++)
+					{
+						newBlock = block.ReadSubBlock(KujuTokenID.tcb_key);
+						ParseBlock(newBlock, ref shape, ref animationNode);
+					}
+					break;
+				case KujuTokenID.tcb_key:
+					//Grab index of matrix within array
+					int matrixIndex = block.ReadInt32();
+					// No idea why, but as opposed to matrices earlier on this is now stored as a quaternion....
+					Quaternion q = new Quaternion(block.ReadSingle(), block.ReadSingle(), block.ReadSingle(), block.ReadSingle());
+					Matrix4D rotationMatrix = Matrix4D.CreateFromQuaternion(q);
+					animationNode.Frames[matrixIndex] += rotationMatrix;
+					break;
+				case KujuTokenID.linear_pos:
+					numFrames = block.ReadInt32();
+					animationNode.Frames = new Matrix4D[numFrames];
+					for (int i = 0; i < numFrames; i++)
+					{
+						newBlock = block.ReadSubBlock(KujuTokenID.tcb_key);
+						ParseBlock(newBlock, ref shape, ref animationNode);
+					}
+					break;
+				case KujuTokenID.linear_key:
+					//Grab index of matrix within array
+					matrixIndex = block.ReadInt32();
+					// This on the other hand is stored as a simple X Y Z translation, again not as a matrix.....
+					Matrix4D translationMatrix = Matrix4D.CreateTranslation(block.ReadSingle(), block.ReadSingle(), block.ReadSingle());
+					animationNode.Frames[matrixIndex] += translationMatrix;
 					break;
 			}
 		}

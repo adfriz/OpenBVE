@@ -83,6 +83,8 @@ namespace TrainManager.Car
 		public bool HasInteriorView = false;
 		/// <summary>Contains the generic sounds attached to the car</summary>
 		public CarSounds Sounds;
+		/// <summary>Stores the wheel radii for this car</summary>
+		public double WheelRadius;
 		/// <summary>The cargo carried by the car</summary>
 		public CargoBase Cargo;
 
@@ -113,6 +115,7 @@ namespace TrainManager.Car
 			FrontBogie.ChangeSection(-1);
 			RearBogie.ChangeSection(-1);
 			Cargo = new Passengers(this);
+			WheelRadius = 0;
 		}
 
 		public CarBase(TrainBase train, int index)
@@ -134,6 +137,7 @@ namespace TrainManager.Car
 			};
 			Brightness = new Brightness(this);
 			Cargo = new Passengers(this);
+			WheelRadius = 0;
 		}
 
 		/// <summary>Moves the car</summary>

@@ -491,6 +491,9 @@ namespace Train.MsTs
 					car.Specs.JerkPowerUp = 10.0;
 					car.Specs.JerkPowerDown = 10.0;
 					break;
+				case KujuTokenID.WheelRadius:
+					car.WheelRadius = block.ReadSingle(UnitOfLength.Meter);
+					break;
 			}
 			return true;
 		}
