@@ -90,9 +90,20 @@ namespace Plugin
 			internal int numVerticies;
 		}
 
+		struct Matrix
+		{
+			internal Matrix(string Name, Matrix4D Matrix)
+			{
+				name = Name;
+				matrix = Matrix;
+			}
+			internal string name;
+			internal Matrix4D matrix;
+		}
+
 		struct Animation
 		{
-			internal List<AnimationNode> Nodes;
+			internal Dictionary<string, AnimationNode> Nodes;
 			/*
 			 * WARNING: MSTS glitch / 'feature':
 			 * This FPS number is divided by 30 for interior view objects
@@ -103,7 +114,6 @@ namespace Plugin
 
 		class AnimationNode
 		{
-			internal string Subject;
 			internal int[] Controllers;
 			internal Matrix4D[] Frames;
 		}
@@ -148,7 +158,7 @@ namespace Plugin
 				points = new List<Vector3>();
 				normals = new List<Vector3>();
 				uv_points = new List<Vector2>();
-				matrices = new List<Matrix4D>();
+				matrices = new List<Matrix>();
 				images = new List<string>();
 				textures = new List<Texture>();
 				prim_states = new List<PrimitiveState>();
@@ -166,7 +176,7 @@ namespace Plugin
 			/// <summary>The texture-coordinates used by this shape</summary>
 			internal readonly List<Vector2> uv_points;
 			/// <summary>The matrices used to transform components of this shape</summary>
-			internal readonly List<Matrix4D> matrices;
+			internal readonly List<Matrix> matrices;
 			/// <summary>The filenames of all textures used by this shape</summary>
 			internal readonly List<string> images;
 			/// <summary>The textures used, with associated parameters</summary>
@@ -217,11 +227,8 @@ namespace Plugin
 				this.materials = new List<Material>();
 			}
 
-			internal void TransformVerticies(List<Matrix4D> matrices)
+			internal void TransformVerticies(List<Matrix> matrices)
 			{
-				//TODO: This moves the verticies
-				//We should actually split them and the associated faces and use position within our animated object instead
-				//This however works when we have no animation supported as per currently
 				for (int i = 0; i < verticies.Count; i++)
 				{
 					for (int j = 0; j < vertexSets.Count; j++)
@@ -253,7 +260,7 @@ namespace Plugin
 
 							for (int k = 0; k < matrixChain.Count; k++)
 							{
-								verticies[i].Coordinates.Transform(matrices[matrixChain[k]], false);
+								verticies[i].Coordinates.Transform(matrices[matrixChain[k]].matrix, false);
 							}
 
 							break;
@@ -823,7 +830,7 @@ namespace Plugin
 					currentMatrix.Row1 = new Vector4(block.ReadSingle(), block.ReadSingle(), block.ReadSingle(), 0);
 					currentMatrix.Row2 = new Vector4(block.ReadSingle(), block.ReadSingle(), block.ReadSingle(), 0);
 					currentMatrix.Row3 = new Vector4(block.ReadSingle(), block.ReadSingle(), block.ReadSingle(), 0);
-					shape.matrices.Add(currentMatrix);
+					shape.matrices.Add(new Matrix(block.Label, currentMatrix));
 					break;
 				case KujuTokenID.normals:
 					int normalCount = block.ReadUInt16();
@@ -1112,7 +1119,7 @@ namespace Plugin
 					Animation animation = new Animation
 					{
 						Framerate = block.ReadInt32(),
-						Nodes = new List<AnimationNode>()
+						Nodes = new Dictionary<string, AnimationNode>()
 					};
 					shape.Animations.Add(animation);
 					newBlock = block.ReadSubBlock(KujuTokenID.anim_nodes);
@@ -1127,13 +1134,15 @@ namespace Plugin
 					}
 					break;
 				case KujuTokenID.anim_node:
-					AnimationNode currentNode = new AnimationNode
-					{
-						Subject = block.Label
-					};
+					AnimationNode currentNode = new AnimationNode();
 					newBlock = block.ReadSubBlock(KujuTokenID.controllers);
 					ParseBlock(newBlock, ref shape, ref currentNode);
-					shape.Animations[shape.Animations.Count - 1].Nodes.Add(currentNode);
+					if (shape.Animations[shape.Animations.Count - 1].Nodes.ContainsKey(block.Label))
+					{
+						break;
+					}
+
+					shape.Animations[shape.Animations.Count - 1].Nodes.Add(block.Label, currentNode);
 					break;
 				case KujuTokenID.controllers:
 					int numControllers = block.ReadInt32();
@@ -1148,7 +1157,7 @@ namespace Plugin
 					animationNode.Frames = new Matrix4D[numFrames];
 					for (int i = 0; i < numFrames; i++)
 					{
-						newBlock = block.ReadSubBlock(KujuTokenID.tcb_key);
+						newBlock = block.ReadSubBlock(new[] { KujuTokenID.tcb_key , KujuTokenID.slerp_rot});
 						ParseBlock(newBlock, ref shape, ref animationNode);
 					}
 					break;
@@ -1165,7 +1174,7 @@ namespace Plugin
 					animationNode.Frames = new Matrix4D[numFrames];
 					for (int i = 0; i < numFrames; i++)
 					{
-						newBlock = block.ReadSubBlock(KujuTokenID.tcb_key);
+						newBlock = block.ReadSubBlock(KujuTokenID.linear_key);
 						ParseBlock(newBlock, ref shape, ref animationNode);
 					}
 					break;
