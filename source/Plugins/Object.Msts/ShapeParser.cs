@@ -32,6 +32,7 @@ using OpenBveApi.Objects;
 using OpenBve.Formats.MsTs;
 using OpenBveApi.FunctionScripting;
 using OpenBveApi.Interface;
+using OpenBveApi.Objects.ObjectTypes;
 using OpenBveApi.Textures;
 using SharpCompress.Compressors;
 using SharpCompress.Compressors.Deflate;
@@ -343,13 +344,15 @@ namespace Plugin
 
 		private static string currentFolder;
 
-		internal static AnimatedObjectCollection ReadObject(string fileName)
+		internal static UnifiedObject ReadObject(string fileName)
 		{
 			MsTsShape shape = new MsTsShape();
 			AnimatedObjectCollection Result = new AnimatedObjectCollection(Plugin.currentHost)
 			{
 				Objects = new AnimatedObject[4]
 			};
+
+			HierarchyAnimatedObject newResult = new HierarchyAnimatedObject(Plugin.currentHost);
 
 			currentFolder = Path.GetDirectoryName(fileName);
 			Stream fb = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -439,16 +442,24 @@ namespace Plugin
 				}
 			}
 			Array.Resize(ref Result.Objects, shape.totalObjects);
+			Array.Resize(ref newResult.Objects, shape.totalObjects);
 			int idx = 0;
 			double[] previousLODs = new double[shape.totalObjects];
 			for (int i = 0; i < shape.LODs.Count; i++)
 			{
 				for (int j = 0; j < shape.LODs[i].subObjects.Count; j++)
 				{
-					Result.Objects[idx] = new AnimatedObject(Plugin.currentHost);
-					Result.Objects[idx].States = new ObjectState[1];
 					ObjectState aos = new ObjectState();
 					shape.LODs[i].subObjects[j].Apply(out aos.Prototype);
+					//newResult.Objects[idx] = new HiearchyObject(newResult,);
+
+
+					/*
+					 * OLD, TO REMOVE
+					 */
+					Result.Objects[idx] = new AnimatedObject(Plugin.currentHost);
+					Result.Objects[idx].States = new ObjectState[1];
+					
 					Result.Objects[idx].States[0] = aos;
 					previousLODs[idx] = shape.LODs[i].viewingDistance;
 					int k = idx;
@@ -462,7 +473,9 @@ namespace Plugin
 						k--;
 
 					}
-
+					/*
+					 * END TO REMOVE
+					 */
 					if (k != 0)
 					{
 						Result.Objects[idx].StateFunction = new FunctionScript(Plugin.currentHost, "if[cameraDistance <" + shape.LODs[i].viewingDistance + ",if[cameraDistance >" + previousLODs[k] + ",0,-1],-1]", true);
