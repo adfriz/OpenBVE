@@ -7,7 +7,7 @@ using OpenBveApi.Math;
 using OpenBveApi.Trains;
 using OpenBveApi.World;
 
-namespace OpenBveApi.Objects.ObjectTypes
+namespace OpenBveApi.Objects
 {
 	/// <summary>An object using a hiearchy of animated parts</summary>
 	public class HierarchyAnimatedObject : UnifiedObject
@@ -17,6 +17,8 @@ namespace OpenBveApi.Objects.ObjectTypes
 		public Dictionary<string, HierarchyEntry> HierarchyParts;
 		/// <summary>The actual objects to be animated</summary>
 		public HiearchyObject[] Objects;
+		/// <summary>The time since the last update of this object</summary>
+		public double SecondsSinceLastUpdate;
 
 		/// <summary>Creates a new HierarchyAnimatedObject</summary>
 		/// <param name="Host">Reference to the host application</param>
