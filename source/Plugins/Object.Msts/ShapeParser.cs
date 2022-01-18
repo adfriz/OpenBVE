@@ -1,4 +1,4 @@
-﻿//Simplified BSD License (BSD-2-Clause)
+//Simplified BSD License (BSD-2-Clause)
 //
 //Copyright (c) 2020, Christopher Lees, The OpenBVE Project
 //
@@ -32,7 +32,6 @@ using OpenBveApi.Objects;
 using OpenBve.Formats.MsTs;
 using OpenBveApi.FunctionScripting;
 using OpenBveApi.Interface;
-using OpenBveApi.Objects.ObjectTypes;
 using OpenBveApi.Textures;
 using SharpCompress.Compressors;
 using SharpCompress.Compressors.Deflate;
@@ -226,12 +225,15 @@ namespace Plugin
 				this.vertexSets = new List<VertexSet>();
 				this.faces = new List<Face>();
 				this.materials = new List<Material>();
+				this.hierarchy = new List<string>();
 			}
 
 			internal void TransformVerticies(List<Matrix> matrices)
 			{
+				transformedVertices = new List<Vertex>(verticies);
 				for (int i = 0; i < verticies.Count; i++)
 				{
+					transformedVertices[i] = new Vertex(verticies[i].Coordinates, verticies[i].Normal);
 					for (int j = 0; j < vertexSets.Count; j++)
 					{
 						if (vertexSets[j].startVertex <= i && vertexSets[j].startVertex + vertexSets[j].numVerticies > i)
@@ -261,16 +263,17 @@ namespace Plugin
 
 							for (int k = 0; k < matrixChain.Count; k++)
 							{
-								verticies[i].Coordinates.Transform(matrices[matrixChain[k]].matrix, false);
+								transformedVertices[i].Coordinates.Transform(matrices[matrixChain[k]].matrix, false);
+								hierarchy.Insert(0,matrices[matrixChain[k]].name);
 							}
-
+							
 							break;
 						}
 					}
 				}
 			}
 
-			internal void Apply(out StaticObject Object)
+			internal void Apply(out StaticObject Object, bool useTransformedVertics)
 			{
 				Object = new StaticObject(Plugin.currentHost)
 				{
@@ -291,7 +294,16 @@ namespace Plugin
 					Array.Resize(ref Object.Mesh.Vertices, mv + verticies.Count);
 					for (int i = 0; i < verticies.Count; i++)
 					{
-						Object.Mesh.Vertices[mv + i] = new OpenBveApi.Objects.Vertex(verticies[i].Coordinates, verticies[i].TextureCoordinates);
+						if (useTransformedVertics)
+						{
+							//Use transformed vertices if we are not animated as will be faster
+							Object.Mesh.Vertices[mv + i] = new OpenBveApi.Objects.Vertex(transformedVertices[i].Coordinates, verticies[i].TextureCoordinates);
+						}
+						else
+						{
+							Object.Mesh.Vertices[mv + i] = new OpenBveApi.Objects.Vertex(verticies[i].Coordinates, verticies[i].TextureCoordinates);
+						}
+
 					}
 
 					for (int i = 0; i < faces.Count; i++)
@@ -335,11 +347,13 @@ namespace Plugin
 					}
 				}
 			}
-
+			
 			internal readonly List<Vertex> verticies;
 			internal readonly List<VertexSet> vertexSets;
 			internal readonly List<Face> faces;
 			internal readonly List<Material> materials;
+			internal List<string> hierarchy;
+			internal List<Vertex> transformedVertices;
 		}
 
 		private static string currentFolder;
@@ -450,8 +464,9 @@ namespace Plugin
 				for (int j = 0; j < shape.LODs[i].subObjects.Count; j++)
 				{
 					ObjectState aos = new ObjectState();
-					shape.LODs[i].subObjects[j].Apply(out aos.Prototype);
-					//newResult.Objects[idx] = new HiearchyObject(newResult,);
+
+					shape.LODs[i].subObjects[j].Apply(out aos.Prototype, true);
+					newResult.Objects[idx] = new HiearchyObject(newResult, shape.LODs[i].subObjects[j].hierarchy.ToArray(), aos, null);
 
 
 					/*
@@ -568,8 +583,15 @@ namespace Plugin
 					ParseBlock(newBlock, ref shape);
 					newBlock = block.ReadSubBlock(KujuTokenID.lod_controls);
 					ParseBlock(newBlock, ref shape);
-					newBlock = block.ReadSubBlock(KujuTokenID.animations);
-					ParseBlock(newBlock, ref shape);
+					try
+					{
+						newBlock = block.ReadSubBlock(KujuTokenID.animations);
+						ParseBlock(newBlock, ref shape);
+					}
+					catch (EndOfStreamException)
+					{
+						// Animation controllers are optional
+					}
 					break;
 				case KujuTokenID.shape_header:
 				case KujuTokenID.volumes:
