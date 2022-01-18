@@ -7,6 +7,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using LibRender2.Trains;
@@ -60,6 +61,14 @@ namespace ObjectViewer {
 		internal static CurrentRoute CurrentRoute;
 
 		internal static TrainManager TrainManager;
+		
+		private static readonly string[] ConsistExtensions =
+		{
+			".dat",
+			".cfg",
+			".xml",
+			".con"
+		};
 
 		// main
 	    [STAThread]
@@ -266,7 +275,8 @@ namespace ObjectViewer {
 		    {
 			    try
 			    {
-				    if(Files[i].EndsWith(".dat", StringComparison.InvariantCultureIgnoreCase) || Files[i].EndsWith(".xml", StringComparison.InvariantCultureIgnoreCase) || Files[i].EndsWith(".cfg", StringComparison.InvariantCultureIgnoreCase))
+				    string ext = System.IO.Path.GetExtension(Files[i]).ToLowerInvariant();
+				    if(ConsistExtensions.Contains(ext))
 				    {
 					    string currentTrain = Files[i];
 					    if (currentTrain.EndsWith("extensions.cfg", StringComparison.InvariantCultureIgnoreCase))
@@ -375,7 +385,8 @@ namespace ObjectViewer {
 							for (int i = 0; i < f.Length; i++)
 				            {
 								string currentTrainFolder = string.Empty;
-								if(f[i].EndsWith(".dat", StringComparison.InvariantCultureIgnoreCase) || f[i].EndsWith(".xml", StringComparison.InvariantCultureIgnoreCase) || f[i].EndsWith(".cfg", StringComparison.InvariantCultureIgnoreCase))
+								string ext = System.IO.Path.GetExtension(f[i]).ToLowerInvariant();
+								if(ConsistExtensions.Contains(ext))
 								{
 									// only check to see if it's a train if this is a specified filetype, else we'll start loading the full train from an object in it's folder
 									currentTrainFolder = System.IO.Path.GetDirectoryName(f[i]);

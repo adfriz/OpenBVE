@@ -1,4 +1,6 @@
-﻿using OpenBveApi.Hosts;
+﻿using System.IO;
+using OpenBveApi.Hosts;
+using OpenBveApi.Interface;
 using OpenBveApi.Objects;
 
 namespace LibRender2.Trains
@@ -41,6 +43,14 @@ namespace LibRender2.Trains
 					Groups[0].Elements[h] = a.Objects[h].Clone();
 					currentHost.CreateDynamicObject(ref Groups[0].Elements[h].internalObject);
 				}
+			}
+			else if (Object is HierarchyAnimatedObject)
+			{
+				HierarchyAnimatedObject hio = (HierarchyAnimatedObject)Object;
+			}
+			else
+			{
+				currentHost.AddMessage(MessageType.Error, false, "Invalid object type for use as a train exterior.");
 			}
 		}
 

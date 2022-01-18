@@ -466,16 +466,16 @@ namespace Plugin
 					ObjectState aos = new ObjectState();
 
 					shape.LODs[i].subObjects[j].Apply(out aos.Prototype, true);
-					newResult.Objects[idx] = new HiearchyObject(newResult, shape.LODs[i].subObjects[j].hierarchy.ToArray(), aos, null);
+					
 
 
 					/*
 					 * OLD, TO REMOVE
 					 */
-					Result.Objects[idx] = new AnimatedObject(Plugin.currentHost);
-					Result.Objects[idx].States = new ObjectState[1];
+					//Result.Objects[idx] = new AnimatedObject(Plugin.currentHost);
+					//Result.Objects[idx].States = new ObjectState[1];
 					
-					Result.Objects[idx].States[0] = aos;
+					//Result.Objects[idx].States[0] = aos;
 					previousLODs[idx] = shape.LODs[i].viewingDistance;
 					int k = idx;
 					while (k > 0)
@@ -493,17 +493,17 @@ namespace Plugin
 					 */
 					if (k != 0)
 					{
-						Result.Objects[idx].StateFunction = new FunctionScript(Plugin.currentHost, "if[cameraDistance <" + shape.LODs[i].viewingDistance + ",if[cameraDistance >" + previousLODs[k] + ",0,-1],-1]", true);
+						newResult.Objects[idx] = new HiearchyObject(newResult, shape.LODs[i].subObjects[j].hierarchy.ToArray(), aos, new FunctionScript(Plugin.currentHost, "if[cameraDistance <" + shape.LODs[i].viewingDistance + ",if[cameraDistance >" + previousLODs[k] + ",0,-1],-1]", true));
 					}
 					else
 					{
-						Result.Objects[idx].StateFunction = new FunctionScript(Plugin.currentHost, "if[cameraDistance <" + shape.LODs[i].viewingDistance + ",0,-1]", true);
+						newResult.Objects[idx] = new HiearchyObject(newResult, shape.LODs[i].subObjects[j].hierarchy.ToArray(), aos, new FunctionScript(Plugin.currentHost, "if[cameraDistance <" + shape.LODs[i].viewingDistance + ",0,-1]", true));
 					}
 
 					idx++;
 				}
 			}
-			return Result;
+			return newResult;
 		}
 
 		private static LOD currentLOD;
