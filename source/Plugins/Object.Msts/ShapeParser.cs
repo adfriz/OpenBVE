@@ -25,6 +25,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using OpenBveApi.Math;
 using OpenBveApi.Colors;
@@ -116,6 +117,7 @@ namespace Plugin
 		{
 			internal int[] Controllers;
 			internal Matrix4D[] Frames;
+			internal bool Rotate = false;
 		}
 
 		class Vertex
@@ -499,7 +501,30 @@ namespace Plugin
 					{
 						newResult.Objects[idx] = new HiearchyObject(newResult, shape.LODs[i].subObjects[j].hierarchy.ToArray(), aos, new FunctionScript(Plugin.currentHost, "if[cameraDistance <" + shape.LODs[i].viewingDistance + ",0,-1]", true));
 					}
-
+					//shape.
+				
+					for (int a = 0; a < shape.Animations.Count; a++)
+					{
+						for (int aN = 0; aN < shape.Animations[a].Nodes.Count; aN++)
+						{
+							string key = shape.Animations[a].Nodes.ElementAt(aN).Key;
+							string functionScript = string.Empty;
+							switch (key.ToUpperInvariant())
+							{
+								case "MAIN":
+									break;
+								case "WHEELS12":
+									
+									break;
+								default:
+									// Unsupported animation controller...
+									continue;
+							}
+							newResult.HierarchyParts.Add(key, new HierarchyEntry(Plugin.currentHost, key, functionScript, shape.Animations[a].Nodes[key].Rotate ? shape.Animations[a].Nodes[key].Frames : null, shape.Animations[a].Nodes[key].Rotate ? null : shape.Animations[a].Nodes[key].Frames));
+						}
+						
+					}
+					
 					idx++;
 				}
 			}
@@ -1195,6 +1220,8 @@ namespace Plugin
 						newBlock = block.ReadSubBlock(new[] { KujuTokenID.tcb_key , KujuTokenID.slerp_rot});
 						ParseBlock(newBlock, ref shape, ref animationNode);
 					}
+
+					animationNode.Rotate = true;
 					break;
 				case KujuTokenID.tcb_key:
 					//Grab index of matrix within array
@@ -1212,6 +1239,7 @@ namespace Plugin
 						newBlock = block.ReadSubBlock(KujuTokenID.linear_key);
 						ParseBlock(newBlock, ref shape, ref animationNode);
 					}
+					animationNode.Rotate = false;
 					break;
 				case KujuTokenID.linear_key:
 					//Grab index of matrix within array
@@ -1219,6 +1247,7 @@ namespace Plugin
 					// This on the other hand is stored as a simple X Y Z translation, again not as a matrix.....
 					Matrix4D translationMatrix = Matrix4D.CreateTranslation(block.ReadSingle(), block.ReadSingle(), block.ReadSingle());
 					animationNode.Frames[matrixIndex] += translationMatrix;
+					animationNode.Rotate = false;
 					break;
 			}
 		}

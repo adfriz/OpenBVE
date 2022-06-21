@@ -30,15 +30,16 @@ namespace LibRender2.Trains
 			{
 				Groups[0] = new AnimatedElementsGroup(Host, Renderer, Object as AnimatedObjectCollection);
 			}
-			Type = ObjectType;
 			else if (Object is HierarchyAnimatedObject)
 			{
 				HierarchyAnimatedObject hio = (HierarchyAnimatedObject)Object;
+				Groups[0] = new HierarchyElementsGroup(Host, Renderer, hio);
 			}
 			else
 			{
-				currentHost.AddMessage(MessageType.Error, false, "Invalid object type for use as a train exterior.");
+				Groups[0] = new AnimatedElementsGroup(Host, Renderer);
 			}
+			Type = ObjectType;
 		}
 
 		/// <summary>Initalizes the CarSection</summary>

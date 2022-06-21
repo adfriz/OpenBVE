@@ -25,6 +25,7 @@ namespace OpenBveApi.Objects
 		public HierarchyAnimatedObject(HostInterface Host)
 		{
 			currentHost = Host;
+			HierarchyParts = new Dictionary<string, HierarchyEntry>();
 		}
 
 		/// <summary>Updates the animated object</summary>
@@ -146,7 +147,15 @@ namespace OpenBveApi.Objects
 		public HierarchyEntry(HostInterface host, string partName, string functionScript, Matrix4D[] translationMatricies, Matrix4D[] rotationMatricies)
 		{
 			Name = partName;
-			FunctionScript = new FunctionScript(host, functionScript, true);
+			if(string.IsNullOrEmpty(functionScript))
+			{
+				FunctionScript = new FunctionScript(host, "true", true);
+			}
+			else
+			{
+				FunctionScript = new FunctionScript(host, functionScript, true);	
+			}
+			
 			TranslationMatricies = translationMatricies;
 			RotationMatricies = rotationMatricies;
 		}

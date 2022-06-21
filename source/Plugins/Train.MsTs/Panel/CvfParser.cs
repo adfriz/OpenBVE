@@ -346,7 +346,7 @@ namespace Train.MsTs
 					double rW = 1024.0 / 640.0;
 					double rH = 768.0 / 480.0;
 					int wday, hday;
-					int j;
+					AnimatedObject element;
 					string f;
 					CultureInfo Culture = CultureInfo.InvariantCulture;
 					switch (Type)
@@ -360,10 +360,10 @@ namespace Train.MsTs
 							Size.X *= rW;
 							Size.Y *= rH;
 							PivotPoint *= rH;
-							j = CreateElement(ref Car.CarSections[0].Groups[0], Position.X, Position.Y, Size.X, Size.Y, new Vector2((0.5 * Size.X) / (tday.Width * rW), PivotPoint / (tday.Height * rH)), Layer * StackDistance, Car.Driver, tday, null, new Color32(255, 255, 255, 255));
-							Car.CarSections[0].Groups[0].Elements[j].RotateZDirection = new Vector3(0.0, 0.0, -1.0);
-							Car.CarSections[0].Groups[0].Elements[j].RotateXDirection = new Vector3(1.0, 0.0, 0.0);
-							Car.CarSections[0].Groups[0].Elements[j].RotateYDirection = Vector3.Cross(Car.CarSections[0].Groups[0].Elements[j].RotateZDirection, Car.CarSections[0].Groups[0].Elements[j].RotateXDirection);
+							element = CreateElement(ref Car.CarSections[0].Groups[0], Position.X, Position.Y, Size.X, Size.Y, new Vector2((0.5 * Size.X) / (tday.Width * rW), PivotPoint / (tday.Height * rH)), Layer * StackDistance, Car.Driver, tday, null, new Color32(255, 255, 255, 255));
+							element.RotateZDirection = new Vector3(0.0, 0.0, -1.0);
+							element.RotateXDirection = new Vector3(1.0, 0.0, 0.0);
+							element.RotateYDirection = Vector3.Cross(element.RotateZDirection, element.RotateXDirection);
 							f = GetStackLanguageFromSubject(Car.baseTrain, Units, "Dial " + " in " + fileName);
 							InitialAngle -= 360;
 							InitialAngle *= 0.0174532925199433; //degrees to radians
@@ -371,10 +371,10 @@ namespace Train.MsTs
 							double a0 = (InitialAngle * Maximum - LastAngle * Minimum) / (Maximum - Minimum);
 							double a1 = (LastAngle - InitialAngle) / (Maximum - Minimum);
 							f += " " + a1.ToString(Culture) + " * " + a0.ToString(Culture) + " +";
-							Car.CarSections[0].Groups[0].Elements[j].RotateZFunction = new FunctionScript(Plugin.currentHost, f, false);
+							element.RotateZFunction = new FunctionScript(Plugin.currentHost, f, false);
 							//MSTS cab dials are backstopped as standard
-							Car.CarSections[0].Groups[0].Elements[j].RotateZFunction.Minimum = InitialAngle;
-							Car.CarSections[0].Groups[0].Elements[j].RotateZFunction.Maximum = LastAngle;
+							element.RotateZFunction.Minimum = InitialAngle;
+							element.RotateZFunction.Maximum = LastAngle;
 							break;
 						case CabComponentType.Lever:
 							Position.X *= rW;
@@ -402,15 +402,18 @@ namespace Train.MsTs
 									}
 								}
 
-								j = -1;
+								element = null;
 								for (int k = 0; k < textures.Length; k++)
 								{
-									int l = CreateElement(ref Car.CarSections[0].Groups[0], Position.X, Position.Y, Size.X * rW, Size.Y * rH, new Vector2(0.5, 0.5), Layer * StackDistance, Car.Driver, textures[k], null, new Color32(255, 255, 255, 255), k != 0);
-									if (k == 0) j = l;
+									AnimatedObject l = CreateElement(ref Car.CarSections[0].Groups[0], Position.X, Position.Y, Size.X * rW, Size.Y * rH, new Vector2(0.5, 0.5), Layer * StackDistance, Car.Driver, textures[k], null, new Color32(255, 255, 255, 255), k != 0);
+									if (k == 0) element = l;
 								}
 
 								f = GetStackLanguageFromSubject(Car.baseTrain, Units, "Lever " + " in " + fileName);
-								Car.CarSections[0].Groups[0].Elements[j].StateFunction = new FunctionScript(Plugin.currentHost, f, false);
+								if (element != null)
+								{
+									element.StateFunction = new FunctionScript(Plugin.currentHost, f, false);
+								}
 							}
 
 							break;
@@ -440,16 +443,18 @@ namespace Train.MsTs
 									}
 								}
 
-								j = -1;
+								element = null;
 								for (int k = 0; k < textures.Length; k++)
 								{
-									int l = CreateElement(ref Car.CarSections[0].Groups[0], Position.X, Position.Y, Size.X * rW, Size.Y * rH, new Vector2(0.5, 0.5), Layer * StackDistance, Car.Driver, textures[k], null, new Color32(255, 255, 255, 255), k != 0);
-									if (k == 0) j = l;
+									AnimatedObject l = CreateElement(ref Car.CarSections[0].Groups[0], Position.X, Position.Y, Size.X * rW, Size.Y * rH, new Vector2(0.5, 0.5), Layer * StackDistance, Car.Driver, textures[k], null, new Color32(255, 255, 255, 255), k != 0);
+									if (k == 0) element = l;
 								}
 
 								f = Type == CabComponentType.TwoState ? GetStackLanguageFromSubject(Car.baseTrain, Units, "TwoState " + " in " + fileName) : GetStackLanguageFromSubject(Car.baseTrain, Units, "TriState " + " in " + fileName);
-
-								Car.CarSections[0].Groups[0].Elements[j].StateFunction = new FunctionScript(Plugin.currentHost, f, false);
+								if (element != null)
+								{
+									element.StateFunction = new FunctionScript(Plugin.currentHost, f, false);
+								}
 							}
 
 							break;
@@ -787,8 +792,14 @@ namespace Train.MsTs
 			return Code + Suffix;
 		}
 
-		internal static int CreateElement(ref ElementsGroup Group, double Left, double Top, double Width, double Height, Vector2 RelativeRotationCenter, double Distance, Vector3 Driver, Texture DaytimeTexture, Texture NighttimeTexture, Color32 Color, bool AddStateToLastElement = false)
+		internal static AnimatedObject CreateElement(ref ElementsGroup _Group, double Left, double Top, double Width, double Height, Vector2 RelativeRotationCenter, double Distance, Vector3 Driver, Texture DaytimeTexture, Texture NighttimeTexture, Color32 Color, bool AddStateToLastElement = false)
 		{
+			AnimatedElementsGroup Group = _Group as AnimatedElementsGroup;
+			if (Group == null)
+			{
+				Group = new AnimatedElementsGroup(Plugin.currentHost, Plugin.Renderer);
+			}
+
 			if (Width == 0 || Height == 0)
 			{
 				Plugin.currentHost.AddMessage(MessageType.Error, false, "Attempted to create an invalid size element");
@@ -859,8 +870,7 @@ namespace Train.MsTs
 			o.Y = ym + Driver.Y;
 			o.Z = EyeDistance - Distance + Driver.Z;
 			// add object
-			if (AddStateToLastElement)
-			{
+			if (AddStateToLastElement) {
 				int n = Group.Elements.Length - 1;
 				int j = Group.Elements[n].States.Length;
 				Array.Resize(ref Group.Elements[n].States, j + 1);
@@ -869,20 +879,20 @@ namespace Train.MsTs
 					Translation = Matrix4D.CreateTranslation(o.X, o.Y, -o.Z),
 					Prototype = Object
 				};
-				return n;
-			}
-			else
-			{
+				_Group = Group;
+				return Group.Elements[n];
+			} else {
 				int n = Group.Elements.Length;
 				Array.Resize(ref Group.Elements, n + 1);
 				Group.Elements[n] = new AnimatedObject(Plugin.currentHost);
-				Group.Elements[n].States = new[] {new ObjectState()};
+				Group.Elements[n].States = new[] { new ObjectState() };
 				Group.Elements[n].States[0].Translation = Matrix4D.CreateTranslation(o.X, o.Y, -o.Z);
 				Group.Elements[n].States[0].Prototype = Object;
 				Group.Elements[n].CurrentState = 0;
-				Group.Elements[n].internalObject = new ObjectState {Prototype = Object};
+				Group.Elements[n].internalObject = new ObjectState { Prototype = Object };
 				Plugin.currentHost.CreateDynamicObject(ref Group.Elements[n].internalObject);
-				return n;
+				_Group = Group;
+				return Group.Elements[n];
 			}
 		}
 	}

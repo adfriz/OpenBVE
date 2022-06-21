@@ -261,13 +261,13 @@ namespace Train.MsTs
 							{
 								// Combined air brakes and control signals
 								// Assume equivilant to ElectromagneticStraightAirBrake
-								car.CarBrake = new ElectromagneticStraightAirBrake(EletropneumaticBrakeType.DelayFillingControl, train.Handles.EmergencyBrake, train.Handles.Reverser, true, 0, 0, new AccelerationCurve[] { new MSTSDecelerationCurve(train, maxForce) });
+								car.CarBrake = new ElectromagneticStraightAirBrake(EletropneumaticBrakeType.DelayFillingControl, train.Handles.EmergencyBrake, train.Handles.Reverser, true, 0, 0, 0, 0, new AccelerationCurve[] { new MSTSDecelerationCurve(train, maxForce) });
 							}
 							else if (brakeSystemTypes.Contains(BrakeSystemType.ECP))
 							{
 								// Complex computer control
 								// Assume equivialant to ElectricCommandBrake at the minute
-								car.CarBrake = new ElectricCommandBrake(EletropneumaticBrakeType.DelayFillingControl, train.Handles.EmergencyBrake, train.Handles.Reverser, true, 0, 0, new AccelerationCurve[] { new MSTSDecelerationCurve(train, maxForce) });
+								car.CarBrake = new ElectricCommandBrake(EletropneumaticBrakeType.DelayFillingControl, train.Handles.EmergencyBrake, train.Handles.Reverser, true, 0, 0, 0, 0, new AccelerationCurve[] { new MSTSDecelerationCurve(train, maxForce) });
 							}
 							else if (brakeSystemTypes.Contains(BrakeSystemType.Air_single_pipe) || brakeSystemTypes.Contains(BrakeSystemType.Air_twin_pipe) || brakeSystemTypes.Contains(BrakeSystemType.Vacuum_single_pipe) || brakeSystemTypes.Contains(BrakeSystemType.Vacuum_twin_pipe))
 							{
@@ -338,13 +338,13 @@ namespace Train.MsTs
 						{
 							// Combined air brakes and control signals
 							// Assume equivilant to ElectromagneticStraightAirBrake
-							car.CarBrake = new ElectromagneticStraightAirBrake(EletropneumaticBrakeType.DelayFillingControl, train.Handles.EmergencyBrake, train.Handles.Reverser, true, 0, 0, new AccelerationCurve[] { new MSTSDecelerationCurve(train, maxForce) });
+							car.CarBrake = new ElectromagneticStraightAirBrake(EletropneumaticBrakeType.DelayFillingControl, train.Handles.EmergencyBrake, train.Handles.Reverser, true, 0, 0, 0, 0, new AccelerationCurve[] { new MSTSDecelerationCurve(train, maxForce) });
 						}
 						else if (brakeSystemTypes.Contains(BrakeSystemType.ECP))
 						{
 							// Complex computer control
 							// Assume equivialant to ElectricCommandBrake at the minute
-							car.CarBrake = new ElectricCommandBrake(EletropneumaticBrakeType.DelayFillingControl, train.Handles.EmergencyBrake, train.Handles.Reverser, true, 0, 0, new AccelerationCurve[] { new MSTSDecelerationCurve(train, maxForce) });
+							car.CarBrake = new ElectricCommandBrake(EletropneumaticBrakeType.DelayFillingControl, train.Handles.EmergencyBrake, train.Handles.Reverser, true, 0, 0, 0, 0, new AccelerationCurve[] { new MSTSDecelerationCurve(train, maxForce) });
 						}
 						else if (brakeSystemTypes.Contains(BrakeSystemType.Air_single_pipe) || brakeSystemTypes.Contains(BrakeSystemType.Air_twin_pipe) || brakeSystemTypes.Contains(BrakeSystemType.Vacuum_single_pipe) || brakeSystemTypes.Contains(BrakeSystemType.Vacuum_twin_pipe))
 						{
@@ -455,7 +455,7 @@ namespace Train.MsTs
 						}
 						car.CarSections = move;
 					}
-					car.CarSections[0] = new CarSection(Plugin.currentHost, ObjectType.Overlay, true);
+					car.CarSections[0] = new CarSection(Plugin.currentHost, Plugin.Renderer, ObjectType.Overlay, true);
 					CabviewFileParser.ParseCabViewFile(cabViewFile, Encoding.ASCII, ref car);
 					car.HasInteriorView = true;
 					break;

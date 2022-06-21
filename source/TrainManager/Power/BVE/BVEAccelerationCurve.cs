@@ -35,7 +35,22 @@ namespace TrainManager.Power
 
 		public override double MaximumAcceleration => Math.Max(StageZeroAcceleration, StageOneAcceleration);
 
-		public BveAccelerationCurve Clone(double multiplier)
+		public BveAccelerationCurve()
+		{
+			Multiplier = 1.0;
+		}
+
+		public BveAccelerationCurve(double stageZeroAcceleration, double stageOneAcceleration, double stageOneSpeed, double stageTwoSpeed, double exponent, double multiplier = 1.0)
+		{
+			StageZeroAcceleration = stageZeroAcceleration;
+			StageOneAcceleration = stageOneAcceleration;
+			StageOneSpeed = stageOneSpeed;
+			StageTwoSpeed = stageTwoSpeed;
+			StageTwoExponent = exponent;
+			Multiplier = multiplier;
+		}
+
+		public BveAccelerationCurve Clone(double multiplier = 1.0)
 		{
 			return new BveAccelerationCurve
 			{

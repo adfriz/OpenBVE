@@ -9,13 +9,16 @@ namespace LibRender2.Trains
 	{
 		/// <summary>Holds a reference to the current host</summary>
 		internal readonly HostInterface currentHost;
+		/// <summary>Holds a reference to the renderer</summary>
+		internal readonly BaseRenderer Renderer;
 
 		/// <summary>The time since the last update of this object</summary>
 		public double SecondsSinceLastUpdate;
 
-		internal ElementsGroup(HostInterface host)
+		internal ElementsGroup(HostInterface host, BaseRenderer renderer)
 		{
 			currentHost = host;
+			Renderer = renderer;
 		}
 
 		/// <summary>Initializes the ElementsGroup</summary>

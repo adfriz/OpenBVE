@@ -13,15 +13,12 @@ namespace LibRender2.Trains
 		/// <summary>The touch elements if applicable</summary>
 		public TouchElement[] TouchElements;
 
-		private readonly BaseRenderer Renderer;
-
-		public AnimatedElementsGroup(HostInterface Host, BaseRenderer renderer) : base(Host)
+		public AnimatedElementsGroup(HostInterface Host, BaseRenderer renderer) : base(Host, renderer)
 		{
 			Elements = new AnimatedObject[] { };
-			Renderer = renderer;
 		}
 
-		public AnimatedElementsGroup(HostInterface Host, BaseRenderer renderer, StaticObject Object) : base(Host)
+		public AnimatedElementsGroup(HostInterface Host, BaseRenderer renderer, StaticObject Object) : base(Host, renderer)
 		{
 			Elements = new AnimatedObject[1];
 			Elements[0] = new AnimatedObject(Host)
@@ -30,14 +27,12 @@ namespace LibRender2.Trains
 				CurrentState = 0,
 				IsPartOfTrain = true
 			};
-			Renderer = renderer;
 			currentHost.CreateDynamicObject(ref Elements[0].internalObject);
 		}
 
-		public AnimatedElementsGroup(HostInterface Host, BaseRenderer renderer, AnimatedObjectCollection ObjectCollection) : base(Host)
+		public AnimatedElementsGroup(HostInterface Host, BaseRenderer renderer, AnimatedObjectCollection ObjectCollection) : base(Host, renderer)
 		{
 			Elements = new AnimatedObject[ObjectCollection.Objects.Length];
-			Renderer = renderer;
 			for (int h = 0; h < ObjectCollection.Objects.Length; h++)
 			{
 				Elements[h] = ObjectCollection.Objects[h].Clone();
