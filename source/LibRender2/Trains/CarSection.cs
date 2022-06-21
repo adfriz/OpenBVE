@@ -8,42 +8,29 @@ namespace LibRender2.Trains
 	/// <summary>An animated object attached to a car (Exterior, cab etc.)</summary>
 	public class CarSection
 	{
-		/// <summary>Holds a reference to the current host</summary>
-		private readonly HostInterface currentHost;
+		
 		/// <summary>The groups of animated objects</summary>
 		public ElementsGroup[] Groups;
 		/// <summary>The current additional group (touch etc.)</summary>
 		public int CurrentAdditionalGroup;
 		/// <summary>Whether this is visible from internal views</summary>
 		public readonly bool VisibleFromInterior;
+		/// <summary>Whether this is to be shown in overlay mode (e.g. panel)</summary>
+		public readonly ObjectType Type;
 
-		public CarSection(HostInterface Host, ObjectType Type, bool visibleFromInterior, UnifiedObject Object = null)
+		public CarSection(HostInterface Host, BaseRenderer Renderer, ObjectType ObjectType, bool visibleFromInterior, UnifiedObject Object = null)
 		{
-			currentHost = Host;
 			Groups = new ElementsGroup[1];
-			Groups[0] = new ElementsGroup(Type);
 			VisibleFromInterior = visibleFromInterior;
 			if (Object is StaticObject)
 			{
-				StaticObject s = (StaticObject) Object;
-				Groups[0].Elements = new AnimatedObject[1];
-				Groups[0].Elements[0] = new AnimatedObject(Host)
-				{
-					States = new[] {new ObjectState(s)},
-					CurrentState = 0
-				};
-				currentHost.CreateDynamicObject(ref Groups[0].Elements[0].internalObject);
+				Groups[0] = new AnimatedElementsGroup(Host, Renderer, Object as StaticObject);
 			}
 			else if (Object is AnimatedObjectCollection)
 			{
-				AnimatedObjectCollection a = (AnimatedObjectCollection)Object;
-				Groups[0].Elements = new AnimatedObject[a.Objects.Length];
-				for (int h = 0; h < a.Objects.Length; h++)
-				{
-					Groups[0].Elements[h] = a.Objects[h].Clone();
-					currentHost.CreateDynamicObject(ref Groups[0].Elements[h].internalObject);
-				}
+				Groups[0] = new AnimatedElementsGroup(Host, Renderer, Object as AnimatedObjectCollection);
 			}
+			Type = ObjectType;
 			else if (Object is HierarchyAnimatedObject)
 			{
 				HierarchyAnimatedObject hio = (HierarchyAnimatedObject)Object;
@@ -60,7 +47,7 @@ namespace LibRender2.Trains
 		{
 			for (int i = 0; i < Groups.Length; i++)
 			{
-				Groups[i].Initialize(CurrentlyVisible);
+				Groups[i].Initialize(CurrentlyVisible, Type);
 			}
 		}
 
@@ -69,20 +56,13 @@ namespace LibRender2.Trains
 		{
 			if (Groups.Length > 0)
 			{
-				for (int i = 0; i < Groups[0].Elements.Length; i++)
-				{
-					currentHost.ShowObject(Groups[0].Elements[i].internalObject, Groups[0].Type);
-				}
+				Groups[0].Show(Type);
 			}
 
 			int add = CurrentAdditionalGroup + 1;
 			if (add < Groups.Length)
 			{
-				for (int i = 0; i < Groups[add].Elements.Length; i++)
-				{
-					currentHost.ShowObject(Groups[add].Elements[i].internalObject, Groups[add].Type);
-					
-				}
+				Groups[add].Show(Type);
 			}
 		}
 	}
