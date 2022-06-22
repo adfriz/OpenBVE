@@ -517,13 +517,18 @@ namespace Plugin
 								case "MAIN":
 									break;
 								case "WHEELS12":
-									functionScript = "wheelradius carindex";
+									functionScript = "carnumber wheelradiusindex";
 									break;
 								default:
 									// Unsupported animation controller...
 									continue;
 							}
-							newResult.HierarchyParts.Add(key, new HierarchyEntry(Plugin.currentHost, key, functionScript, shape.Animations[a].Nodes[key].Rotate ? shape.Animations[a].Nodes[key].Frames : null, shape.Animations[a].Nodes[key].Rotate ? null : shape.Animations[a].Nodes[key].Frames));
+
+							if (!newResult.HierarchyParts.ContainsKey(key))
+							{
+								newResult.HierarchyParts.Add(key, new HierarchyEntry(Plugin.currentHost, key, functionScript, shape.Animations[a].Nodes[key].Rotate ? shape.Animations[a].Nodes[key].Frames : null, shape.Animations[a].Nodes[key].Rotate ? null : shape.Animations[a].Nodes[key].Frames));
+							}
+							
 						}
 						
 					}
