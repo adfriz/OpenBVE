@@ -149,11 +149,11 @@ namespace OpenBveApi.Objects
 			Name = partName;
 			if(string.IsNullOrEmpty(functionScript))
 			{
-				FunctionScript = new FunctionScript(host, "true", true);
+				FunctionScript = new FunctionScript(host, "1", false);
 			}
 			else
 			{
-				FunctionScript = new FunctionScript(host, functionScript, true);	
+				FunctionScript = new FunctionScript(host, functionScript, false);	
 			}
 			
 			TranslationMatricies = translationMatricies;

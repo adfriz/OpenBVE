@@ -233,6 +233,7 @@ namespace Plugin
 			internal void TransformVerticies(List<Matrix> matrices)
 			{
 				transformedVertices = new List<Vertex>(verticies);
+				List<int> matrixChain = new List<int>();
 				for (int i = 0; i < verticies.Count; i++)
 				{
 					transformedVertices[i] = new Vertex(verticies[i].Coordinates, verticies[i].Normal);
@@ -240,7 +241,6 @@ namespace Plugin
 					{
 						if (vertexSets[j].startVertex <= i && vertexSets[j].startVertex + vertexSets[j].numVerticies > i)
 						{
-							List<int> matrixChain = new List<int>();
 							int hi = vertexSets[j].hierarchyIndex;
 							if (hi != -1 && hi < matrices.Count)
 							{
@@ -266,12 +266,15 @@ namespace Plugin
 							for (int k = 0; k < matrixChain.Count; k++)
 							{
 								transformedVertices[i].Coordinates.Transform(matrices[matrixChain[k]].matrix, false);
-								hierarchy.Insert(0,matrices[matrixChain[k]].name);
 							}
-							
 							break;
 						}
 					}
+				}
+
+				for (int i = 0; i < matrixChain.Count; i++)
+				{
+					hierarchy.Insert(0,matrices[matrixChain[i]].name);
 				}
 			}
 
@@ -514,7 +517,7 @@ namespace Plugin
 								case "MAIN":
 									break;
 								case "WHEELS12":
-									
+									functionScript = "wheelradius carindex";
 									break;
 								default:
 									// Unsupported animation controller...
