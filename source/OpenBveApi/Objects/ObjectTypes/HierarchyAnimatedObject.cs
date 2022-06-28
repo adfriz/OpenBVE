@@ -121,8 +121,11 @@ namespace OpenBveApi.Objects
 			Matrix4D rotation = Matrix4D.NoTransformation;
 			for (int i = 0; i < Hiearchy.Length; i++)
 			{
-				translation += rootObject.HierarchyParts[Hiearchy[i]].CurrentTranslationMatrix;
-				rotation += rootObject.HierarchyParts[Hiearchy[i]].CurrentRotationMatrix;
+				if (rootObject.HierarchyParts.ContainsKey(Hiearchy[i]))
+				{
+					translation += rootObject.HierarchyParts[Hiearchy[i]].CurrentTranslationMatrix;
+					rotation += rootObject.HierarchyParts[Hiearchy[i]].CurrentRotationMatrix;
+				}
 			}
 
 			State.Translation = translation;
@@ -155,9 +158,31 @@ namespace OpenBveApi.Objects
 			{
 				FunctionScript = new FunctionScript(host, functionScript, false);	
 			}
+
+			if (translationMatricies == null)
+			{
+				TranslationMatricies = new[]
+				{
+					Matrix4D.NoTransformation
+				};
+			}
+			else
+			{
+				TranslationMatricies = translationMatricies;	
+			}
+
+			if (rotationMatricies == null)
+			{
+				RotationMatricies = new[]
+				{
+					Matrix4D.NoTransformation
+				};
+			}
+			else
+			{
+				RotationMatricies = rotationMatricies;	
+			}
 			
-			TranslationMatricies = translationMatricies;
-			RotationMatricies = rotationMatricies;
 		}
 
 		/// <summary>Gets the current matrix</summary>

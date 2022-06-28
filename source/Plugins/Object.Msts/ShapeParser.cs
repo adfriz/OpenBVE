@@ -515,7 +515,8 @@ namespace Plugin
 							switch (key.ToUpperInvariant())
 							{
 								case "MAIN":
-									break;
+									// not actually an animation
+									continue;
 								case "WHEELS12":
 									functionScript = "carnumber wheelradiusindex";
 									break;

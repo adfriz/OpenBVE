@@ -386,10 +386,19 @@ namespace ObjectViewer {
 				            {
 								string currentTrainFolder = string.Empty;
 								string ext = System.IO.Path.GetExtension(f[i]).ToLowerInvariant();
+								bool isConsist = false;
 								if(ConsistExtensions.Contains(ext))
 								{
 									// only check to see if it's a train if this is a specified filetype, else we'll start loading the full train from an object in it's folder
-									currentTrainFolder = System.IO.Path.GetDirectoryName(f[i]);
+									isConsist = true;
+									if (ext != ".con")
+									{
+										currentTrainFolder = System.IO.Path.GetDirectoryName(f[i]);
+									}
+									else
+									{
+										currentTrainFolder = f[i];
+									}
 								}
 								for (int j = 0; j < Program.CurrentHost.Plugins.Length; j++)
 					            {
@@ -407,7 +416,7 @@ namespace ObjectViewer {
 						            {
 							            Files.Add(f[i]);
 						            }
-						            if (!string.IsNullOrEmpty(currentTrainFolder) && Program.CurrentHost.Plugins[j].Train != null && Program.CurrentHost.Plugins[j].Train.CanLoadTrain(currentTrainFolder))
+						            if (isConsist && Program.CurrentHost.Plugins[j].Train != null && Program.CurrentHost.Plugins[j].Train.CanLoadTrain(currentTrainFolder))
 						            {
 							            Files.Add(f[i]);
 						            }

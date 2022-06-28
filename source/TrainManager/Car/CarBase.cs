@@ -116,6 +116,7 @@ namespace TrainManager.Car
 			RearBogie.ChangeSection(-1);
 			Cargo = new Passengers(this);
 			WheelRadius = 0;
+			ReAdhesionDevice = new CarReAdhesionDevice(this, ReadhesionDeviceType.NotFitted);
 		}
 
 		public CarBase(TrainBase train, int index)
