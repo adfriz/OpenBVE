@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System;
+using System.Globalization;
 using OpenBveApi.Colors;
 using OpenBveApi.Interface;
 using TrainManager.Trains;
@@ -21,6 +22,7 @@ namespace TrainManager.Handles
 
 		public override void Update()
 		{
+			safetyState = 0;
 			int sec = EmergencyBrake.Safety ? MaximumNotch : Safety;
 			if (DelayedChanges.Length == 0)
 			{
@@ -108,6 +110,11 @@ namespace TrainManager.Handles
 				Actual = b; //TODO: FIXME
 				TrainManagerBase.currentHost.AddBlackBoxEntry();
 			
+		}
+
+		public override void ApplySafetyState(int newState)
+		{
+			safetyState = Math.Max(safetyState, newState);
 		}
 	}
 
@@ -199,6 +206,11 @@ namespace TrainManager.Handles
 				Actual = (int) newState; //TODO: FIXME
 				TrainManagerBase.currentHost.AddBlackBoxEntry();
 			}
+		}
+
+		public override void ApplySafetyState(int newState)
+		{
+			safetyState = Math.Max(safetyState, newState);
 		}
 
 		public override string GetNotchDescription(out MessageColor color)

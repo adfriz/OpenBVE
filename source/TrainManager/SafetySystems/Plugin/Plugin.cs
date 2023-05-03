@@ -265,7 +265,7 @@ namespace TrainManager.SafetySystems
 			{
 				if (virtualHandles)
 				{
-					this.Train.Handles.Power.Safety = handles.PowerNotch;
+					this.Train.Handles.Power.ApplySafetyState(handles.PowerNotch);
 				}
 				else
 				{
@@ -276,7 +276,7 @@ namespace TrainManager.SafetySystems
 			{
 				if (virtualHandles)
 				{
-					this.Train.Handles.Power.Safety = this.Train.Handles.Power.Driver;
+					this.Train.Handles.Power.ApplySafetyState(this.Train.Handles.Power.Driver);
 				}
 
 				this.PluginValid = false;
@@ -297,7 +297,7 @@ namespace TrainManager.SafetySystems
 				{
 					if (virtualHandles)
 					{
-						this.Train.Handles.Brake.Safety = (int) AirBrakeHandleState.Release;
+						this.Train.Handles.Brake.ApplySafetyState((int) AirBrakeHandleState.Release);
 					}
 					else
 					{
@@ -309,7 +309,7 @@ namespace TrainManager.SafetySystems
 				{
 					if (virtualHandles)
 					{
-						this.Train.Handles.Brake.Safety = (int) AirBrakeHandleState.Lap;
+						this.Train.Handles.Brake.ApplySafetyState((int) AirBrakeHandleState.Lap);
 					}
 					else
 					{
@@ -321,7 +321,7 @@ namespace TrainManager.SafetySystems
 				{
 					if (virtualHandles)
 					{
-						this.Train.Handles.Brake.Safety = (int) AirBrakeHandleState.Service;
+						this.Train.Handles.Brake.ApplySafetyState((int) AirBrakeHandleState.Service);
 					}
 					else
 					{
@@ -333,7 +333,7 @@ namespace TrainManager.SafetySystems
 				{
 					if (virtualHandles)
 					{
-						this.Train.Handles.Brake.Safety = (int) AirBrakeHandleState.Service;
+						this.Train.Handles.Brake.ApplySafetyState((int) AirBrakeHandleState.Service);
 						this.Train.Handles.EmergencyBrake.Safety = true;
 					}
 					else
@@ -356,7 +356,7 @@ namespace TrainManager.SafetySystems
 						if (virtualHandles)
 						{
 							this.Train.Handles.EmergencyBrake.Safety = true;
-							this.Train.Handles.Brake.Safety = this.Train.Handles.Brake.MaximumNotch;
+							this.Train.Handles.Brake.ApplySafetyState(this.Train.Handles.Brake.MaximumNotch);
 						}
 						else
 						{
@@ -369,7 +369,7 @@ namespace TrainManager.SafetySystems
 					{
 						if (virtualHandles)
 						{
-							this.Train.Handles.Brake.Safety = handles.BrakeNotch - 1;
+							this.Train.Handles.Brake.ApplySafetyState(handles.BrakeNotch - 1);
 						}
 						else
 						{
@@ -382,7 +382,7 @@ namespace TrainManager.SafetySystems
 					{
 						if (virtualHandles)
 						{
-							this.Train.Handles.Brake.Safety = 0;
+							this.Train.Handles.Brake.ApplySafetyState(0);
 							this.Train.Handles.HoldBrake.Actual = true;
 						}
 						else
@@ -396,7 +396,7 @@ namespace TrainManager.SafetySystems
 					{
 						if (virtualHandles)
 						{
-							this.Train.Handles.Brake.Safety = 0;
+							this.Train.Handles.Brake.ApplySafetyState(0);
 						}
 						else
 						{
@@ -409,7 +409,7 @@ namespace TrainManager.SafetySystems
 					{
 						if (virtualHandles)
 						{
-							this.Train.Handles.Brake.Safety = this.Train.Handles.Brake.Driver;
+							this.Train.Handles.Brake.ApplySafetyState(Train.Handles.Brake.Driver);
 						}
 
 						this.PluginValid = false;
@@ -422,7 +422,7 @@ namespace TrainManager.SafetySystems
 						if (virtualHandles)
 						{
 							this.Train.Handles.EmergencyBrake.Safety = true;
-							this.Train.Handles.Brake.Safety = this.Train.Handles.Brake.MaximumNotch;
+							this.Train.Handles.Brake.ApplySafetyState(this.Train.Handles.Brake.MaximumNotch);
 						}
 						else
 						{
@@ -434,7 +434,7 @@ namespace TrainManager.SafetySystems
 					{
 						if (virtualHandles)
 						{
-							this.Train.Handles.Brake.Safety = handles.BrakeNotch;
+							this.Train.Handles.Brake.ApplySafetyState(handles.BrakeNotch);
 						}
 						else
 						{
@@ -446,7 +446,7 @@ namespace TrainManager.SafetySystems
 					{
 						if (virtualHandles)
 						{
-							this.Train.Handles.Brake.Safety = this.Train.Handles.Brake.Driver;
+							this.Train.Handles.Brake.ApplySafetyState(this.Train.Handles.Brake.Driver);
 						}
 
 						this.PluginValid = false;

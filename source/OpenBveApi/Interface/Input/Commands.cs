@@ -307,7 +307,12 @@ namespace OpenBveApi.Interface {
 			 * Added in 1.8.4.3
 			 */
 			/// <summary>Toggles the sanders if fitted</summary>
-			Sanders
+			Sanders,
+			/*
+			 * Added in 1.9.1.0
+			 */
+			/// <summary>Controls the DSD</summary>
+			DriverSupervisionDevice
 		}
 
 		/// <summary>Defines the possible command types</summary>
