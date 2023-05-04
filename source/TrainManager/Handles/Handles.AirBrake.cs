@@ -1,4 +1,5 @@
-﻿using OpenBveApi.Colors;
+﻿using System;
+using OpenBveApi.Colors;
 using OpenBveApi.Interface;
 using TrainManager.Trains;
 
@@ -99,6 +100,11 @@ namespace TrainManager.Handles
 					baseTrain.Plugin.UpdateBrake();
 				}
 			}
+		}
+
+		public override void ApplySafetyState(int newState)
+		{
+			safetyState = Math.Max(safetyState, newState);
 		}
 
 		public override string GetNotchDescription(out MessageColor color)
