@@ -4,10 +4,11 @@ using OpenBveApi.Math;
 using OpenBveApi.Trains;
 using SoundManager;
 using TrainEditor2.Models.Sounds;
+using TrainManager.Motor;
 
 namespace TrainEditor2.Simulation.TrainManager
 {
-	public static partial class TrainManager
+	public static partial class TrainEditor
 	{
 		/// <summary>The base class containing the properties of a train car</summary>
 		internal class Car : AbstractCar
@@ -120,7 +121,7 @@ namespace TrainEditor2.Simulation.TrainManager
 					for (int i = 0; i < tables.Length; i++)
 					{
 						MotorSound.Table table = tables[i];
-						MotorSound.Entry entry = table.GetEntry(speed);
+						BVEMotorSoundTableEntry entry = table.GetEntry(speed);
 
 						if (!isPlayTables[i])
 						{
