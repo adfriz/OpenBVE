@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Formats.OpenBve;
 using OpenBveApi;
 using OpenBveApi.Interface;
 using OpenBveApi.Math;
@@ -61,6 +62,9 @@ namespace Train.OpenBve
 			// parse configuration file
 			System.Globalization.CultureInfo Culture = System.Globalization.CultureInfo.InvariantCulture;
 			List<string> Lines = System.IO.File.ReadAllLines(FileName, Encoding).ToList();
+
+			ConfigFile<SoundCfgSection, MessageType> cfg = new ConfigFile<SoundCfgSection, MessageType>(Lines.ToArray(), Plugin.currentHost);
+
 			int emptyLines = 0;
 			for (int i = Lines.Count - 1; i >= 0; i--)
 			{

@@ -50,13 +50,13 @@ namespace Formats.OpenBve
 		    return false;
 	    }
 
-	    public virtual bool GetVector2(TT key, out Vector2 value)
+	    public virtual bool GetVector2(TT key, char separator, out Vector2 value)
 	    {
 			value = Vector2.Null;
 			return false;
 	    }
 
-	    public virtual bool GetVector3(TT key, out Vector3 value)
+	    public virtual bool GetVector3(TT key, char separator, out Vector3 value)
 	    {
 		    value = Vector3.Zero;
 		    return false;
@@ -101,7 +101,8 @@ namespace Formats.OpenBve
 			{
 				if (myLines[i].StartsWith("[") && myLines[i].EndsWith("]"))
 				{
-					string sct = myLines[i].Trim().Trim('[', ']');
+					// n.b. remove spaces to allow parsing to an enum
+					string sct = myLines[i].Trim().Trim('[', ']').Remove(' ');
 					
 					if (!Enum.TryParse(sct, true, out currentSection))
 					{
@@ -146,7 +147,8 @@ namespace Formats.OpenBve
 			{
 				if (myLines[i].StartsWith("[") && myLines[i].EndsWith("]"))
 				{
-					string sct = myLines[i].Trim().Trim('[', ']');
+					// n.b. remove spaces to allow parsing to an enum
+					string sct = myLines[i].Trim().Trim('[', ']').Remove(' ');
 					
 					if (!Enum.TryParse(sct, true, out currentSection))
 					{
@@ -194,7 +196,8 @@ namespace Formats.OpenBve
 		private Dictionary<TT, string> keyValuePairs;
 		public override Block<T, TT> ReadNextBlock()
 		{
-			throw new InvalidDataException("A section in a CFG file cannot contain sub-blocks.");
+			currentHost.AddMessage(MessageType.Error, false, "A section in a CFG file cannot contain sub-blocks.");
+			return null;
 		}
 
 		internal ConfigSection(T myKey, string[] myLines, HostInterface Host) : base(myKey, Host)
@@ -214,7 +217,7 @@ namespace Formats.OpenBve
 					}
 					else
 					{
-						// add error
+						currentHost.AddMessage(MessageType.Error, false, "Unknown Key " + key + " encountered in Section " + myKey + " at Line " + i);
 					}
 				}
 			}
@@ -227,6 +230,7 @@ namespace Formats.OpenBve
 				values = value.Split(separator);
 				return true;
 			}
+			currentHost.AddMessage(MessageType.Warning, false, "Key " + key + " was not found in Section " + Key);
 			values = new string[0];
 			return false;
 		}
@@ -244,10 +248,12 @@ namespace Formats.OpenBve
 				}
 				catch
 				{
+					currentHost.AddMessage(MessageType.Warning, false, "Function Script " + script + " was invalid in Key "+ Key + " in Section " + Key);
 					function = null;
 					return false;
 				}
 			}
+			currentHost.AddMessage(MessageType.Warning, false, "Key " + key + " was not found in Section " + Key);
 			function = null;
 			return false;
 			
