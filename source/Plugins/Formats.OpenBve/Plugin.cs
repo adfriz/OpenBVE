@@ -40,12 +40,21 @@ namespace Formats.OpenBve
 
 	    public virtual int RemainingSubBlocks => 0;
 
+	    public virtual int RemainingDataValues => 0;
+
 	    public readonly T Key;
 
 	    internal readonly HostInterface currentHost;
 
 	    public virtual bool GetValue(TT key, out string value)
 	    {
+		    value = string.Empty;
+		    return false;
+	    }
+
+	    public virtual bool GetIndexedValue(out int index, out string value)
+	    {
+		    index = -1;
 		    value = string.Empty;
 		    return false;
 	    }
@@ -74,7 +83,7 @@ namespace Formats.OpenBve
 		    return false;
 	    }
 
-	    protected Block(T myKey, HostInterface host)
+		protected Block(T myKey, HostInterface host)
 	    {
 		    Key = myKey;
 		    currentHost = host;
@@ -88,6 +97,7 @@ namespace Formats.OpenBve
 
 		private readonly List<Block<T, TT>> subBlocks;
 
+		
 		public ConfigFile(string fileName, Encoding encoding, HostInterface host) : base(default, host)
 		{
 			myLines = File.ReadAllLines(fileName, encoding);
@@ -134,19 +144,44 @@ namespace Formats.OpenBve
 			}
 		}
 
-		public ConfigFile(string[] Lines, HostInterface Host) : base(default, Host)
+		public ConfigFile(string[] Lines, HostInterface Host, string expectedHeader = null) : base(default, Host)
 		{
 			myLines = Lines;
 			subBlocks = new List<Block<T, TT>>();
 			List<string> blockLines = new List<string>();
 			bool addToBlock = false;
 			T currentSection = default(T);
+
+			bool headerOK = !string.IsNullOrEmpty(expectedHeader);
+
 			//string 
 
 			for (int i = 0; i < myLines.Length; i++)
 			{
+				if (headerOK == false)
+				{
+					int j = Lines[i].IndexOf(';');
+					if (j >= 0)
+					{
+						Lines[i] = Lines[i].Substring(0, j).Trim();
+					}
+					else
+					{
+						Lines[i] = Lines[i].Trim();
+					}
+
+					if (!string.IsNullOrEmpty(Lines[i]) && string.Compare(Lines[i], expectedHeader, StringComparison.OrdinalIgnoreCase) == 0)
+					{
+						headerOK = true;
+					}
+				}
 				if (myLines[i].StartsWith("[") && myLines[i].EndsWith("]"))
 				{
+					if (!headerOK)
+					{
+						currentHost.AddMessage(MessageType.Error, false, "The expected header " + expectedHeader + " was not found.");
+						headerOK = true;
+					}
 					// n.b. remove spaces to allow parsing to an enum
 					string sct = myLines[i].Trim().Trim('[', ']').Remove(' ');
 					
@@ -193,16 +228,21 @@ namespace Formats.OpenBve
 
 	public class ConfigSection <T, TT> : Block<T, TT> where T : struct, Enum where TT : struct, Enum
 	{
-		private Dictionary<TT, string> keyValuePairs;
+		private readonly Dictionary<TT, string> keyValuePairs;
+
+		private readonly List<IndexedValue> indexedValues;
 		public override Block<T, TT> ReadNextBlock()
 		{
 			currentHost.AddMessage(MessageType.Error, false, "A section in a CFG file cannot contain sub-blocks.");
 			return null;
 		}
 
+		public override int RemainingDataValues => keyValuePairs.Count + indexedValues.Count;
+
 		internal ConfigSection(T myKey, string[] myLines, HostInterface Host) : base(myKey, Host)
 		{
 			keyValuePairs = new Dictionary<TT, string>();
+			indexedValues = new List<IndexedValue>();
 			for (int i = 0; i < myLines.Length; i++)
 			{
 				int j = myLines[i].IndexOf("=", StringComparison.Ordinal);
@@ -210,8 +250,19 @@ namespace Formats.OpenBve
 				{
 					string a = myLines[i].Substring(0, j).TrimEnd();
 					string b = myLines[i].Substring(j + 1).TrimStart();
-					TT key;
-					if (Enum.TryParse(a, true, out key))
+					if (int.TryParse(a, out var idx))
+					{
+						if (idx >= 0)
+						{
+							indexedValues.Add(new IndexedValue(idx, b));
+						}
+						else
+						{
+							currentHost.AddMessage(MessageType.Error, false, "Invalid index " + idx + " encountered in Section " + myKey + " at Line " + i);	
+						}
+						
+					}
+					else if (Enum.TryParse(a, true, out TT key))
 					{
 						keyValuePairs.Add(key, b);
 					}
@@ -221,6 +272,20 @@ namespace Formats.OpenBve
 					}
 				}
 			}
+		}
+
+		public override bool GetIndexedValue(out int index, out string value)
+		{
+			if (indexedValues.Count > 0)
+			{
+				index = indexedValues[0].Index;
+				value = indexedValues[0].Value;
+				indexedValues.RemoveAt(0);
+				return true;
+			}
+			index = -1;
+			value = string.Empty;
+			return false;
 		}
 
 		public override bool GetStringArray(TT key, char separator, out string[] values)
