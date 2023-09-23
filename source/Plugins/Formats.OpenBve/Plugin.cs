@@ -43,7 +43,7 @@ namespace Formats.OpenBve
 	    public virtual int RemainingDataValues => 0;
 
 	    public readonly T Key;
-
+		
 	    internal readonly HostInterface currentHost;
 
 	    public virtual bool GetValue(TT key, out string value)
@@ -97,62 +97,15 @@ namespace Formats.OpenBve
 
 		private readonly List<Block<T, TT>> subBlocks;
 
-		
-		public ConfigFile(string fileName, Encoding encoding, HostInterface host) : base(default, host)
-		{
-			myLines = File.ReadAllLines(fileName, encoding);
-			subBlocks = new List<Block<T, TT>>();
-			List<string> blockLines = new List<string>();
-			bool addToBlock = false;
-			T currentSection = default(T);
-			//string 
-
-			for (int i = 0; i < myLines.Length; i++)
-			{
-				if (myLines[i].StartsWith("[") && myLines[i].EndsWith("]"))
-				{
-					// n.b. remove spaces to allow parsing to an enum
-					string sct = myLines[i].Trim().Trim('[', ']').Remove(' ');
-					
-					if (!Enum.TryParse(sct, true, out currentSection))
-					{
-						addToBlock = false;
-						currentHost.AddMessage(MessageType.Error, false, "Unknown Section " + sct + " encountered in file " + fileName + " at Line " + i);
-					}
-					else
-					{
-						addToBlock = true;
-					}
-					if (blockLines.Count > 0)
-					{
-						subBlocks.Add(new ConfigSection<T, TT>(currentSection, blockLines.ToArray(), currentHost));
-						blockLines.Clear();
-					}
-				}
-				else
-				{
-					if (addToBlock)
-					{
-						blockLines.Add(myLines[i]);
-					}
-				}
-			}
-			// final block
-			if (blockLines.Count > 0)
-			{
-				subBlocks.Add(new ConfigSection<T, TT>(currentSection, blockLines.ToArray(), currentHost));
-			}
-		}
-
 		public ConfigFile(string[] Lines, HostInterface Host, string expectedHeader = null) : base(default, Host)
 		{
 			myLines = Lines;
 			subBlocks = new List<Block<T, TT>>();
 			List<string> blockLines = new List<string>();
 			bool addToBlock = false;
-			T currentSection = default(T);
+			T previousSection = default(T);
 
-			bool headerOK = !string.IsNullOrEmpty(expectedHeader);
+			bool headerOK = string.IsNullOrEmpty(expectedHeader);
 
 			//string 
 
@@ -183,8 +136,9 @@ namespace Formats.OpenBve
 						headerOK = true;
 					}
 					// n.b. remove spaces to allow parsing to an enum
-					string sct = myLines[i].Trim().Trim('[', ']').Remove(' ');
-					
+					string sct = myLines[i].Trim().Trim('[', ']').Replace(" ", "");
+
+					T currentSection;
 					if (!Enum.TryParse(sct, true, out currentSection))
 					{
 						addToBlock = false;
@@ -194,12 +148,13 @@ namespace Formats.OpenBve
 					{
 						addToBlock = true;
 					}
-					// add error
+
 					if (blockLines.Count > 0)
 					{
-						subBlocks.Add(new ConfigSection<T, TT>(currentSection, blockLines.ToArray(), currentHost));
+						subBlocks.Add(new ConfigSection<T, TT>(previousSection, blockLines.ToArray(), currentHost));
 						blockLines.Clear();
 					}
+					previousSection = currentSection;
 				}
 				else
 				{
@@ -212,7 +167,7 @@ namespace Formats.OpenBve
 			// final block
 			if (blockLines.Count > 0)
 			{
-				subBlocks.Add(new ConfigSection<T, TT>(currentSection, blockLines.ToArray(), currentHost));
+				subBlocks.Add(new ConfigSection<T, TT>(previousSection, blockLines.ToArray(), currentHost));
 			}
 		}
 
@@ -230,7 +185,7 @@ namespace Formats.OpenBve
 	{
 		private readonly Dictionary<TT, string> keyValuePairs;
 
-		private readonly List<IndexedValue> indexedValues;
+		private readonly Dictionary<int, string> indexedValues;
 		public override Block<T, TT> ReadNextBlock()
 		{
 			currentHost.AddMessage(MessageType.Error, false, "A section in a CFG file cannot contain sub-blocks.");
@@ -242,7 +197,7 @@ namespace Formats.OpenBve
 		internal ConfigSection(T myKey, string[] myLines, HostInterface Host) : base(myKey, Host)
 		{
 			keyValuePairs = new Dictionary<TT, string>();
-			indexedValues = new List<IndexedValue>();
+			indexedValues = new Dictionary<int, string>();
 			for (int i = 0; i < myLines.Length; i++)
 			{
 				int j = myLines[i].IndexOf("=", StringComparison.Ordinal);
@@ -254,7 +209,16 @@ namespace Formats.OpenBve
 					{
 						if (idx >= 0)
 						{
-							indexedValues.Add(new IndexedValue(idx, b));
+							if (indexedValues.ContainsKey(idx))
+							{
+								currentHost.AddMessage(MessageType.Warning, false, "Duplicate index " + idx + " encountered in Section " + myKey + " at Line " + i);
+								indexedValues[idx] = b;
+							}
+							else
+							{
+								indexedValues.Add(idx, b);
+							}
+							
 						}
 						else
 						{
@@ -278,9 +242,9 @@ namespace Formats.OpenBve
 		{
 			if (indexedValues.Count > 0)
 			{
-				index = indexedValues[0].Index;
-				value = indexedValues[0].Value;
-				indexedValues.RemoveAt(0);
+				index = indexedValues.ElementAt(0).Key;
+				value = indexedValues.ElementAt(0).Value;
+				indexedValues.Remove(index);
 				return true;
 			}
 			index = -1;
