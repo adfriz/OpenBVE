@@ -24,9 +24,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
 using OpenBveApi.FunctionScripting;
 using OpenBveApi.Hosts;
 using OpenBveApi.Interface;
@@ -43,8 +41,22 @@ namespace Formats.OpenBve
 	    public virtual int RemainingDataValues => 0;
 
 	    public readonly T Key;
+
+	    public readonly int Index;
 		
 	    internal readonly HostInterface currentHost;
+
+	    public virtual bool GetValue(TT key, out bool value)
+	    {
+		    value = false;
+		    return false;
+	    }
+
+	    public virtual bool GetValue(TT key, out double value)
+	    {
+		    value = 0;
+		    return false;
+	    }
 
 	    public virtual bool GetValue(TT key, out string value)
 	    {
@@ -83,8 +95,9 @@ namespace Formats.OpenBve
 		    return false;
 	    }
 
-		protected Block(T myKey, HostInterface host)
-	    {
+		protected Block(int myIndex, T myKey, HostInterface host)
+		{
+			Index = myIndex;
 		    Key = myKey;
 		    currentHost = host;
 	    }
@@ -97,12 +110,13 @@ namespace Formats.OpenBve
 
 		private readonly List<Block<T, TT>> subBlocks;
 
-		public ConfigFile(string[] Lines, HostInterface Host, string expectedHeader = null) : base(default, Host)
+		public ConfigFile(string[] Lines, HostInterface Host, string expectedHeader = null) : base(-1, default, Host)
 		{
 			myLines = Lines;
 			subBlocks = new List<Block<T, TT>>();
 			List<string> blockLines = new List<string>();
 			bool addToBlock = false;
+			int idx = -1;
 			T previousSection = default(T);
 
 			bool headerOK = string.IsNullOrEmpty(expectedHeader);
@@ -139,6 +153,23 @@ namespace Formats.OpenBve
 					string sct = myLines[i].Trim().Trim('[', ']').Replace(" ", "");
 
 					T currentSection;
+					if (char.IsDigit(sct[sct.Length - 1]))
+					{
+						int c = sct.Length - 1;
+						while (!char.IsDigit(sct[c]) && c > 0)
+						{
+							c--;
+						}
+
+						
+						if (!int.TryParse(sct.Substring(c, sct.Length - c), out idx) || idx < 0)
+						{
+							currentHost.AddMessage(MessageType.Error, false, "Invalid index encountered in Section " + sct + " at Line " + i);
+							idx = -1;
+						}
+						sct = sct.Substring(0, c);
+
+					}
 					if (!Enum.TryParse(sct, true, out currentSection))
 					{
 						addToBlock = false;
@@ -151,7 +182,7 @@ namespace Formats.OpenBve
 
 					if (blockLines.Count > 0)
 					{
-						subBlocks.Add(new ConfigSection<T, TT>(previousSection, blockLines.ToArray(), currentHost));
+						subBlocks.Add(new ConfigSection<T, TT>(idx, previousSection, blockLines.ToArray(), currentHost));
 						blockLines.Clear();
 					}
 					previousSection = currentSection;
@@ -167,7 +198,7 @@ namespace Formats.OpenBve
 			// final block
 			if (blockLines.Count > 0)
 			{
-				subBlocks.Add(new ConfigSection<T, TT>(previousSection, blockLines.ToArray(), currentHost));
+				subBlocks.Add(new ConfigSection<T, TT>(idx, previousSection, blockLines.ToArray(), currentHost));
 			}
 		}
 
@@ -193,8 +224,8 @@ namespace Formats.OpenBve
 		}
 
 		public override int RemainingDataValues => keyValuePairs.Count + indexedValues.Count;
-
-		internal ConfigSection(T myKey, string[] myLines, HostInterface Host) : base(myKey, Host)
+		
+		internal ConfigSection(int myIndex, T myKey, string[] myLines, HostInterface Host) : base(myIndex, myKey, Host)
 		{
 			keyValuePairs = new Dictionary<TT, string>();
 			indexedValues = new Dictionary<int, string>();
@@ -294,6 +325,37 @@ namespace Formats.OpenBve
 				return true;
 			}
 			value = string.Empty;
+			return false;
+		}
+
+		public override bool GetValue(TT key, out double value)
+		{
+			if (keyValuePairs.TryGetValue(key, out var s))
+			{
+				if (double.TryParse(s, out value))
+				{
+					return true;
+				}
+				currentHost.AddMessage(MessageType.Warning, false, "Value " + s + " is not a valid double in Key "+ Key + " in Section " + Key);
+				return false;
+
+			}
+			value = 0;
+			return false;
+		}
+
+		public override bool GetValue(TT key, out bool value)
+		{
+			if (keyValuePairs.TryGetValue(key, out var s))
+			{
+				s = s.ToLowerInvariant().Trim();
+				if (s == "1" || s == "true")
+				{
+					value = true;
+					return true;
+				}
+			}
+			value = false;
 			return false;
 		}
 	}

@@ -60,10 +60,10 @@ namespace Train.OpenBve
 			Encoding Encoding = TextEncoding.GetSystemEncodingFromFile(FileName);
 
 			// parse configuration file
-			List<string> Lines = System.IO.File.ReadAllLines(FileName, Encoding).ToList();
+			string[] Lines = System.IO.File.ReadAllLines(FileName, Encoding);
 			Dictionary<int, string> MotorFiles = new Dictionary<int, string>();
 
-			ConfigFile<SoundCfgSection, SoundCfgKey> cfg = new ConfigFile<SoundCfgSection, SoundCfgKey>(Lines.ToArray(), Plugin.currentHost, "Version 1.0");
+			ConfigFile<SoundCfgSection, SoundCfgKey> cfg = new ConfigFile<SoundCfgSection, SoundCfgKey>(Lines, Plugin.currentHost, "Version 1.0");
 			while (cfg.RemainingSubBlocks > 0)
 			{
 				Block<SoundCfgSection, SoundCfgKey> block = cfg.ReadNextBlock();
@@ -206,13 +206,13 @@ namespace Train.OpenBve
 							train.Cars[train.DriverCar].Horns[0].LoopSound = sound as SoundBuffer;
 							train.Cars[train.DriverCar].Horns[0].SoundPosition = front;
 							train.Cars[train.DriverCar].Horns[0].Loop = false;
-							if (block.GetValue(SoundCfgKey.PrimaryStart, out var primaryStart))
+							if (block.GetValue(SoundCfgKey.PrimaryStart, out string primaryStart))
 							{
 								Plugin.currentHost.RegisterSound(Path.CombineFile(trainFolder, primaryStart), SoundCfgParser.largeRadius, out var startSound);
 								train.Cars[train.DriverCar].Horns[0].StartSound = startSound as SoundBuffer;
 								train.Cars[train.DriverCar].Horns[0].StartEndSounds = true;
 							}
-							if (block.GetValue(SoundCfgKey.PrimaryStart, out var primaryEnd))
+							if (block.GetValue(SoundCfgKey.PrimaryStart, out string primaryEnd))
 							{
 								Plugin.currentHost.RegisterSound(Path.CombineFile(trainFolder, primaryEnd), SoundCfgParser.largeRadius, out var endSound);
 								train.Cars[train.DriverCar].Horns[0].StartSound = endSound as SoundBuffer;
@@ -225,13 +225,13 @@ namespace Train.OpenBve
 							train.Cars[train.DriverCar].Horns[1].LoopSound = sound as SoundBuffer;
 							train.Cars[train.DriverCar].Horns[1].SoundPosition = front;
 							train.Cars[train.DriverCar].Horns[1].Loop = false;
-							if (block.GetValue(SoundCfgKey.SecondaryStart, out var secondaryStart))
+							if (block.GetValue(SoundCfgKey.SecondaryStart, out string secondaryStart))
 							{
 								Plugin.currentHost.RegisterSound(Path.CombineFile(trainFolder, secondaryStart), SoundCfgParser.largeRadius, out var startSound);
 								train.Cars[train.DriverCar].Horns[1].StartSound = startSound as SoundBuffer;
 								train.Cars[train.DriverCar].Horns[1].StartEndSounds = true;
 							}
-							if (block.GetValue(SoundCfgKey.SecondaryEnd, out var secondaryEnd))
+							if (block.GetValue(SoundCfgKey.SecondaryEnd, out string secondaryEnd))
 							{
 								Plugin.currentHost.RegisterSound(Path.CombineFile(trainFolder, secondaryEnd), SoundCfgParser.largeRadius, out var endSound);
 								train.Cars[train.DriverCar].Horns[1].EndSound = endSound as SoundBuffer;
@@ -245,13 +245,13 @@ namespace Train.OpenBve
 							train.Cars[train.DriverCar].Horns[0].LoopSound = sound as SoundBuffer;
 							train.Cars[train.DriverCar].Horns[0].SoundPosition = front;
 							train.Cars[train.DriverCar].Horns[0].Loop = false;
-							if (block.GetValue(SoundCfgKey.MusicStart, out var musicStart))
+							if (block.GetValue(SoundCfgKey.MusicStart, out string musicStart))
 							{
 								Plugin.currentHost.RegisterSound(Path.CombineFile(trainFolder, musicStart), SoundCfgParser.mediumRadius, out var startSound);
 								train.Cars[train.DriverCar].Horns[0].StartSound = startSound as SoundBuffer;
 								train.Cars[train.DriverCar].Horns[0].StartEndSounds = true;
 							}
-							if (block.GetValue(SoundCfgKey.MusicEnd, out var musicEnd))
+							if (block.GetValue(SoundCfgKey.MusicEnd, out string musicEnd))
 							{
 								Plugin.currentHost.RegisterSound(Path.CombineFile(trainFolder, musicEnd), SoundCfgParser.mediumRadius, out var endSound);
 								train.Cars[train.DriverCar].Horns[0].EndSound = endSound as SoundBuffer;
