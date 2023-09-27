@@ -285,7 +285,16 @@ namespace Formats.OpenBve
 			currentHost.AddMessage(MessageType.Warning, false, "Key " + key + " was not found in Section " + Key);
 			function = null;
 			return false;
-			
+		}
+
+		public override bool GetValue(TT key, out string value)
+		{
+			if (keyValuePairs.TryGetValue(key, out value))
+			{
+				return true;
+			}
+			value = string.Empty;
+			return false;
 		}
 	}
 }
