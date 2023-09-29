@@ -28,7 +28,6 @@ namespace Train.OpenBve
 			bool[] BogieObjectsReversed = new bool[Train.Cars.Length * 2];
 			bool[] CarsDefined = new bool[Train.Cars.Length];
 			bool[] BogiesDefined = new bool[Train.Cars.Length * 2];
-			System.Globalization.CultureInfo Culture = System.Globalization.CultureInfo.InvariantCulture;
 			string FileName = Path.CombineFile(TrainPath, "extensions.cfg");
 			if (System.IO.File.Exists(FileName)) {
 				Encoding = TextEncoding.GetSystemEncodingFromFile(FileName, Encoding);
@@ -90,7 +89,6 @@ namespace Train.OpenBve
 							}
 
 							CarsDefined[block.Index] = true;
-							double carLength;
 							if (block.GetValue(ExtensionCfgKey.Object, out string carObject))
 							{
 								if (!Path.ContainsInvalidChars(carObject))
@@ -107,7 +105,7 @@ namespace Train.OpenBve
 								}
 							}
 
-							if (block.GetValue(ExtensionCfgKey.Length, out carLength))
+							if (block.GetValue(ExtensionCfgKey.Length, out double carLength))
 							{
 								Train.Cars[block.Index].Length = carLength;
 							}
@@ -116,14 +114,14 @@ namespace Train.OpenBve
 							block.GetValue(ExtensionCfgKey.LoadingSway, out Train.Cars[block.Index].EnableLoadingSway);
 							if (block.GetVector2(ExtensionCfgKey.Axles, ',', out Vector2 carAxles))
 							{
-								if (carAxles.Y >= carAxles.X)
+								if (carAxles.X >= carAxles.Y)
 								{
 									Plugin.currentHost.AddMessage(MessageType.Error, false, "Rear is expected to be less than Front for Car " + block.Index + " in file " + FileName);
 								}
 								else
 								{
-									Train.Cars[block.Index].FrontAxle.Position = carAxles.X;
-									Train.Cars[block.Index].RearAxle.Position = carAxles.Y;	
+									Train.Cars[block.Index].RearAxle.Position = carAxles.X;	
+									Train.Cars[block.Index].FrontAxle.Position = carAxles.Y;
 								}
 								
 							}
@@ -131,14 +129,14 @@ namespace Train.OpenBve
 						case ExtensionCfgSection.Coupler:
 							if (block.GetVector2(ExtensionCfgKey.Axles, ',', out Vector2 distances))
 							{
-								if (distances.Y >= distances.X)
+								if (distances.X >= distances.Y)
 								{
 									Plugin.currentHost.AddMessage(MessageType.Error, false, "Minimum is expected to be less than Maximum in for Coupler " + block.Index + " in file " + FileName);
 								}
 								else
 								{
 									Train.Cars[block.Index].Coupler.MinimumDistanceBetweenCars = distances.X;
-									Train.Cars[block.Index].Coupler.MaximumDistanceBetweenCars = distances.Y;	
+									Train.Cars[block.Index].Coupler.MaximumDistanceBetweenCars = distances.Y;
 								}
 							}
 							if (block.GetValue(ExtensionCfgKey.Object, out string couplerObject))
@@ -198,7 +196,7 @@ namespace Train.OpenBve
 							block.GetValue(ExtensionCfgKey.Reversed, out BogieObjectsReversed[block.Index]);
 							if (block.GetVector2(ExtensionCfgKey.Axles, ',', out Vector2 bogieAxles))
 							{
-								if (bogieAxles.Y >= bogieAxles.X)
+								if (bogieAxles.X >= bogieAxles.Y)
 								{
 									Plugin.currentHost.AddMessage(MessageType.Error, false, "Rear is expected to be less than Front for Bogie " + block.Index + " in file " + FileName);
 								}
@@ -206,13 +204,13 @@ namespace Train.OpenBve
 								{
 									if (IsOdd)
 									{
-										Train.Cars[CarIndex].FrontBogie.RearAxle.Position = bogieAxles.Y;
-										Train.Cars[CarIndex].FrontBogie.FrontAxle.Position = bogieAxles.X;
+										Train.Cars[CarIndex].FrontBogie.RearAxle.Position = bogieAxles.X;
+										Train.Cars[CarIndex].FrontBogie.FrontAxle.Position = bogieAxles.Y;
 									}
 									else
 									{
-										Train.Cars[CarIndex].RearBogie.RearAxle.Position = bogieAxles.Y;
-										Train.Cars[CarIndex].RearBogie.FrontAxle.Position = bogieAxles.X;
+										Train.Cars[CarIndex].RearBogie.RearAxle.Position = bogieAxles.X;
+										Train.Cars[CarIndex].RearBogie.FrontAxle.Position = bogieAxles.Y;
 									}
 									DefinedAxles = true;
 								}

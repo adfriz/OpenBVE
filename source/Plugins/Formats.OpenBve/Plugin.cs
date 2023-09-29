@@ -117,6 +117,7 @@ namespace Formats.OpenBve
 			List<string> blockLines = new List<string>();
 			bool addToBlock = false;
 			int idx = -1;
+			int previousIdx = -1;
 			T previousSection = default(T);
 
 			bool headerOK = string.IsNullOrEmpty(expectedHeader);
@@ -182,10 +183,11 @@ namespace Formats.OpenBve
 
 					if (blockLines.Count > 0)
 					{
-						subBlocks.Add(new ConfigSection<T, TT>(idx, previousSection, blockLines.ToArray(), currentHost));
+						subBlocks.Add(new ConfigSection<T, TT>(previousIdx, previousSection, blockLines.ToArray(), currentHost));
 						blockLines.Clear();
 					}
 					previousSection = currentSection;
+					previousIdx = idx;
 				}
 				else
 				{
@@ -267,6 +269,30 @@ namespace Formats.OpenBve
 					}
 				}
 			}
+		}
+
+		public override bool GetVector2(TT key, char separator, out Vector2 value)
+		{
+			value = Vector2.Null;
+			if (keyValuePairs.TryGetValue(key, out var rawValue))
+			{
+				string[] splitStrings = rawValue.Split(separator);
+				if (splitStrings.Length > 2)
+				{
+					currentHost.AddMessage(MessageType.Warning, false, "Unexpected extra " + (splitStrings.Length - 2) + " paramaters " + key + " encountered in " + key + " in Section " + Key);
+				}
+				
+				if (!NumberFormats.TryParseDoubleVb6(splitStrings[0], out value.X))
+				{
+					currentHost.AddMessage(MessageType.Warning, false, "X was invalid in " + key + " in Section " + Key);
+				}
+				if (!NumberFormats.TryParseDoubleVb6(splitStrings[1], out value.Y))
+				{
+					currentHost.AddMessage(MessageType.Warning, false, "Y was invalid in " + key + " in Section " + Key);
+				}
+				return true;
+			}
+			return false;
 		}
 
 		public override bool GetIndexedValue(out int index, out string value)
