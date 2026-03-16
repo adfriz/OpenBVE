@@ -314,10 +314,6 @@ namespace Route.Bve5
 							for (int k = 0; k < Data.Blocks[i].FreeObjects[railKey].Count; k++)
 							{
 								string key = Data.Blocks[i].FreeObjects[railKey][k].Key;
-								double dx = Data.Blocks[i].FreeObjects[railKey][k].Position.X;
-								double dy = Data.Blocks[i].FreeObjects[railKey][k].Position.Y;
-								double dz = Data.Blocks[i].FreeObjects[railKey][k].Position.Z;
-								double tpos = Data.Blocks[i].FreeObjects[railKey][k].TrackPosition;
 								Vector3 wpos;
 								Transformation Transformation;
 								if (j == 0)
@@ -328,9 +324,10 @@ namespace Route.Bve5
 								{
 									GetSecondaryRailTransformation(Position, Direction, Data.Blocks, i, railKey, Data.Blocks[i].FreeObjects[railKey][k], out wpos, out Transformation);
 								}
-								wpos += dx * Transformation.X + dy * Transformation.Y + dz * Transformation.Z;
+
+								wpos += Data.Blocks[i].FreeObjects[railKey][k].Position * Transformation;
 								Data.Objects.TryGetValue(key, out UnifiedObject obj);
-								obj?.CreateObject(wpos, Transformation, new Transformation(Data.Blocks[i].FreeObjects[railKey][k].Yaw, Data.Blocks[i].FreeObjects[railKey][k].Pitch, Data.Blocks[i].FreeObjects[railKey][k].Roll), -1, StartingDistance, EndingDistance, tpos, 1.0);
+								obj?.CreateObject(wpos, Transformation, new Transformation(Data.Blocks[i].FreeObjects[railKey][k].Yaw, Data.Blocks[i].FreeObjects[railKey][k].Pitch, Data.Blocks[i].FreeObjects[railKey][k].Roll), -1, StartingDistance, EndingDistance, Data.Blocks[i].FreeObjects[railKey][k].TrackPosition, 1.0);
 							}
 						}
 
@@ -382,11 +379,6 @@ namespace Route.Bve5
 						{
 							for (int k = 0; k < Data.Blocks[i].Signals[j].Count; k++)
 							{
-								string key = Data.Blocks[i].Signals[j][k].Key;
-								double dx = Data.Blocks[i].Signals[j][k].Position.X;
-								double dy = Data.Blocks[i].Signals[j][k].Position.Y;
-								double dz = Data.Blocks[i].Signals[j][k].Position.Z;
-								double tpos = Data.Blocks[i].Signals[j][k].TrackPosition;
 								Vector3 wpos;
 								Transformation Transformation;
 								if (j == 0)
@@ -397,9 +389,9 @@ namespace Route.Bve5
 								{
 									GetSecondaryRailTransformation(Position, Direction, Data.Blocks, i, railKey, Data.Blocks[i].Signals[j][k], out wpos, out Transformation);
 								}
-								wpos += dx * Transformation.X + dy * Transformation.Y + dz * Transformation.Z;
+								wpos += Data.Blocks[i].Signals[j][k].Position * Transformation;
 
-								SignalData sd = Data.SignalObjects.Find(data => data.Key.Equals(key, StringComparison.InvariantCultureIgnoreCase));
+								SignalData sd = Data.SignalObjects.Find(data => data.Key.Equals(Data.Blocks[i].Signals[j][k].Key, StringComparison.InvariantCultureIgnoreCase));
 								if (sd != null)
 								{
 									if (sd.Numbers.Any())
@@ -441,7 +433,7 @@ namespace Route.Bve5
 											aoc.Objects[m].RefreshRate = refreshRate;
 										}
 
-										aoc.CreateObject(wpos, Transformation, new Transformation(Data.Blocks[i].Signals[j][k].Yaw, Data.Blocks[i].Signals[j][k].Pitch, Data.Blocks[i].Signals[j][k].Roll), Data.Blocks[i].Signals[j][k].SectionIndex, StartingDistance, EndingDistance, tpos, 1.0);
+										aoc.CreateObject(wpos, Transformation, new Transformation(Data.Blocks[i].Signals[j][k].Yaw, Data.Blocks[i].Signals[j][k].Pitch, Data.Blocks[i].Signals[j][k].Roll), Data.Blocks[i].Signals[j][k].SectionIndex, StartingDistance, EndingDistance, Data.Blocks[i].Signals[j][k].TrackPosition, 1.0);
 									}
 								}
 							}

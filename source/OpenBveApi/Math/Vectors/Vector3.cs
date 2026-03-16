@@ -319,9 +319,18 @@ namespace OpenBveApi.Math {
 			return b;
 		}
 
-		
+		/// <summary>Multiplies a Vector3 by a transformation</summary>
+		/// <param name="t">The transformation</param>
+		/// <param name="v">The vector</param>
+		/// <returns>The multiplied vector</returns>
+		public static Vector3 operator *(Vector3 v, Transformation t)
+		{
+			v = t.X * v.X + t.Y * v.Y + t.Z * v.Z;
+			return v;
+		}
+
 		// --- comparisons ---
-		
+
 		/// <summary>Checks whether the two specified vectors are equal.</summary>
 		/// <param name="a">The first vector.</param>
 		/// <param name="b">The second vector.</param>
