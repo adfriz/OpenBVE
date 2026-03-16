@@ -114,11 +114,9 @@ namespace OpenBveApi
 				int a = char.ConvertToUtf32(Text, i);
 				if (a == 0xD & i < Text.Length - 1) {
 					int b = char.ConvertToUtf32(Text, i + 1);
+					Builder.Append("\r\n");
 					if (b == 0xA) {
-						Builder.Append("\r\n");
 						i++;
-					} else {
-						Builder.Append("\r\n");
 					}
 				} else if (a == 0xA | a == 0xC | a == 0xD | a == 0x85 | a == 0x2028 | a == 0x2029) {
 					Builder.Append("\r\n");

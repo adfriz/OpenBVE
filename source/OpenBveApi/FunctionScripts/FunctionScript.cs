@@ -3,6 +3,7 @@ using OpenBveApi.Interface;
 using OpenBveApi.Math;
 using OpenBveApi.Trains;
 using System;
+// ReSharper disable StringLiteralTypo
 
 namespace OpenBveApi.FunctionScripting
 {
