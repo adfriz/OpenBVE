@@ -188,9 +188,7 @@ namespace Formats.OpenBve
 			currentHost.AddMessage(MessageType.Error, false, "A section in a CFG file cannot contain sub-blocks.");
 			return null;
 		}
-
-		public override int RemainingDataValues => keyValuePairs.Count + indexedValues.Count + rawValues.Count;
-
+		
 		internal ConfigSection(int myIndex, int startingLine, T1 myKey, string[] myLines, string fileName, HostInterface currentHost) : base(myIndex, myKey, fileName, currentHost)
 		{
 			for (int i = 0; i < myLines.Length; i++)

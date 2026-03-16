@@ -77,7 +77,7 @@ namespace CsvRwRouteParser
 				}
 			}
 
-			while (patchBlock.RemainingDataValues > 0)
+			while (patchBlock.RemainingIndexedValues > 0)
 			{
 				patchBlock.GetIndexedValue(out int expressionNumber, out string text);
 				currentPatch.ExpressionFixes.Add(expressionNumber, text);

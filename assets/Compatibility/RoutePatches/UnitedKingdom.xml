@@ -475,5 +475,21 @@
 		<FileName>Diagram. 5 - Ongar BVE4- heavy rain with 3D raindrops.csv</FileName>
 		<ReducedColorTransparency>true</ReducedColorTransparency>
 	</Patch>
+	<!-- Ashford- Victoria -->
+	<!-- Broken fog, use UK signals and accurate object disposal -->
+	<Patch>
+		<Hash>14C1AA7A7A62044602E7BBA6C2A393E53F40E3266376B8F5CF0FD87FCC3A640F</Hash>
+		<FileName>Ashford-Victoria.csv</FileName>
+		<SignalSet>BritishRail.xml</SignalSet>
+		<AccurateObjectDisposal>true</AccurateObjectDisposal>
+		<Expression Number="264"></Expression>
+	</Patch>
+	<Patch>
+		<Hash>9D6ADFFEAB5F2FF969E77A9BDE94FDEECC033D2CB68F08F37851C81DE74375D3</Hash>
+		<FileName>Ashford-Victoria.rw</FileName>
+		<SignalSet>BritishRail.xml</SignalSet>
+		<AccurateObjectDisposal>true</AccurateObjectDisposal>
+		<Expression Number="266"></Expression>
+	</Patch>
   </RoutePatches>
 </openBVE>

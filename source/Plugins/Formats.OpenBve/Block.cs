@@ -111,11 +111,13 @@ namespace Formats.OpenBve
 			return returnedBlocks;
 		}
 
-		public virtual int RemainingSubBlocks => subBlocks.Count;
+		public int RemainingSubBlocks => subBlocks.Count;
 
-	    public virtual int RemainingDataValues => 0;
+	    public int RemainingDataValues => keyValuePairs.Count + indexedValues.Count + rawValues.Count;
 
-	    public readonly T1 Key;
+	    public int RemainingIndexedValues => indexedValues.Count;
+
+		public readonly T1 Key;
 
 	    public readonly int Index;
 
