@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Formats.OpenBve
+﻿namespace Formats.OpenBve
 {
 	public enum SoundXMLSection
 	{
@@ -25,6 +19,7 @@ namespace Formats.OpenBve
 		Reverser,
 		Run,
 		Shoe,
+		Rub = Shoe,
 		Suspension,
 		RequestStop,
 		Touch,

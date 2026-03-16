@@ -95,7 +95,7 @@ namespace Formats.OpenBve
 		public virtual List<Block<T1, T2>> ReadBlocks(T1[] blocks)
 		{
 			List<Block<T1, T2>> returnedBlocks = new List<Block<T1, T2>>();
-			for (int i = subBlocks.Count - 1; i > 0; i--)
+			for (int i = subBlocks.Count - 1; i >= 0; i--)
 			{
 				for (int j = 0; j < blocks.Length; j++)
 				{
