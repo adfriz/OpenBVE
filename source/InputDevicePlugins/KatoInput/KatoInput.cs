@@ -346,11 +346,17 @@ namespace KatoInput
 		/// <summary>Looks for the first connected controller that is supported by the plugin.</summary>
 		internal void FindActiveController()
 		{
-			controllers.Clear();
-			EC1Controller.GetControllers(controllers);
+			// When loading the plugin, get all the supported controllers
+			// The plugin will not try to find new controllers after this
+			if (loading)
+			{
+				EC1Controller.GetControllers(controllers);
+			}
 
+			// Set the first connected controller as the active controller
 			foreach (KeyValuePair<Guid,Controller> controller in controllers)
 			{
+				controller.Value.Update();
 				if (controller.Value.State.IsConnected)
 				{
 					activeControllerGuid = controller.Key;
