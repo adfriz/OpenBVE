@@ -172,7 +172,7 @@ namespace OpenBveApi.Interface {
 			DebugNormals,
 			/// <summary>Shows or hides debug information on the brake-system performance</summary>
 			DebugBrakeSystems,
-			/// <summary>Shows or hides the ATS (plugin) debugn screen</summary>
+			/// <summary>Shows or hides the ATS (plugin) debug screen</summary>
 			DebugATS,
 			/// <summary>Shows or hides the touch range</summary>
 			DebugTouchMode,

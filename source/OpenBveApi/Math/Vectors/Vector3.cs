@@ -574,10 +574,10 @@ namespace OpenBveApi.Math {
 			double norm = vector.X * vector.X + vector.Y * vector.Y + vector.Z * vector.Z;
 			if (norm == 0.0) {
 				throw new DivideByZeroException();
-			} else {
-				double factor = 1.0 / System.Math.Sqrt(norm);
-				return new Vector3(vector.X * factor, vector.Y * factor, vector.Z * factor);
 			}
+
+			double factor = 1.0 / System.Math.Sqrt(norm);
+			return new Vector3(vector.X * factor, vector.Y * factor, vector.Z * factor);
 		}
 		
 		/// <summary>Translates a vector by a specified offset.</summary>
@@ -646,25 +646,25 @@ namespace OpenBveApi.Math {
 		/// <param name="b">The second spatial coordinate.</param>
 		/// <param name="c">The third spatial coordinate.</param>
 		/// <param name="normal">On success, receives the vector perpendicular to the described plane. On failure, receives Vector3.Up.</param>
-		/// <returns>The success of the operation. This operation fails if the specified three vectors are colinear.</returns>
+		/// <returns>The success of the operation. This operation fails if the specified three vectors are collinear.</returns>
 		public static bool CreateNormal(Vector3 a, Vector3 b, Vector3 c, out Vector3 normal) {
 			normal = Vector3.Cross(b - a, c - a);
 			double norm = normal.X * normal.X + normal.Y * normal.Y + normal.Z * normal.Z;
 			if (norm != 0.0) {
 				normal *= 1.0 / System.Math.Sqrt(norm);
 				return true;
-			} else {
-				normal = Vector3.Up;
-				return false;
 			}
+
+			normal = Vector3.Up;
+			return false;
 		}
 		
-		/// <summary>Checks whether three spatial coordinates are colinear.</summary>
+		/// <summary>Checks whether three spatial coordinates are collinear.</summary>
 		/// <param name="a">The first spatial coordinate.</param>
 		/// <param name="b">The second spatial coordinate.</param>
 		/// <param name="c">The third spatial coordinate.</param>
-		/// <returns>A boolean indicating whether the three spatial coordinates are colinear.</returns>
-		public static bool AreColinear(Vector3 a, Vector3 b, Vector3 c) {
+		/// <returns>A boolean indicating whether the three spatial coordinates are collinear.</returns>
+		public static bool AreCollinear(Vector3 a, Vector3 b, Vector3 c) {
 			Vector3 normal = Vector3.Cross(b - a, c - a);
 			return IsNullVector(normal);
 		}

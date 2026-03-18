@@ -671,7 +671,7 @@ namespace OpenBveApi.Packages
 
 		
 
-		/// <summary>Checks to see if upgrading or downgrading this package will break any dependancies</summary>
+		/// <summary>Checks to see if upgrading or downgrading this package will break any dependencies</summary>
 		public static List<Package> UpgradeDowngradeDependancies(Package currentPackage, List<Package> installedRoutes, List<Package> installedTrains)
 		{
 			List<Package> Dependancies = new List<Package>();
@@ -715,7 +715,7 @@ namespace OpenBveApi.Packages
 			}
 			if (Dependancies.Count == 0)
 			{
-				//Return null if there are no unmet dependancies
+				//Return null if there are no unmet dependencies
 				return null;
 			}
 			return Dependancies;

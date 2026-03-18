@@ -437,7 +437,7 @@ namespace OpenBveApi.Colors {
 		/// <param name="stringToParse">The string to parse</param>
 		/// <param name="separator">The separator character</param>
 		/// <param name="Color">The out Color32</param>
-		/// <returns>True if parsing succeded with no errors, false otherwise</returns>
+		/// <returns>True if parsing succeeded with no errors, false otherwise</returns>
 		/// <remarks>This will always return a Color32.
 		/// If any part fails parsing, it will be set to 255</remarks>
 		public static bool TryParseColor(string stringToParse, char separator, out Color32 Color)
