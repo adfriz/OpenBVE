@@ -1,4 +1,4 @@
-﻿//Simplified BSD License (BSD-2-Clause)
+//Simplified BSD License (BSD-2-Clause)
 //
 //Copyright (c) 2025, Christopher Lees, The OpenBVE Project
 //
@@ -64,10 +64,9 @@ namespace OpenBveApi.Objects
 		}
 
 		/// <summary>Clones a vertex</summary>
-		public Vertex(Vertex v)
+		public override VertexTemplate Clone()
 		{
-			Coordinates = v.Coordinates;
-			TextureCoordinates = v.TextureCoordinates;
+			return new Vertex(Coordinates, TextureCoordinates);
 		}
 
 		/// <summary>Tests if two vertices are equal</summary>

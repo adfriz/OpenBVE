@@ -35,6 +35,10 @@ namespace OpenBveApi.Objects
 		/// <summary>The texture co-ordinates for the vertex</summary>
 		public Vector2 TextureCoordinates;
 
+		/// <summary>Clones the vertex</summary>
+		/// <returns>The cloned vertex</returns>
+		public abstract VertexTemplate Clone();
+
 		/// <summary>Tests if this vertex template is equal to the supplied object</summary>
 		/// <param name="obj">The supplied object</param>
 		/// <returns>True if they are equal, false otherwise</returns>

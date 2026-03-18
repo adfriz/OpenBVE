@@ -54,14 +54,7 @@ namespace OpenBveApi.Objects
 			// vertices
 			for (int j = 0; j < Mesh.Vertices.Length; j++)
 			{
-				if (Mesh.Vertices[j] is ColoredVertex cv)
-				{
-					cloneResult.Mesh.Vertices[j] = new ColoredVertex(cv);
-				}
-				else
-				{
-					cloneResult.Mesh.Vertices[j] = new Vertex((Vertex) Mesh.Vertices[j]);
-				}
+				cloneResult.Mesh.Vertices[j] = Mesh.Vertices[j].Clone();
 			}
 
 			// faces
@@ -103,22 +96,7 @@ namespace OpenBveApi.Objects
 			// vertices
 			for (int j = 0; j < Mesh.Vertices.Length; j++)
 			{
-				if (Mesh.Vertices[j] is ColoredVertex cv)
-				{
-					cloneResult.Mesh.Vertices[j] = new ColoredVertex(cv);
-				}
-				else if (Mesh.Vertices[j] is LightMappedVertex lv)
-				{
-					cloneResult.Mesh.Vertices[j] = new LightMappedVertex(lv);
-				}
-				else if (Mesh.Vertices[j] is AnimatedVertex av)
-				{
-					cloneResult.Mesh.Vertices[j] = new AnimatedVertex(av);
-				}
-				else
-				{
-					cloneResult.Mesh.Vertices[j] = new Vertex((Vertex) Mesh.Vertices[j]);
-				}
+				cloneResult.Mesh.Vertices[j] = Mesh.Vertices[j].Clone();
 			}
 
 			// faces
@@ -384,11 +362,7 @@ namespace OpenBveApi.Objects
 
 			for (int i = 0; i < additionalObject.Mesh.Vertices.Length; i++)
 			{
-				if (additionalObject.Mesh.Vertices[i] is ColoredVertex cv)
-				{
-					Mesh.Vertices[mv + i] = new ColoredVertex(cv);
-				}
-				else if (additionalObject.Mesh.Vertices[i] is AnimatedVertex av)
+				if (additionalObject.Mesh.Vertices[i] is AnimatedVertex av)
 				{
 					Vector3 transformedCoordinates = new Vector3(av.Coordinates);
 					for (int j = 0; j < av.MatrixChain.Length; j++)
@@ -402,7 +376,7 @@ namespace OpenBveApi.Objects
 				}
 				else
 				{
-					Mesh.Vertices[mv + i] = new Vertex((Vertex) additionalObject.Mesh.Vertices[i]);
+					Mesh.Vertices[mv + i] = additionalObject.Mesh.Vertices[i].Clone();
 				}
 
 			}

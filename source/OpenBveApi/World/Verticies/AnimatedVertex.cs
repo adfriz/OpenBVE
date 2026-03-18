@@ -1,4 +1,4 @@
-﻿//Simplified BSD License (BSD-2-Clause)
+//Simplified BSD License (BSD-2-Clause)
 //
 //Copyright (c) 2025, Christopher Lees, The OpenBVE Project
 //
@@ -66,11 +66,9 @@ namespace OpenBveApi.Objects
 		}
 
 		/// <summary>Clones an animated vertex</summary>
-		public AnimatedVertex(AnimatedVertex v)
+		public override VertexTemplate Clone()
 		{
-			Coordinates = v.Coordinates;
-			TextureCoordinates = v.TextureCoordinates;
-			MatrixChain = v.MatrixChain;
+			return new AnimatedVertex(Coordinates, TextureCoordinates, MatrixChain);
 		}
 
 		/// <summary>Tests if this vertex is equal to the supplied object</summary>
