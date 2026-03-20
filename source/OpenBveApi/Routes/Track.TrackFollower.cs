@@ -400,7 +400,7 @@ namespace OpenBveApi.Routes
 						return;
 					}
 
-					if (oldDelta > e.TrackPositionDelta & newDelta <= e.TrackPositionDelta)
+					if (oldDelta > e.TrackPositionDelta && newDelta <= e.TrackPositionDelta)
 					{
 						e.TryTrigger(-1, this);
 					}
@@ -411,7 +411,7 @@ namespace OpenBveApi.Routes
 				for (int j = 0; j < currentHost.Tracks[Index].Elements[elementIndex].Events.Count; j++)
 				{
 					GeneralEvent e = currentHost.Tracks[Index].Elements[elementIndex].Events[j];
-					if (oldDelta < e.TrackPositionDelta & newDelta >= e.TrackPositionDelta)
+					if (oldDelta < e.TrackPositionDelta && newDelta >= e.TrackPositionDelta)
 					{
 						e.TryTrigger(1, this);
 					}
