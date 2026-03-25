@@ -55,7 +55,11 @@ namespace Train.OpenBve
 		{
 			string currentXMLPath = Path.GetDirectoryName(block.FileName);
 			Vector3 interiorDirection = Vector3.Zero;
-			block.TryGetValue(TrainXMLKey.Length, ref Train.Cars[Car].Length);
+			if (block.TryGetValue(TrainXMLKey.Length, ref Train.Cars[Car].Length))
+			{
+				Train.Cars[block.Index].BeaconReceiverPosition = 0.5 * Train.Cars[Car].Length;
+			}
+
 			block.TryGetValue(TrainXMLKey.Width, ref Train.Cars[Car].Width);
 			block.TryGetValue(TrainXMLKey.Height, ref Train.Cars[Car].Height);
 			block.TryGetValue(TrainXMLKey.CenterOfGravityHeight, ref Train.Cars[Car].Specs.CenterOfGravityHeight);
