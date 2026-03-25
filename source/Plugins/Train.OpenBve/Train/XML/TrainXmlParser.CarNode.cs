@@ -368,7 +368,7 @@ namespace Train.OpenBve
 
 				if (block.ReadBlock(TrainXMLSection.AccelerationCurves, out Block<TrainXMLSection, TrainXMLKey> accelerationCurvesBlock))
 				{
-					// NOTE: AccelerationCurves were originally at /openBVE/Train/Car/AccelerationCurves. Moved to be a child of the Power block, but retaining this for backwards compatability
+					// NOTE: AccelerationCurves were originally at /openBVE/Train/Car/AccelerationCurves. Moved to be a child of the Power block, but retaining this for backwards compatibility
 					finalAccelerationCurves = ParseAccelerationBlock(accelerationCurvesBlock);
 					accelerationCurvesBlock.ReportErrors();
 				}
