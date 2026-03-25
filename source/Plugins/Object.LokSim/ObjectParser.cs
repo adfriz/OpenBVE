@@ -1,4 +1,4 @@
-﻿//Simplified BSD License (BSD-2-Clause)
+//Simplified BSD License (BSD-2-Clause)
 //
 //Copyright (c) 2020, Christopher Lees, The OpenBVE Project
 //
@@ -363,12 +363,18 @@ namespace Plugin
 				}
 
 				//Apply rotation
-				/*
-                 * NOTES:
-                 * No rotation order is specified
-                 * The rotation string in a .l3dgrp file is ordered Y, Z, X    ??? Can't find a good reason for this ???
-                 * Rotations must still be performed in X,Y,Z order to produce correct results
-                 */
+				if (Rotation.X != 0.0)
+				{
+					Rotation.X = Rotation.X.ToRadians();
+					//Apply rotation
+					Builder.ApplyRotation(Vector3.Down, Rotation.X);
+				}
+				if (Rotation.Y != 0.0)
+				{
+					Rotation.Y = Rotation.Y.ToRadians();
+					//Apply rotation
+					Builder.ApplyRotation(Vector3.Forward, Rotation.Y);
+				}
 
 				if (Rotation.Z != 0.0)
 				{
@@ -376,23 +382,6 @@ namespace Plugin
 					//Apply rotation
 					Builder.ApplyRotation(Vector3.Right, Rotation.Z);
 				}
-
-
-				if (Rotation.X != 0.0)
-				{
-					//This is actually the Y-Axis rotation
-					Rotation.X = Rotation.X.ToRadians();
-					//Apply rotation
-					Builder.ApplyRotation(Vector3.Down, Rotation.X);
-				}
-				if (Rotation.Y != 0.0)
-				{
-					//This is actually the X-Axis rotation
-					Rotation.Y = Rotation.Y.ToRadians();
-					//Apply rotation
-					Builder.ApplyRotation(Vector3.Forward, Rotation.Y);
-				}
-
 
 				//These files appear to only have one texture defined
 				//Therefore import later- May have to change
