@@ -24,10 +24,8 @@
 
 using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
 using System.IO;
-using System.Runtime.InteropServices;
+using System.Linq;
 using System.Xml;
 using OpenBveApi.Colors;
 using OpenBveApi.Math;
@@ -44,7 +42,7 @@ namespace Plugin
 		/// <param name="FileName">The text file to load the animated object from. Must be an absolute file name.</param>
 		/// <param name="Rotation">The rotation to be applied</param>
 		/// <returns>The object loaded.</returns>
-		internal static StaticObject ReadObject(string FileName, Vector3 Rotation)
+		internal static StaticObject ReadObject(string FileName, Vector3 Rotation, ref bool autoRotate)
 		{
 			string BaseDir = Path.GetDirectoryName(FileName);
 			XmlDocument currentXML = new XmlDocument();
@@ -210,7 +208,12 @@ namespace Plugin
 														Face2 = false;
 													}
 													break;
-
+												case "AutoRotate":
+													if (attribute.Value == "TRUE")
+													{
+														autoRotate = true;
+													}
+													break;
 												/*
 												 * MISSING PROPERTIES:
 												 * AutoRotate - Rotate with tracks?? LS3D presumably uses a 3D world system.
