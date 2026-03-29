@@ -7,6 +7,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using LibRender2.Menu;
@@ -35,6 +36,9 @@ namespace ObjectViewer {
 
 		// members
 	    internal static List<string> Files = new List<string>();
+        /// <summary>Last time the objects were reloaded (UTC).</summary>
+        internal static DateTime lastReloadTime = DateTime.UtcNow;
+        private static double reloadCheckTimer;
 
 		// mouse
 		internal static Vector3 MouseCameraPosition = Vector3.Zero;
@@ -307,6 +311,7 @@ namespace ObjectViewer {
 
 	    internal static void RefreshObjects()
 	    {
+	        lastReloadTime = DateTime.UtcNow;
 		    LightingRelative = -1.0;
 			Renderer.Reset();
 		    Game.Reset();
@@ -398,6 +403,25 @@ namespace ObjectViewer {
 			    Renderer.GameWindow.Title = "Object Viewer";
 		    }
 	    }
+
+        /// <summary>Checks if any of the loaded files have been updated externally.</summary>
+        internal static void CheckFileChanges(double timeElapsed)
+        {
+            if (Files.Count == 0 || (reloadCheckTimer += timeElapsed) < 0.5)
+            {
+                return;
+            }
+            reloadCheckTimer = 0.0;
+
+            for (int i = 0; i < Files.Count; i++)
+            {
+                if (System.IO.File.GetLastWriteTimeUtc(Files[i]) > lastReloadTime)
+                {
+                    RefreshObjects();
+                    return;
+                }
+            }
+        }
 
 
 	    // process events
@@ -494,6 +518,7 @@ namespace ObjectViewer {
 		            LightingRelative = -1.0;
 	                Game.Reset();
 		            Files = new List<string>();
+                    lastReloadTime = DateTime.UtcNow;
 					NearestTrain.UpdateSpecs();
 					Renderer.ApplyBackgroundColor();
 	                break;
