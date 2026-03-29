@@ -7,6 +7,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using LibRender2.Menu;
@@ -59,6 +60,11 @@ namespace ObjectViewer {
 		internal static CurrentRoute CurrentRoute;
 
 		internal static TrainManager TrainManager;
+
+		// watchers for auto-reload
+		private static readonly List<System.IO.FileSystemWatcher> Watchers = new List<System.IO.FileSystemWatcher>();
+		// flag set when FileSystemWatcher detects a file change
+		internal static bool ObjectsReloadPending = false;
 
 		[System.Runtime.InteropServices.DllImport("user32.dll")]
 		private static extern bool SetProcessDPIAware();
@@ -128,7 +134,7 @@ namespace ObjectViewer {
 
 						        if (CurrentHost.Plugins[j].Object != null && CurrentHost.Plugins[j].Object.CanLoadObject(args[i]))
 						        {
-							        filesToLoad.Add(args[i]);
+							        filesToLoad.Add(System.IO.Path.GetFullPath(args[i]));
 						        }
 					        }
 				        }
@@ -249,7 +255,7 @@ namespace ObjectViewer {
 
 		internal static void DragFile(object sender, FileDropEventArgs e)
 		{
-			Files.Add(e.FileName);
+			Files.Add(System.IO.Path.GetFullPath(e.FileName));
 			// reset
 			LightingRelative = -1.0;
 			Game.Reset();
@@ -397,7 +403,52 @@ namespace ObjectViewer {
 		    {
 			    Renderer.GameWindow.Title = "Object Viewer";
 		    }
+			UpdateWatchers();
 	    }
+
+		/// <summary>Updates the FileSystemWatcher instances for all currently loaded files.</summary>
+		internal static void UpdateWatchers()
+		{
+			// Dispose and clear existing watchers
+			for (int i = 0; i < Watchers.Count; i++)
+			{
+				Watchers[i].EnableRaisingEvents = false;
+				Watchers[i].Dispose();
+			}
+			Watchers.Clear();
+
+			List<string> directories = new List<string>();
+			for (int i = 0; i < Files.Count; i++)
+			{
+				if (!System.IO.File.Exists(Files[i])) continue;
+				string dir = System.IO.Path.GetDirectoryName(Files[i]);
+				if (!string.IsNullOrEmpty(dir) && !directories.Contains(dir))
+				{
+					directories.Add(dir);
+				}
+			}
+
+			foreach (string dir in directories)
+			{
+				try
+				{
+					// Create a watcher for each directory containing loaded files
+					System.IO.FileSystemWatcher watcher = new System.IO.FileSystemWatcher(dir);
+					watcher.NotifyFilter = System.IO.NotifyFilters.LastWrite | System.IO.NotifyFilters.FileName | System.IO.NotifyFilters.CreationTime;
+					// Trigger reload pending if any of our loaded files in this directory change
+					watcher.Changed += (s, e) => { if (Files.Any(f => string.Equals(f, e.FullPath, StringComparison.OrdinalIgnoreCase))) ObjectsReloadPending = true; };
+					watcher.Created += (s, e) => { if (Files.Any(f => string.Equals(f, e.FullPath, StringComparison.OrdinalIgnoreCase))) ObjectsReloadPending = true; };
+					watcher.Renamed += (s, e) => { if (Files.Any(f => string.Equals(f, e.FullPath, StringComparison.OrdinalIgnoreCase))) ObjectsReloadPending = true; };
+					watcher.Deleted += (s, e) => { if (Files.Any(f => string.Equals(f, e.FullPath, StringComparison.OrdinalIgnoreCase))) ObjectsReloadPending = true; };
+					watcher.EnableRaisingEvents = true;
+					Watchers.Add(watcher);
+				}
+				catch
+				{
+					// Ignored
+				}
+			}
+		}
 
 
 	    // process events
@@ -452,11 +503,11 @@ namespace ObjectViewer {
 
 						            if (Program.CurrentHost.Plugins[j].Object != null && Program.CurrentHost.Plugins[j].Object.CanLoadObject(f[i]))
 						            {
-							            Files.Add(f[i]);
+							            Files.Add(System.IO.Path.GetFullPath(f[i]));
 						            }
 						            if (!string.IsNullOrEmpty(currentTrain) && Program.CurrentHost.Plugins[j].Train != null && Program.CurrentHost.Plugins[j].Train.CanLoadTrain(currentTrain))
 						            {
-							            Files.Add(f[i]);
+							            Files.Add(System.IO.Path.GetFullPath(f[i]));
 						            }
 					            }
 					            
@@ -494,6 +545,7 @@ namespace ObjectViewer {
 		            LightingRelative = -1.0;
 	                Game.Reset();
 		            Files = new List<string>();
+					UpdateWatchers();
 					NearestTrain.UpdateSpecs();
 					Renderer.ApplyBackgroundColor();
 	                break;

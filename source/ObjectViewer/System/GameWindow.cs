@@ -1,4 +1,4 @@
-﻿using LibRender2.Viewports;
+using LibRender2.Viewports;
 using ObjectViewer.Trains;
 using OpenBveApi;
 using OpenTK;
@@ -282,7 +282,27 @@ namespace ObjectViewer
 
 			TotalTimeElapsedForInfo += RealTimeElapsed;
 			RenderRealTimeElapsed += RealTimeElapsed;
+
+			// Handle auto-reload request from FileSystemWatcher
+			if (Program.ObjectsReloadPending)
+			{
+				// Set 0.5s debounce timer to wait for editor write to finish
+				ReloadTimer = 0.5;
+				Program.ObjectsReloadPending = false;
+			}
+			if (ReloadTimer > 0)
+			{
+				ReloadTimer -= RealTimeElapsed;
+				if (ReloadTimer <= 0)
+				{
+					// Perform the actual refresh of all objects
+					Program.RefreshObjects();
+				}
+			}
 		}
+
+		// internal timer for handling auto-reload debouncing
+		private double ReloadTimer = 0.0;
 
         protected override void OnResize(EventArgs e)
         {
