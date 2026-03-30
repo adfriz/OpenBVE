@@ -407,7 +407,7 @@ namespace ObjectViewer {
         /// <summary>Checks if any of the loaded files have been updated externally.</summary>
         internal static void CheckFileChanges(double timeElapsed)
         {
-            if (Files.Count == 0 || (reloadCheckTimer += timeElapsed) < 0.5)
+            if (Interface.CurrentOptions.AutoReloadObjects == false || Files.Count == 0 || (reloadCheckTimer += timeElapsed) < 0.5)
             {
                 return;
             }
@@ -415,11 +415,26 @@ namespace ObjectViewer {
 
             for (int i = 0; i < Files.Count; i++)
             {
-                if (System.IO.File.GetLastWriteTimeUtc(Files[i]) > lastReloadTime)
-                {
-                    RefreshObjects();
-                    return;
-                }
+	            try
+	            {
+		            DateTime time = System.IO.File.GetLastWriteTimeUtc(Files[i]);
+		            if ((DateTime.Now - time).TotalSeconds > 5 || time.Year == 1601)
+		            {
+			            // file is held open for constant write (within last 5s)
+						// file no longer exists (returns 01/01/1601)
+			            continue;
+		            }
+		            if (System.IO.File.GetLastWriteTimeUtc(Files[i]) > lastReloadTime)
+		            {
+			            RefreshObjects();
+			            return;
+		            }
+				}
+	            catch(Exception e)
+	            {
+		            Interface.AddMessage(MessageType.Error, false, "Stopping automatically reloading objects due to the following exception: " + e);
+	            }
+	            
             }
         }
 
