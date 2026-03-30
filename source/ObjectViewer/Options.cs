@@ -30,8 +30,6 @@ namespace ObjectViewer
 
 		internal Key CameraMoveBackward;
 
-		internal bool AutoReloadObjects;
-
 		/// <summary>
 		/// The mode of optimization to be performed on an object
 		/// </summary>

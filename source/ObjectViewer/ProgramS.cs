@@ -418,7 +418,7 @@ namespace ObjectViewer {
 	            try
 	            {
 		            DateTime time = System.IO.File.GetLastWriteTimeUtc(Files[i]);
-		            if ((DateTime.Now - time).TotalSeconds > 5 || time.Year == 1601)
+		            if ((DateTime.Now - time).TotalSeconds < 5 || time.Year == 1601)
 		            {
 			            // file is held open for constant write (within last 5s)
 						// file no longer exists (returns 01/01/1601)
