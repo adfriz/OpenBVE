@@ -1,4 +1,4 @@
-﻿using LibRender2.Menu;
+using LibRender2.Menu;
 using OpenBveApi.Graphics;
 using OpenBveApi.Hosts;
 using OpenBveApi.Interface;
@@ -64,6 +64,8 @@ namespace ObjectViewer
 								try
 								{
 									potentialFiles = Directory.GetFiles(SearchDirectory);
+									// n.b. sort order of returned files is not guaranteed, so case invariant sort
+									Array.Sort(potentialFiles,(x, y) => String.Compare(x, y, StringComparison.InvariantCultureIgnoreCase));
 									directoryList = Directory.GetDirectories(SearchDirectory);
 								}
 								catch
@@ -79,6 +81,8 @@ namespace ObjectViewer
 								try
 								{
 									potentialFiles = Directory.GetFiles(SearchDirectory);
+									// n.b. sort order of returned files is not guaranteed, so case invariant sort
+									Array.Sort(potentialFiles, (x, y) => String.Compare(x, y, StringComparison.InvariantCultureIgnoreCase));
 									directoryList = Directory.GetDirectories(SearchDirectory);
 								}
 								catch
