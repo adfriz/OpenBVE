@@ -132,7 +132,7 @@ namespace ObjectViewer {
 
 						        if (CurrentHost.Plugins[j].Object != null && CurrentHost.Plugins[j].Object.CanLoadObject(args[i]))
 						        {
-							        filesToLoad.Add(args[i]);
+								        filesToLoad.Add(System.IO.Path.GetFullPath(args[i]));
 						        }
 					        }
 				        }
@@ -253,7 +253,7 @@ namespace ObjectViewer {
 
 		internal static void DragFile(object sender, FileDropEventArgs e)
 		{
-			Files.Add(e.FileName);
+			Files.Add(System.IO.Path.GetFullPath(e.FileName));
 			// reset
 			LightingRelative = -1.0;
 			Game.Reset();
@@ -309,9 +309,8 @@ namespace ObjectViewer {
 	        }
 	    }
 
-	    internal static void RefreshObjects()
+	    internal static void RefreshObjects(bool autoReload = false)
 	    {
-	        lastReloadTime = DateTime.UtcNow;
 		    LightingRelative = -1.0;
 			Renderer.Reset();
 		    Game.Reset();
@@ -379,7 +378,16 @@ namespace ObjectViewer {
 			    }
 			    catch (Exception ex)
 			    {
-				    Interface.AddMessage(MessageType.Critical, false, "Unhandled error (" + ex.Message + ") encountered while processing the file " + Files[i] + ".");
+				    if (!autoReload)
+				    {
+					    Interface.AddMessage(MessageType.Critical, false, "Unhandled error (" + ex.Message + ") encountered while processing the file " + Files[i] + ".");
+				    }
+				    else
+				    {
+					    // If auto-reloading, a failure likely means the file is locked / being written to
+					    // So we don't update the last reload time, and try again in 0.5s
+					    return;
+				    }
 			    }
 		    }
 
@@ -402,6 +410,7 @@ namespace ObjectViewer {
 		    {
 			    Renderer.GameWindow.Title = "Object Viewer";
 		    }
+		    lastReloadTime = DateTime.UtcNow;
 	    }
 
         /// <summary>Checks if any of the loaded files have been updated externally.</summary>
@@ -415,10 +424,20 @@ namespace ObjectViewer {
 
             for (int i = 0; i < Files.Count; i++)
             {
-                if (System.IO.File.GetLastWriteTimeUtc(Files[i]) > lastReloadTime)
+                try
                 {
-                    RefreshObjects();
-                    return;
+                    if (System.IO.File.Exists(Files[i]))
+                    {
+                        if (System.IO.File.GetLastWriteTimeUtc(Files[i]) > lastReloadTime)
+                        {
+                            RefreshObjects(true);
+                            return;
+                        }
+                    }
+                }
+                catch
+                {
+                    // If the file is locked / inaccessible, wait for the next poll
                 }
             }
         }
@@ -476,11 +495,11 @@ namespace ObjectViewer {
 
 						            if (Program.CurrentHost.Plugins[j].Object != null && Program.CurrentHost.Plugins[j].Object.CanLoadObject(f[i]))
 						            {
-							            Files.Add(f[i]);
+							            Files.Add(System.IO.Path.GetFullPath(f[i]));
 						            }
 						            if (!string.IsNullOrEmpty(currentTrain) && Program.CurrentHost.Plugins[j].Train != null && Program.CurrentHost.Plugins[j].Train.CanLoadTrain(currentTrain))
 						            {
-							            Files.Add(f[i]);
+							            Files.Add(System.IO.Path.GetFullPath(f[i]));
 						            }
 					            }
 					            
