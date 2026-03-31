@@ -57,11 +57,14 @@ namespace RouteViewer
 			this.comboBoxNewXParser = new System.Windows.Forms.ComboBox();
 			this.label15 = new System.Windows.Forms.Label();
 			this.numericUpDownViewingDistance = new System.Windows.Forms.NumericUpDown();
+			this.labelNearClip = new System.Windows.Forms.Label();
+			this.numericUpDownNearClip = new System.Windows.Forms.NumericUpDown();
 			((System.ComponentModel.ISupportInitialize)(this.width)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.height)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.AnsiotropicLevel)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.AntialiasingLevel)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.numericUpDownViewingDistance)).BeginInit();
+			((System.ComponentModel.ISupportInitialize)(this.numericUpDownNearClip)).BeginInit();
 			this.SuspendLayout();
 			// 
 			// InterpolationMode
@@ -139,7 +142,7 @@ namespace RouteViewer
 			// 
 			// button1
 			// 
-			this.button1.Location = new System.Drawing.Point(211, 447);
+			this.button1.Location = new System.Drawing.Point(211, 473);
 			this.button1.Name = "button1";
 			this.button1.Size = new System.Drawing.Size(75, 23);
 			this.button1.TabIndex = 9;
@@ -389,11 +392,50 @@ namespace RouteViewer
             0,
             0});
 			// 
-			// formOptions
+			// labelNearClip
+			// 
+			this.labelNearClip.AutoSize = true;
+			this.labelNearClip.Location = new System.Drawing.Point(12, 438);
+			this.labelNearClip.Name = "labelNearClip";
+			this.labelNearClip.Size = new System.Drawing.Size(109, 13);
+			this.labelNearClip.TabIndex = 36;
+			this.labelNearClip.Text = "Near Clip (m):";
+			// 
+			// numericUpDownNearClip
+			// 
+			this.numericUpDownNearClip.DecimalPlaces = 3;
+			this.numericUpDownNearClip.Increment = new decimal(new int[] {
+            1,
+            0,
+            0,
+            131072});
+			this.numericUpDownNearClip.Location = new System.Drawing.Point(166, 436);
+			this.numericUpDownNearClip.Maximum = new decimal(new int[] {
+            100,
+            0,
+            0,
+            0});
+			this.numericUpDownNearClip.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            131072});
+			this.numericUpDownNearClip.Name = "numericUpDownNearClip";
+			this.numericUpDownNearClip.Size = new System.Drawing.Size(120, 20);
+			this.numericUpDownNearClip.TabIndex = 35;
+			this.numericUpDownNearClip.Value = new decimal(new int[] {
+            2,
+            0,
+            0,
+            65536});
+			// 
+			// FormOptions
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-			this.ClientSize = new System.Drawing.Size(311, 482);
+			this.ClientSize = new System.Drawing.Size(311, 508);
+			this.Controls.Add(this.labelNearClip);
+			this.Controls.Add(this.numericUpDownNearClip);
 			this.Controls.Add(this.label15);
 			this.Controls.Add(this.numericUpDownViewingDistance);
 			this.Controls.Add(this.label12);
@@ -433,6 +475,7 @@ namespace RouteViewer
 			((System.ComponentModel.ISupportInitialize)(this.AnsiotropicLevel)).EndInit();
 			((System.ComponentModel.ISupportInitialize)(this.AntialiasingLevel)).EndInit();
 			((System.ComponentModel.ISupportInitialize)(this.numericUpDownViewingDistance)).EndInit();
+			((System.ComponentModel.ISupportInitialize)(this.numericUpDownNearClip)).EndInit();
 			this.ResumeLayout(false);
 			this.PerformLayout();
 
@@ -469,5 +512,7 @@ namespace RouteViewer
 		private System.Windows.Forms.ComboBox comboBoxNewXParser;
 		private System.Windows.Forms.Label label15;
 		private System.Windows.Forms.NumericUpDown numericUpDownViewingDistance;
+		private System.Windows.Forms.Label labelNearClip;
+		private System.Windows.Forms.NumericUpDown numericUpDownNearClip;
 	}
 }

@@ -503,7 +503,7 @@ namespace LibRender2.Textures
 				{
 					if (RegisteredTextures[i] != null && RegisteredTextures[i].OpenGlTextures[j].Used)
 					{
-						LoadTexture(ref RegisteredTextures[i], (OpenGlTextureWrapMode)j, CPreciseTimer.GetClockTicks(), renderer.currentOptions.Interpolation, renderer.currentOptions.AnisotropicFilteringLevel);
+						LoadTexture(ref RegisteredTextures[i], (OpenGlTextureWrapMode)j, CPreciseTimer.GetClockTicks(), renderer.CurrentOptions.Interpolation, renderer.CurrentOptions.AnisotropicFilteringLevel);
 					}
 
 				}

@@ -1,4 +1,4 @@
-﻿//Simplified BSD License (BSD-2-Clause)
+//Simplified BSD License (BSD-2-Clause)
 //
 //Copyright (c) 2024, Maurizo M. Gavioli, The OpenBVE Project
 //
@@ -114,10 +114,10 @@ namespace LibRender2.Menu
 		public Key MenuBackKey;
 
 		/// <summary>Creates a new menu instance</summary>
-		protected AbstractMenu(BaseRenderer renderer, BaseOptions currentOptions)
+		protected AbstractMenu(BaseRenderer renderer, BaseOptions CurrentOptions)
 		{
 			Renderer = renderer;
-			CurrentOptions = currentOptions;
+			CurrentOptions = CurrentOptions;
 		}
 
 		/// <summary>Initializes the menu system upon first use</summary>

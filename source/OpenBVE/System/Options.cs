@@ -301,6 +301,9 @@ namespace OpenBve
 				Builder.AppendLine("transparencyMode = " + ((int)TransparencyMode).ToString(Culture));
 				Builder.AppendLine("oldtransparencymode = " + (OldTransparencyMode ? "true" : "false"));
 				Builder.AppendLine("viewingDistance = " + ViewingDistance.ToString(Culture));
+				Builder.AppendLine("nearclipscenery = " + NearClipScenery.ToString(Culture));
+				Builder.AppendLine("nearclipcab = " + NearClipCab.ToString(Culture));
+				Builder.AppendLine("nearclipbase = " + NearClipBase.ToString(Culture));
 				Builder.AppendLine("quadLeafSize = " + QuadTreeLeafSize.ToString(Culture));
 				Builder.AppendLine("motionBlur = " + MotionBlur);
 				Builder.AppendLine("fpslimit = " + FPSLimit.ToString(Culture));
@@ -464,6 +467,17 @@ namespace OpenBve
 							block.GetValue(OptionsKey.ForwardsCompatibleContext, out CurrentOptions.ForceForwardsCompatibleContext);
 							block.TryGetValue(OptionsKey.ViewingDistance, ref Interface.CurrentOptions.ViewingDistance, NumberRange.Positive);
 							block.TryGetValue(OptionsKey.QuadLeafSize, ref Interface.CurrentOptions.QuadTreeLeafSize, NumberRange.Positive);
+							block.TryGetValue(OptionsKey.NearClipScenery, ref Interface.CurrentOptions.NearClipScenery, NumberRange.Positive);
+							block.TryGetValue(OptionsKey.NearClipCab, ref Interface.CurrentOptions.NearClipCab, NumberRange.Positive);
+							block.TryGetValue(OptionsKey.NearClipBase, ref Interface.CurrentOptions.NearClipBase, NumberRange.Positive);
+							// ensure viewing distance is greater than the near clipping plane to avoid rendering issues
+							double maxNearClip = Math.Max(Interface.CurrentOptions.NearClipScenery, Math.Max(Interface.CurrentOptions.NearClipCab, Interface.CurrentOptions.NearClipBase));
+
+							if (Interface.CurrentOptions.ViewingDistance <= maxNearClip)
+							{
+								Interface.CurrentOptions.ViewingDistance = (int)Math.Ceiling(maxNearClip) + 1;
+							}
+
 							block.TryGetValue(OptionsKey.UIScaleFactor, ref CurrentOptions.UserInterfaceScaleFactor);
 							break;
 						case OptionsSection.Quality:

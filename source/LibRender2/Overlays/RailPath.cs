@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using OpenBveApi.Colors;
@@ -64,7 +64,7 @@ namespace LibRender2.Overlays
 		/// <summary>Renders the path overlay</summary>
 		public void Render()
 		{
-			double halfDistance = (Math.Max(Renderer.currentOptions.ViewingDistance, 1000) / 2.0) * 1.1;
+			double halfDistance = (Math.Max(Renderer.CurrentOptions.ViewingDistance, 1000) / 2.0) * 1.1;
 			int numElements = (int)(halfDistance / BlockLength);
 			if (!Display || !Visible(Renderer.CameraTrackFollower.TrackPosition, out int startElement))
 			{

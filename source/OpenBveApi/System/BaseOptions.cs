@@ -113,6 +113,12 @@ namespace OpenBveApi
 		public bool EnableBve5ScriptedTrain;
 		/// <summary>The scale factor for the user interface</summary>
 		public int UserInterfaceScaleFactor;
+		/// <summary>The near clipping plane for scenery</summary>
+		public double NearClipScenery = 0.5;
+		/// <summary>The near clipping plane for the cab</summary>
+		public double NearClipCab = 0.025;
+		/// <summary>The near clipping plane for the base renderer</summary>
+		public double NearClipBase = 0.2;
 
 		/// <summary>Saves the options to the specified filename</summary>
 		/// <param name="fileName">The filename to save the options to</param>

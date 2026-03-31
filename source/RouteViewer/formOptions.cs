@@ -1,6 +1,7 @@
 using LibRender2.Viewports;
 using OpenBveApi;
 using OpenBveApi.Graphics;
+using OpenBveApi.Interface;
 using OpenBveApi.Objects;
 using OpenTK.Graphics;
 using System;
@@ -25,7 +26,12 @@ namespace RouteViewer
 			checkBoxProgressBar.Checked = Interface.CurrentOptions.LoadingProgressBar;
 			comboBoxNewXParser.SelectedIndex = (int) Interface.CurrentOptions.CurrentXParser;
 			comboBoxNewObjParser.SelectedIndex = (int) Interface.CurrentOptions.CurrentObjParser;
-			numericUpDownViewingDistance.Value = Math.Min(Interface.CurrentOptions.ViewingDistance, numericUpDownViewingDistance.Minimum);
+			numericUpDownViewingDistance.Value = (decimal)Interface.CurrentOptions.ViewingDistance;
+			numericUpDownNearClip.Value = (decimal)Interface.CurrentOptions.NearClipBase;
+			if (Translations.CurrentLanguageCode != "en-US")
+			{
+				labelNearClip.Text = Translations.GetInterfaceString(OpenBveApi.Hosts.HostApplication.OpenBve, new[] { "options", "quality_distance_nearclip" });
+			}
         }
 
         internal static DialogResult ShowOptions()
@@ -43,6 +49,7 @@ namespace RouteViewer
 	    private readonly int previousAntialiasingLevel = Interface.CurrentOptions.AntiAliasingLevel;
 	    private readonly int previousAnisotropicLevel = Interface.CurrentOptions.AnisotropicFilteringLevel;
 	    private readonly int previousViewingDistance = Interface.CurrentOptions.ViewingDistance;
+	    private readonly double previousNearClipBase = Interface.CurrentOptions.NearClipBase;
 	    private bool GraphicsModeChanged = false;
 
         private void button1_Click(object sender, EventArgs e)
@@ -126,7 +133,15 @@ namespace RouteViewer
 				}
 			}
 			Interface.CurrentOptions.ViewingDistance = (int)numericUpDownViewingDistance.Value;
+			Interface.CurrentOptions.NearClipBase = (double)numericUpDownNearClip.Value;
+			// ensure viewing distance is greater than the near clipping plane to avoid rendering issues
+			if (Interface.CurrentOptions.ViewingDistance <= Interface.CurrentOptions.NearClipBase)
+
+			{
+				Interface.CurrentOptions.ViewingDistance = (int)Math.Ceiling(Interface.CurrentOptions.NearClipBase) + 1;
+			}
 			Interface.CurrentOptions.QuadTreeLeafSize = Math.Max(50, (int)Math.Ceiling(Interface.CurrentOptions.ViewingDistance / 10.0d) * 10); // quad tree size set to 10% of viewing distance to the nearest 10
+
 			Interface.CurrentOptions.Save(Path.CombineFile(Program.FileSystem.SettingsFolder, "1.5.0/options_rv.cfg"));
 			for (int i = 0; i < Program.CurrentHost.Plugins.Length; i++)
 			{
@@ -137,7 +152,7 @@ namespace RouteViewer
 				}
 			}
 			//Check if interpolation mode or anisotropic filtering level has changed, and trigger a reload
-			if (previousInterpolationMode != Interface.CurrentOptions.Interpolation || previousAnisotropicLevel != Interface.CurrentOptions.AnisotropicFilteringLevel || GraphicsModeChanged || Interface.CurrentOptions.ViewingDistance != previousViewingDistance)
+			if (previousInterpolationMode != Interface.CurrentOptions.Interpolation || previousAnisotropicLevel != Interface.CurrentOptions.AnisotropicFilteringLevel || GraphicsModeChanged || Interface.CurrentOptions.ViewingDistance != previousViewingDistance || Interface.CurrentOptions.NearClipBase != previousNearClipBase)
 			{
 				this.DialogResult = DialogResult.OK;
 			}

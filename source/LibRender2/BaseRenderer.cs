@@ -55,7 +55,7 @@ namespace LibRender2
 		internal FileSystem fileSystem;
 
 		/// <summary>Holds a reference to the current options</summary>
-		internal BaseOptions currentOptions;
+		public BaseOptions CurrentOptions;
 
 		public List<ObjectState> StaticObjectStates;
 		public List<ObjectState> DynamicObjectStates;
@@ -298,12 +298,12 @@ namespace LibRender2
 
 		public Dictionary<Texture, HashSet<Vector3>> CubesToDraw = new Dictionary<Texture, HashSet<Vector3>>();
 
-		public bool AvailableNewRenderer => currentOptions != null && currentOptions.IsUseNewRenderer && !ForceLegacyOpenGL;
+		public bool AvailableNewRenderer => CurrentOptions != null && CurrentOptions.IsUseNewRenderer && !ForceLegacyOpenGL;
 
 		protected BaseRenderer(HostInterface CurrentHost, BaseOptions CurrentOptions, FileSystem FileSystem)
 		{
 			currentHost = CurrentHost;
-			currentOptions = CurrentOptions;
+			CurrentOptions = CurrentOptions;
 			fileSystem = FileSystem;
 			if (CurrentHost.Application != HostApplication.TrainEditor && CurrentHost.Application != HostApplication.TrainEditor2)
 			{
@@ -320,7 +320,7 @@ namespace LibRender2
 
 			projectionMatrixList = new List<Matrix4D>();
 			viewMatrixList = new List<Matrix4D>();
-			Fonts = new Fonts(currentHost, this, currentOptions.Font);
+			Fonts = new Fonts(currentHost, this, CurrentOptions.Font);
 			VisibilityThread = new Thread(RunVisibiliityThread);
 			VisibilityThread.Start();
 			RenderThreadJobs = new ConcurrentQueue<ThreadStart>();
@@ -336,7 +336,7 @@ namespace LibRender2
 		[HandleProcessCorruptedStateExceptions] //As some graphics cards crash really nastily if we request unsupported features
 		public virtual void Initialize()
 		{
-			if (!ForceLegacyOpenGL && (currentOptions.IsUseNewRenderer || currentHost.Application != HostApplication.OpenBve)) // GL3 has already failed. Don't trigger unnecessary exceptions
+			if (!ForceLegacyOpenGL && (CurrentOptions.IsUseNewRenderer || currentHost.Application != HostApplication.OpenBve)) // GL3 has already failed. Don't trigger unnecessary exceptions
 			{
 				try
 				{
@@ -355,7 +355,7 @@ namespace LibRender2
 				catch
 				{
 					currentHost.AddMessage(MessageType.Error, false, "Initializing the default shaders failed- Falling back to legacy openGL.");
-					currentOptions.IsUseNewRenderer = false;
+					CurrentOptions.IsUseNewRenderer = false;
 					ForceLegacyOpenGL = true;
 					try
 					{
@@ -377,7 +377,7 @@ namespace LibRender2
 				{
 					// Shader failed to load, but no exception
 					currentHost.AddMessage(MessageType.Error, false, "Initializing the default shaders failed- Falling back to legacy openGL.");
-					currentOptions.IsUseNewRenderer = false;
+					CurrentOptions.IsUseNewRenderer = false;
 					ForceLegacyOpenGL = true;
 				}
 			}
@@ -451,12 +451,12 @@ namespace LibRender2
 		/// <remarks>We need to purge the current shader state and update lighting to avoid glitches</remarks>
 		public void SwitchOpenGLVersion()
 		{
-			if (currentOptions.IsUseNewRenderer && AvailableNewRenderer)
+			if (CurrentOptions.IsUseNewRenderer && AvailableNewRenderer)
 			{
 				DefaultShader.Activate();
 				DefaultShader.Deactivate();
 			}
-			currentOptions.IsUseNewRenderer = !currentOptions.IsUseNewRenderer;
+			CurrentOptions.IsUseNewRenderer = !CurrentOptions.IsUseNewRenderer;
 			Lighting.Initialize();
 		}
 
@@ -712,13 +712,13 @@ namespace LibRender2
 			ObjectsSortedByStartPointer = 0;
 			ObjectsSortedByEndPointer = 0;
 			
-			if (currentOptions.ObjectDisposalMode == ObjectDisposalMode.QuadTree)
+			if (CurrentOptions.ObjectDisposalMode == ObjectDisposalMode.QuadTree)
 			{
 				foreach (ObjectState state in StaticObjectStates)
 				{
 					VisibleObjects.quadTree.Add(state, Orientation3.Default);
 				}
-				VisibleObjects.quadTree.Initialize(currentOptions.QuadTreeLeafSize);
+				VisibleObjects.quadTree.Initialize(CurrentOptions.QuadTreeLeafSize);
 				UpdateQuadTreeVisibility();
 			}
 			else
@@ -769,7 +769,7 @@ namespace LibRender2
 
 		private void UpdateVisibility(double trackPosition)
 		{
-			if (currentOptions.ObjectDisposalMode == ObjectDisposalMode.QuadTree)
+			if (CurrentOptions.ObjectDisposalMode == ObjectDisposalMode.QuadTree)
 			{
 				UpdateQuadTreeVisibility();
 			}
@@ -969,7 +969,7 @@ namespace LibRender2
 			{
 				// Calling GL.GetString in this manner seems to be crashing the OS-X driver (No idea, but probably OpenTK....)
 				// As we only support newer Intel Macs, 16x AF is safe
-				currentOptions.AnisotropicFilteringMaximum = 16;
+				CurrentOptions.AnisotropicFilteringMaximum = 16;
 				return;
 			}
 			
@@ -981,17 +981,17 @@ namespace LibRender2
 				if (error == ErrorCode.InvalidEnum)
 				{
 					// Doing this on a forward compatible GL context fails with invalid enum
-					currentOptions.AnisotropicFilteringMaximum = 16;
+					CurrentOptions.AnisotropicFilteringMaximum = 16;
 					return;
 				}
 			}
 			catch
 			{
-				currentOptions.AnisotropicFilteringMaximum = 0;
-				currentOptions.AnisotropicFilteringLevel = 0;
+				CurrentOptions.AnisotropicFilteringMaximum = 0;
+				CurrentOptions.AnisotropicFilteringLevel = 0;
 				return;
 			}
-			currentOptions.AnisotropicFilteringMaximum = 0;
+			CurrentOptions.AnisotropicFilteringMaximum = 0;
 
 			foreach (string extension in Extensions)
 			{
@@ -1000,26 +1000,26 @@ namespace LibRender2
 					float n = GL.GetFloat((GetPName)ExtTextureFilterAnisotropic.MaxTextureMaxAnisotropyExt);
 					int MaxAF = (int)Math.Round(n);
 
-					if (MaxAF != currentOptions.AnisotropicFilteringMaximum)
+					if (MaxAF != CurrentOptions.AnisotropicFilteringMaximum)
 					{
-						currentOptions.AnisotropicFilteringMaximum = (int)Math.Round(n);
+						CurrentOptions.AnisotropicFilteringMaximum = (int)Math.Round(n);
 					}
 					break;
 				}
 			}
 
-			if (currentOptions.AnisotropicFilteringMaximum <= 0)
+			if (CurrentOptions.AnisotropicFilteringMaximum <= 0)
 			{
-				currentOptions.AnisotropicFilteringMaximum = 0;
-				currentOptions.AnisotropicFilteringLevel = 0;
+				CurrentOptions.AnisotropicFilteringMaximum = 0;
+				CurrentOptions.AnisotropicFilteringLevel = 0;
 			}
-			else if (currentOptions.AnisotropicFilteringLevel == 0 & currentOptions.AnisotropicFilteringMaximum > 0)
+			else if (CurrentOptions.AnisotropicFilteringLevel == 0 & CurrentOptions.AnisotropicFilteringMaximum > 0)
 			{
-				currentOptions.AnisotropicFilteringLevel = currentOptions.AnisotropicFilteringMaximum;
+				CurrentOptions.AnisotropicFilteringLevel = CurrentOptions.AnisotropicFilteringMaximum;
 			}
-			else if (currentOptions.AnisotropicFilteringLevel > currentOptions.AnisotropicFilteringMaximum)
+			else if (CurrentOptions.AnisotropicFilteringLevel > CurrentOptions.AnisotropicFilteringMaximum)
 			{
-				currentOptions.AnisotropicFilteringLevel = currentOptions.AnisotropicFilteringMaximum;
+				CurrentOptions.AnisotropicFilteringLevel = CurrentOptions.AnisotropicFilteringMaximum;
 			}
 		}
 		
@@ -1048,7 +1048,8 @@ namespace LibRender2
 
 			Screen.AspectRatio = Screen.Width / (double)Screen.Height;
 			Camera.HorizontalViewingAngle = 2.0 * Math.Atan(Math.Tan(0.5 * Camera.VerticalViewingAngle) * Screen.AspectRatio);
-			CurrentProjectionMatrix = Matrix4D.CreatePerspectiveFieldOfView(Camera.VerticalViewingAngle, Screen.AspectRatio, 0.2, currentOptions.ViewingDistance);
+			double nearClip = Math.Max(0.01, CurrentOptions.NearClipBase);
+			CurrentProjectionMatrix = Matrix4D.CreatePerspectiveFieldOfView(Camera.VerticalViewingAngle, Screen.AspectRatio, nearClip, CurrentOptions.ViewingDistance);
 		}
 
 		public void ResetShader(Shader shader)

@@ -45,7 +45,7 @@ namespace LibRender2.Objects
 			AlphaFaces = myAlphaFaces.AsReadOnly();
 			OverlayOpaqueFaces = myOverlayOpaqueFaces.AsReadOnly();
 			OverlayAlphaFaces = myOverlayAlphaFaces.AsReadOnly();
-			quadTree = new QuadTree(renderer.currentOptions.ViewingDistance);
+			quadTree = new QuadTree(renderer.CurrentOptions.ViewingDistance);
 		}
 
 		private bool AddObject(ObjectState state)
@@ -184,7 +184,7 @@ namespace LibRender2.Objects
 						{
 							alpha = true;
 						}
-						else if (transparencyType == TextureTransparencyType.Partial && renderer.currentOptions.TransparencyMode == TransparencyMode.Quality)
+						else if (transparencyType == TextureTransparencyType.Partial && renderer.CurrentOptions.TransparencyMode == TransparencyMode.Quality)
 						{
 							alpha = true;
 						}
@@ -212,7 +212,7 @@ namespace LibRender2.Objects
 						{
 							alpha = true;
 						}
-						else if (transparencyType == TextureTransparencyType.Partial && renderer.currentOptions.TransparencyMode == TransparencyMode.Quality)
+						else if (transparencyType == TextureTransparencyType.Partial && renderer.CurrentOptions.TransparencyMode == TransparencyMode.Quality)
 						{
 							alpha = true;
 						}

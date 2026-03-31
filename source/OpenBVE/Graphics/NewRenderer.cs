@@ -98,10 +98,12 @@ namespace OpenBve.Graphics
 			{
 				case ViewportMode.Scenery:
 					double cd = Program.CurrentRoute.CurrentBackground is BackgroundObject b ? Math.Max(Program.CurrentRoute.CurrentBackground.BackgroundImageDistance, b.ClipDistance) : Program.CurrentRoute.CurrentBackground.BackgroundImageDistance;
-					CurrentProjectionMatrix = Matrix4D.CreatePerspectiveFieldOfView(Camera.VerticalViewingAngle, Screen.AspectRatio, 0.5, cd);
+					double nearClipScenery = Math.Max(0.01, Program.Renderer.CurrentOptions.NearClipScenery);
+					CurrentProjectionMatrix = Matrix4D.CreatePerspectiveFieldOfView(Camera.VerticalViewingAngle, Screen.AspectRatio, nearClipScenery, cd);
 					break;
 				case ViewportMode.Cab:
-					CurrentProjectionMatrix = Matrix4D.CreatePerspectiveFieldOfView(Camera.VerticalViewingAngle, Screen.AspectRatio, 0.025, 50.0);
+					double nearClipCab = Math.Max(0.01, Program.Renderer.CurrentOptions.NearClipCab);
+					CurrentProjectionMatrix = Matrix4D.CreatePerspectiveFieldOfView(Camera.VerticalViewingAngle, Screen.AspectRatio, nearClipCab, 50.0);
 					break;
 			}
 
@@ -511,7 +513,7 @@ namespace OpenBve.Graphics
 			OptionLighting = true;
 		}
 
-		public NewRenderer(HostInterface currentHost, BaseOptions currentOptions, FileSystem fileSystem) : base(currentHost, currentOptions, fileSystem)
+		public NewRenderer(HostInterface currentHost, BaseOptions CurrentOptions, FileSystem fileSystem) : base(currentHost, CurrentOptions, fileSystem)
 		{
 		}
 	}
