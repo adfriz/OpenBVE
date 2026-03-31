@@ -155,7 +155,7 @@ namespace ObjectViewer
 						case OptionsSection.Display:
 							block.TryGetValue(OptionsKey.WindowWidth, ref Interface.CurrentOptions.WindowWidth, NumberRange.Positive);
 							block.TryGetValue(OptionsKey.WindowHeight, ref Interface.CurrentOptions.WindowHeight, NumberRange.Positive);
-							block.TryGetValue(OptionsKey.IsUseNewRenderer, out Interface.CurrentOptions.IsUseNewRenderer);
+							block.TryGetValue(OptionsKey.IsUseNewRenderer, ref Interface.CurrentOptions.IsUseNewRenderer);
 							block.TryGetValue(OptionsKey.NearClipBase, ref Interface.CurrentOptions.NearClipBase, NumberRange.Positive);
 							// ensure viewing distance is greater than the near clipping plane to avoid rendering issues
 							if (Interface.CurrentOptions.ViewingDistance <= Interface.CurrentOptions.NearClipBase)
