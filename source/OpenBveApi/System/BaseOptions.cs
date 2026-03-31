@@ -116,6 +116,13 @@ namespace OpenBveApi
 		/// <summary>Whether loaded objects are automatically reloaded on change</summary>
 		public bool AutoReloadObjects;
 		
+		/// <summary>The near clipping plane for scenery</summary>
+		public double NearClipScenery = 0.5;
+		/// <summary>The near clipping plane for the cab</summary>
+		public double NearClipCab = 0.025;
+		/// <summary>The near clipping plane for the base renderer</summary>
+		public double NearClipBase = 0.2;
+
 		/// <summary>Saves the options to the specified filename</summary>
 		/// <param name="fileName">The filename to save the options to</param>
 		public abstract void Save(string fileName);

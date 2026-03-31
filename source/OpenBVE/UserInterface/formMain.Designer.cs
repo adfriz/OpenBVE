@@ -183,6 +183,12 @@ namespace OpenBve {
             this.labelAnisotropic = new System.Windows.Forms.Label();
             this.comboboxInterpolation = new System.Windows.Forms.ComboBox();
             this.labelInterpolation = new System.Windows.Forms.Label();
+            this.labelNearClipScenery = new System.Windows.Forms.Label();
+            this.updownNearClipScenery = new System.Windows.Forms.NumericUpDown();
+            this.labelNearClipCab = new System.Windows.Forms.Label();
+            this.updownNearClipCab = new System.Windows.Forms.NumericUpDown();
+            this.labelNearClipBase = new System.Windows.Forms.Label();
+            this.updownNearClipBase = new System.Windows.Forms.NumericUpDown();
             this.trackbarTransparency = new System.Windows.Forms.TrackBar();
             this.panelOptionsRight = new System.Windows.Forms.Panel();
             this.groupBoxOther = new System.Windows.Forms.GroupBox();
@@ -520,6 +526,9 @@ namespace OpenBve {
             this.groupBoxRailDriver.SuspendLayout();
             this.groupboxDistance.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.updownDistance)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.updownNearClipScenery)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.updownNearClipCab)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.updownNearClipBase)).BeginInit();
             this.groupboxControls.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.trackbarJoystickAxisThreshold)).BeginInit();
             this.groupboxVerbosity.SuspendLayout();
@@ -2603,7 +2612,7 @@ namespace OpenBve {
             this.panelOptionsRight.Controls.Add(this.groupboxSound);
             this.panelOptionsRight.Location = new System.Drawing.Point(332, 72);
             this.panelOptionsRight.Name = "panelOptionsRight";
-            this.panelOptionsRight.Size = new System.Drawing.Size(316, 579);
+            this.panelOptionsRight.Size = new System.Drawing.Size(316, 620);
             this.panelOptionsRight.TabIndex = 17;
             // 
             // groupBoxOther
@@ -2613,7 +2622,7 @@ namespace OpenBve {
             this.groupBoxOther.Controls.Add(this.comboBoxTimeTableDisplayMode);
             this.groupBoxOther.Controls.Add(this.labelTimeTableDisplayMode);
             this.groupBoxOther.ForeColor = System.Drawing.Color.Black;
-            this.groupBoxOther.Location = new System.Drawing.Point(0, 468);
+            this.groupBoxOther.Location = new System.Drawing.Point(0, 543);
             this.groupBoxOther.Name = "groupBoxOther";
             this.groupBoxOther.Size = new System.Drawing.Size(316, 48);
             this.groupBoxOther.TabIndex = 19;
@@ -2652,7 +2661,7 @@ namespace OpenBve {
             this.groupBoxRailDriver.Controls.Add(this.comboBoxRailDriverUnits);
             this.groupBoxRailDriver.Controls.Add(this.labelRailDriverSpeedUnits);
             this.groupBoxRailDriver.ForeColor = System.Drawing.Color.Black;
-            this.groupBoxRailDriver.Location = new System.Drawing.Point(0, 230);
+            this.groupBoxRailDriver.Location = new System.Drawing.Point(0, 305);
             this.groupBoxRailDriver.Name = "groupBoxRailDriver";
             this.groupBoxRailDriver.Size = new System.Drawing.Size(316, 75);
             this.groupBoxRailDriver.TabIndex = 21;
@@ -2706,6 +2715,12 @@ namespace OpenBve {
             // 
             this.groupboxDistance.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupboxDistance.Controls.Add(this.updownNearClipBase);
+            this.groupboxDistance.Controls.Add(this.labelNearClipBase);
+            this.groupboxDistance.Controls.Add(this.updownNearClipCab);
+            this.groupboxDistance.Controls.Add(this.labelNearClipCab);
+            this.groupboxDistance.Controls.Add(this.updownNearClipScenery);
+            this.groupboxDistance.Controls.Add(this.labelNearClipScenery);
             this.groupboxDistance.Controls.Add(this.comboboxMotionBlur);
             this.groupboxDistance.Controls.Add(this.labelMotionBlur);
             this.groupboxDistance.Controls.Add(this.labelDistanceUnit);
@@ -2714,7 +2729,7 @@ namespace OpenBve {
             this.groupboxDistance.ForeColor = System.Drawing.Color.Black;
             this.groupboxDistance.Location = new System.Drawing.Point(0, 0);
             this.groupboxDistance.Name = "groupboxDistance";
-            this.groupboxDistance.Size = new System.Drawing.Size(316, 80);
+            this.groupboxDistance.Size = new System.Drawing.Size(316, 155);
             this.groupboxDistance.TabIndex = 8;
             this.groupboxDistance.TabStop = false;
             this.groupboxDistance.Text = "Distance effects";
@@ -2740,6 +2755,129 @@ namespace OpenBve {
             this.labelMotionBlur.TabIndex = 3;
             this.labelMotionBlur.Text = "Motion blur:";
             this.labelMotionBlur.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            // 
+            // labelNearClipScenery
+            // 
+            this.labelNearClipScenery.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.labelNearClipScenery.AutoEllipsis = true;
+            this.labelNearClipScenery.Location = new System.Drawing.Point(5, 75);
+            this.labelNearClipScenery.Name = "labelNearClipScenery";
+            this.labelNearClipScenery.Size = new System.Drawing.Size(136, 18);
+            this.labelNearClipScenery.TabIndex = 5;
+            this.labelNearClipScenery.Text = "Near clip (Scenery):";
+            this.labelNearClipScenery.TextAlign = System.Drawing.ContentAlignment.TopRight;
+            // 
+            // updownNearClipScenery
+            // 
+            this.updownNearClipScenery.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.updownNearClipScenery.DecimalPlaces = 3;
+            this.updownNearClipScenery.Increment = new decimal(new int[] {
+            1,
+            0,
+            0,
+            131072});
+            this.updownNearClipScenery.Location = new System.Drawing.Point(144, 73);
+            this.updownNearClipScenery.Maximum = new decimal(new int[] {
+            100,
+            0,
+            0,
+            0});
+            this.updownNearClipScenery.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            131072});
+            this.updownNearClipScenery.Name = "updownNearClipScenery";
+            this.updownNearClipScenery.Size = new System.Drawing.Size(152, 20);
+            this.updownNearClipScenery.TabIndex = 6;
+            this.updownNearClipScenery.Value = new decimal(new int[] {
+            5,
+            0,
+            0,
+            65536});
+            // 
+            // labelNearClipCab
+            // 
+            this.labelNearClipCab.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.labelNearClipCab.AutoEllipsis = true;
+            this.labelNearClipCab.Location = new System.Drawing.Point(5, 100);
+            this.labelNearClipCab.Name = "labelNearClipCab";
+            this.labelNearClipCab.Size = new System.Drawing.Size(136, 18);
+            this.labelNearClipCab.TabIndex = 7;
+            this.labelNearClipCab.Text = "Near clip (Cab):";
+            this.labelNearClipCab.TextAlign = System.Drawing.ContentAlignment.TopRight;
+            // 
+            // updownNearClipCab
+            // 
+            this.updownNearClipCab.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.updownNearClipCab.DecimalPlaces = 3;
+            this.updownNearClipCab.Increment = new decimal(new int[] {
+            5,
+            0,
+            0,
+            196608});
+            this.updownNearClipCab.Location = new System.Drawing.Point(144, 98);
+            this.updownNearClipCab.Maximum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.updownNearClipCab.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            131072});
+            this.updownNearClipCab.Name = "updownNearClipCab";
+            this.updownNearClipCab.Size = new System.Drawing.Size(152, 20);
+            this.updownNearClipCab.TabIndex = 8;
+            this.updownNearClipCab.Value = new decimal(new int[] {
+            25,
+            0,
+            0,
+            196608});
+            // 
+            // labelNearClipBase
+            // 
+            this.labelNearClipBase.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.labelNearClipBase.AutoEllipsis = true;
+            this.labelNearClipBase.Location = new System.Drawing.Point(5, 125);
+            this.labelNearClipBase.Name = "labelNearClipBase";
+            this.labelNearClipBase.Size = new System.Drawing.Size(136, 18);
+            this.labelNearClipBase.TabIndex = 9;
+            this.labelNearClipBase.Text = "Near clip (Base):";
+            this.labelNearClipBase.TextAlign = System.Drawing.ContentAlignment.TopRight;
+            // 
+            // updownNearClipBase
+            // 
+            this.updownNearClipBase.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.updownNearClipBase.DecimalPlaces = 3;
+            this.updownNearClipBase.Increment = new decimal(new int[] {
+            1,
+            0,
+            0,
+            131072});
+            this.updownNearClipBase.Location = new System.Drawing.Point(144, 123);
+            this.updownNearClipBase.Maximum = new decimal(new int[] {
+            10,
+            0,
+            0,
+            0});
+            this.updownNearClipBase.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            131072});
+            this.updownNearClipBase.Name = "updownNearClipBase";
+            this.updownNearClipBase.Size = new System.Drawing.Size(152, 20);
+            this.updownNearClipBase.TabIndex = 10;
+            this.updownNearClipBase.Value = new decimal(new int[] {
+            2,
+            0,
+            0,
+            65536});
             // 
             // labelDistanceUnit
             // 
@@ -2795,7 +2933,7 @@ namespace OpenBve {
             this.groupboxControls.Controls.Add(this.checkboxJoysticksUsed);
             this.groupboxControls.Controls.Add(this.labelJoystickAxisThreshold);
             this.groupboxControls.ForeColor = System.Drawing.Color.Black;
-            this.groupboxControls.Location = new System.Drawing.Point(0, 144);
+            this.groupboxControls.Location = new System.Drawing.Point(0, 219);
             this.groupboxControls.Name = "groupboxControls";
             this.groupboxControls.Size = new System.Drawing.Size(316, 80);
             this.groupboxControls.TabIndex = 10;
@@ -2856,7 +2994,7 @@ namespace OpenBve {
             this.groupboxVerbosity.Controls.Add(this.checkboxErrorMessages);
             this.groupboxVerbosity.Controls.Add(this.checkboxWarningMessages);
             this.groupboxVerbosity.ForeColor = System.Drawing.Color.Black;
-            this.groupboxVerbosity.Location = new System.Drawing.Point(0, 396);
+            this.groupboxVerbosity.Location = new System.Drawing.Point(0, 471);
             this.groupboxVerbosity.Name = "groupboxVerbosity";
             this.groupboxVerbosity.Size = new System.Drawing.Size(316, 64);
             this.groupboxVerbosity.TabIndex = 12;
@@ -2903,7 +3041,7 @@ namespace OpenBve {
             this.groupboxSimulation.Controls.Add(this.checkboxCollisions);
             this.groupboxSimulation.Controls.Add(this.checkboxToppling);
             this.groupboxSimulation.ForeColor = System.Drawing.Color.Black;
-            this.groupboxSimulation.Location = new System.Drawing.Point(0, 310);
+            this.groupboxSimulation.Location = new System.Drawing.Point(0, 385);
             this.groupboxSimulation.Name = "groupboxSimulation";
             this.groupboxSimulation.Size = new System.Drawing.Size(316, 80);
             this.groupboxSimulation.TabIndex = 11;
@@ -2973,7 +3111,7 @@ namespace OpenBve {
             this.groupboxSound.Controls.Add(this.updownSoundNumber);
             this.groupboxSound.Controls.Add(this.labelSoundNumber);
             this.groupboxSound.ForeColor = System.Drawing.Color.Black;
-            this.groupboxSound.Location = new System.Drawing.Point(0, 88);
+            this.groupboxSound.Location = new System.Drawing.Point(0, 163);
             this.groupboxSound.Name = "groupboxSound";
             this.groupboxSound.Size = new System.Drawing.Size(316, 48);
             this.groupboxSound.TabIndex = 9;
@@ -6032,6 +6170,9 @@ namespace OpenBve {
             this.groupBoxRailDriver.PerformLayout();
             this.groupboxDistance.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.updownDistance)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.updownNearClipScenery)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.updownNearClipCab)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.updownNearClipBase)).EndInit();
             this.groupboxControls.ResumeLayout(false);
             this.groupboxControls.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.trackbarJoystickAxisThreshold)).EndInit();
@@ -6156,6 +6297,12 @@ namespace OpenBve {
         private System.Windows.Forms.GroupBox groupboxDistance;
         private System.Windows.Forms.NumericUpDown updownDistance;
         private System.Windows.Forms.Label labelDistance;
+        private System.Windows.Forms.Label labelNearClipScenery;
+        private System.Windows.Forms.NumericUpDown updownNearClipScenery;
+        private System.Windows.Forms.Label labelNearClipCab;
+        private System.Windows.Forms.NumericUpDown updownNearClipCab;
+        private System.Windows.Forms.Label labelNearClipBase;
+        private System.Windows.Forms.NumericUpDown updownNearClipBase;
         private System.Windows.Forms.GroupBox groupboxInterpolation;
         private System.Windows.Forms.ComboBox comboboxInterpolation;
         private System.Windows.Forms.Label labelInterpolation;

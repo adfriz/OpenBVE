@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -154,7 +154,7 @@ namespace LibRender2
 					CursorList.Add(new MouseCursor(Renderer, "nk.png", Image));
 				}
 			}
-			Renderer.currentOptions.CursorFileName = "nk.png";
+			Renderer.CurrentOptions.CursorFileName = "nk.png";
 		}
 	}
 }

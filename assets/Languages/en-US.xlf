@@ -1117,6 +1117,18 @@
 					<trans-unit id="quality_distance_viewingdistance_meters">
 						<source>m</source>
 					</trans-unit>
+					<trans-unit id="quality_distance_nearclip">
+						<source>Near clip:</source>
+					</trans-unit>
+					<trans-unit id="quality_distance_nearclip_scenery">
+						<source>Near clip (scenery):</source>
+					</trans-unit>
+					<trans-unit id="quality_distance_nearclip_cab">
+						<source>Near clip (cab):</source>
+					</trans-unit>
+					<trans-unit id="quality_distance_nearclip_base">
+						<source>Near clip (base):</source>
+					</trans-unit>
 					<trans-unit id="quality_distance_motionblur">
 						<source>Motion blur:</source>
 					</trans-unit>

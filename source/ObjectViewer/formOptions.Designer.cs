@@ -1,4 +1,4 @@
-﻿namespace ObjectViewer
+namespace ObjectViewer
 {
     partial class formOptions
     {
@@ -32,6 +32,8 @@
             this.tabPageOptions = new System.Windows.Forms.TabPage();
             this.comboBoxOptimizeObjects = new System.Windows.Forms.ComboBox();
             this.labelOptimizeObjects = new System.Windows.Forms.Label();
+            this.labelNearClip = new System.Windows.Forms.Label();
+            this.nearClip = new System.Windows.Forms.NumericUpDown();
             this.comboBoxNewObjParser = new System.Windows.Forms.ComboBox();
             this.labelUseNewObjParser = new System.Windows.Forms.Label();
             this.comboBoxNewXParser = new System.Windows.Forms.ComboBox();
@@ -74,6 +76,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.AnsiotropicLevel)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.height)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.width)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nearClip)).BeginInit();
             this.tabPageKeys.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -93,6 +96,8 @@
             this.tabPageOptions.Controls.Add(this.labelAutoReloadChanged);
             this.tabPageOptions.Controls.Add(this.comboBoxOptimizeObjects);
             this.tabPageOptions.Controls.Add(this.labelOptimizeObjects);
+            this.tabPageOptions.Controls.Add(this.nearClip);
+            this.tabPageOptions.Controls.Add(this.labelNearClip);
             this.tabPageOptions.Controls.Add(this.comboBoxNewObjParser);
             this.tabPageOptions.Controls.Add(this.labelUseNewObjParser);
             this.tabPageOptions.Controls.Add(this.comboBoxNewXParser);
@@ -140,6 +145,43 @@
             this.labelOptimizeObjects.Size = new System.Drawing.Size(131, 13);
             this.labelOptimizeObjects.TabIndex = 46;
             this.labelOptimizeObjects.Text = "Object Optimization Mode:";
+            // 
+            // labelNearClip
+            // 
+            this.labelNearClip.AutoSize = true;
+            this.labelNearClip.Location = new System.Drawing.Point(10, 327);
+            this.labelNearClip.Name = "labelNearClip";
+            this.labelNearClip.Size = new System.Drawing.Size(73, 13);
+            this.labelNearClip.TabIndex = 48;
+            this.labelNearClip.Text = "Near Clip (m):";
+            // 
+            // nearClip
+            // 
+            this.nearClip.DecimalPlaces = 3;
+            this.nearClip.Increment = new decimal(new int[] {
+            1,
+            0,
+            0,
+            131072});
+            this.nearClip.Location = new System.Drawing.Point(160, 327);
+            this.nearClip.Maximum = new decimal(new int[] {
+            100,
+            0,
+            0,
+            0});
+            this.nearClip.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            131072});
+            this.nearClip.Name = "nearClip";
+            this.nearClip.Size = new System.Drawing.Size(121, 20);
+            this.nearClip.TabIndex = 49;
+            this.nearClip.Value = new decimal(new int[] {
+            2,
+            0,
+            0,
+            65536});
             // 
             // comboBoxNewObjParser
             // 
@@ -541,6 +583,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.AnsiotropicLevel)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.height)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.width)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nearClip)).EndInit();
             this.tabPageKeys.ResumeLayout(false);
             this.tabPageKeys.PerformLayout();
             this.ResumeLayout(false);
@@ -585,6 +628,8 @@
 		private System.Windows.Forms.Label labelRight;
 		private System.Windows.Forms.ComboBox comboBoxLeft;
 		private System.Windows.Forms.Label labelLeft;
+		private System.Windows.Forms.Label labelNearClip;
+		private System.Windows.Forms.NumericUpDown nearClip;
 		private System.Windows.Forms.Button CloseButton;
 		private System.Windows.Forms.Label labelControls;
 		private System.Windows.Forms.CheckBox checkBoxAutoReload;
