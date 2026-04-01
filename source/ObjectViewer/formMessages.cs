@@ -48,7 +48,7 @@ namespace ObjectViewer
 			if (Interface.CurrentOptions.AutoReloadObjects)
 			{
 				ListViewItem a = Dialog.listviewMessages.Items.Add("Information", "information");
-				a.SubItems.Add("Objects last reloaded at time: " + Program.lastReloadTime);
+				a.SubItems.Add("Objects last reloaded at time: " + Program.LastReloadTime);
 			}
 
 			// ReSharper restore EmptyGeneralCatchClause

@@ -37,7 +37,9 @@ namespace ObjectViewer {
 		// members
 	    internal static List<string> Files = new List<string>();
         /// <summary>Last time the objects were reloaded (UTC).</summary>
-        internal static DateTime lastReloadTime = DateTime.UtcNow;
+        internal static DateTime LastReloadTime = DateTime.UtcNow;
+		/// <summary>The number of failed auto-reloads</summary>
+        internal static int AutoReloadFailureCounter = 0;
         private static double reloadCheckTimer;
 
 		// mouse
@@ -132,7 +134,7 @@ namespace ObjectViewer {
 
 						        if (CurrentHost.Plugins[j].Object != null && CurrentHost.Plugins[j].Object.CanLoadObject(args[i]))
 						        {
-							        filesToLoad.Add(args[i]);
+								        filesToLoad.Add(System.IO.Path.GetFullPath(args[i]));
 						        }
 					        }
 				        }
@@ -253,7 +255,7 @@ namespace ObjectViewer {
 
 		internal static void DragFile(object sender, FileDropEventArgs e)
 		{
-			Files.Add(e.FileName);
+			Files.Add(System.IO.Path.GetFullPath(e.FileName));
 			// reset
 			LightingRelative = -1.0;
 			Game.Reset();
@@ -309,9 +311,8 @@ namespace ObjectViewer {
 	        }
 	    }
 
-	    internal static void RefreshObjects()
+	    internal static void RefreshObjects(bool autoReload = false)
 	    {
-	        lastReloadTime = DateTime.UtcNow;
 		    LightingRelative = -1.0;
 			Renderer.Reset();
 		    Game.Reset();
@@ -379,9 +380,31 @@ namespace ObjectViewer {
 			    }
 			    catch (Exception ex)
 			    {
-				    Interface.AddMessage(MessageType.Critical, false, "Unhandled error (" + ex.Message + ") encountered while processing the file " + Files[i] + ".");
+				    if (!autoReload || AutoReloadFailureCounter > 5)
+				    {
+					    if (autoReload)
+					    {
+							// failure counter must be above 5
+							Interface.CurrentOptions.AutoReloadObjects = false;
+							Interface.AddMessage(MessageType.Critical, false, "Stopped automatically re-loading objects due to the Unhandled error (" + ex.Message + ") encountered while processing the file " + Files[i] + ".");
+						}
+					    else
+					    {
+						    Interface.AddMessage(MessageType.Critical, false, "Unhandled error (" + ex.Message + ") encountered while processing the file " + Files[i] + ".");
+						}
+							
+				    }
+				    else
+				    {
+					    AutoReloadFailureCounter++;
+					    // If auto-reloading, a failure likely means the file is locked / being written to
+					    // So we don't update the last reload time, and try again in 0.5s
+					    return;
+				    }
 			    }
 		    }
+
+		    AutoReloadFailureCounter = 0;
 
 			NearestTrain.UpdateSpecs();
 			NearestTrain.Apply();
@@ -402,6 +425,7 @@ namespace ObjectViewer {
 		    {
 			    Renderer.GameWindow.Title = "Object Viewer";
 		    }
+		    LastReloadTime = DateTime.UtcNow;
 	    }
 
         /// <summary>Checks if any of the loaded files have been updated externally.</summary>
@@ -424,7 +448,7 @@ namespace ObjectViewer {
 						// file no longer exists (returns 01/01/1601)
 			            continue;
 		            }
-		            if (System.IO.File.GetLastWriteTimeUtc(Files[i]) > lastReloadTime)
+		            if (System.IO.File.GetLastWriteTimeUtc(Files[i]) > LastReloadTime)
 		            {
 			            RefreshObjects();
 			            return;
@@ -491,11 +515,11 @@ namespace ObjectViewer {
 
 						            if (Program.CurrentHost.Plugins[j].Object != null && Program.CurrentHost.Plugins[j].Object.CanLoadObject(f[i]))
 						            {
-							            Files.Add(f[i]);
+							            Files.Add(System.IO.Path.GetFullPath(f[i]));
 						            }
 						            if (!string.IsNullOrEmpty(currentTrain) && Program.CurrentHost.Plugins[j].Train != null && Program.CurrentHost.Plugins[j].Train.CanLoadTrain(currentTrain))
 						            {
-							            Files.Add(f[i]);
+							            Files.Add(System.IO.Path.GetFullPath(f[i]));
 						            }
 					            }
 					            
@@ -533,7 +557,7 @@ namespace ObjectViewer {
 		            LightingRelative = -1.0;
 	                Game.Reset();
 		            Files = new List<string>();
-                    lastReloadTime = DateTime.UtcNow;
+                    LastReloadTime = DateTime.UtcNow;
 					NearestTrain.UpdateSpecs();
 					Renderer.ApplyBackgroundColor();
 	                break;
