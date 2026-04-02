@@ -174,10 +174,8 @@ namespace AssimpNET.Obj
 			{
 				return true;
 			}
-			else
-			{
-				--end;
-			}
+
+			end--;
 			return tmp == end;
 		}
 
