@@ -28,8 +28,41 @@ in vec4 oViewPos;
 in vec2 oUv;
 in vec4 oColor;
 in vec4 oLightResult;
-uniform vec2 uAlphaTest;
+uniform sampler2DShadow uShadowMap0;  // Cascade 0 (near)
+uniform sampler2DShadow uShadowMap1;  // Cascade 1 (mid)
+uniform sampler2DShadow uShadowMap2;  // Cascade 2 (far)
+uniform sampler2DShadow uShadowMap3;  // Cascade 3 (extra far)
+uniform float uCascadeFarDist0;
+uniform float uCascadeFarDist1;
+uniform float uCascadeFarDist2;
+uniform float uCascadeFarDist3;
+uniform float uCascadeBias0;
+uniform float uCascadeBias1;
+uniform float uCascadeBias2;
+uniform float uCascadeBias3;
+uniform float uShadowStrength;
+uniform bool  uShadowEnabled;
+uniform int   uCascadeCount;  // 2, 3, or 4
+uniform vec2  uAlphaTest;
 uniform sampler2D uTexture;
+
+struct Light
+{
+	vec3 position;
+	vec3 ambient;
+	vec3 diffuse;
+	vec3 specular;
+	vec4 lightModel;
+};
+uniform Light uLight;
+
+// Inputs from vertex shader
+in vec3  vNormal;
+in vec4  vPosLightSpace0;
+in vec4  vPosLightSpace1;
+in vec4  vPosLightSpace2;
+in vec4  vPosLightSpace3;
+in float vViewDepth;
 uniform int uMaterialFlags;
 uniform float uBrightness;
 uniform float uOpacity;
@@ -40,6 +73,105 @@ uniform vec3  uFogColor;
 uniform float uFogDensity;
 uniform bool uFogIsLinear;
 out vec4 fragColor;
+
+/// Samples a single cascade with 4-tap PCF via hardware comparison.
+float SampleCascade(sampler2DShadow shadowMap, vec4 posLightSpace, float bias)
+{
+    vec3 projCoords = posLightSpace.xyz / posLightSpace.w;
+    projCoords = projCoords * 0.5 + 0.5;
+
+    // Out-of-bounds check
+    if (projCoords.x < 0.0 || projCoords.x > 1.0 ||
+        projCoords.y < 0.0 || projCoords.y > 1.0 ||
+        projCoords.z < 0.0 || projCoords.z > 1.0)
+    {
+        return 1.0;
+    }
+
+    // Compute slope-scaled bias to fix peter-panning on flat surfaces while avoiding acne on sloped ones.
+    vec3 normal = normalize(vNormal);
+    vec3 lightDir = normalize(uLight.position);
+    float biasScale = clamp(1.0 - dot(normal, lightDir), 0.0, 1.0);
+    float activeBias = bias * (1.1 + biasScale * 1.5); 
+
+    float currentDepth = projCoords.z - activeBias;
+
+    // Tight 4-tap rotated grid PCF for sharper shadows.
+    // Each tap is bilinear-averaged by the hardware sampler2DShadow.
+    vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
+    float shadow = 0.0;
+    
+    // Rotated grid offsets at a tight 0.5 texels
+    shadow += texture(shadowMap, vec3(projCoords.xy + vec2(-0.5, -0.5) * texelSize, currentDepth));
+    shadow += texture(shadowMap, vec3(projCoords.xy + vec2( 0.5, -0.5) * texelSize, currentDepth));
+    shadow += texture(shadowMap, vec3(projCoords.xy + vec2(-0.5,  0.5) * texelSize, currentDepth));
+    shadow += texture(shadowMap, vec3(projCoords.xy + vec2( 0.5,  0.5) * texelSize, currentDepth));
+    shadow *= 0.25;
+
+    return shadow;
+}
+
+float SampleCascadeByIndex(int idx)
+{
+    if (idx == 0) return SampleCascade(uShadowMap0, vPosLightSpace0, uCascadeBias0);
+    if (idx == 1) return SampleCascade(uShadowMap1, vPosLightSpace1, uCascadeBias1);
+    if (idx == 2) return SampleCascade(uShadowMap2, vPosLightSpace2, uCascadeBias2);
+    if (idx == 3) return SampleCascade(uShadowMap3, vPosLightSpace3, uCascadeBias3);
+    return 1.0;
+}
+
+float GetCascadeFarDist(int idx)
+{
+    if (idx == 0) return uCascadeFarDist0;
+    if (idx == 1) return uCascadeFarDist1;
+    if (idx == 2) return uCascadeFarDist2;
+    if (idx == 3) return uCascadeFarDist3;
+    return 0.0;
+}
+
+/// Full CSM sampling with cascade selection and smooth blending.
+float CSMShadow()
+{
+    float blendRange = 15.0;
+    float shadow = 1.0;
+    int cascadeCount = uCascadeCount;
+
+    for (int i = 0; i < cascadeCount; i++)
+    {
+        float farDist = GetCascadeFarDist(i);
+
+        if (vViewDepth < farDist)
+        {
+            shadow = SampleCascadeByIndex(i);
+
+            // Blend toward next cascade near the boundary
+            if (i < cascadeCount - 1)
+            {
+                float blendStart = farDist - blendRange;
+                if (vViewDepth > blendStart)
+                {
+                    float nextShadow = SampleCascadeByIndex(i + 1);
+                    float t = (vViewDepth - blendStart) / blendRange;
+                    shadow = mix(shadow, nextShadow, t);
+                }
+            }
+            else
+            {
+                // Last cascade: fade out at far edge
+                float fadeStart = farDist - blendRange * 2.0;
+                if (vViewDepth > fadeStart)
+                {
+                    float t = (vViewDepth - fadeStart) / (farDist - fadeStart);
+                    shadow = mix(shadow, 1.0, t);
+                }
+            }
+
+            break;  // Found our cascade, stop searching
+        }
+    }
+
+    return mix(1.0, shadow, uShadowStrength);
+}
 
 void main(void)
 {
@@ -101,7 +233,22 @@ void main(void)
 	 * as otherwise light coming through a semi-transparent material will 
 	 * affect it's final opacity, and hence whether its discarded or not
 	 */
-	finalColor *= oLightResult;
+	float shadow = 1.0;
+	if (uShadowEnabled)
+	{
+		shadow = CSMShadow();
+	}
+	
+	if ((uMaterialFlags & 1) == 0 && (uMaterialFlags & 4) == 0)
+	{
+		// Material is not emissive, apply shadow to the light factor
+		finalColor.rgb *= (oLightResult.rgb * shadow);
+		finalColor.a *= oLightResult.a;
+	}
+	else
+	{
+		finalColor *= oLightResult;
+	}
 	
 	// Fog
 	float fogFactor = 1.0;

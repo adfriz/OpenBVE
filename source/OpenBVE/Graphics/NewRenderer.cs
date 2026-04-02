@@ -136,18 +136,25 @@ namespace OpenBve.Graphics
 			}
 
 			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+			
+			// set up camera and lighting early for shadows
+			CurrentViewMatrix = Matrix4D.LookAt(Vector3.Zero, new Vector3(Camera.AbsoluteDirection.X, Camera.AbsoluteDirection.Y, -Camera.AbsoluteDirection.Z), new Vector3(Camera.AbsoluteUp.X, Camera.AbsoluteUp.Y, -Camera.AbsoluteUp.Z));
+			TransformedLightPosition = new Vector3(Lighting.OptionLightPosition.X, Lighting.OptionLightPosition.Y, -Lighting.OptionLightPosition.Z);
+			TransformedLightPosition.Transform(CurrentViewMatrix);
+
+			if (AvailableNewRenderer)
+			{
+				PerformCSMShadowPass();
+			}
 
 			UpdateViewport(ViewportChangeMode.ChangeToScenery);
 
-			// set up camera and lighting
-			CurrentViewMatrix = Matrix4D.LookAt(Vector3.Zero, new Vector3(Camera.AbsoluteDirection.X, Camera.AbsoluteDirection.Y, -Camera.AbsoluteDirection.Z), new Vector3(Camera.AbsoluteUp.X, Camera.AbsoluteUp.Y, -Camera.AbsoluteUp.Z));
 			if (Lighting.ShouldInitialize)
 			{
 				Lighting.Initialize();
 				Lighting.ShouldInitialize = false;
 			}
-			TransformedLightPosition = new Vector3(Lighting.OptionLightPosition.X, Lighting.OptionLightPosition.Y, -Lighting.OptionLightPosition.Z);
-			TransformedLightPosition.Transform(CurrentViewMatrix);
+			
 			if (!AvailableNewRenderer)
 			{
 				GL.Light(LightName.Light0, LightParameter.Position, new[] { (float)TransformedLightPosition.X, (float)TransformedLightPosition.Y, (float)TransformedLightPosition.Z, 0.0f });
@@ -184,6 +191,7 @@ namespace OpenBve.Graphics
 			if (AvailableNewRenderer)
 			{
 				DefaultShader.Activate();
+				BindCSMToDefaultShader();
 			}
 
 			// render background

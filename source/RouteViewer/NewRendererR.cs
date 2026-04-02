@@ -149,8 +149,10 @@ namespace RouteViewer
 
 			if (AvailableNewRenderer)
 			{
+				PerformCSMShadowPass();
 				DefaultShader.Activate();
-            }
+				BindCSMToDefaultShader();
+			}
 			
 
 			// render background

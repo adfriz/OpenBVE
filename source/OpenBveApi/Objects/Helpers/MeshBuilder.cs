@@ -89,7 +89,7 @@ namespace OpenBveApi.Objects
 					if (Materials[i].TransparencyTexture != null)
 					{
 						currentHost.LoadTexture(Materials[i].TransparencyTexture, new TextureParameters(null, null), out transparency);
-						currentHost.LoadTexture(ref transparency, OpenGlTextureWrapMode.ClampClamp, true);
+						currentHost.LoadTexture(ref transparency, OpenGlTextureWrapMode.ClampClamp);
 					}
 
 					TextureParameters parameters;

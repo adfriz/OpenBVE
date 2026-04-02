@@ -458,6 +458,42 @@ namespace OpenBve {
 			checkBoxLoadInAdvance.Checked = Interface.CurrentOptions.LoadInAdvance;
 			checkBoxUnloadTextures.Checked = Interface.CurrentOptions.UnloadUnusedTextures;
 			checkBoxIsUseNewRenderer.Checked = Interface.CurrentOptions.IsUseNewRenderer;
+			// Shadow Resolution
+			switch (Interface.CurrentOptions.ShadowResolution)
+			{
+				case ShadowMapResolution.Off:    comboboxShadowResolution.SelectedIndex = 0; break;
+				case ShadowMapResolution.Low:    comboboxShadowResolution.SelectedIndex = 1; break;
+				case ShadowMapResolution.Medium: comboboxShadowResolution.SelectedIndex = 2; break;
+				case ShadowMapResolution.High:   comboboxShadowResolution.SelectedIndex = 3; break;
+				case ShadowMapResolution.Ultra:  comboboxShadowResolution.SelectedIndex = 4; break;
+				default: comboboxShadowResolution.SelectedIndex = 3; break;
+			}
+			// Shadow Distance
+			switch (Interface.CurrentOptions.ShadowDrawDistance)
+			{
+				case ShadowDistance.Near:    comboboxShadowDistance.SelectedIndex = 0; break;
+				case ShadowDistance.Medium:  comboboxShadowDistance.SelectedIndex = 1; break;
+				case ShadowDistance.Far:     comboboxShadowDistance.SelectedIndex = 2; break;
+				case ShadowDistance.VeryFar: comboboxShadowDistance.SelectedIndex = 3; break;
+				case ShadowDistance.ViewingDistance: comboboxShadowDistance.SelectedIndex = 4; break;
+				default: comboboxShadowDistance.SelectedIndex = 1; break;
+			}
+			// Shadow Cascades
+			switch (Interface.CurrentOptions.ShadowCascades)
+			{
+				case ShadowCascadeCount.Two:   comboboxShadowCascades.SelectedIndex = 0; break;
+				case ShadowCascadeCount.Three: comboboxShadowCascades.SelectedIndex = 1; break;
+				case ShadowCascadeCount.Four:  comboboxShadowCascades.SelectedIndex = 2; break;
+				default: comboboxShadowCascades.SelectedIndex = 1; break;
+			}
+			// Shadow Strength
+			trackbarShadowStrength.Value = (int)(Interface.CurrentOptions.ShadowStrength * 100.0);
+			labelShadowStrengthValue.Text = trackbarShadowStrength.Value + "%";
+			// Enable/disable shadow sub-controls based on resolution setting
+			bool shadowEnabled = Interface.CurrentOptions.ShadowResolution != ShadowMapResolution.Off;
+			comboboxShadowDistance.Enabled = shadowEnabled;
+			comboboxShadowCascades.Enabled = shadowEnabled;
+			trackbarShadowStrength.Enabled = shadowEnabled;
 			checkboxBlackBox.Checked = Interface.CurrentOptions.BlackBox;
 			checkBoxLoadingSway.Checked = Interface.CurrentOptions.LoadingSway;
 			checkBoxTransparencyFix.Checked = Interface.CurrentOptions.OldTransparencyMode;
@@ -692,7 +728,31 @@ namespace OpenBve {
 			comboboxMotionBlur.Items[1] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_distance_motionblur_low"});
 			comboboxMotionBlur.Items[2] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_distance_motionblur_medium"});
 			comboboxMotionBlur.Items[3] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_distance_motionblur_high"});
-			labelMotionBlur.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_distance_motionblur"});
+			//Shadows
+			groupboxShadows.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "shadows_header" });
+			labelShadowResolution.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "shadows_resolution" });
+			labelShadowDistance.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "shadows_distance" });
+			labelShadowCascades.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "shadows_cascades" });
+			labelShadowStrength.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "shadows_strength" });
+
+			// Combobox items (shadow resolution)
+			comboboxShadowResolution.Items[0] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "shadows_resolution_off" });
+			comboboxShadowResolution.Items[1] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "shadows_resolution_low" });
+			comboboxShadowResolution.Items[2] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "shadows_resolution_medium" });
+			comboboxShadowResolution.Items[3] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "shadows_resolution_high" });
+			comboboxShadowResolution.Items[4] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "shadows_resolution_ultra" });
+
+			// Combobox items (shadow distance)
+			comboboxShadowDistance.Items[0] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "shadows_distance_near" });
+			comboboxShadowDistance.Items[1] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "shadows_distance_medium" });
+			comboboxShadowDistance.Items[2] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "shadows_distance_far" });
+			comboboxShadowDistance.Items[3] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "shadows_distance_veryfar" });
+			comboboxShadowDistance.Items[4] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "shadows_distance_viewingdistance" });
+
+			// Combobox items (shadow cascades)
+			comboboxShadowCascades.Items[0] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "shadows_cascades_2" });
+			comboboxShadowCascades.Items[1] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "shadows_cascades_3" });
+			comboboxShadowCascades.Items[2] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "shadows_cascades_4" });
 			//Simulation
 			groupboxSimulation.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","misc_simulation"});
 			checkboxToppling.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","misc_simulation_toppling"});
@@ -1096,6 +1156,33 @@ namespace OpenBve {
 			Interface.CurrentOptions.OldTransparencyMode = checkBoxTransparencyFix.Checked;
 			Interface.CurrentOptions.EnableBveTsHacks = checkBoxHacks.Checked;
 			Interface.CurrentOptions.IsUseNewRenderer = checkBoxIsUseNewRenderer.Checked;
+			// Shadow Resolution
+			switch (comboboxShadowResolution.SelectedIndex)
+			{
+				case 0: Interface.CurrentOptions.ShadowResolution = ShadowMapResolution.Off; break;
+				case 1: Interface.CurrentOptions.ShadowResolution = ShadowMapResolution.Low; break;
+				case 2: Interface.CurrentOptions.ShadowResolution = ShadowMapResolution.Medium; break;
+				case 3: Interface.CurrentOptions.ShadowResolution = ShadowMapResolution.High; break;
+				case 4: Interface.CurrentOptions.ShadowResolution = ShadowMapResolution.Ultra; break;
+			}
+			// Shadow Distance
+			switch (comboboxShadowDistance.SelectedIndex)
+			{
+				case 0: Interface.CurrentOptions.ShadowDrawDistance = ShadowDistance.Near; break;
+				case 1: Interface.CurrentOptions.ShadowDrawDistance = ShadowDistance.Medium; break;
+				case 2: Interface.CurrentOptions.ShadowDrawDistance = ShadowDistance.Far; break;
+				case 3: Interface.CurrentOptions.ShadowDrawDistance = ShadowDistance.VeryFar; break;
+				case 4: Interface.CurrentOptions.ShadowDrawDistance = ShadowDistance.ViewingDistance; break;
+			}
+			// Shadow Cascades
+			switch (comboboxShadowCascades.SelectedIndex)
+			{
+				case 0: Interface.CurrentOptions.ShadowCascades = ShadowCascadeCount.Two; break;
+				case 1: Interface.CurrentOptions.ShadowCascades = ShadowCascadeCount.Three; break;
+				case 2: Interface.CurrentOptions.ShadowCascades = ShadowCascadeCount.Four; break;
+			}
+			// Shadow Strength
+			Interface.CurrentOptions.ShadowStrength = trackbarShadowStrength.Value / 100.0;
 			Interface.CurrentOptions.GameMode = (GameMode)comboboxMode.SelectedIndex;
 			Interface.CurrentOptions.BlackBox = checkboxBlackBox.Checked;
 			Interface.CurrentOptions.LoadingSway = checkBoxLoadingSway.Checked;

@@ -284,6 +284,12 @@ namespace ObjectViewer
 			RenderRealTimeElapsed += RealTimeElapsed;
 
             Program.CheckFileChanges(RealTimeElapsed);
+
+			if (Program.ReloadRequested)
+			{
+				Program.ReloadRequested = false;
+				Program.RefreshObjects();
+			}
 		}
 
         protected override void OnResize(EventArgs e)

@@ -1132,6 +1132,60 @@
 					<trans-unit id="quality_distance_motionblur_high">
 						<source>High</source>
 					</trans-unit>
+					<trans-unit id="shadows_header">
+						<source>Shadows</source>
+					</trans-unit>
+					<trans-unit id="shadows_resolution">
+						<source>Shadow Resolution:</source>
+					</trans-unit>
+					<trans-unit id="shadows_resolution_off">
+						<source>Off</source>
+					</trans-unit>
+					<trans-unit id="shadows_resolution_low">
+						<source>Low (512×512)</source>
+					</trans-unit>
+					<trans-unit id="shadows_resolution_medium">
+						<source>Medium (1024×1024)</source>
+					</trans-unit>
+					<trans-unit id="shadows_resolution_high">
+						<source>High (2048×2048)</source>
+					</trans-unit>
+					<trans-unit id="shadows_resolution_ultra">
+						<source>Ultra (4096×4096)</source>
+					</trans-unit>
+					<trans-unit id="shadows_distance">
+						<source>Shadow Distance:</source>
+					</trans-unit>
+					<trans-unit id="shadows_distance_near">
+						<source>Near (150m)</source>
+					</trans-unit>
+					<trans-unit id="shadows_distance_medium">
+						<source>Medium (300m)</source>
+					</trans-unit>
+					<trans-unit id="shadows_distance_far">
+						<source>Far (500m)</source>
+					</trans-unit>
+					<trans-unit id="shadows_distance_veryfar">
+						<source>Very Far (800m)</source>
+					</trans-unit>
+					<trans-unit id="shadows_distance_viewingdistance">
+						<source>Follow Viewing Distance</source>
+					</trans-unit>
+					<trans-unit id="shadows_cascades">
+						<source>Shadow Cascades:</source>
+					</trans-unit>
+					<trans-unit id="shadows_cascades_2">
+						<source>2 Cascades (Fastest)</source>
+					</trans-unit>
+					<trans-unit id="shadows_cascades_3">
+						<source>3 Cascades (Balanced)</source>
+					</trans-unit>
+					<trans-unit id="shadows_cascades_4">
+						<source>4 Cascades (Best Quality)</source>
+					</trans-unit>
+					<trans-unit id="shadows_strength">
+						<source>Shadow Strength:</source>
+					</trans-unit>
 					<trans-unit id="misc">
 						<source>Miscellaneous</source>
 					</trans-unit>
