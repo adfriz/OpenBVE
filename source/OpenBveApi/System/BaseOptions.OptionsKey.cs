@@ -37,6 +37,7 @@ namespace OpenBveApi
 		NearClipScenery,
 		NearClipCab,
 		NearClipBase,
+		AutoReloadObjects,
 		// Quality
 		Interpolation,
 		AnisotropicFilteringLevel,

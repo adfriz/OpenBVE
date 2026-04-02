@@ -79,6 +79,7 @@ namespace ObjectViewer
 				Builder.AppendLine("windowHeight = " + Program.Renderer.Screen.Height.ToString(Culture));
 				Builder.AppendLine("isUseNewRenderer = " + (IsUseNewRenderer ? "true" : "false"));
 				Builder.AppendLine("nearclipbase = " + NearClipBase.ToString(Culture));
+				Builder.AppendLine("autoReloadObjects = " + (AutoReloadObjects ? "true" : "false"));
 				Builder.AppendLine();
 				Builder.AppendLine("[quality]");
 				Builder.AppendLine("interpolation = " + Interpolation);
@@ -155,15 +156,14 @@ namespace ObjectViewer
 						case OptionsSection.Display:
 							block.TryGetValue(OptionsKey.WindowWidth, ref Interface.CurrentOptions.WindowWidth, NumberRange.Positive);
 							block.TryGetValue(OptionsKey.WindowHeight, ref Interface.CurrentOptions.WindowHeight, NumberRange.Positive);
-							block.TryGetValue(OptionsKey.IsUseNewRenderer, ref Interface.CurrentOptions.IsUseNewRenderer);
+							block.GetValue(OptionsKey.IsUseNewRenderer, out Interface.CurrentOptions.IsUseNewRenderer);
 							block.TryGetValue(OptionsKey.NearClipBase, ref Interface.CurrentOptions.NearClipBase, NumberRange.Positive);
 							// ensure viewing distance is greater than the near clipping plane to avoid rendering issues
 							if (Interface.CurrentOptions.ViewingDistance <= Interface.CurrentOptions.NearClipBase)
-
 							{
 								Interface.CurrentOptions.ViewingDistance = (int)Math.Ceiling(Interface.CurrentOptions.NearClipBase) + 1;
 							}
-
+							block.GetValue(OptionsKey.AutoReloadObjects, out Interface.CurrentOptions.AutoReloadObjects);
 							break;
 						case OptionsSection.Quality:
 							block.GetEnumValue(OptionsKey.Interpolation, out Interface.CurrentOptions.Interpolation);
