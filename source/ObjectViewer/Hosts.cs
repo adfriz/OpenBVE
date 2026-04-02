@@ -155,7 +155,7 @@ namespace ObjectViewer {
 			return false;
 		}
 		
-		public override bool LoadTexture(ref Texture Texture, OpenGlTextureWrapMode wrapMode, bool renderThread = false)
+		public override bool LoadTexture(ref Texture Texture, OpenGlTextureWrapMode wrapMode)
 		{
 			return Program.Renderer.TextureManager.LoadTexture(ref Texture, wrapMode, CPreciseTimer.GetClockTicks(), Interface.CurrentOptions.Interpolation, Interface.CurrentOptions.AnisotropicFilteringLevel);
 		}
@@ -286,13 +286,13 @@ namespace ObjectViewer {
 
 										if (Object is StaticObject staticObject)
 										{
-											StaticObjectCache.Add(ValueTuple.Create(path, false, File.GetLastWriteTime(path)), staticObject);
+											StaticObjectCache.Add(ValueTuple.Create(path.ToLowerInvariant(), false, File.GetLastWriteTime(path)), staticObject);
 											return true;
 										}
 
 										if (Object is AnimatedObjectCollection aoc)
 										{
-											AnimatedObjectCollectionCache.Add(path, aoc);
+											AnimatedObjectCollectionCache.Add(path.ToLowerInvariant(), aoc);
 										}
 
 										return true;

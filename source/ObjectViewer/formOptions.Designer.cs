@@ -1,4 +1,4 @@
-﻿namespace ObjectViewer
+namespace ObjectViewer
 {
     partial class formOptions
     {
@@ -66,18 +66,39 @@
             this.comboBoxLeft = new System.Windows.Forms.ComboBox();
             this.labelLeft = new System.Windows.Forms.Label();
             this.CloseButton = new System.Windows.Forms.Button();
+            this.tabPageShadows = new System.Windows.Forms.TabPage();
+            this.comboBoxShadowResolution = new System.Windows.Forms.ComboBox();
+            this.labelShadowResolution = new System.Windows.Forms.Label();
+            this.comboBoxShadowDistance = new System.Windows.Forms.ComboBox();
+            this.labelShadowDistance = new System.Windows.Forms.Label();
+            this.comboBoxShadowCascades = new System.Windows.Forms.ComboBox();
+            this.labelShadowCascades = new System.Windows.Forms.Label();
+            this.numericUpDownShadowStrength = new System.Windows.Forms.NumericUpDown();
+            this.labelShadowStrength = new System.Windows.Forms.Label();
+            this.labelSunDirection = new System.Windows.Forms.Label();
+            this.labelSunAzimuth = new System.Windows.Forms.Label();
+            this.trackBarSunAzimuth = new System.Windows.Forms.TrackBar();
+            this.labelSunAzimuthValue = new System.Windows.Forms.Label();
+            this.labelSunElevation = new System.Windows.Forms.Label();
+            this.trackBarSunElevation = new System.Windows.Forms.TrackBar();
+            this.labelSunElevationValue = new System.Windows.Forms.Label();
             this.tabControl1.SuspendLayout();
             this.tabPageOptions.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.AntialiasingLevel)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.AnsiotropicLevel)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.height)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.width)).BeginInit();
+            this.tabPageShadows.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownShadowStrength)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.trackBarSunAzimuth)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.trackBarSunElevation)).BeginInit();
             this.tabPageKeys.SuspendLayout();
             this.SuspendLayout();
             // 
             // tabControl1
             // 
             this.tabControl1.Controls.Add(this.tabPageOptions);
+            this.tabControl1.Controls.Add(this.tabPageShadows);
             this.tabControl1.Controls.Add(this.tabPageKeys);
             this.tabControl1.Location = new System.Drawing.Point(1, 12);
             this.tabControl1.Name = "tabControl1";
@@ -357,6 +378,192 @@
             this.InterpolationMode.Size = new System.Drawing.Size(121, 21);
             this.InterpolationMode.TabIndex = 26;
             // 
+            // tabPageShadows
+            // 
+            this.tabPageShadows.Controls.Add(this.comboBoxShadowResolution);
+            this.tabPageShadows.Controls.Add(this.labelShadowResolution);
+            this.tabPageShadows.Controls.Add(this.comboBoxShadowDistance);
+            this.tabPageShadows.Controls.Add(this.labelShadowDistance);
+            this.tabPageShadows.Controls.Add(this.comboBoxShadowCascades);
+            this.tabPageShadows.Controls.Add(this.labelShadowCascades);
+            this.tabPageShadows.Controls.Add(this.numericUpDownShadowStrength);
+            this.tabPageShadows.Controls.Add(this.labelShadowStrength);
+            this.tabPageShadows.Controls.Add(this.labelSunDirection);
+            this.tabPageShadows.Controls.Add(this.labelSunAzimuth);
+            this.tabPageShadows.Controls.Add(this.trackBarSunAzimuth);
+            this.tabPageShadows.Controls.Add(this.labelSunAzimuthValue);
+            this.tabPageShadows.Controls.Add(this.labelSunElevation);
+            this.tabPageShadows.Controls.Add(this.trackBarSunElevation);
+            this.tabPageShadows.Controls.Add(this.labelSunElevationValue);
+            this.tabPageShadows.Location = new System.Drawing.Point(4, 22);
+            this.tabPageShadows.Name = "tabPageShadows";
+            this.tabPageShadows.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPageShadows.Size = new System.Drawing.Size(304, 348);
+            this.tabPageShadows.TabIndex = 2;
+            this.tabPageShadows.Text = "Shadows";
+            this.tabPageShadows.UseVisualStyleBackColor = true;
+            // 
+            // comboBoxShadowResolution
+            // 
+            this.comboBoxShadowResolution.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboBoxShadowResolution.FormattingEnabled = true;
+            this.comboBoxShadowResolution.Items.AddRange(new object[] {
+            "Off",
+            "Low (512)",
+            "Medium (1024)",
+            "High (2048)",
+            "Ultra (4096)"});
+            this.comboBoxShadowResolution.Location = new System.Drawing.Point(160, 24);
+            this.comboBoxShadowResolution.Name = "comboBoxShadowResolution";
+            this.comboBoxShadowResolution.Size = new System.Drawing.Size(121, 21);
+            this.comboBoxShadowResolution.TabIndex = 28;
+            // 
+            // labelShadowResolution
+            // 
+            this.labelShadowResolution.AutoSize = true;
+            this.labelShadowResolution.Location = new System.Drawing.Point(6, 27);
+            this.labelShadowResolution.Name = "labelShadowResolution";
+            this.labelShadowResolution.Size = new System.Drawing.Size(60, 13);
+            this.labelShadowResolution.TabIndex = 29;
+            this.labelShadowResolution.Text = "Resolution:";
+            // 
+            // comboBoxShadowDistance
+            // 
+            this.comboBoxShadowDistance.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboBoxShadowDistance.FormattingEnabled = true;
+            this.comboBoxShadowDistance.Items.AddRange(new object[] {
+            "Near (150m)",
+            "Medium (300m)",
+            "Far (500m)",
+            "Very Far (800m)",
+            "Follow Viewing Distance"});
+            this.comboBoxShadowDistance.Location = new System.Drawing.Point(160, 54);
+            this.comboBoxShadowDistance.Name = "comboBoxShadowDistance";
+            this.comboBoxShadowDistance.Size = new System.Drawing.Size(121, 21);
+            this.comboBoxShadowDistance.TabIndex = 30;
+            // 
+            // labelShadowDistance
+            // 
+            this.labelShadowDistance.AutoSize = true;
+            this.labelShadowDistance.Location = new System.Drawing.Point(6, 57);
+            this.labelShadowDistance.Name = "labelShadowDistance";
+            this.labelShadowDistance.Size = new System.Drawing.Size(82, 13);
+            this.labelShadowDistance.TabIndex = 31;
+            this.labelShadowDistance.Text = "Draw Distance:";
+            // 
+            // comboBoxShadowCascades
+            // 
+            this.comboBoxShadowCascades.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboBoxShadowCascades.FormattingEnabled = true;
+            this.comboBoxShadowCascades.Items.AddRange(new object[] {
+            "2 Cascades",
+            "3 Cascades",
+            "4 Cascades"});
+            this.comboBoxShadowCascades.Location = new System.Drawing.Point(160, 84);
+            this.comboBoxShadowCascades.Name = "comboBoxShadowCascades";
+            this.comboBoxShadowCascades.Size = new System.Drawing.Size(121, 21);
+            this.comboBoxShadowCascades.TabIndex = 32;
+            // 
+            // labelShadowCascades
+            // 
+            this.labelShadowCascades.AutoSize = true;
+            this.labelShadowCascades.Location = new System.Drawing.Point(6, 87);
+            this.labelShadowCascades.Name = "labelShadowCascades";
+            this.labelShadowCascades.Size = new System.Drawing.Size(57, 13);
+            this.labelShadowCascades.TabIndex = 33;
+            this.labelShadowCascades.Text = "Cascades:";
+            // 
+            // numericUpDownShadowStrength
+            // 
+            this.numericUpDownShadowStrength.Location = new System.Drawing.Point(160, 114);
+            this.numericUpDownShadowStrength.Maximum = new decimal(new int[] {
+            100,
+            0,
+            0,
+            0});
+            this.numericUpDownShadowStrength.Name = "numericUpDownShadowStrength";
+            this.numericUpDownShadowStrength.Size = new System.Drawing.Size(120, 20);
+            this.numericUpDownShadowStrength.TabIndex = 34;
+            // 
+            // labelShadowStrength
+            // 
+            this.labelShadowStrength.AutoSize = true;
+            this.labelShadowStrength.Location = new System.Drawing.Point(6, 116);
+            this.labelShadowStrength.Name = "labelShadowStrength";
+            this.labelShadowStrength.Size = new System.Drawing.Size(109, 13);
+            this.labelShadowStrength.TabIndex = 35;
+            this.labelShadowStrength.Text = "Strength (0 - 100%):";
+            // 
+            // labelSunDirection
+            // 
+            this.labelSunDirection.AutoSize = true;
+            this.labelSunDirection.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.labelSunDirection.Location = new System.Drawing.Point(6, 150);
+            this.labelSunDirection.Name = "labelSunDirection";
+            this.labelSunDirection.Size = new System.Drawing.Size(96, 15);
+            this.labelSunDirection.TabIndex = 36;
+            this.labelSunDirection.Text = "Sun Direction";
+            // 
+            // labelSunAzimuth
+            // 
+            this.labelSunAzimuth.AutoSize = true;
+            this.labelSunAzimuth.Location = new System.Drawing.Point(6, 172);
+            this.labelSunAzimuth.Name = "labelSunAzimuth";
+            this.labelSunAzimuth.Size = new System.Drawing.Size(47, 13);
+            this.labelSunAzimuth.TabIndex = 37;
+            this.labelSunAzimuth.Text = "Azimuth:";
+            // 
+            // trackBarSunAzimuth
+            // 
+            this.trackBarSunAzimuth.Location = new System.Drawing.Point(6, 188);
+            this.trackBarSunAzimuth.Maximum = 360;
+            this.trackBarSunAzimuth.Minimum = 0;
+            this.trackBarSunAzimuth.Name = "trackBarSunAzimuth";
+            this.trackBarSunAzimuth.Size = new System.Drawing.Size(235, 45);
+            this.trackBarSunAzimuth.TabIndex = 38;
+            this.trackBarSunAzimuth.TickFrequency = 30;
+            this.trackBarSunAzimuth.Value = 240;
+            this.trackBarSunAzimuth.Scroll += new System.EventHandler(this.trackBarSunAzimuth_Scroll);
+            // 
+            // labelSunAzimuthValue
+            // 
+            this.labelSunAzimuthValue.AutoSize = true;
+            this.labelSunAzimuthValue.Location = new System.Drawing.Point(247, 192);
+            this.labelSunAzimuthValue.Name = "labelSunAzimuthValue";
+            this.labelSunAzimuthValue.Size = new System.Drawing.Size(31, 13);
+            this.labelSunAzimuthValue.TabIndex = 39;
+            this.labelSunAzimuthValue.Text = "240°";
+            // 
+            // labelSunElevation
+            // 
+            this.labelSunElevation.AutoSize = true;
+            this.labelSunElevation.Location = new System.Drawing.Point(6, 236);
+            this.labelSunElevation.Name = "labelSunElevation";
+            this.labelSunElevation.Size = new System.Drawing.Size(54, 13);
+            this.labelSunElevation.TabIndex = 40;
+            this.labelSunElevation.Text = "Elevation:";
+            // 
+            // trackBarSunElevation
+            // 
+            this.trackBarSunElevation.Location = new System.Drawing.Point(6, 252);
+            this.trackBarSunElevation.Maximum = 90;
+            this.trackBarSunElevation.Minimum = 5;
+            this.trackBarSunElevation.Name = "trackBarSunElevation";
+            this.trackBarSunElevation.Size = new System.Drawing.Size(235, 45);
+            this.trackBarSunElevation.TabIndex = 41;
+            this.trackBarSunElevation.TickFrequency = 10;
+            this.trackBarSunElevation.Value = 60;
+            this.trackBarSunElevation.Scroll += new System.EventHandler(this.trackBarSunElevation_Scroll);
+            // 
+            // labelSunElevationValue
+            // 
+            this.labelSunElevationValue.AutoSize = true;
+            this.labelSunElevationValue.Location = new System.Drawing.Point(247, 256);
+            this.labelSunElevationValue.Name = "labelSunElevationValue";
+            this.labelSunElevationValue.Size = new System.Drawing.Size(25, 13);
+            this.labelSunElevationValue.TabIndex = 42;
+            this.labelSunElevationValue.Text = "60°";
+            // 
             // tabPageKeys
             // 
             this.tabPageKeys.Controls.Add(this.labelControls);
@@ -520,6 +727,11 @@
             ((System.ComponentModel.ISupportInitialize)(this.AnsiotropicLevel)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.height)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.width)).EndInit();
+            this.tabPageShadows.ResumeLayout(false);
+            this.tabPageShadows.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownShadowStrength)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.trackBarSunAzimuth)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.trackBarSunElevation)).EndInit();
             this.tabPageKeys.ResumeLayout(false);
             this.tabPageKeys.PerformLayout();
             this.ResumeLayout(false);
@@ -566,5 +778,21 @@
 		private System.Windows.Forms.Label labelLeft;
 		private System.Windows.Forms.Button CloseButton;
 		private System.Windows.Forms.Label labelControls;
+		private System.Windows.Forms.TabPage tabPageShadows;
+		private System.Windows.Forms.ComboBox comboBoxShadowResolution;
+		private System.Windows.Forms.Label labelShadowResolution;
+		private System.Windows.Forms.ComboBox comboBoxShadowDistance;
+		private System.Windows.Forms.Label labelShadowDistance;
+		private System.Windows.Forms.ComboBox comboBoxShadowCascades;
+		private System.Windows.Forms.Label labelShadowCascades;
+		private System.Windows.Forms.NumericUpDown numericUpDownShadowStrength;
+		private System.Windows.Forms.Label labelShadowStrength;
+		private System.Windows.Forms.Label labelSunDirection;
+		private System.Windows.Forms.Label labelSunAzimuth;
+		private System.Windows.Forms.TrackBar trackBarSunAzimuth;
+		private System.Windows.Forms.Label labelSunAzimuthValue;
+		private System.Windows.Forms.Label labelSunElevation;
+		private System.Windows.Forms.TrackBar trackBarSunElevation;
+		private System.Windows.Forms.Label labelSunElevationValue;
 	}
 }

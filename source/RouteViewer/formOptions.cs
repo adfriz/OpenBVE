@@ -7,6 +7,8 @@ using System;
 using System.ComponentModel;
 using System.Windows.Forms;
 
+using OpenBveApi.Interface;
+
 namespace RouteViewer
 {
     public partial class FormOptions : Form
@@ -25,7 +27,38 @@ namespace RouteViewer
 			checkBoxProgressBar.Checked = Interface.CurrentOptions.LoadingProgressBar;
 			comboBoxNewXParser.SelectedIndex = (int) Interface.CurrentOptions.CurrentXParser;
 			comboBoxNewObjParser.SelectedIndex = (int) Interface.CurrentOptions.CurrentObjParser;
-			numericUpDownViewingDistance.Value = Math.Min(Interface.CurrentOptions.ViewingDistance, numericUpDownViewingDistance.Minimum);
+			numericUpDownViewingDistance.Value = Interface.CurrentOptions.ViewingDistance;
+
+            // Shadows
+            switch (Interface.CurrentOptions.ShadowResolution)
+            {
+                case ShadowMapResolution.Off: comboBoxShadowResolution.SelectedIndex = 0; break;
+                case ShadowMapResolution.Low: comboBoxShadowResolution.SelectedIndex = 1; break;
+                case ShadowMapResolution.Medium: comboBoxShadowResolution.SelectedIndex = 2; break;
+                case ShadowMapResolution.High: comboBoxShadowResolution.SelectedIndex = 3; break;
+                case ShadowMapResolution.Ultra: comboBoxShadowResolution.SelectedIndex = 4; break;
+                default: comboBoxShadowResolution.SelectedIndex = 3; break;
+            }
+
+            switch (Interface.CurrentOptions.ShadowDrawDistance)
+            {
+                case ShadowDistance.Near: comboBoxShadowDistance.SelectedIndex = 0; break;
+                case ShadowDistance.Medium: comboBoxShadowDistance.SelectedIndex = 1; break;
+                case ShadowDistance.Far: comboBoxShadowDistance.SelectedIndex = 2; break;
+                case ShadowDistance.VeryFar: comboBoxShadowDistance.SelectedIndex = 3; break;
+                case ShadowDistance.ViewingDistance: comboBoxShadowDistance.SelectedIndex = 4; break;
+                default: comboBoxShadowDistance.SelectedIndex = 1; break;
+            }
+
+            switch (Interface.CurrentOptions.ShadowCascades)
+            {
+                case ShadowCascadeCount.Two: comboBoxShadowCascades.SelectedIndex = 0; break;
+                case ShadowCascadeCount.Three: comboBoxShadowCascades.SelectedIndex = 1; break;
+                case ShadowCascadeCount.Four: comboBoxShadowCascades.SelectedIndex = 2; break;
+                default: comboBoxShadowCascades.SelectedIndex = 1; break;
+            }
+
+            numericUpDownShadowStrength.Value = (decimal)Interface.CurrentOptions.ShadowStrength;
         }
 
         internal static DialogResult ShowOptions()
@@ -127,6 +160,48 @@ namespace RouteViewer
 			}
 			Interface.CurrentOptions.ViewingDistance = (int)numericUpDownViewingDistance.Value;
 			Interface.CurrentOptions.QuadTreeLeafSize = Math.Max(50, (int)Math.Ceiling(Interface.CurrentOptions.ViewingDistance / 10.0d) * 10); // quad tree size set to 10% of viewing distance to the nearest 10
+
+            // Shadows
+            var prevShadowRes = Interface.CurrentOptions.ShadowResolution;
+            var prevShadowDist = Interface.CurrentOptions.ShadowDrawDistance;
+            var prevShadowCasc = Interface.CurrentOptions.ShadowCascades;
+            var prevShadowStr = Interface.CurrentOptions.ShadowStrength;
+
+            switch (comboBoxShadowResolution.SelectedIndex)
+            {
+                case 0: Interface.CurrentOptions.ShadowResolution = ShadowMapResolution.Off; break;
+                case 1: Interface.CurrentOptions.ShadowResolution = ShadowMapResolution.Low; break;
+                case 2: Interface.CurrentOptions.ShadowResolution = ShadowMapResolution.Medium; break;
+                case 3: Interface.CurrentOptions.ShadowResolution = ShadowMapResolution.High; break;
+                case 4: Interface.CurrentOptions.ShadowResolution = ShadowMapResolution.Ultra; break;
+            }
+
+            switch (comboBoxShadowDistance.SelectedIndex)
+            {
+                case 0: Interface.CurrentOptions.ShadowDrawDistance = ShadowDistance.Near; break;
+                case 1: Interface.CurrentOptions.ShadowDrawDistance = ShadowDistance.Medium; break;
+                case 2: Interface.CurrentOptions.ShadowDrawDistance = ShadowDistance.Far; break;
+                case 3: Interface.CurrentOptions.ShadowDrawDistance = ShadowDistance.VeryFar; break;
+                case 4: Interface.CurrentOptions.ShadowDrawDistance = ShadowDistance.ViewingDistance; break;
+            }
+
+            switch (comboBoxShadowCascades.SelectedIndex)
+            {
+                case 0: Interface.CurrentOptions.ShadowCascades = ShadowCascadeCount.Two; break;
+                case 1: Interface.CurrentOptions.ShadowCascades = ShadowCascadeCount.Three; break;
+                case 2: Interface.CurrentOptions.ShadowCascades = ShadowCascadeCount.Four; break;
+            }
+
+            Interface.CurrentOptions.ShadowStrength = (float)numericUpDownShadowStrength.Value;
+
+            if (prevShadowRes != Interface.CurrentOptions.ShadowResolution ||
+                prevShadowDist != Interface.CurrentOptions.ShadowDrawDistance ||
+                prevShadowCasc != Interface.CurrentOptions.ShadowCascades ||
+                Math.Abs(prevShadowStr - Interface.CurrentOptions.ShadowStrength) > 0.01f)
+            {
+                Program.Renderer.ReloadShadowSettings();
+            }
+
 			Interface.CurrentOptions.Save(Path.CombineFile(Program.FileSystem.SettingsFolder, "1.5.0/options_rv.cfg"));
 			for (int i = 0; i < Program.CurrentHost.Plugins.Length; i++)
 			{

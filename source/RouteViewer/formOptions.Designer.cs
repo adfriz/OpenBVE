@@ -57,11 +57,21 @@ namespace RouteViewer
 			this.comboBoxNewXParser = new System.Windows.Forms.ComboBox();
 			this.label15 = new System.Windows.Forms.Label();
 			this.numericUpDownViewingDistance = new System.Windows.Forms.NumericUpDown();
+			this.labelShadowSettings = new System.Windows.Forms.Label();
+			this.labelShadowResolution = new System.Windows.Forms.Label();
+			this.comboBoxShadowResolution = new System.Windows.Forms.ComboBox();
+			this.labelShadowDistance = new System.Windows.Forms.Label();
+			this.comboBoxShadowDistance = new System.Windows.Forms.ComboBox();
+			this.labelShadowCascades = new System.Windows.Forms.Label();
+			this.comboBoxShadowCascades = new System.Windows.Forms.ComboBox();
+			this.labelShadowStrength = new System.Windows.Forms.Label();
+			this.numericUpDownShadowStrength = new System.Windows.Forms.NumericUpDown();
 			((System.ComponentModel.ISupportInitialize)(this.width)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.height)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.AnsiotropicLevel)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.AntialiasingLevel)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.numericUpDownViewingDistance)).BeginInit();
+			((System.ComponentModel.ISupportInitialize)(this.numericUpDownShadowStrength)).BeginInit();
 			this.SuspendLayout();
 			// 
 			// InterpolationMode
@@ -139,7 +149,7 @@ namespace RouteViewer
 			// 
 			// button1
 			// 
-			this.button1.Location = new System.Drawing.Point(211, 447);
+			this.button1.Location = new System.Drawing.Point(211, 580);
 			this.button1.Name = "button1";
 			this.button1.Size = new System.Drawing.Size(75, 23);
 			this.button1.TabIndex = 9;
@@ -389,11 +399,132 @@ namespace RouteViewer
             0,
             0});
 			// 
+			// labelShadowSettings
+			// 
+			this.labelShadowSettings.AutoSize = true;
+			this.labelShadowSettings.Font = new System.Drawing.Font("Microsoft Sans Serif", 9f, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+			this.labelShadowSettings.Location = new System.Drawing.Point(99, 445);
+			this.labelShadowSettings.Name = "labelShadowSettings";
+			this.labelShadowSettings.Size = new System.Drawing.Size(120, 15);
+			this.labelShadowSettings.TabIndex = 35;
+			this.labelShadowSettings.Text = "Shadow Settings";
+			// 
+			// labelShadowResolution
+			// 
+			this.labelShadowResolution.AutoSize = true;
+			this.labelShadowResolution.Location = new System.Drawing.Point(12, 470);
+			this.labelShadowResolution.Name = "labelShadowResolution";
+			this.labelShadowResolution.Size = new System.Drawing.Size(60, 13);
+			this.labelShadowResolution.TabIndex = 36;
+			this.labelShadowResolution.Text = "Resolution:";
+			// 
+			// comboBoxShadowResolution
+			// 
+			this.comboBoxShadowResolution.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+			this.comboBoxShadowResolution.FormattingEnabled = true;
+			this.comboBoxShadowResolution.Items.AddRange(new object[] {
+            "Off",
+            "Low (1024)",
+            "Medium (2048)",
+            "High (4096)",
+            "Ultra (8192)"});
+			this.comboBoxShadowResolution.Location = new System.Drawing.Point(166, 467);
+			this.comboBoxShadowResolution.Name = "comboBoxShadowResolution";
+			this.comboBoxShadowResolution.Size = new System.Drawing.Size(121, 21);
+			this.comboBoxShadowResolution.TabIndex = 37;
+			// 
+			// labelShadowDistance
+			// 
+			this.labelShadowDistance.AutoSize = true;
+			this.labelShadowDistance.Location = new System.Drawing.Point(12, 497);
+			this.labelShadowDistance.Name = "labelShadowDistance";
+			this.labelShadowDistance.Size = new System.Drawing.Size(82, 13);
+			this.labelShadowDistance.TabIndex = 38;
+			this.labelShadowDistance.Text = "Draw Distance:";
+			// 
+			// comboBoxShadowDistance
+			// 
+			this.comboBoxShadowDistance.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+			this.comboBoxShadowDistance.FormattingEnabled = true;
+			this.comboBoxShadowDistance.Items.AddRange(new object[] {
+            "Near (150m)",
+            "Medium (400m)",
+            "Far (800m)",
+            "Very Far (1500m)",
+            "Follow Viewing Distance"});
+			this.comboBoxShadowDistance.Location = new System.Drawing.Point(166, 494);
+			this.comboBoxShadowDistance.Name = "comboBoxShadowDistance";
+			this.comboBoxShadowDistance.Size = new System.Drawing.Size(121, 21);
+			this.comboBoxShadowDistance.TabIndex = 39;
+			// 
+			// labelShadowCascades
+			// 
+			this.labelShadowCascades.AutoSize = true;
+			this.labelShadowCascades.Location = new System.Drawing.Point(12, 524);
+			this.labelShadowCascades.Name = "labelShadowCascades";
+			this.labelShadowCascades.Size = new System.Drawing.Size(83, 13);
+			this.labelShadowCascades.TabIndex = 40;
+			this.labelShadowCascades.Text = "Cascade Count:";
+			// 
+			// comboBoxShadowCascades
+			// 
+			this.comboBoxShadowCascades.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+			this.comboBoxShadowCascades.FormattingEnabled = true;
+			this.comboBoxShadowCascades.Items.AddRange(new object[] {
+            "2 Cascades",
+            "3 Cascades",
+            "4 Cascades"});
+			this.comboBoxShadowCascades.Location = new System.Drawing.Point(166, 521);
+			this.comboBoxShadowCascades.Name = "comboBoxShadowCascades";
+			this.comboBoxShadowCascades.Size = new System.Drawing.Size(121, 21);
+			this.comboBoxShadowCascades.TabIndex = 41;
+			// 
+			// labelShadowStrength
+			// 
+			this.labelShadowStrength.AutoSize = true;
+			this.labelShadowStrength.Location = new System.Drawing.Point(12, 551);
+			this.labelShadowStrength.Name = "labelShadowStrength";
+			this.labelShadowStrength.Size = new System.Drawing.Size(91, 13);
+			this.labelShadowStrength.TabIndex = 42;
+			this.labelShadowStrength.Text = "Shadow Strength:";
+			// 
+			// numericUpDownShadowStrength
+			// 
+			this.numericUpDownShadowStrength.DecimalPlaces = 2;
+			this.numericUpDownShadowStrength.Increment = new decimal(new int[] {
+            5,
+            0,
+            0,
+            131072});
+			this.numericUpDownShadowStrength.Location = new System.Drawing.Point(166, 549);
+			this.numericUpDownShadowStrength.Maximum = new decimal(new int[] {
+            10,
+            0,
+            0,
+            65536});
+			this.numericUpDownShadowStrength.Name = "numericUpDownShadowStrength";
+			this.numericUpDownShadowStrength.Size = new System.Drawing.Size(120, 20);
+			this.numericUpDownShadowStrength.TabIndex = 43;
+			this.numericUpDownShadowStrength.Value = new decimal(new int[] {
+            5,
+            0,
+            0,
+            65536});
+			// 
 			// formOptions
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-			this.ClientSize = new System.Drawing.Size(311, 482);
+			this.ClientSize = new System.Drawing.Size(311, 620);
+			this.Controls.Add(this.labelShadowStrength);
+			this.Controls.Add(this.numericUpDownShadowStrength);
+			this.Controls.Add(this.labelShadowCascades);
+			this.Controls.Add(this.comboBoxShadowCascades);
+			this.Controls.Add(this.labelShadowDistance);
+			this.Controls.Add(this.comboBoxShadowDistance);
+			this.Controls.Add(this.labelShadowResolution);
+			this.Controls.Add(this.comboBoxShadowResolution);
+			this.Controls.Add(this.labelShadowSettings);
 			this.Controls.Add(this.label15);
 			this.Controls.Add(this.numericUpDownViewingDistance);
 			this.Controls.Add(this.label12);
@@ -469,5 +600,14 @@ namespace RouteViewer
 		private System.Windows.Forms.ComboBox comboBoxNewXParser;
 		private System.Windows.Forms.Label label15;
 		private System.Windows.Forms.NumericUpDown numericUpDownViewingDistance;
+		private System.Windows.Forms.Label labelShadowSettings;
+		private System.Windows.Forms.Label labelShadowResolution;
+		private System.Windows.Forms.ComboBox comboBoxShadowResolution;
+		private System.Windows.Forms.Label labelShadowDistance;
+		private System.Windows.Forms.ComboBox comboBoxShadowDistance;
+		private System.Windows.Forms.Label labelShadowCascades;
+		private System.Windows.Forms.ComboBox comboBoxShadowCascades;
+		private System.Windows.Forms.Label labelShadowStrength;
+		private System.Windows.Forms.NumericUpDown numericUpDownShadowStrength;
 	}
 }

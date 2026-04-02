@@ -68,7 +68,10 @@ namespace Train.OpenBve
 				Plugin.CurrentProgress = Plugin.LastProgress + perCarProgress * i;
 				if (carBlocks[i].Key == TrainXMLSection.Car)
 				{
-					ParseCarBlock(carBlocks[i], carIndex, ref Train, ref carObjects, ref bogieObjects, ref interiorVisible[carIndex]);
+					if (carIndex < Train.Cars.Length)
+					{
+						ParseCarBlock(carBlocks[i], carIndex, ref Train, ref carObjects, ref bogieObjects, ref interiorVisible[carIndex]);
+					}
 					carIndex++;
 				}
 				else

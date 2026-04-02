@@ -27,7 +27,7 @@ namespace OpenBve
 			if (Program.Renderer.Camera.CurrentMode == CameraViewMode.Interior | Program.Renderer.Camera.CurrentMode == CameraViewMode.InteriorLookAhead | Program.Renderer.Camera.CurrentMode == CameraViewMode.Exterior) {
 				CarBase car = TrainManager.PlayerTrain.Cars[TrainManager.PlayerTrain.DriverCar];
 				Vector3 diff = car.FrontAxle.Follower.WorldPosition - car.RearAxle.Follower.WorldPosition;
-				if (diff.IsNullVector()) {
+				if (diff.Norm() < 1e-10) {
 					listenerVelocity = car.CurrentSpeed * Vector3.Forward;
 				} else {
 					listenerVelocity = car.CurrentSpeed * Vector3.Normalize(diff);

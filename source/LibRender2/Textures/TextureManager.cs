@@ -115,7 +115,7 @@ namespace LibRender2.Textures
 						//The only exceptions thrown were these when it barfed
 						PathOrigin source = RegisteredTextures[i].Origin as PathOrigin;
 
-						if (source != null && source.Path == path && source.Parameters == parameters)
+						if (source != null && source.Path.Equals(path, StringComparison.InvariantCultureIgnoreCase) && source.Parameters == parameters)
 						{
 							handle = RegisteredTextures[i];
 							return true;

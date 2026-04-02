@@ -1,4 +1,4 @@
-﻿using LibRender2.Viewports;
+using LibRender2.Viewports;
 using ObjectViewer.Trains;
 using OpenBveApi;
 using OpenTK;
@@ -282,6 +282,12 @@ namespace ObjectViewer
 
 			TotalTimeElapsedForInfo += RealTimeElapsed;
 			RenderRealTimeElapsed += RealTimeElapsed;
+
+			if (Program.ReloadRequested)
+			{
+				Program.ReloadRequested = false;
+				Program.RefreshObjects();
+			}
 		}
 
         protected override void OnResize(EventArgs e)

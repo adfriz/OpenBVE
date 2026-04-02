@@ -300,6 +300,11 @@ namespace Train.OpenBve
 					ExtensionsCfgParser.ParseExtensionsConfig(currentTrain.TrainFolder, encoding, ref carObjects, ref bogieObjects, ref couplerObjects, out visibleFromInterior, currentTrain);
 				}
 
+				// Ensure visibleFromInterior is valid even if both parsers fail
+				if (visibleFromInterior == null || visibleFromInterior.Length != currentTrain.Cars.Length)
+				{
+					visibleFromInterior = new bool[currentTrain.Cars.Length];
+				}
 				currentTrain.CameraCar = currentTrain.DriverCar;
 				Thread.Sleep(1);
 				if (Cancel)
@@ -383,7 +388,7 @@ namespace Train.OpenBve
 						numMotorCars++;
 						if (currentTrain.Cars[i].TractionModel.MotorSounds == null && TrainXmlParser.MotorSoundXMLParsed != null)
 						{
-							if(!TrainXmlParser.MotorSoundXMLParsed[i])
+							if(i < TrainXmlParser.MotorSoundXMLParsed.Length && !TrainXmlParser.MotorSoundXMLParsed[i])
 							{
 								currentTrain.Cars[i].TractionModel.MotorSounds = new BVEMotorSound(currentTrain.Cars[i], 18.0, MotorSoundTables);
 							}

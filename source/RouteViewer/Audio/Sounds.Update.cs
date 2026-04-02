@@ -28,7 +28,7 @@ namespace RouteViewer
 			{
 				CarBase car = TrainManager.PlayerTrain.Cars[TrainManager.PlayerTrain.DriverCar];
 				Vector3 diff = car.FrontAxle.Follower.WorldPosition - car.RearAxle.Follower.WorldPosition;
-				if (diff.IsNullVector())
+				if (diff.Norm() < 1e-10)
 				{
 					listenerVelocity = car.CurrentSpeed * Vector3.Forward;
 				}

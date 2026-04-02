@@ -308,6 +308,28 @@ namespace ObjectViewer {
 	    internal static void RefreshObjects()
 	    {
 		    LightingRelative = -1.0;
+			
+			// Prune cache to allow actual reloading of modified files
+			var staticKeysToRemove = new List<ValueTuple<string, bool, DateTime>>();
+			foreach (var key in CurrentHost.StaticObjectCache.Keys)
+			{
+				try
+				{
+					if (!System.IO.File.Exists(key.Item1) || System.IO.File.GetLastWriteTime(key.Item1) != key.Item3)
+					{
+						staticKeysToRemove.Add(key);
+					}
+				}
+				catch { staticKeysToRemove.Add(key); }
+			}
+			foreach (var key in staticKeysToRemove)
+			{
+				CurrentHost.StaticObjectCache.Remove(key);
+			}
+			CurrentHost.AnimatedObjectCollectionCache.Clear();
+			// Let TextureManager check for texture changes
+			Renderer.TextureManager.UnloadAllTextures(true);
+
 			Renderer.Reset();
 		    Game.Reset();
 			formTrain.Instance?.DisableUI();
@@ -397,8 +419,49 @@ namespace ObjectViewer {
 		    {
 			    Renderer.GameWindow.Title = "Object Viewer";
 		    }
+			UpdateWatchers();
 	    }
 
+
+		internal static List<System.IO.FileSystemWatcher> FileWatchers = new List<System.IO.FileSystemWatcher>();
+		internal static bool ReloadRequested = false;
+		private static DateTime LastFileChangedTime = DateTime.MinValue;
+
+		internal static void UpdateWatchers()
+		{
+			foreach (var watcher in FileWatchers)
+			{
+				watcher.EnableRaisingEvents = false;
+				watcher.Dispose();
+			}
+			FileWatchers.Clear();
+			foreach (string file in Files)
+			{
+				try
+				{
+					string dir = System.IO.Path.GetDirectoryName(file);
+					string name = System.IO.Path.GetFileName(file);
+					if (System.IO.Directory.Exists(dir))
+					{
+						var watcher = new System.IO.FileSystemWatcher(dir, name);
+						watcher.NotifyFilter = System.IO.NotifyFilters.LastWrite;
+						watcher.Changed += OnFileChanged;
+						watcher.EnableRaisingEvents = true;
+						FileWatchers.Add(watcher);
+					}
+				}
+				catch { }
+			}
+		}
+
+		private static void OnFileChanged(object source, System.IO.FileSystemEventArgs e)
+		{
+			if ((DateTime.Now - LastFileChangedTime).TotalMilliseconds > 500)
+			{
+				LastFileChangedTime = DateTime.Now;
+				ReloadRequested = true;
+			}
+		}
 
 	    // process events
 	    internal static void KeyDown(object sender, KeyboardKeyEventArgs e)

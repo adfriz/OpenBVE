@@ -188,18 +188,8 @@ namespace RouteViewer
 			return false;
 		}
 
-		public override bool LoadTexture(ref Texture Texture, OpenGlTextureWrapMode wrapMode, bool renderThread = false)
+		public override bool LoadTexture(ref Texture Texture, OpenGlTextureWrapMode wrapMode)
 		{
-			if (renderThread)
-			{
-				Texture t = Texture;
-				Program.Renderer.RunInRenderThread(() =>
-				{
-					Program.Renderer.TextureManager.LoadTexture(ref t, wrapMode, CPreciseTimer.GetClockTicks(), Interface.CurrentOptions.Interpolation, Interface.CurrentOptions.AnisotropicFilteringLevel);
-				}, 1000);
-				Texture = t;
-				return true;
-			}
 			return Program.Renderer.TextureManager.LoadTexture(ref Texture, wrapMode, CPreciseTimer.GetClockTicks(), Interface.CurrentOptions.Interpolation, Interface.CurrentOptions.AnisotropicFilteringLevel);
 		}
 		
@@ -356,7 +346,7 @@ namespace RouteViewer
 										{
 											staticObject.OptimizeObject(PreserveVertices, Interface.CurrentOptions.ObjectOptimizationBasicThreshold, true);
 											Object = staticObject;
-											StaticObjectCache.Add(ValueTuple.Create(path, PreserveVertices, File.GetLastWriteTime(path)), Object);
+											StaticObjectCache.Add(ValueTuple.Create(path.ToLowerInvariant(), PreserveVertices, File.GetLastWriteTime(path)), Object);
 											return true;
 										}
 
@@ -430,13 +420,13 @@ namespace RouteViewer
 
 										if (Object is StaticObject staticObject)
 										{
-											StaticObjectCache.Add(ValueTuple.Create(path, false, File.GetLastWriteTime(path)), staticObject);
+											StaticObjectCache.Add(ValueTuple.Create(path.ToLowerInvariant(), false, File.GetLastWriteTime(path)), staticObject);
 											return true;
 										}
 
 										if (Object is AnimatedObjectCollection aoc)
 										{
-											AnimatedObjectCollectionCache.Add(path, aoc);
+											AnimatedObjectCollectionCache.Add(path.ToLowerInvariant(), aoc);
 										}
 
 										return true;

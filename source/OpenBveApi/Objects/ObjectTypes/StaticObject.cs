@@ -752,29 +752,40 @@ namespace OpenBveApi.Objects
 				}
 			}
 
-			// Cull vertices based on hidden option.
-			// This is disabled by default because it adds a lot of time to the loading process.
+			// Cull identical and unreferenced vertices based on the hidden vertexCulling option.
+			// Replaced old very slow OrderedDictionary implementation with generic Dictionary.
 			if (!preserveVerticies && vertexCulling)
 			{
-				OrderedDictionary newVertices = new OrderedDictionary();
-				for (int i = 0; i < Mesh.Vertices.Length; i++)
-				{
-					if (!newVertices.Contains(Mesh.Vertices[i]))
-					{
-						newVertices.Add(Mesh.Vertices[i], newVertices.Count);
-					}
-				}
+				Dictionary<VertexTemplate, int> uniqueVertices = new Dictionary<VertexTemplate, int>();
+				VertexTemplate[] newVertices = new VertexTemplate[Mesh.Vertices.Length];
+				int count = 0;
 
+				// Iterate through all referenced vertices in the faces.
+				// This automatically ignores and culls unreferenced 'garbage' vertices in the original Mesh.Vertices array.
 				for (int i = 0; i < Mesh.Faces.Length; i++)
 				{
 					for (int j = 0; j < Mesh.Faces[i].Vertices.Length; j++)
 					{
-						Mesh.Faces[i].Vertices[j].Index = (int)newVertices[Mesh.Vertices[Mesh.Faces[i].Vertices[j].Index]];
+						int oldIndex = Mesh.Faces[i].Vertices[j].Index;
+						VertexTemplate vertex = Mesh.Vertices[oldIndex];
+
+						// If the exact same vertex structure hasn't been cached yet, cache it and add it to our new array.
+						if (!uniqueVertices.TryGetValue(vertex, out int newIndex))
+						{
+							newIndex = count;
+							uniqueVertices.Add(vertex, newIndex);
+							newVertices[count] = vertex;
+							count++;
+						}
+
+						// Update the face to point to the new, deduplicated vertex index.
+						Mesh.Faces[i].Vertices[j].Index = newIndex;
 					}
 				}
 
-				newVertices.Keys.CopyTo(Mesh.Vertices, 0);
-				Array.Resize(ref Mesh.Vertices, newVertices.Count);
+				// Copy the unique vertices back into the mesh
+				Mesh.Vertices = new VertexTemplate[count];
+				Array.Copy(newVertices, 0, Mesh.Vertices, 0, count);
 			}
 
 			// structure optimization
