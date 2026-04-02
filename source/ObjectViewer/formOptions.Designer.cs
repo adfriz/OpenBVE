@@ -82,6 +82,8 @@ namespace ObjectViewer
             this.labelSunElevation = new System.Windows.Forms.Label();
             this.trackBarSunElevation = new System.Windows.Forms.TrackBar();
             this.labelSunElevationValue = new System.Windows.Forms.Label();
+            this.labelAutoReloadChanged = new System.Windows.Forms.Label();
+            this.checkBoxAutoReload = new System.Windows.Forms.CheckBox();
             this.tabControl1.SuspendLayout();
             this.tabPageOptions.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.AntialiasingLevel)).BeginInit();
@@ -103,11 +105,13 @@ namespace ObjectViewer
             this.tabControl1.Location = new System.Drawing.Point(1, 12);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
-            this.tabControl1.Size = new System.Drawing.Size(312, 374);
+            this.tabControl1.Size = new System.Drawing.Size(312, 381);
             this.tabControl1.TabIndex = 26;
             // 
             // tabPageOptions
             // 
+            this.tabPageOptions.Controls.Add(this.checkBoxAutoReload);
+            this.tabPageOptions.Controls.Add(this.labelAutoReloadChanged);
             this.tabPageOptions.Controls.Add(this.comboBoxOptimizeObjects);
             this.tabPageOptions.Controls.Add(this.labelOptimizeObjects);
             this.tabPageOptions.Controls.Add(this.comboBoxNewObjParser);
@@ -132,7 +136,7 @@ namespace ObjectViewer
             this.tabPageOptions.Location = new System.Drawing.Point(4, 22);
             this.tabPageOptions.Name = "tabPageOptions";
             this.tabPageOptions.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPageOptions.Size = new System.Drawing.Size(304, 348);
+            this.tabPageOptions.Size = new System.Drawing.Size(304, 355);
             this.tabPageOptions.TabIndex = 0;
             this.tabPageOptions.Text = "Options";
             this.tabPageOptions.UseVisualStyleBackColor = true;
@@ -701,7 +705,7 @@ namespace ObjectViewer
             // 
             // CloseButton
             // 
-            this.CloseButton.Location = new System.Drawing.Point(234, 388);
+            this.CloseButton.Location = new System.Drawing.Point(234, 399);
             this.CloseButton.Name = "CloseButton";
             this.CloseButton.Size = new System.Drawing.Size(75, 23);
             this.CloseButton.TabIndex = 32;
@@ -709,11 +713,28 @@ namespace ObjectViewer
             this.CloseButton.UseVisualStyleBackColor = true;
             this.CloseButton.Click += new System.EventHandler(this.CloseButton_Click);
             // 
+            // labelAutoReloadChanged
+            // 
+            this.labelAutoReloadChanged.Location = new System.Drawing.Point(10, 324);
+            this.labelAutoReloadChanged.Name = "labelAutoReloadChanged";
+            this.labelAutoReloadChanged.Size = new System.Drawing.Size(131, 28);
+            this.labelAutoReloadChanged.TabIndex = 48;
+            this.labelAutoReloadChanged.Text = "Automatically Reload Changed Objects:";
+            // 
+            // checkBoxAutoReload
+            // 
+            this.checkBoxAutoReload.AutoSize = true;
+            this.checkBoxAutoReload.Location = new System.Drawing.Point(265, 328);
+            this.checkBoxAutoReload.Name = "checkBoxAutoReload";
+            this.checkBoxAutoReload.Size = new System.Drawing.Size(15, 14);
+            this.checkBoxAutoReload.TabIndex = 49;
+            this.checkBoxAutoReload.UseVisualStyleBackColor = true;
+            // 
             // formOptions
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(311, 421);
+            this.ClientSize = new System.Drawing.Size(311, 434);
             this.Controls.Add(this.CloseButton);
             this.Controls.Add(this.tabControl1);
             this.Name = "formOptions";
@@ -794,5 +815,7 @@ namespace ObjectViewer
 		private System.Windows.Forms.Label labelSunElevation;
 		private System.Windows.Forms.TrackBar trackBarSunElevation;
 		private System.Windows.Forms.Label labelSunElevationValue;
+		private System.Windows.Forms.CheckBox checkBoxAutoReload;
+		private System.Windows.Forms.Label labelAutoReloadChanged;
 	}
 }

@@ -29,7 +29,7 @@ namespace ObjectViewer
 
 		private double RenderRealTimeElapsed;
 		private double TotalTimeElapsedForInfo;
-
+        
         private static double RotateXSpeed = 0.0;
         private static double RotateYSpeed = 0.0;
         
@@ -288,6 +288,7 @@ namespace ObjectViewer
 				Program.ReloadRequested = false;
 				Program.RefreshObjects();
 			}
+            Program.CheckFileChanges(RealTimeElapsed);
 		}
 
         protected override void OnResize(EventArgs e)
