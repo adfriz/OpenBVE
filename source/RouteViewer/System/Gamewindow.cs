@@ -1,4 +1,4 @@
-﻿using LibRender2.Viewports;
+using LibRender2.Viewports;
 using OpenBveApi;
 using OpenBveApi.Hosts;
 using OpenBveApi.Math;
@@ -203,6 +203,8 @@ namespace RouteViewer
 			{
 				Program.Renderer.PopMatrix(MatrixMode.Modelview);
 				Program.Renderer.PopMatrix(MatrixMode.Projection);
+				// Reinitialize shadows after route loading completes
+				Program.Renderer.ReloadShadowSettings();
 			}
 			else
 			{

@@ -61,6 +61,10 @@ namespace ObjectViewer
 			// Initialize sun direction sliders from current light position
 			InitializeSunSliders();
 
+			// Wire up shadow resolution change to enable/disable related controls
+			comboBoxShadowResolution.SelectedIndexChanged += comboBoxShadowResolution_SelectedIndexChanged;
+			UpdateShadowControlsEnabled();
+
 			comboBoxLeft.DataSource = Enum.GetValues(typeof(Key));
 			comboBoxLeft.SelectedItem = Interface.CurrentOptions.CameraMoveLeft;
 			comboBoxRight.DataSource = Enum.GetValues(typeof(Key));
@@ -78,25 +82,34 @@ namespace ObjectViewer
 
 		private void InitializeSunSliders()
 		{
-			// Convert current OptionLightPosition (direction vector) to azimuth/elevation
-			var lp = Program.Renderer.Lighting.OptionLightPosition;
-			double elevation = Math.Asin(Math.Max(-1.0, Math.Min(1.0, lp.Y))) * 180.0 / Math.PI;
-			double azimuth = Math.Atan2(lp.X, lp.Z) * 180.0 / Math.PI;
-			if (azimuth < 0) azimuth += 360.0;
+			trackBarSunElevation.Value = (int)Interface.CurrentOptions.LightElevation;
+			trackBarSunAzimuth.Value = (int)Interface.CurrentOptions.LightAzimuth;
+			labelSunAzimuthValue.Text = trackBarSunAzimuth.Value + "\u00b0";
+			labelSunElevationValue.Text = trackBarSunElevation.Value + "\u00b0";
+		}
 
-			int elevInt = (int)Math.Round(Math.Max(5, Math.Min(90, elevation)));
-			int azimInt = (int)Math.Round(azimuth) % 360;
+		private void UpdateShadowControlsEnabled()
+		{
+			bool enabled = comboBoxShadowResolution.SelectedIndex != 0; // 0 = Off
+			comboBoxShadowDistance.Enabled = enabled;
+			comboBoxShadowCascades.Enabled = enabled;
+			numericUpDownShadowStrength.Enabled = enabled;
+			trackBarSunAzimuth.Enabled = enabled;
+			trackBarSunElevation.Enabled = enabled;
+		}
 
-			trackBarSunElevation.Value = elevInt;
-			trackBarSunAzimuth.Value = azimInt;
-			labelSunAzimuthValue.Text = azimInt + "\u00b0";
-			labelSunElevationValue.Text = elevInt + "\u00b0";
+		private void comboBoxShadowResolution_SelectedIndexChanged(object sender, EventArgs e)
+		{
+			UpdateShadowControlsEnabled();
 		}
 
 		private void UpdateSunDirection()
 		{
-			double azimuthRad = trackBarSunAzimuth.Value * Math.PI / 180.0;
-			double elevationRad = trackBarSunElevation.Value * Math.PI / 180.0;
+			Interface.CurrentOptions.LightAzimuth = trackBarSunAzimuth.Value;
+			Interface.CurrentOptions.LightElevation = trackBarSunElevation.Value;
+
+			double azimuthRad = Interface.CurrentOptions.LightAzimuth * Math.PI / 180.0;
+			double elevationRad = Interface.CurrentOptions.LightElevation * Math.PI / 180.0;
 
 			// Convert spherical to direction vector
 			float x = (float)(Math.Sin(azimuthRad) * Math.Cos(elevationRad));

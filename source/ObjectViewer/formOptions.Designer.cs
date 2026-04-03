@@ -102,6 +102,7 @@ namespace ObjectViewer
             this.tabControl1.Controls.Add(this.tabPageOptions);
             this.tabControl1.Controls.Add(this.tabPageShadows);
             this.tabControl1.Controls.Add(this.tabPageKeys);
+            this.tabControl1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
             this.tabControl1.Location = new System.Drawing.Point(1, 12);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
@@ -133,6 +134,7 @@ namespace ObjectViewer
             this.tabPageOptions.Controls.Add(this.labelInterpolationMode);
             this.tabPageOptions.Controls.Add(this.labelInterpolationSettings);
             this.tabPageOptions.Controls.Add(this.InterpolationMode);
+            this.tabPageOptions.AutoScroll = true;
             this.tabPageOptions.Location = new System.Drawing.Point(4, 22);
             this.tabPageOptions.Name = "tabPageOptions";
             this.tabPageOptions.Padding = new System.Windows.Forms.Padding(3);
@@ -399,12 +401,13 @@ namespace ObjectViewer
             this.tabPageShadows.Controls.Add(this.labelSunElevation);
             this.tabPageShadows.Controls.Add(this.trackBarSunElevation);
             this.tabPageShadows.Controls.Add(this.labelSunElevationValue);
+            this.tabPageShadows.AutoScroll = true;
             this.tabPageShadows.Location = new System.Drawing.Point(4, 22);
             this.tabPageShadows.Name = "tabPageShadows";
             this.tabPageShadows.Padding = new System.Windows.Forms.Padding(3);
             this.tabPageShadows.Size = new System.Drawing.Size(304, 348);
             this.tabPageShadows.TabIndex = 2;
-            this.tabPageShadows.Text = "Shadows";
+            this.tabPageShadows.Text = "Shadow && Lighting";
             this.tabPageShadows.UseVisualStyleBackColor = true;
             // 
             // comboBoxShadowResolution
@@ -583,6 +586,7 @@ namespace ObjectViewer
             this.tabPageKeys.Controls.Add(this.labelRight);
             this.tabPageKeys.Controls.Add(this.comboBoxLeft);
             this.tabPageKeys.Controls.Add(this.labelLeft);
+            this.tabPageKeys.AutoScroll = true;
             this.tabPageKeys.Location = new System.Drawing.Point(4, 22);
             this.tabPageKeys.Name = "tabPageKeys";
             this.tabPageKeys.Padding = new System.Windows.Forms.Padding(3);
@@ -705,6 +709,7 @@ namespace ObjectViewer
             // 
             // CloseButton
             // 
+            this.CloseButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.CloseButton.Location = new System.Drawing.Point(234, 399);
             this.CloseButton.Name = "CloseButton";
             this.CloseButton.Size = new System.Drawing.Size(75, 23);
@@ -737,6 +742,7 @@ namespace ObjectViewer
             this.ClientSize = new System.Drawing.Size(311, 434);
             this.Controls.Add(this.CloseButton);
             this.Controls.Add(this.tabControl1);
+            this.MinimumSize = new System.Drawing.Size(330, 400);
             this.Name = "formOptions";
             this.ShowIcon = false;
             this.ShowInTaskbar = false;
