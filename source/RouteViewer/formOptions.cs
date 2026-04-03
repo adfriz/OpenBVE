@@ -8,6 +8,7 @@ using System.ComponentModel;
 using System.Windows.Forms;
 
 using OpenBveApi.Interface;
+using OpenBveApi.Math;
 
 namespace RouteViewer
 {
@@ -58,7 +59,71 @@ namespace RouteViewer
                 default: comboBoxShadowCascades.SelectedIndex = 1; break;
             }
 
-            numericUpDownShadowStrength.Value = (decimal)Interface.CurrentOptions.ShadowStrength;
+            numericUpDownShadowStrength.Minimum = 1;
+            numericUpDownShadowStrength.Maximum = 100;
+            numericUpDownShadowStrength.Increment = 5;
+            numericUpDownShadowStrength.DecimalPlaces = 0;
+            numericUpDownShadowStrength.Value = (decimal)Math.Round(Interface.CurrentOptions.ShadowStrength * 100.0);
+            if (numericUpDownShadowStrength.Value < 1) numericUpDownShadowStrength.Value = 1;
+            numericUpDownShadowStrength.Refresh();
+
+            // Initialize sun direction sliders from current light position
+            InitializeSunSliders();
+
+            // Wire up shadow resolution change to enable/disable related controls
+            comboBoxShadowResolution.SelectedIndexChanged += comboBoxShadowResolution_SelectedIndexChanged;
+            UpdateShadowControlsEnabled();
+        }
+
+        private void InitializeSunSliders()
+        {
+            trackBarSunElevation.Value = (int)Interface.CurrentOptions.LightElevation;
+            trackBarSunAzimuth.Value = (int)Interface.CurrentOptions.LightAzimuth;
+            labelSunAzimuthValue.Text = trackBarSunAzimuth.Value + "\u00b0";
+            labelSunElevationValue.Text = trackBarSunElevation.Value + "\u00b0";
+        }
+
+        private void UpdateShadowControlsEnabled()
+        {
+            bool enabled = comboBoxShadowResolution.SelectedIndex != 0; // 0 = Off
+            comboBoxShadowDistance.Enabled = enabled;
+            comboBoxShadowCascades.Enabled = enabled;
+            numericUpDownShadowStrength.Enabled = enabled;
+            trackBarSunAzimuth.Enabled = enabled;
+            trackBarSunElevation.Enabled = enabled;
+        }
+
+        private void comboBoxShadowResolution_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            UpdateShadowControlsEnabled();
+        }
+
+        private void UpdateSunDirection()
+        {
+            Interface.CurrentOptions.LightAzimuth = trackBarSunAzimuth.Value;
+            Interface.CurrentOptions.LightElevation = trackBarSunElevation.Value;
+
+            double azimuthRad = Interface.CurrentOptions.LightAzimuth * Math.PI / 180.0;
+            double elevationRad = Interface.CurrentOptions.LightElevation * Math.PI / 180.0;
+
+            // Convert spherical to direction vector
+            float x = (float)(Math.Sin(azimuthRad) * Math.Cos(elevationRad));
+            float y = (float)(Math.Sin(elevationRad));
+            float z = (float)(Math.Cos(azimuthRad) * Math.Cos(elevationRad));
+
+            Program.Renderer.Lighting.OptionLightPosition = new Vector3(x, y, z);
+        }
+
+        private void trackBarSunAzimuth_Scroll(object sender, EventArgs e)
+        {
+            labelSunAzimuthValue.Text = trackBarSunAzimuth.Value + "\u00b0";
+            UpdateSunDirection();
+        }
+
+        private void trackBarSunElevation_Scroll(object sender, EventArgs e)
+        {
+            labelSunElevationValue.Text = trackBarSunElevation.Value + "\u00b0";
+            UpdateSunDirection();
         }
 
         internal static DialogResult ShowOptions()
@@ -192,7 +257,7 @@ namespace RouteViewer
                 case 2: Interface.CurrentOptions.ShadowCascades = ShadowCascadeCount.Four; break;
             }
 
-            Interface.CurrentOptions.ShadowStrength = (float)numericUpDownShadowStrength.Value;
+            Interface.CurrentOptions.ShadowStrength = (double)numericUpDownShadowStrength.Value / 100.0;
 
             if (prevShadowRes != Interface.CurrentOptions.ShadowResolution ||
                 prevShadowDist != Interface.CurrentOptions.ShadowDrawDistance ||
@@ -201,6 +266,8 @@ namespace RouteViewer
             {
                 Program.Renderer.ReloadShadowSettings();
             }
+
+            // Sun direction is already updated in real-time via slider events
 
 			Interface.CurrentOptions.Save(Path.CombineFile(Program.FileSystem.SettingsFolder, "1.5.0/options_rv.cfg"));
 			for (int i = 0; i < Program.CurrentHost.Plugins.Length; i++)
