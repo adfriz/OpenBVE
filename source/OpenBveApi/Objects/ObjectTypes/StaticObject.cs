@@ -873,72 +873,34 @@ namespace OpenBveApi.Objects
 
 			// Squish faces that have the same material.
 			{
-				bool[] canMerge = new bool[f];
-				for (int i = 0; i < f - 1; ++i)
+				Dictionary<long, int> mergedMap = new Dictionary<long, int>();
+				int newF = 0;
+				for (int i = 0; i < f; ++i)
 				{
-					int mergeVertices = 0;
-
-					// Type of current face
-					FaceFlags type = Mesh.Faces[i].Flags & FaceFlags.FaceTypeMask;
-					FaceFlags face = Mesh.Faces[i].Flags & FaceFlags.Face2Mask;
-
-					// Find faces that can be merged
-					for (int j = i + 1; j < f; ++j)
+					// Only merge triangular faces to keep geometry consistent
+					if ((Mesh.Faces[i].Flags & FaceFlags.FaceTypeMask) != FaceFlags.Triangles)
 					{
-						FaceFlags type2 = Mesh.Faces[j].Flags & FaceFlags.FaceTypeMask;
-						FaceFlags face2 = Mesh.Faces[j].Flags & FaceFlags.Face2Mask;
-
-						// Conditions for face merger
-						bool mergeable = (type == FaceFlags.Triangles) &&
-						                 (type == type2) &&
-						                 (face == face2) &&
-						                 (Mesh.Faces[i].Material == Mesh.Faces[j].Material);
-
-						canMerge[j] = mergeable;
-						mergeVertices += mergeable ? Mesh.Faces[j].Vertices.Length : 0;
-					}
-
-					if (mergeVertices == 0)
-					{
+						Mesh.Faces[newF++] = Mesh.Faces[i];
 						continue;
 					}
 
-					// Current end of array index
-					int lastVertexIt = Mesh.Faces[i].Vertices.Length;
-
-					// Resize current face's vertices to have enough room
-					Array.Resize(ref Mesh.Faces[i].Vertices, lastVertexIt + mergeVertices);
-
-					// Merge faces
-					for (int j = i + 1; j < f; ++j)
+					// Build key from Flags (upper 32-bit) and Material index (lower 32-bit)
+					long key = ((long)Mesh.Faces[i].Flags << 32) | (uint)Mesh.Faces[i].Material;
+					if (mergedMap.TryGetValue(key, out int target))
 					{
-						if (canMerge[j])
-						{
-							// Copy vertices
-							Mesh.Faces[j].Vertices.CopyTo(Mesh.Faces[i].Vertices, lastVertexIt);
-
-							// Adjust index
-							lastVertexIt += Mesh.Faces[j].Vertices.Length;
-						}
+						// Merge vertices into the existing target face
+						int oldLen = Mesh.Faces[target].Vertices.Length;
+						Array.Resize(ref Mesh.Faces[target].Vertices, oldLen + Mesh.Faces[i].Vertices.Length);
+						Array.Copy(Mesh.Faces[i].Vertices, 0, Mesh.Faces[target].Vertices, oldLen, Mesh.Faces[i].Vertices.Length);
 					}
-
-					// Remove now unused faces
-					int jump = 0;
-					for (int j = i + 1; j < f; ++j)
+					else
 					{
-						if (canMerge[j])
-						{
-							jump += 1;
-						}
-						else if (jump > 0)
-						{
-							Mesh.Faces[j - jump] = Mesh.Faces[j];
-						}
+						// New unique face/material combination found
+						mergedMap[key] = newF;
+						Mesh.Faces[newF++] = Mesh.Faces[i];
 					}
-
-					// Remove faces removed from face count
-					f -= jump;
 				}
+				f = newF;
 			}
 			// finalize arrays
 
