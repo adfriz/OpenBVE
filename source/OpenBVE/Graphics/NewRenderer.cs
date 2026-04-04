@@ -142,12 +142,12 @@ namespace OpenBve.Graphics
 			TransformedLightPosition = new Vector3(Lighting.OptionLightPosition.X, Lighting.OptionLightPosition.Y, -Lighting.OptionLightPosition.Z);
 			TransformedLightPosition.Transform(CurrentViewMatrix);
 
+			UpdateViewport(ViewportChangeMode.ChangeToScenery);
+
 			if (AvailableNewRenderer)
 			{
 				PerformCSMShadowPass();
 			}
-
-			UpdateViewport(ViewportChangeMode.ChangeToScenery);
 
 			if (Lighting.ShouldInitialize)
 			{
