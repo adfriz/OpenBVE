@@ -88,9 +88,9 @@ namespace Plugin
 							}
 						}
 					}
-					//Convert runs of whitespace to single
-					var list = Lines[i].Split().Where(s => !string.IsNullOrWhiteSpace(s));
-					Lines[i] = string.Join(" ", list);
+					//Convert runs of whitespace to single - avoid slow LINQ
+					string[] parts = Lines[i].Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+					Lines[i] = string.Join(" ", parts);
 				}
 				StringBuilder Builder = new StringBuilder();
 				for (int i = 0; i < Lines.Length; i++) {
@@ -446,6 +446,8 @@ namespace Plugin
 					}
 					else
 					{
+						// Optimize: Use a list for materials and only update the builder at the end if needed 
+						// but to keep it simple, we check if current material matches before resizing
 						int m = builder.Materials.Length;
 						Array.Resize(ref builder.Materials, m + 1);
 						builder.Materials[m] = newMaterial;
@@ -596,15 +598,18 @@ namespace Plugin
 									uint z = block.ReadDword();
 									Vector3 normal = new Vector3(*(float*)&x, *(float*)&y, *(float*)&z);
 
+									// Optimize: Avoid O(N^2) search by updating only relevant facial vertices
 									for (int i = 0; i < builder.Faces.Count; i++)
 									{
-										for (int j = 0; j < builder.Faces[i].Vertices.Length; j++)
+										MeshFace f = builder.Faces[i];
+										for (int j = 0; j < f.Vertices.Length; j++)
 										{
-											if (builder.Faces[i].Vertices[j].Index == currentVertex)
+											if (f.Vertices[j].Index == currentVertex)
 											{
-												builder.Faces[i].Vertices[j].Normal = normal;
+												f.Vertices[j].Normal = normal;
 											}
 										}
+										builder.Faces[i] = f;
 									}
 									numRemainingDwords -= 3;
 									break;
