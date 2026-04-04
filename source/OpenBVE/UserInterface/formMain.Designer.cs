@@ -158,6 +158,8 @@ namespace OpenBve {
             this.labelShadowStrength = new System.Windows.Forms.Label();
             this.trackbarShadowStrength = new System.Windows.Forms.TrackBar();
             this.labelShadowStrengthValue = new System.Windows.Forms.Label();
+            this.labelShadowBias = new System.Windows.Forms.Label();
+            this.updownShadowBias = new System.Windows.Forms.NumericUpDown();
             this.panelOptionsLeft = new System.Windows.Forms.Panel();
             this.groupboxDisplayMode = new System.Windows.Forms.GroupBox();
             this.comboBoxFont = new System.Windows.Forms.ComboBox();
@@ -1972,12 +1974,14 @@ namespace OpenBve {
             this.groupboxShadows.Controls.Add(this.labelShadowStrength);
             this.groupboxShadows.Controls.Add(this.trackbarShadowStrength);
             this.groupboxShadows.Controls.Add(this.labelShadowStrengthValue);
+            this.groupboxShadows.Controls.Add(this.labelShadowBias);
+            this.groupboxShadows.Controls.Add(this.updownShadowBias);
             this.groupboxShadows.ForeColor = System.Drawing.Color.Black;
             this.groupboxShadows.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.groupboxShadows.Location = new System.Drawing.Point(0, 520);
             this.groupboxShadows.Name = "groupboxShadows";
-            this.groupboxShadows.Size = new System.Drawing.Size(299, 150);
+            this.groupboxShadows.Size = new System.Drawing.Size(299, 180);
             this.groupboxShadows.TabIndex = 30;
             this.groupboxShadows.TabStop = false;
             this.groupboxShadows.Text = "Shadows";
@@ -2081,6 +2085,39 @@ namespace OpenBve {
             this.labelShadowStrengthValue.Size = new System.Drawing.Size(27, 13);
             this.labelShadowStrengthValue.TabIndex = 8;
             this.labelShadowStrengthValue.Text = "70%";
+            // 
+            // labelShadowBias
+            // 
+            this.labelShadowBias.AutoSize = true;
+            this.labelShadowBias.Location = new System.Drawing.Point(8, 154);
+            this.labelShadowBias.Name = "labelShadowBias";
+            this.labelShadowBias.Size = new System.Drawing.Size(102, 13);
+            this.labelShadowBias.TabIndex = 8;
+            this.labelShadowBias.Text = "Shadow Bias:";
+            // 
+            // updownShadowBias
+            // 
+            this.updownShadowBias.DecimalPlaces = 6;
+            this.updownShadowBias.Increment = new decimal(new int[] {
+            1,
+            0,
+            0,
+            393216});
+            this.updownShadowBias.Location = new System.Drawing.Point(120, 151);
+            this.updownShadowBias.Maximum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.updownShadowBias.Name = "updownShadowBias";
+            this.updownShadowBias.Size = new System.Drawing.Size(120, 20);
+            this.updownShadowBias.TabIndex = 9;
+            this.updownShadowBias.Value = new decimal(new int[] {
+            5,
+            0,
+            0,
+            393216});
+            this.updownShadowBias.ValueChanged += new System.EventHandler(this.updownShadowBias_ValueChanged);
             this.groupBoxPackageOptions.TabIndex = 19;
             this.groupBoxPackageOptions.TabStop = false;
             this.groupBoxPackageOptions.Text = "Package Management";
@@ -6262,6 +6299,8 @@ namespace OpenBve {
         private System.Windows.Forms.Label labelShadowStrength;
         private System.Windows.Forms.TrackBar trackbarShadowStrength;
         private System.Windows.Forms.Label labelShadowStrengthValue;
+        private System.Windows.Forms.Label labelShadowBias;
+        private System.Windows.Forms.NumericUpDown updownShadowBias;
         private System.Windows.Forms.GroupBox groupboxShadows;
         private System.Windows.Forms.ComboBox comboboxVSync;
         private System.Windows.Forms.Label labelVSync;

@@ -489,11 +489,13 @@ namespace OpenBve {
 			// Shadow Strength
 			trackbarShadowStrength.Value = (int)(Interface.CurrentOptions.ShadowStrength * 100.0);
 			labelShadowStrengthValue.Text = trackbarShadowStrength.Value + "%";
+			updownShadowBias.Value = (decimal)Interface.CurrentOptions.ShadowBias;
 			// Enable/disable shadow sub-controls based on resolution setting
 			bool shadowEnabled = Interface.CurrentOptions.ShadowResolution != ShadowMapResolution.Off;
 			comboboxShadowDistance.Enabled = shadowEnabled;
 			comboboxShadowCascades.Enabled = shadowEnabled;
 			trackbarShadowStrength.Enabled = shadowEnabled;
+			updownShadowBias.Enabled = shadowEnabled;
 			checkboxBlackBox.Checked = Interface.CurrentOptions.BlackBox;
 			checkBoxLoadingSway.Checked = Interface.CurrentOptions.LoadingSway;
 			checkBoxTransparencyFix.Checked = Interface.CurrentOptions.OldTransparencyMode;
@@ -734,6 +736,12 @@ namespace OpenBve {
 			labelShadowDistance.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "shadows_distance" });
 			labelShadowCascades.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "shadows_cascades" });
 			labelShadowStrength.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "shadows_strength" });
+			labelShadowBias.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "shadows_bias" });
+			if (labelShadowBias.Text == "shadows_bias")
+			{
+				labelShadowBias.Text = "Shadow Bias:";
+			}
+
 
 			// Combobox items (shadow resolution)
 			comboboxShadowResolution.Items[0] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "shadows_resolution_off" });
@@ -806,8 +814,12 @@ namespace OpenBve {
 			labelRouteInstallDirectory.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","package_route_directory"});
 			labelTrainInstallDirectory.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","package_train_directory"});
 			labelOtherInstallDirectory.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","package_other_directory"});
-			labelOtherInstallDirectory.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "package_msts_directory" });
+			label1.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "package_msts_directory" });
 			labelPackageCompression.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","package_compression"});
+			comboBoxCompressionFormat.Items.Clear();
+			comboBoxCompressionFormat.Items.Add("Zip");
+			comboBoxCompressionFormat.Items.Add("Tar.GZ");
+			comboBoxCompressionFormat.Items.Add("BZ2");
 			//Kiosk Mode
 			groupBoxKioskMode.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","kiosk_mode"});
 			checkBoxEnableKiosk.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","kiosk_mode_enable"});

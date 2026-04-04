@@ -1186,6 +1186,9 @@
 					<trans-unit id="shadows_strength">
 						<source>Shadow Strength:</source>
 					</trans-unit>
+					<trans-unit id="shadows_bias">
+						<source>Shadow Bias:</source>
+					</trans-unit>
 					<trans-unit id="misc">
 						<source>Miscellaneous</source>
 					</trans-unit>

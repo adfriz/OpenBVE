@@ -79,6 +79,9 @@ namespace LibRender2.Shadows
 		/// </summary>
 		public static double GetStableRadius(double zNear, double zFar, double fovYRad, double aspect)
 		{
+			// Clamp min FOV to 45 degrees (0.785 rad) to prevent the sphere from shrinking too much when zooming.
+			// This ensures large objects (like trains) don't get clipped from the shadow map at high zoom.
+			fovYRad = Math.Max(fovYRad, 0.785398); 
 			// Half-height/width of the far plane of this sub-frustum in camera space
 			double h = zFar * Math.Tan(fovYRad / 2.0);
 			double w = h * aspect;

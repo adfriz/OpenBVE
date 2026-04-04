@@ -75,6 +75,8 @@ namespace RouteViewer
             this.labelSunElevation = new System.Windows.Forms.Label();
             this.trackBarSunElevation = new System.Windows.Forms.TrackBar();
             this.labelSunElevationValue = new System.Windows.Forms.Label();
+            this.labelShadowBias = new System.Windows.Forms.Label();
+            this.numericUpDownShadowBias = new System.Windows.Forms.NumericUpDown();
             this.tabControl1.SuspendLayout();
             this.tabPageOptions.SuspendLayout();
             this.tabPageShadows.SuspendLayout();
@@ -86,6 +88,7 @@ namespace RouteViewer
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownShadowStrength)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBarSunAzimuth)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBarSunElevation)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownShadowBias)).BeginInit();
             this.SuspendLayout();
             // 
             // tabControl1
@@ -155,6 +158,8 @@ namespace RouteViewer
             this.tabPageShadows.Controls.Add(this.labelSunElevation);
             this.tabPageShadows.Controls.Add(this.trackBarSunElevation);
             this.tabPageShadows.Controls.Add(this.labelSunElevationValue);
+            this.tabPageShadows.Controls.Add(this.labelShadowBias);
+            this.tabPageShadows.Controls.Add(this.numericUpDownShadowBias);
             this.tabPageShadows.AutoScroll = true;
             this.tabPageShadows.Location = new System.Drawing.Point(4, 22);
             this.tabPageShadows.Name = "tabPageShadows";
@@ -574,7 +579,7 @@ namespace RouteViewer
             // 
             this.labelSunDirection.AutoSize = true;
             this.labelSunDirection.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.labelSunDirection.Location = new System.Drawing.Point(6, 150);
+            this.labelSunDirection.Location = new System.Drawing.Point(6, 190);
             this.labelSunDirection.Name = "labelSunDirection";
             this.labelSunDirection.Size = new System.Drawing.Size(96, 15);
             this.labelSunDirection.TabIndex = 36;
@@ -583,7 +588,7 @@ namespace RouteViewer
             // labelSunAzimuth
             // 
             this.labelSunAzimuth.AutoSize = true;
-            this.labelSunAzimuth.Location = new System.Drawing.Point(6, 172);
+            this.labelSunAzimuth.Location = new System.Drawing.Point(6, 212);
             this.labelSunAzimuth.Name = "labelSunAzimuth";
             this.labelSunAzimuth.Size = new System.Drawing.Size(47, 13);
             this.labelSunAzimuth.TabIndex = 37;
@@ -591,7 +596,7 @@ namespace RouteViewer
             // 
             // trackBarSunAzimuth
             // 
-            this.trackBarSunAzimuth.Location = new System.Drawing.Point(6, 188);
+            this.trackBarSunAzimuth.Location = new System.Drawing.Point(6, 228);
             this.trackBarSunAzimuth.Maximum = 360;
             this.trackBarSunAzimuth.Minimum = 0;
             this.trackBarSunAzimuth.Name = "trackBarSunAzimuth";
@@ -604,7 +609,7 @@ namespace RouteViewer
             // labelSunAzimuthValue
             // 
             this.labelSunAzimuthValue.AutoSize = true;
-            this.labelSunAzimuthValue.Location = new System.Drawing.Point(247, 192);
+            this.labelSunAzimuthValue.Location = new System.Drawing.Point(247, 232);
             this.labelSunAzimuthValue.Name = "labelSunAzimuthValue";
             this.labelSunAzimuthValue.Size = new System.Drawing.Size(31, 13);
             this.labelSunAzimuthValue.TabIndex = 39;
@@ -613,7 +618,7 @@ namespace RouteViewer
             // labelSunElevation
             // 
             this.labelSunElevation.AutoSize = true;
-            this.labelSunElevation.Location = new System.Drawing.Point(6, 236);
+            this.labelSunElevation.Location = new System.Drawing.Point(6, 276);
             this.labelSunElevation.Name = "labelSunElevation";
             this.labelSunElevation.Size = new System.Drawing.Size(54, 13);
             this.labelSunElevation.TabIndex = 40;
@@ -621,7 +626,7 @@ namespace RouteViewer
             // 
             // trackBarSunElevation
             // 
-            this.trackBarSunElevation.Location = new System.Drawing.Point(6, 252);
+            this.trackBarSunElevation.Location = new System.Drawing.Point(6, 292);
             this.trackBarSunElevation.Maximum = 90;
             this.trackBarSunElevation.Minimum = 5;
             this.trackBarSunElevation.Name = "trackBarSunElevation";
@@ -634,11 +639,31 @@ namespace RouteViewer
             // labelSunElevationValue
             // 
             this.labelSunElevationValue.AutoSize = true;
-            this.labelSunElevationValue.Location = new System.Drawing.Point(247, 256);
+            this.labelSunElevationValue.Location = new System.Drawing.Point(247, 296);
             this.labelSunElevationValue.Name = "labelSunElevationValue";
             this.labelSunElevationValue.Size = new System.Drawing.Size(25, 13);
             this.labelSunElevationValue.TabIndex = 42;
             this.labelSunElevationValue.Text = "60°";
+            // 
+            // labelShadowBias
+            // 
+            this.labelShadowBias.AutoSize = true;
+            this.labelShadowBias.Location = new System.Drawing.Point(6, 150);
+            this.labelShadowBias.Name = "labelShadowBias";
+            this.labelShadowBias.Size = new System.Drawing.Size(72, 13);
+            this.labelShadowBias.TabIndex = 43;
+            this.labelShadowBias.Text = "Shadow Bias:";
+            // 
+            // numericUpDownShadowBias
+            // 
+            this.numericUpDownShadowBias.DecimalPlaces = 6;
+            this.numericUpDownShadowBias.Increment = new decimal(new int[] { 1, 0, 0, 393216 });
+            this.numericUpDownShadowBias.Location = new System.Drawing.Point(160, 148);
+            this.numericUpDownShadowBias.Maximum = new decimal(new int[] { 1, 0, 0, 0 });
+            this.numericUpDownShadowBias.Name = "numericUpDownShadowBias";
+            this.numericUpDownShadowBias.Size = new System.Drawing.Size(120, 20);
+            this.numericUpDownShadowBias.TabIndex = 44;
+            this.numericUpDownShadowBias.Value = new decimal(new int[] { 5, 0, 0, 393216 });
             // 
             // button1
             // 
@@ -730,5 +755,7 @@ namespace RouteViewer
         private System.Windows.Forms.Label labelSunElevation;
         private System.Windows.Forms.TrackBar trackBarSunElevation;
         private System.Windows.Forms.Label labelSunElevationValue;
+        private System.Windows.Forms.Label labelShadowBias;
+        private System.Windows.Forms.NumericUpDown numericUpDownShadowBias;
     }
 }

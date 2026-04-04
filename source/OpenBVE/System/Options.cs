@@ -307,6 +307,7 @@ namespace OpenBve
 				Builder.AppendLine("shadowdrawdistance = " + (int)ShadowDrawDistance);
 				Builder.AppendLine("shadowcascades = " + (int)ShadowCascades);
 				Builder.AppendLine("shadowstrength = " + ShadowStrength.ToString(Culture));
+				Builder.AppendLine("shadowbias = " + ShadowBias.ToString(Culture));
 				Builder.AppendLine("fpslimit = " + FPSLimit.ToString(Culture));
 				Builder.AppendLine();
 				Builder.AppendLine("[objectOptimization]");
@@ -484,6 +485,9 @@ namespace OpenBve
 							block.GetEnumValue(OptionsKey.ShadowDrawDistance, out Interface.CurrentOptions.ShadowDrawDistance);
 							block.GetEnumValue(OptionsKey.ShadowCascades, out Interface.CurrentOptions.ShadowCascades);
 							block.TryGetValue(OptionsKey.ShadowStrength, ref CurrentOptions.ShadowStrength);
+							block.TryGetValue(OptionsKey.ShadowBias, ref CurrentOptions.ShadowBias);
+							if (CurrentOptions.ShadowBias < 0.0) CurrentOptions.ShadowBias = 0.0;
+							if (CurrentOptions.ShadowBias > 1.0) CurrentOptions.ShadowBias = 1.0;
 							block.GetValue(OptionsKey.FPSLimit, out CurrentOptions.FPSLimit);
 							if (CurrentOptions.FPSLimit < 0)
 							{
