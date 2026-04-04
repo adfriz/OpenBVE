@@ -417,7 +417,8 @@ namespace LibRender2.Shaders
 			GL.ProgramUniform4(handle, UniformLayout.MaterialSpecular, MaterialSpecular.R / 255.0f, MaterialSpecular.G / 255.0f, MaterialSpecular.B / 255.0f, MaterialSpecular.A / 255.0f);
 		}
 
-		public void SetMaterialEmission(Color24 MaterialEmission)
+		// Accepts Color32 for API consistency, but only sends RGB (vec3) to the GLSL shader
+		public void SetMaterialEmission(Color32 MaterialEmission)
 		{
 			GL.ProgramUniform3(handle, UniformLayout.MaterialEmission, MaterialEmission.R / 255.0f, MaterialEmission.G / 255.0f, MaterialEmission.B / 255.0f);
 		}

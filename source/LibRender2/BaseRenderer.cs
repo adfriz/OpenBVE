@@ -648,12 +648,16 @@ namespace LibRender2
 								GL.BindTexture(TextureTarget.Texture2D,
 									material.DaytimeTexture.OpenGlTextures[(int)(material.WrapMode ?? OpenGlTextureWrapMode.ClampClamp)].Name);
 								ShadowDepthShaderProgram.SetHasTexture(true);
-								ShadowDepthShaderProgram.SetAlphaCutoff(0.5f);
 							}
 							else
 							{
 								ShadowDepthShaderProgram.SetHasTexture(false);
 							}
+
+							// Set alpha cutoff + material alpha for all faces, so untextured semi-transparent
+							// geometry (e.g. glass with Color,80,80,160,90) is also correctly discarded
+							ShadowDepthShaderProgram.SetAlphaCutoff(0.5f);
+							ShadowDepthShaderProgram.SetMaterialAlpha(material.Color.A / 255.0f);
 
 #pragma warning disable CS0618
 							ObjectState state = face.Object;
@@ -721,6 +725,7 @@ namespace LibRender2
 				DefaultShader.SetCascadeShadowMapUnit(i, 4 + i);
 				DefaultShader.SetCascadeFarDistance(i, (float)CSMCaster.CascadeFarDistances[i]);
 				DefaultShader.SetCascadeBias(i, CSMCaster.CascadeBiases[i] + (float)currentOptions.ShadowBias);
+				DefaultShader.SetNormalBias(i, (float)currentOptions.ShadowNormalBias);
 			}
 
 
@@ -1822,7 +1827,7 @@ namespace LibRender2
 				}
 			}
 
-			GL.Material(MaterialFace.FrontAndBack, MaterialParameter.Emission, (material.Flags & MaterialFlags.Emissive) != 0 ? new Color4(material.EmissiveColor.R, material.EmissiveColor.G, material.EmissiveColor.B, 255) : Color4.Black);
+			GL.Material(MaterialFace.FrontAndBack, MaterialParameter.Emission, (material.Flags & MaterialFlags.Emissive) != 0 ? new Color4(material.EmissiveColor.R, material.EmissiveColor.G, material.EmissiveColor.B, material.EmissiveColor.A) : Color4.Black);
 
 			// fog
 			if (Fog.Enabled)

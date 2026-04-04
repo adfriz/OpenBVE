@@ -67,6 +67,7 @@ namespace RouteViewer
             if (numericUpDownShadowStrength.Value < 1) numericUpDownShadowStrength.Value = 1;
             numericUpDownShadowStrength.Refresh();
             numericUpDownShadowBias.Value = (decimal)Interface.CurrentOptions.ShadowBias;
+            numericUpDownShadowNormalBias.Value = (decimal)Interface.CurrentOptions.ShadowNormalBias;
 
 
             // Initialize sun direction sliders from current light position
@@ -92,6 +93,9 @@ namespace RouteViewer
             comboBoxShadowCascades.Enabled = enabled;
             numericUpDownShadowStrength.Enabled = enabled;
             numericUpDownShadowBias.Enabled = enabled;
+            numericUpDownShadowBias.ReadOnly = !enabled;
+            numericUpDownShadowNormalBias.Enabled = enabled;
+            numericUpDownShadowNormalBias.ReadOnly = !enabled;
 
             trackBarSunAzimuth.Enabled = enabled;
             trackBarSunElevation.Enabled = enabled;
@@ -236,6 +240,7 @@ namespace RouteViewer
             var prevShadowCasc = Interface.CurrentOptions.ShadowCascades;
             var prevShadowStr = Interface.CurrentOptions.ShadowStrength;
             var prevShadowBias = Interface.CurrentOptions.ShadowBias;
+            var prevShadowNormalBias = Interface.CurrentOptions.ShadowNormalBias;
 
 
             switch (comboBoxShadowResolution.SelectedIndex)
@@ -265,13 +270,15 @@ namespace RouteViewer
 
             Interface.CurrentOptions.ShadowStrength = (double)numericUpDownShadowStrength.Value / 100.0;
             Interface.CurrentOptions.ShadowBias = (double)numericUpDownShadowBias.Value;
+            Interface.CurrentOptions.ShadowNormalBias = (double)numericUpDownShadowNormalBias.Value;
 
 
             if (prevShadowRes != Interface.CurrentOptions.ShadowResolution ||
                 prevShadowDist != Interface.CurrentOptions.ShadowDrawDistance ||
                 prevShadowCasc != Interface.CurrentOptions.ShadowCascades ||
                 Math.Abs(prevShadowStr - Interface.CurrentOptions.ShadowStrength) > 0.01f ||
-                Math.Abs(prevShadowBias - Interface.CurrentOptions.ShadowBias) > 0.000001f)
+                Math.Abs(prevShadowBias - Interface.CurrentOptions.ShadowBias) > 0.000001f ||
+                Math.Abs(prevShadowNormalBias - Interface.CurrentOptions.ShadowNormalBias) > 0.01f)
             {
 
                 Program.Renderer.ReloadShadowSettings();

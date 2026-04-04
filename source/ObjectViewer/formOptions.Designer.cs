@@ -84,6 +84,8 @@ namespace ObjectViewer
             this.labelSunElevationValue = new System.Windows.Forms.Label();
             this.labelShadowBias = new System.Windows.Forms.Label();
             this.numericUpDownShadowBias = new System.Windows.Forms.NumericUpDown();
+            this.labelShadowNormalBias = new System.Windows.Forms.Label();
+            this.numericUpDownShadowNormalBias = new System.Windows.Forms.NumericUpDown();
             this.labelAutoReloadChanged = new System.Windows.Forms.Label();
             this.checkBoxAutoReload = new System.Windows.Forms.CheckBox();
             this.tabControl1.SuspendLayout();
@@ -97,6 +99,7 @@ namespace ObjectViewer
             ((System.ComponentModel.ISupportInitialize)(this.trackBarSunAzimuth)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBarSunElevation)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownShadowBias)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownShadowNormalBias)).BeginInit();
             this.tabPageKeys.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -406,6 +409,8 @@ namespace ObjectViewer
             this.tabPageShadows.Controls.Add(this.labelSunElevationValue);
             this.tabPageShadows.Controls.Add(this.labelShadowBias);
             this.tabPageShadows.Controls.Add(this.numericUpDownShadowBias);
+            this.tabPageShadows.Controls.Add(this.labelShadowNormalBias);
+            this.tabPageShadows.Controls.Add(this.numericUpDownShadowNormalBias);
             this.tabPageShadows.AutoScroll = true;
             this.tabPageShadows.Location = new System.Drawing.Point(4, 22);
             this.tabPageShadows.Name = "tabPageShadows";
@@ -596,6 +601,26 @@ namespace ObjectViewer
             this.numericUpDownShadowBias.TabIndex = 51;
             this.numericUpDownShadowBias.Value = new decimal(new int[] { 5, 0, 0, 393216 });
             // 
+            // labelShadowNormalBias
+            // 
+            this.labelShadowNormalBias.AutoSize = true;
+            this.labelShadowNormalBias.Location = new System.Drawing.Point(12, 166);
+            this.labelShadowNormalBias.Name = "labelShadowNormalBias";
+            this.labelShadowNormalBias.Size = new System.Drawing.Size(102, 13);
+            this.labelShadowNormalBias.TabIndex = 52;
+            this.labelShadowNormalBias.Text = "Normal Bias:";
+            // 
+            // numericUpDownShadowNormalBias
+            // 
+            this.numericUpDownShadowNormalBias.DecimalPlaces = 2;
+            this.numericUpDownShadowNormalBias.Increment = new decimal(new int[] { 1, 0, 0, 65536 });
+            this.numericUpDownShadowNormalBias.Location = new System.Drawing.Point(160, 166);
+            this.numericUpDownShadowNormalBias.Maximum = new decimal(new int[] { 10, 0, 0, 0 });
+            this.numericUpDownShadowNormalBias.Name = "numericUpDownShadowNormalBias";
+            this.numericUpDownShadowNormalBias.Size = new System.Drawing.Size(120, 20);
+            this.numericUpDownShadowNormalBias.TabIndex = 53;
+            this.numericUpDownShadowNormalBias.Value = new decimal(new int[] { 2, 0, 0, 0 });
+            // 
             // tabPageKeys
             // 
             this.tabPageKeys.Controls.Add(this.labelControls);
@@ -784,6 +809,8 @@ namespace ObjectViewer
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownShadowStrength)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBarSunAzimuth)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBarSunElevation)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownShadowBias)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownShadowNormalBias)).EndInit();
             this.tabPageKeys.ResumeLayout(false);
             this.tabPageKeys.PerformLayout();
             this.ResumeLayout(false);
@@ -848,6 +875,8 @@ namespace ObjectViewer
 		private System.Windows.Forms.Label labelSunElevationValue;
 		private System.Windows.Forms.Label labelShadowBias;
 		private System.Windows.Forms.NumericUpDown numericUpDownShadowBias;
+		private System.Windows.Forms.Label labelShadowNormalBias;
+		private System.Windows.Forms.NumericUpDown numericUpDownShadowNormalBias;
 		private System.Windows.Forms.CheckBox checkBoxAutoReload;
 		private System.Windows.Forms.Label labelAutoReloadChanged;
 	}

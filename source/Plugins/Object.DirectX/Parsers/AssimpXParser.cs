@@ -214,7 +214,8 @@ namespace Plugin
 				builder.Materials[m].Color = new Color32(mesh.Materials[i].Diffuse);
 				double mPower = mesh.Materials[i].SpecularExponent; //TODO: Unsure what this does...
 				Color24 mSpecular = new Color24(mesh.Materials[i].Specular);
-				builder.Materials[m].EmissiveColor = new Color24(mesh.Materials[i].Emissive);
+				// Wrap Color24 in Color32 for RGBA support; alpha defaults to 255 (opaque)
+				builder.Materials[m].EmissiveColor = new Color32(new Color24(mesh.Materials[i].Emissive));
 				builder.Materials[m].Flags |= MaterialFlags.Emissive; //TODO: Check exact behaviour
 				if (Plugin.EnabledHacks.BlackTransparency)
 				{

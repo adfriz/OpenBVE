@@ -52,7 +52,7 @@ namespace OpenBve {
 			trackbarShadowStrength.Enabled = shadowEnabled;
 			labelShadowStrengthValue.Enabled = shadowEnabled;
 			updownShadowBias.Enabled = shadowEnabled;
-
+			updownShadowNormalBias.Enabled = shadowEnabled;
 
 			if (!shadowEnabled)
 			{
@@ -73,6 +73,11 @@ namespace OpenBve {
 		private void updownShadowBias_ValueChanged(object sender, EventArgs e)
 		{
 			Interface.CurrentOptions.ShadowBias = (double)updownShadowBias.Value;
+		}
+
+		private void updownShadowNormalBias_ValueChanged(object sender, EventArgs e)
+		{
+			Interface.CurrentOptions.ShadowNormalBias = (double)updownShadowNormalBias.Value;
 		}
 
 		

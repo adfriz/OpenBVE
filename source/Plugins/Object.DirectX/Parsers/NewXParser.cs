@@ -423,7 +423,8 @@ namespace Plugin
 					newMaterial.Color = new Color32(block.ReadColor128);
 					double mPower = block.ReadSingle(); //TODO: Unsure what this does...
 					Color24 mSpecular = new Color24(block.ReadColor96);
-					newMaterial.EmissiveColor = new Color24(block.ReadColor96);
+					// Convert Color96 → Color24 → Color32; alpha defaults to 255 (opaque)
+					newMaterial.EmissiveColor = new Color32(new Color24(block.ReadColor96));
 					newMaterial.Flags |= MaterialFlags.Emissive; //TODO: Check exact behaviour
 					if (Plugin.EnabledHacks.BlackTransparency)
 					{
