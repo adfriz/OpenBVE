@@ -1,4 +1,4 @@
-﻿//Simplified BSD License (BSD-2-Clause)
+//Simplified BSD License (BSD-2-Clause)
 //
 //Copyright (c) 2020, S520, The OpenBVE Project
 //
@@ -85,6 +85,39 @@ namespace Plugin
 
 				foreach (AssimpNET.Obj.Mesh mesh in model.Meshes)
 				{
+					// Optimize: Add material once per mesh instead of once per face
+					int m = builder.Materials.Length;
+					Array.Resize(ref builder.Materials, m + 1);
+					builder.Materials[m] = new OpenBveApi.Objects.Material();
+					uint materialIndex = mesh.MaterialIndex;
+					if (materialIndex != AssimpNET.Obj.Mesh.NoMaterial)
+					{
+						AssimpNET.Obj.Material material = model.MaterialMap[model.MaterialLib[(int)materialIndex]];
+						builder.Materials[m].Color = new Color32(material.Diffuse);
+#pragma warning disable 0219
+						//Current openBVE renderer does not support specular color
+						// ReSharper disable once UnusedVariable
+						Color24 mSpecular = new Color24(material.Specular);
+#pragma warning restore 0219
+						builder.Materials[m].EmissiveColor = new Color24(material.Emissive);
+						builder.Materials[m].Flags |= MaterialFlags.Emissive; //TODO: Check exact behaviour
+						if (material.TransparentUsed)
+						{
+							builder.Materials[m].TransparentColor = new Color24(material.Transparent);
+							builder.Materials[m].Flags |= MaterialFlags.TransparentColor;
+						}
+
+						if (material.Texture != null)
+						{
+							builder.Materials[m].DaytimeTexture = Path.CombineFile(currentFolder, material.Texture);
+							if (!System.IO.File.Exists(builder.Materials[m].DaytimeTexture))
+							{
+								Plugin.currentHost.AddMessage(MessageType.Error, true, "Texture " + builder.Materials[m].DaytimeTexture + " was not found in file " + fileName);
+								builder.Materials[m].DaytimeTexture = null;
+							}
+						}
+					}
+
 					foreach (Face face in mesh.Faces)
 					{
 						int nVerts = face.Vertices.Count;
@@ -96,12 +129,11 @@ namespace Plugin
 						for (int i = 0; i < nVerts; i++)
 						{
 							VertexTemplate v = allVertices[(int)face.Vertices[i]].Clone();
-							if (allTexCoords.Count > 0 && i <= allTexCoords.Count && face.TexturCoords.Count > 0 && i <= face.TexturCoords.Count)
+							if (allTexCoords.Count > 0 && i < allTexCoords.Count && face.TexturCoords.Count > 0 && i < face.TexturCoords.Count)
 							{
 								v.TextureCoordinates = allTexCoords[(int)face.TexturCoords[i]];
 							}
 							builder.Vertices.Add(v);
-							
 						}
 
 						MeshFace f = new MeshFace(nVerts);
@@ -113,51 +145,22 @@ namespace Plugin
 								f.Vertices[i].Normal = allNormals[(int)face.Normals[i]];
 							}
 						}
-						f.Material = 1;
+						f.Material = (ushort)m;
 						builder.Faces.Add(f);
-						
-
-						int m = builder.Materials.Length;
-						Array.Resize(ref builder.Materials, m + 1);
-						builder.Materials[m] = new OpenBveApi.Objects.Material();
-						uint materialIndex = mesh.MaterialIndex;
-						if (materialIndex != AssimpNET.Obj.Mesh.NoMaterial)
-						{
-							AssimpNET.Obj.Material material = model.MaterialMap[model.MaterialLib[(int)materialIndex]];
-							builder.Materials[m].Color = new Color32(material.Diffuse);
-#pragma warning disable 0219
-							//Current openBVE renderer does not support specular color
-							// ReSharper disable once UnusedVariable
-							Color24 mSpecular = new Color24(material.Specular);
-#pragma warning restore 0219
-							builder.Materials[m].EmissiveColor = new Color24(material.Emissive);
-							builder.Materials[m].Flags |= MaterialFlags.Emissive; //TODO: Check exact behaviour
-							if (material.TransparentUsed)
-							{
-								builder.Materials[m].TransparentColor = new Color24(material.Transparent);
-								builder.Materials[m].Flags |= MaterialFlags.TransparentColor;
-							}
-							
-							if (material.Texture != null)
-							{
-								builder.Materials[m].DaytimeTexture = Path.CombineFile(currentFolder, material.Texture);
-								if (!System.IO.File.Exists(builder.Materials[m].DaytimeTexture))
-								{
-									Plugin.currentHost.AddMessage(MessageType.Error, true, "Texture " + builder.Materials[m].DaytimeTexture + " was not found in file " + fileName);
-									builder.Materials[m].DaytimeTexture = null;
-								}
-							}
-						}
 
 						if (model.Exporter >= ModelExporter.UnknownLeftHanded)
 						{
-							Array.Reverse(builder.Faces[builder.Faces.Count -1].Vertices, 0, builder.Faces[builder.Faces.Count -1].Vertices.Length);
+							Array.Reverse(builder.Faces[builder.Faces.Count - 1].Vertices, 0, builder.Faces[builder.Faces.Count - 1].Vertices.Length);
 						}
 
-						if (face.Material != lastMaterial)
+						if (face.Material != lastMaterial && lastMaterial != null)
 						{
 							builder.Apply(ref obj);
 							builder = new MeshBuilder(Plugin.currentHost);
+							// Re-add material for the new builder
+							m = builder.Materials.Length;
+							Array.Resize(ref builder.Materials, m + 1);
+							builder.Materials[m] = obj.Mesh.Materials[obj.Mesh.Materials.Length - 1]; // Use existing material
 						}
 						lastMaterial = face.Material;
 					}
