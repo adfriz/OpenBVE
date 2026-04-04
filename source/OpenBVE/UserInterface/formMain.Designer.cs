@@ -1983,9 +1983,9 @@ namespace OpenBve {
             this.groupboxShadows.ForeColor = System.Drawing.Color.Black;
             this.groupboxShadows.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.groupboxShadows.Location = new System.Drawing.Point(0, 520);
+            this.groupboxShadows.Location = new System.Drawing.Point(0, 551);
             this.groupboxShadows.Name = "groupboxShadows";
-            this.groupboxShadows.Size = new System.Drawing.Size(299, 180);
+            this.groupboxShadows.Size = new System.Drawing.Size(299, 210);
             this.groupboxShadows.TabIndex = 30;
             this.groupboxShadows.TabStop = false;
             this.groupboxShadows.Text = "Shadows";
@@ -2323,10 +2323,12 @@ namespace OpenBve {
             this.panelOptionsLeft.Controls.Add(this.groupboxWindow);
             this.panelOptionsLeft.Controls.Add(this.groupboxFullscreen);
             this.panelOptionsLeft.Controls.Add(this.groupboxInterpolation);
+            this.panelOptionsLeft.Controls.Add(this.groupboxShadows);
             this.panelOptionsLeft.Location = new System.Drawing.Point(8, 72);
             this.panelOptionsLeft.Name = "panelOptionsLeft";
             this.panelOptionsLeft.Size = new System.Drawing.Size(316, 576);
             this.panelOptionsLeft.TabIndex = 16;
+            this.panelOptionsLeft.AutoScroll = true;
             // 
             // groupboxDisplayMode
             // 
@@ -2801,7 +2803,6 @@ namespace OpenBve {
             // 
             // panelOptionsRight
             // 
-            this.panelOptionsRight.Controls.Add(this.groupboxShadows);
             this.panelOptionsRight.Controls.Add(this.groupBoxOther);
             this.panelOptionsRight.Controls.Add(this.groupBoxRailDriver);
             this.panelOptionsRight.Controls.Add(this.groupboxDistance);
