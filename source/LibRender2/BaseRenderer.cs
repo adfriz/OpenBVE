@@ -629,46 +629,57 @@ namespace LibRender2
 				lock (VisibleObjects.LockObject)
 				{
 					int lastVAOHandle = -1;
-					foreach (var face in VisibleObjects.OpaqueFaces)
-					{
-						if (face.Object.Prototype.Mesh.VAO == null) continue;
-						
-						Matrix4D modelMatrix = face.Object.ModelMatrix * Camera.TranslationMatrix;
-						ShadowDepthShaderProgram.SetModelMatrix(modelMatrix);
 
-						// Bind texture for alpha scissoring if the face has one
-						var material = face.Object.Prototype.Mesh.Materials[face.Face.Material];
-						if (material.DaytimeTexture != null && currentHost.LoadTexture(ref material.DaytimeTexture, (OpenGlTextureWrapMode)(material.WrapMode ?? OpenGlTextureWrapMode.ClampClamp)))
+					// Add a helper to render a collection of faces into the shadow pass also avoiding duplicate loops for opaque and alpha collections.
+					Action<ICollection<FaceState>> renderFaces = faces =>
+					{
+						foreach (var face in faces)
 						{
-							GL.ActiveTexture(TextureUnit.Texture0);
-							GL.BindTexture(TextureTarget.Texture2D,
-								material.DaytimeTexture.OpenGlTextures[(int)(material.WrapMode ?? OpenGlTextureWrapMode.ClampClamp)].Name);
-							ShadowDepthShaderProgram.SetHasTexture(true);
-							ShadowDepthShaderProgram.SetAlphaCutoff(0.5f);
-						}
-						else
-						{
-							ShadowDepthShaderProgram.SetHasTexture(false);
-						}
+							if (face.Object.Prototype.Mesh.VAO == null) continue;
+
+							Matrix4D modelMatrix = face.Object.ModelMatrix * Camera.TranslationMatrix;
+							ShadowDepthShaderProgram.SetModelMatrix(modelMatrix);
+
+							// Bind texture for alpha scissoring if the face has one
+							var material = face.Object.Prototype.Mesh.Materials[face.Face.Material];
+							if (material.DaytimeTexture != null && currentHost.LoadTexture(ref material.DaytimeTexture, (OpenGlTextureWrapMode)(material.WrapMode ?? OpenGlTextureWrapMode.ClampClamp)))
+							{
+								GL.ActiveTexture(TextureUnit.Texture0);
+								GL.BindTexture(TextureTarget.Texture2D,
+									material.DaytimeTexture.OpenGlTextures[(int)(material.WrapMode ?? OpenGlTextureWrapMode.ClampClamp)].Name);
+								ShadowDepthShaderProgram.SetHasTexture(true);
+								ShadowDepthShaderProgram.SetAlphaCutoff(0.5f);
+							}
+							else
+							{
+								ShadowDepthShaderProgram.SetHasTexture(false);
+							}
 
 #pragma warning disable CS0618
-						ObjectState state = face.Object;
-						if (state.Matricies != null && state.Matricies.Length > 0)
-						{
-							ShadowDepthShaderProgram.SetCurrentAnimationMatricies(state);
-							GL.BindBufferBase(BufferTarget.UniformBuffer, 0, state.MatrixBufferIndex);
-						}
+							ObjectState state = face.Object;
+							if (state.Matricies != null && state.Matricies.Length > 0)
+							{
+								ShadowDepthShaderProgram.SetCurrentAnimationMatricies(state);
+								GL.BindBufferBase(BufferTarget.UniformBuffer, 0, state.MatrixBufferIndex);
+							}
 #pragma warning restore CS0618
 
-						VertexArrayObject vao = (VertexArrayObject)face.Object.Prototype.Mesh.VAO;
-						if (vao.handle != lastVAOHandle)
-						{
-							vao.Bind();
-							lastVAOHandle = vao.handle;
+							VertexArrayObject vao = (VertexArrayObject)face.Object.Prototype.Mesh.VAO;
+							if (vao.handle != lastVAOHandle)
+							{
+								vao.Bind();
+								lastVAOHandle = vao.handle;
+							}
+							PrimitiveType drawMode = GetPrimitiveType(face.Face.Flags);
+							vao.Draw(drawMode, face.Face.IboStartIndex, face.Face.Vertices.Length);
 						}
-						PrimitiveType drawMode = GetPrimitiveType(face.Face.Flags);
-						vao.Draw(drawMode, face.Face.IboStartIndex, face.Face.Vertices.Length);
-					}
+					};
+
+					// Render both opaque and alpha-tested geometry into the shadow map.
+					// This ensures semi-transparent cutout objects (fences, trees, etc. using `transparent`) 
+					// cast proper silhouettes instead of being skipped.
+					renderFaces(VisibleObjects.OpaqueFaces);
+					renderFaces(VisibleObjects.AlphaFaces);
 				}
 				CSMShadowMaps.Unbind();
 			}
@@ -677,6 +688,10 @@ namespace LibRender2
 			GL.DepthFunc(DepthFunction.Lequal);
 			GL.CullFace(CullFaceMode.Front);
 			GL.Viewport(0, 0, Screen.Width, Screen.Height);
+
+			// Shadow pass corrupts the GL texture state without updating LastBoundTexture
+			// Clear it here so the main pass is forced to rebind the correct texture or whitePixel.
+			LastBoundTexture = null;
 		}
 
 		/// <summary>
