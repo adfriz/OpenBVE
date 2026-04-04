@@ -1,4 +1,4 @@
-﻿//Simplified BSD License (BSD-2-Clause)
+//Simplified BSD License (BSD-2-Clause)
 //
 //Copyright (c) 2020, S520, The OpenBVE Project
 //
@@ -130,7 +130,8 @@ namespace Plugin
 							// ReSharper disable once UnusedVariable
 							Color24 mSpecular = new Color24(material.Specular);
 #pragma warning restore 0219
-							builder.Materials[m].EmissiveColor = new Color24(material.Emissive);
+							// Wrap Color24 in Color32 for RGBA support; alpha defaults to 255 (opaque)
+							builder.Materials[m].EmissiveColor = new Color32(new Color24(material.Emissive));
 							builder.Materials[m].Flags |= MaterialFlags.Emissive; //TODO: Check exact behaviour
 							if (material.TransparentUsed)
 							{

@@ -160,6 +160,8 @@ namespace OpenBve {
             this.labelShadowStrengthValue = new System.Windows.Forms.Label();
             this.labelShadowBias = new System.Windows.Forms.Label();
             this.updownShadowBias = new System.Windows.Forms.NumericUpDown();
+            this.labelShadowNormalBias = new System.Windows.Forms.Label();
+            this.updownShadowNormalBias = new System.Windows.Forms.NumericUpDown();
             this.panelOptionsLeft = new System.Windows.Forms.Panel();
             this.groupboxDisplayMode = new System.Windows.Forms.GroupBox();
             this.comboBoxFont = new System.Windows.Forms.ComboBox();
@@ -1976,6 +1978,8 @@ namespace OpenBve {
             this.groupboxShadows.Controls.Add(this.labelShadowStrengthValue);
             this.groupboxShadows.Controls.Add(this.labelShadowBias);
             this.groupboxShadows.Controls.Add(this.updownShadowBias);
+            this.groupboxShadows.Controls.Add(this.labelShadowNormalBias);
+            this.groupboxShadows.Controls.Add(this.updownShadowNormalBias);
             this.groupboxShadows.ForeColor = System.Drawing.Color.Black;
             this.groupboxShadows.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
@@ -2118,6 +2122,39 @@ namespace OpenBve {
             0,
             393216});
             this.updownShadowBias.ValueChanged += new System.EventHandler(this.updownShadowBias_ValueChanged);
+            // 
+            // labelShadowNormalBias
+            // 
+            this.labelShadowNormalBias.AutoSize = true;
+            this.labelShadowNormalBias.Location = new System.Drawing.Point(8, 178);
+            this.labelShadowNormalBias.Name = "labelShadowNormalBias";
+            this.labelShadowNormalBias.Size = new System.Drawing.Size(102, 13);
+            this.labelShadowNormalBias.TabIndex = 10;
+            this.labelShadowNormalBias.Text = "Normal Bias:";
+            // 
+            // updownShadowNormalBias
+            // 
+            this.updownShadowNormalBias.DecimalPlaces = 2;
+            this.updownShadowNormalBias.Increment = new decimal(new int[] {
+            1,
+            0,
+            0,
+            65536});
+            this.updownShadowNormalBias.Location = new System.Drawing.Point(120, 175);
+            this.updownShadowNormalBias.Maximum = new decimal(new int[] {
+            10,
+            0,
+            0,
+            0});
+            this.updownShadowNormalBias.Name = "updownShadowNormalBias";
+            this.updownShadowNormalBias.Size = new System.Drawing.Size(120, 20);
+            this.updownShadowNormalBias.TabIndex = 11;
+            this.updownShadowNormalBias.Value = new decimal(new int[] {
+            2,
+            0,
+            0,
+            0});
+            this.updownShadowNormalBias.ValueChanged += new System.EventHandler(this.updownShadowNormalBias_ValueChanged);
             this.groupBoxPackageOptions.TabIndex = 19;
             this.groupBoxPackageOptions.TabStop = false;
             this.groupBoxPackageOptions.Text = "Package Management";
@@ -6301,6 +6338,8 @@ namespace OpenBve {
         private System.Windows.Forms.Label labelShadowStrengthValue;
         private System.Windows.Forms.Label labelShadowBias;
         private System.Windows.Forms.NumericUpDown updownShadowBias;
+        private System.Windows.Forms.Label labelShadowNormalBias;
+        private System.Windows.Forms.NumericUpDown updownShadowNormalBias;
         private System.Windows.Forms.GroupBox groupboxShadows;
         private System.Windows.Forms.ComboBox comboboxVSync;
         private System.Windows.Forms.Label labelVSync;

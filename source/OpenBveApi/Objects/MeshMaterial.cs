@@ -1,4 +1,4 @@
-﻿#pragma warning disable 0660, 0661
+#pragma warning disable 0660, 0661
 using System;
 using OpenBveApi.Colors;
 using OpenBveApi.Textures;
@@ -15,8 +15,8 @@ namespace OpenBveApi.Objects
 		/// <summary>The texture transparent color</summary>
 		/// <remarks>Only valid if using <see cref="TextureTransparencyType.Partial"/></remarks>
 		public Color24 TransparentColor;
-		/// <summary>The material emissive color</summary>
-		public Color24 EmissiveColor;
+		/// <summary>The material emissive color (upgraded to Color32 to support optional RGBA; alpha defaults to 255)</summary>
+		public Color32 EmissiveColor;
 		/// <summary>The daytime texture</summary>
 		public Texture DaytimeTexture;
 		/// <summary>The night-time texture</summary>
@@ -37,7 +37,7 @@ namespace OpenBveApi.Objects
 			if (A.Flags != B.Flags) return false;
 			if (A.Color.R != B.Color.R | A.Color.G != B.Color.G | A.Color.B != B.Color.B | A.Color.A != B.Color.A) return false;
 			if (A.TransparentColor.R != B.TransparentColor.R | A.TransparentColor.G != B.TransparentColor.G | A.TransparentColor.B != B.TransparentColor.B) return false;
-			if (A.EmissiveColor.R != B.EmissiveColor.R | A.EmissiveColor.G != B.EmissiveColor.G | A.EmissiveColor.B != B.EmissiveColor.B) return false;
+			if (A.EmissiveColor.R != B.EmissiveColor.R | A.EmissiveColor.G != B.EmissiveColor.G | A.EmissiveColor.B != B.EmissiveColor.B | A.EmissiveColor.A != B.EmissiveColor.A) return false;
 			if (A.DaytimeTexture != B.DaytimeTexture) return false;
 			if (A.NighttimeTexture != B.NighttimeTexture) return false;
 			if (A.LightMapTexture != B.LightMapTexture) return false;
@@ -53,7 +53,7 @@ namespace OpenBveApi.Objects
 			if (A.Flags != B.Flags) return true;
 			if (A.Color.R != B.Color.R | A.Color.G != B.Color.G | A.Color.B != B.Color.B | A.Color.A != B.Color.A) return true;
 			if (A.TransparentColor.R != B.TransparentColor.R | A.TransparentColor.G != B.TransparentColor.G | A.TransparentColor.B != B.TransparentColor.B) return true;
-			if (A.EmissiveColor.R != B.EmissiveColor.R | A.EmissiveColor.G != B.EmissiveColor.G | A.EmissiveColor.B != B.EmissiveColor.B) return true;
+			if (A.EmissiveColor.R != B.EmissiveColor.R | A.EmissiveColor.G != B.EmissiveColor.G | A.EmissiveColor.B != B.EmissiveColor.B | A.EmissiveColor.A != B.EmissiveColor.A) return true;
 			if (A.DaytimeTexture != B.DaytimeTexture) return true;
 			if (A.NighttimeTexture != B.NighttimeTexture) return true;
 			if (A.LightMapTexture != B.LightMapTexture) return true;

@@ -1,4 +1,4 @@
-using System;
+ using System;
 using System.IO;
 using System.Reflection;
 using OpenTK.Graphics.OpenGL;
@@ -20,6 +20,7 @@ namespace LibRender2.Shaders
 		private int uTexture;
 		private int uHasTexture;
 		private int uAlphaCutoff;
+		private int uMaterialAlpha; // Uniform location for material color alpha
 
 		public ShadowDepthShader()
 		{
@@ -51,6 +52,7 @@ namespace LibRender2.Shaders
 			uTexture = GL.GetUniformLocation(Handle, "uTexture");
 			uHasTexture = GL.GetUniformLocation(Handle, "uHasTexture");
 			uAlphaCutoff = GL.GetUniformLocation(Handle, "uAlphaCutoff");
+			uMaterialAlpha = GL.GetUniformLocation(Handle, "uMaterialAlpha"); // Cache the material alpha location
 		}
 
 		private static string LoadEmbeddedShader(string filename)
@@ -123,6 +125,12 @@ namespace LibRender2.Shaders
 		public void SetAlphaCutoff(float cutoff)
 		{
 			GL.Uniform1(uAlphaCutoff, cutoff);
+		}
+
+		/// <summary>Sets the material color alpha (0.0–1.0) for semi-transparent shadow discard</summary>
+		public void SetMaterialAlpha(float alpha)
+		{
+			GL.Uniform1(uMaterialAlpha, alpha);
 		}
 
 		public void SetModelMatrix(OpenBveApi.Math.Matrix4D m)

@@ -40,6 +40,10 @@ uniform float uCascadeBias0;
 uniform float uCascadeBias1;
 uniform float uCascadeBias2;
 uniform float uCascadeBias3;
+uniform float uNormalBias0;
+uniform float uNormalBias1;
+uniform float uNormalBias2;
+uniform float uNormalBias3;
 uniform float uShadowStrength;
 uniform bool  uShadowEnabled;
 uniform int   uCascadeCount;  // 2, 3, or 4
@@ -75,7 +79,7 @@ uniform bool uFogIsLinear;
 out vec4 fragColor;
 
 /// Samples a single cascade with 4-tap PCF via hardware comparison.
-float SampleCascade(sampler2DShadow shadowMap, vec4 posLightSpace, float bias)
+float SampleCascade(sampler2DShadow shadowMap, vec4 posLightSpace, float bias, float normalBias)
 {
     vec3 projCoords = posLightSpace.xyz / posLightSpace.w;
     projCoords = projCoords * 0.5 + 0.5;
@@ -93,7 +97,7 @@ float SampleCascade(sampler2DShadow shadowMap, vec4 posLightSpace, float bias)
     vec3 lightDir = normalize(uLight.position);
     float biasScale = clamp(1.0 - dot(normal, lightDir), 0.0, 1.0);
     // Multiply the base Z-bias by a slope factor to perfectly cure acne on thin meshes
-    float activeBias = bias * (1.1 + biasScale * 2.0); 
+    float activeBias = bias * (1.1 + biasScale * normalBias); 
 
     float currentDepth = projCoords.z - activeBias;
 
@@ -114,10 +118,10 @@ float SampleCascade(sampler2DShadow shadowMap, vec4 posLightSpace, float bias)
 
 float SampleCascadeByIndex(int idx)
 {
-    if (idx == 0) return SampleCascade(uShadowMap0, vPosLightSpace0, uCascadeBias0);
-    if (idx == 1) return SampleCascade(uShadowMap1, vPosLightSpace1, uCascadeBias1);
-    if (idx == 2) return SampleCascade(uShadowMap2, vPosLightSpace2, uCascadeBias2);
-    if (idx == 3) return SampleCascade(uShadowMap3, vPosLightSpace3, uCascadeBias3);
+    if (idx == 0) return SampleCascade(uShadowMap0, vPosLightSpace0, uCascadeBias0, uNormalBias0);
+    if (idx == 1) return SampleCascade(uShadowMap1, vPosLightSpace1, uCascadeBias1, uNormalBias1);
+    if (idx == 2) return SampleCascade(uShadowMap2, vPosLightSpace2, uCascadeBias2, uNormalBias2);
+    if (idx == 3) return SampleCascade(uShadowMap3, vPosLightSpace3, uCascadeBias3, uNormalBias3);
     return 1.0;
 }
 

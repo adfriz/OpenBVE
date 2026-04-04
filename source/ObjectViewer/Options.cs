@@ -6,6 +6,7 @@ using System.Windows.Forms;
 using Formats.OpenBve;
 using ObjectViewer.Graphics;
 using OpenBveApi;
+using OpenBveApi.Interface;
 using OpenBveApi.Input;
 using Path = OpenBveApi.Path;
 
@@ -61,6 +62,8 @@ namespace ObjectViewer
 		internal Options()
 		{
 			ObjectOptimizationMode = ObjectOptimizationMode.Low;
+			ShadowResolution = ShadowMapResolution.High;
+			ShadowBias = 0.000005;
 		}
 
 		public override void Save(string fileName)
@@ -88,7 +91,9 @@ namespace ObjectViewer
 				Builder.AppendLine("shadowresolution = " + (int)ShadowResolution);
 				Builder.AppendLine("shadowdistance = " + (int)ShadowDrawDistance);
 				Builder.AppendLine("shadowcascades = " + (int)ShadowCascades);
-				Builder.AppendLine("shadowstrength = " + ShadowStrength.ToString(Culture));
+				Builder.AppendLine("shadowstrength = " + ShadowStrength.ToString("0.00", Culture));
+				Builder.AppendLine("shadowbias = " + ShadowBias.ToString("0.000000", Culture));
+				Builder.AppendLine("shadownormalbias = " + ShadowNormalBias.ToString("0.00", Culture));
 				Builder.AppendLine("lightazimuth = " + LightAzimuth.ToString(Culture));
 				Builder.AppendLine("lightelevation = " + LightElevation.ToString(Culture));
 				Builder.AppendLine();
@@ -173,6 +178,8 @@ namespace ObjectViewer
 							block.GetEnumValue(OptionsKey.ShadowDrawDistance, out Interface.CurrentOptions.ShadowDrawDistance);
 							block.GetEnumValue(OptionsKey.ShadowCascades, out Interface.CurrentOptions.ShadowCascades);
 							block.TryGetValue(OptionsKey.ShadowStrength, ref Interface.CurrentOptions.ShadowStrength, NumberRange.Positive);
+							block.TryGetValue(OptionsKey.ShadowBias, ref Interface.CurrentOptions.ShadowBias);
+							block.TryGetValue(OptionsKey.ShadowNormalBias, ref Interface.CurrentOptions.ShadowNormalBias);
 							block.TryGetValue(OptionsKey.LightAzimuth, ref Interface.CurrentOptions.LightAzimuth);
 							block.TryGetValue(OptionsKey.LightElevation, ref Interface.CurrentOptions.LightElevation);
 							break;

@@ -51,6 +51,8 @@ namespace RouteViewer
 				Builder.AppendLine("shadowdistance = " + (int)ShadowDrawDistance);
 				Builder.AppendLine("shadowcascades = " + (int)ShadowCascades);
 				Builder.AppendLine("shadowstrength = " + ShadowStrength.ToString(Culture));
+				Builder.AppendLine("shadowbias = " + ShadowBias.ToString("0.000000", Culture));
+				Builder.AppendLine("shadownormalbias = " + ShadowNormalBias.ToString("0.00", Culture));
 				Builder.AppendLine();
 				Builder.AppendLine("[loading]");
 				Builder.AppendLine("showlogo = " + (LoadingLogo ? "true" : "false"));
@@ -120,6 +122,8 @@ namespace RouteViewer
 							block.GetEnumValue(OptionsKey.ShadowDrawDistance, out Interface.CurrentOptions.ShadowDrawDistance);
 							block.GetEnumValue(OptionsKey.ShadowCascades, out Interface.CurrentOptions.ShadowCascades);
 							block.TryGetValue(OptionsKey.ShadowStrength, ref Interface.CurrentOptions.ShadowStrength, NumberRange.Positive);
+							block.TryGetValue(OptionsKey.ShadowBias, ref Interface.CurrentOptions.ShadowBias);
+							block.TryGetValue(OptionsKey.ShadowNormalBias, ref Interface.CurrentOptions.ShadowNormalBias);
 							block.TryGetValue(OptionsKey.ViewingDistance, ref Interface.CurrentOptions.ViewingDistance, NumberRange.Positive);
 							break;
 						case OptionsSection.Loading:

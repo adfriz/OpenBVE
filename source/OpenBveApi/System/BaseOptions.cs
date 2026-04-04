@@ -91,6 +91,8 @@ namespace OpenBveApi
 		public double ShadowStrength = 0.7;
 		/// <summary>Shadow bias to prevent shadow acne.</summary>
 		public double ShadowBias = 0.000005;
+		/// <summary>Shadow normal bias (slope scale multiplier) to perfectly cure acne on curved/thin meshes.</summary>
+		public double ShadowNormalBias = 2.0;
 
 
 		/// <summary>The sun azimuth in degrees</summary>

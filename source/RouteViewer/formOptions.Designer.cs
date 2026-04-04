@@ -77,6 +77,8 @@ namespace RouteViewer
             this.labelSunElevationValue = new System.Windows.Forms.Label();
             this.labelShadowBias = new System.Windows.Forms.Label();
             this.numericUpDownShadowBias = new System.Windows.Forms.NumericUpDown();
+            this.labelShadowNormalBias = new System.Windows.Forms.Label();
+            this.numericUpDownShadowNormalBias = new System.Windows.Forms.NumericUpDown();
             this.tabControl1.SuspendLayout();
             this.tabPageOptions.SuspendLayout();
             this.tabPageShadows.SuspendLayout();
@@ -86,9 +88,10 @@ namespace RouteViewer
             ((System.ComponentModel.ISupportInitialize)(this.AntialiasingLevel)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownViewingDistance)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownShadowStrength)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownShadowBias)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownShadowNormalBias)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBarSunAzimuth)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBarSunElevation)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownShadowBias)).BeginInit();
             this.SuspendLayout();
             // 
             // tabControl1
@@ -160,6 +163,8 @@ namespace RouteViewer
             this.tabPageShadows.Controls.Add(this.labelSunElevationValue);
             this.tabPageShadows.Controls.Add(this.labelShadowBias);
             this.tabPageShadows.Controls.Add(this.numericUpDownShadowBias);
+            this.tabPageShadows.Controls.Add(this.labelShadowNormalBias);
+            this.tabPageShadows.Controls.Add(this.numericUpDownShadowNormalBias);
             this.tabPageShadows.AutoScroll = true;
             this.tabPageShadows.Location = new System.Drawing.Point(4, 22);
             this.tabPageShadows.Name = "tabPageShadows";
@@ -665,6 +670,26 @@ namespace RouteViewer
             this.numericUpDownShadowBias.TabIndex = 44;
             this.numericUpDownShadowBias.Value = new decimal(new int[] { 5, 0, 0, 393216 });
             // 
+            // labelShadowNormalBias
+            // 
+            this.labelShadowNormalBias.AutoSize = true;
+            this.labelShadowNormalBias.Location = new System.Drawing.Point(6, 172);
+            this.labelShadowNormalBias.Name = "labelShadowNormalBias";
+            this.labelShadowNormalBias.Size = new System.Drawing.Size(102, 13);
+            this.labelShadowNormalBias.TabIndex = 45;
+            this.labelShadowNormalBias.Text = "Normal Bias:";
+            // 
+            // numericUpDownShadowNormalBias
+            // 
+            this.numericUpDownShadowNormalBias.DecimalPlaces = 2;
+            this.numericUpDownShadowNormalBias.Increment = new decimal(new int[] { 1, 0, 0, 65536 });
+            this.numericUpDownShadowNormalBias.Location = new System.Drawing.Point(160, 170);
+            this.numericUpDownShadowNormalBias.Maximum = new decimal(new int[] { 10, 0, 0, 0 });
+            this.numericUpDownShadowNormalBias.Name = "numericUpDownShadowNormalBias";
+            this.numericUpDownShadowNormalBias.Size = new System.Drawing.Size(120, 20);
+            this.numericUpDownShadowNormalBias.TabIndex = 46;
+            this.numericUpDownShadowNormalBias.Value = new decimal(new int[] { 2, 0, 0, 0 });
+            // 
             // button1
             // 
             this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
@@ -757,5 +782,7 @@ namespace RouteViewer
         private System.Windows.Forms.Label labelSunElevationValue;
         private System.Windows.Forms.Label labelShadowBias;
         private System.Windows.Forms.NumericUpDown numericUpDownShadowBias;
+        private System.Windows.Forms.Label labelShadowNormalBias;
+        private System.Windows.Forms.NumericUpDown numericUpDownShadowNormalBias;
     }
 }

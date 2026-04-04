@@ -490,12 +490,14 @@ namespace OpenBve {
 			trackbarShadowStrength.Value = (int)(Interface.CurrentOptions.ShadowStrength * 100.0);
 			labelShadowStrengthValue.Text = trackbarShadowStrength.Value + "%";
 			updownShadowBias.Value = (decimal)Interface.CurrentOptions.ShadowBias;
+			updownShadowNormalBias.Value = (decimal)Interface.CurrentOptions.ShadowNormalBias;
 			// Enable/disable shadow sub-controls based on resolution setting
 			bool shadowEnabled = Interface.CurrentOptions.ShadowResolution != ShadowMapResolution.Off;
 			comboboxShadowDistance.Enabled = shadowEnabled;
 			comboboxShadowCascades.Enabled = shadowEnabled;
 			trackbarShadowStrength.Enabled = shadowEnabled;
 			updownShadowBias.Enabled = shadowEnabled;
+			updownShadowNormalBias.Enabled = shadowEnabled;
 			checkboxBlackBox.Checked = Interface.CurrentOptions.BlackBox;
 			checkBoxLoadingSway.Checked = Interface.CurrentOptions.LoadingSway;
 			checkBoxTransparencyFix.Checked = Interface.CurrentOptions.OldTransparencyMode;
@@ -741,6 +743,7 @@ namespace OpenBve {
 			{
 				labelShadowBias.Text = "Shadow Bias:";
 			}
+			labelShadowNormalBias.Text = "Normal Bias:";
 
 
 			// Combobox items (shadow resolution)
@@ -1195,6 +1198,8 @@ namespace OpenBve {
 			}
 			// Shadow Strength
 			Interface.CurrentOptions.ShadowStrength = trackbarShadowStrength.Value / 100.0;
+			Interface.CurrentOptions.ShadowBias = (double)updownShadowBias.Value;
+			Interface.CurrentOptions.ShadowNormalBias = (double)updownShadowNormalBias.Value;
 			Interface.CurrentOptions.GameMode = (GameMode)comboboxMode.SelectedIndex;
 			Interface.CurrentOptions.BlackBox = checkboxBlackBox.Checked;
 			Interface.CurrentOptions.LoadingSway = checkBoxLoadingSway.Checked;
