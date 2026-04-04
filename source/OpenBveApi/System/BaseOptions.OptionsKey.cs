@@ -48,7 +48,9 @@ namespace OpenBveApi
 		ShadowDrawDistance,
 		ShadowCascades,
 		ShadowStrength,
+		ShadowBias,
 		LightAzimuth,
+
 		LightElevation,
 		// Object Optimization
 		BasicThreshold,

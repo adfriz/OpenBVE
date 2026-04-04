@@ -145,9 +145,12 @@ namespace LibRender2.Shadows
                 LightSpaceMatrices[i] = lightView * lightProj;
                 CascadeFarDistances[i] = (float)splits[i + 1];
 
-                // Moderate bias — keep extremely low to avoid peter-panning.
-                // With 2000m range, 0.00001f is roughly 2cm.
-                CascadeBiases[i] = 0.000005f * (1.0f + i * 2.0f);
+                // Z-Bias: Convert physical texel size into a Depth Buffer fraction.
+                // This ensures we push the depth exactly enough to cure acne, but no more.
+                double texelWorldSize = (orthoSize * 2.0) / (double)Resolution;
+                double depthRange = zFar - zNear;
+                double baseBias = texelWorldSize / depthRange;
+                CascadeBiases[i] = (float)baseBias;
             }
         }
 

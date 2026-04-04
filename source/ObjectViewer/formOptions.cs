@@ -57,6 +57,8 @@ namespace ObjectViewer
 			}
 
 			numericUpDownShadowStrength.Value = (decimal)(Interface.CurrentOptions.ShadowStrength * 100.0);
+			numericUpDownShadowBias.Value = (decimal)Interface.CurrentOptions.ShadowBias;
+
 
 			// Initialize sun direction sliders from current light position
 			InitializeSunSliders();
@@ -94,7 +96,9 @@ namespace ObjectViewer
 			comboBoxShadowDistance.Enabled = enabled;
 			comboBoxShadowCascades.Enabled = enabled;
 			numericUpDownShadowStrength.Enabled = enabled;
+			numericUpDownShadowBias.Enabled = enabled;
 			trackBarSunAzimuth.Enabled = enabled;
+
 			trackBarSunElevation.Enabled = enabled;
 		}
 
@@ -257,6 +261,8 @@ namespace ObjectViewer
 			}
 
 			Interface.CurrentOptions.ShadowStrength = (double)numericUpDownShadowStrength.Value / 100.0;
+			Interface.CurrentOptions.ShadowBias = (double)numericUpDownShadowBias.Value;
+
 
 			// Sun direction is already updated in real-time via slider events
 			

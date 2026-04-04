@@ -82,6 +82,8 @@ namespace ObjectViewer
             this.labelSunElevation = new System.Windows.Forms.Label();
             this.trackBarSunElevation = new System.Windows.Forms.TrackBar();
             this.labelSunElevationValue = new System.Windows.Forms.Label();
+            this.labelShadowBias = new System.Windows.Forms.Label();
+            this.numericUpDownShadowBias = new System.Windows.Forms.NumericUpDown();
             this.labelAutoReloadChanged = new System.Windows.Forms.Label();
             this.checkBoxAutoReload = new System.Windows.Forms.CheckBox();
             this.tabControl1.SuspendLayout();
@@ -94,6 +96,7 @@ namespace ObjectViewer
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownShadowStrength)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBarSunAzimuth)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBarSunElevation)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownShadowBias)).BeginInit();
             this.tabPageKeys.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -401,6 +404,8 @@ namespace ObjectViewer
             this.tabPageShadows.Controls.Add(this.labelSunElevation);
             this.tabPageShadows.Controls.Add(this.trackBarSunElevation);
             this.tabPageShadows.Controls.Add(this.labelSunElevationValue);
+            this.tabPageShadows.Controls.Add(this.labelShadowBias);
+            this.tabPageShadows.Controls.Add(this.numericUpDownShadowBias);
             this.tabPageShadows.AutoScroll = true;
             this.tabPageShadows.Location = new System.Drawing.Point(4, 22);
             this.tabPageShadows.Name = "tabPageShadows";
@@ -505,7 +510,7 @@ namespace ObjectViewer
             // 
             this.labelSunDirection.AutoSize = true;
             this.labelSunDirection.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.labelSunDirection.Location = new System.Drawing.Point(6, 150);
+            this.labelSunDirection.Location = new System.Drawing.Point(6, 190);
             this.labelSunDirection.Name = "labelSunDirection";
             this.labelSunDirection.Size = new System.Drawing.Size(96, 15);
             this.labelSunDirection.TabIndex = 36;
@@ -514,7 +519,7 @@ namespace ObjectViewer
             // labelSunAzimuth
             // 
             this.labelSunAzimuth.AutoSize = true;
-            this.labelSunAzimuth.Location = new System.Drawing.Point(6, 172);
+            this.labelSunAzimuth.Location = new System.Drawing.Point(6, 212);
             this.labelSunAzimuth.Name = "labelSunAzimuth";
             this.labelSunAzimuth.Size = new System.Drawing.Size(47, 13);
             this.labelSunAzimuth.TabIndex = 37;
@@ -522,7 +527,7 @@ namespace ObjectViewer
             // 
             // trackBarSunAzimuth
             // 
-            this.trackBarSunAzimuth.Location = new System.Drawing.Point(6, 188);
+            this.trackBarSunAzimuth.Location = new System.Drawing.Point(6, 228);
             this.trackBarSunAzimuth.Maximum = 360;
             this.trackBarSunAzimuth.Minimum = 0;
             this.trackBarSunAzimuth.Name = "trackBarSunAzimuth";
@@ -535,7 +540,7 @@ namespace ObjectViewer
             // labelSunAzimuthValue
             // 
             this.labelSunAzimuthValue.AutoSize = true;
-            this.labelSunAzimuthValue.Location = new System.Drawing.Point(247, 192);
+            this.labelSunAzimuthValue.Location = new System.Drawing.Point(247, 232);
             this.labelSunAzimuthValue.Name = "labelSunAzimuthValue";
             this.labelSunAzimuthValue.Size = new System.Drawing.Size(31, 13);
             this.labelSunAzimuthValue.TabIndex = 39;
@@ -544,7 +549,7 @@ namespace ObjectViewer
             // labelSunElevation
             // 
             this.labelSunElevation.AutoSize = true;
-            this.labelSunElevation.Location = new System.Drawing.Point(6, 236);
+            this.labelSunElevation.Location = new System.Drawing.Point(6, 276);
             this.labelSunElevation.Name = "labelSunElevation";
             this.labelSunElevation.Size = new System.Drawing.Size(54, 13);
             this.labelSunElevation.TabIndex = 40;
@@ -552,7 +557,7 @@ namespace ObjectViewer
             // 
             // trackBarSunElevation
             // 
-            this.trackBarSunElevation.Location = new System.Drawing.Point(6, 252);
+            this.trackBarSunElevation.Location = new System.Drawing.Point(6, 292);
             this.trackBarSunElevation.Maximum = 90;
             this.trackBarSunElevation.Minimum = 5;
             this.trackBarSunElevation.Name = "trackBarSunElevation";
@@ -565,11 +570,31 @@ namespace ObjectViewer
             // labelSunElevationValue
             // 
             this.labelSunElevationValue.AutoSize = true;
-            this.labelSunElevationValue.Location = new System.Drawing.Point(247, 256);
+            this.labelSunElevationValue.Location = new System.Drawing.Point(247, 296);
             this.labelSunElevationValue.Name = "labelSunElevationValue";
             this.labelSunElevationValue.Size = new System.Drawing.Size(25, 13);
             this.labelSunElevationValue.TabIndex = 42;
             this.labelSunElevationValue.Text = "60°";
+            // 
+            // labelShadowBias
+            // 
+            this.labelShadowBias.AutoSize = true;
+            this.labelShadowBias.Location = new System.Drawing.Point(6, 146);
+            this.labelShadowBias.Name = "labelShadowBias";
+            this.labelShadowBias.Size = new System.Drawing.Size(72, 13);
+            this.labelShadowBias.TabIndex = 50;
+            this.labelShadowBias.Text = "Shadow Bias:";
+            // 
+            // numericUpDownShadowBias
+            // 
+            this.numericUpDownShadowBias.DecimalPlaces = 6;
+            this.numericUpDownShadowBias.Increment = new decimal(new int[] { 1, 0, 0, 393216 });
+            this.numericUpDownShadowBias.Location = new System.Drawing.Point(160, 144);
+            this.numericUpDownShadowBias.Maximum = new decimal(new int[] { 1, 0, 0, 0 });
+            this.numericUpDownShadowBias.Name = "numericUpDownShadowBias";
+            this.numericUpDownShadowBias.Size = new System.Drawing.Size(120, 20);
+            this.numericUpDownShadowBias.TabIndex = 51;
+            this.numericUpDownShadowBias.Value = new decimal(new int[] { 5, 0, 0, 393216 });
             // 
             // tabPageKeys
             // 
@@ -821,6 +846,8 @@ namespace ObjectViewer
 		private System.Windows.Forms.Label labelSunElevation;
 		private System.Windows.Forms.TrackBar trackBarSunElevation;
 		private System.Windows.Forms.Label labelSunElevationValue;
+		private System.Windows.Forms.Label labelShadowBias;
+		private System.Windows.Forms.NumericUpDown numericUpDownShadowBias;
 		private System.Windows.Forms.CheckBox checkBoxAutoReload;
 		private System.Windows.Forms.Label labelAutoReloadChanged;
 	}

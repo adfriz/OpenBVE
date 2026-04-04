@@ -397,6 +397,10 @@ namespace LibRender2
 					ForceLegacyOpenGL = true;
 				}
 			}
+			else
+			{
+				ForceLegacyOpenGL = true;
+			}
 
 			Background = new Background(this);
 			Fog = new Fog(this);
@@ -612,8 +616,8 @@ namespace LibRender2
 			ShadowDepthShaderProgram.Use();
 			GL.Enable(EnableCap.DepthTest);
 			GL.DepthFunc(DepthFunction.Less);
-			GL.Enable(EnableCap.CullFace);
-			GL.CullFace(CullFaceMode.Front);
+			GL.Disable(EnableCap.CullFace);
+			GL.DepthMask(true); // Ensure depth writes are enabled before clearing
 			ShadowDepthShaderProgram.SetTexture(0); // always use texture unit 0
 
 			for (int cascade = 0; cascade < CSMCaster.CascadeCount; cascade++)
@@ -701,8 +705,9 @@ namespace LibRender2
 				DefaultShader.SetCascadeLightSpaceMatrix(i, CSMCaster.LightSpaceMatrices[i]);
 				DefaultShader.SetCascadeShadowMapUnit(i, 4 + i);
 				DefaultShader.SetCascadeFarDistance(i, (float)CSMCaster.CascadeFarDistances[i]);
-				DefaultShader.SetCascadeBias(i, CSMCaster.CascadeBiases[i]);
+				DefaultShader.SetCascadeBias(i, CSMCaster.CascadeBiases[i] + (float)currentOptions.ShadowBias);
 			}
+
 
 			// If fewer than max cascades, disable unused slots
 			for (int i = cascadeCount; i < 4; i++)

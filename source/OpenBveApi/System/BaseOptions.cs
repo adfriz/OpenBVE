@@ -89,6 +89,10 @@ namespace OpenBveApi
 		public ShadowCascadeCount ShadowCascades = ShadowCascadeCount.Three;
 		/// <summary>Shadow darkness strength. 0.0 = invisible, 1.0 = full black.</summary>
 		public double ShadowStrength = 0.7;
+		/// <summary>Shadow bias to prevent shadow acne.</summary>
+		public double ShadowBias = 0.000005;
+
+
 		/// <summary>The sun azimuth in degrees</summary>
 		public double LightAzimuth = 240.0;
 		/// <summary>The sun elevation in degrees</summary>

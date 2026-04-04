@@ -88,11 +88,12 @@ float SampleCascade(sampler2DShadow shadowMap, vec4 posLightSpace, float bias)
         return 1.0;
     }
 
-    // Compute slope-scaled bias to fix peter-panning on flat surfaces while avoiding acne on sloped ones.
+    // Compute slope-scaled Z-bias dynamically based on the exact texel size fraction passed from C#.
     vec3 normal = normalize(vNormal);
     vec3 lightDir = normalize(uLight.position);
     float biasScale = clamp(1.0 - dot(normal, lightDir), 0.0, 1.0);
-    float activeBias = bias * (1.1 + biasScale * 1.5); 
+    // Multiply the base Z-bias by a slope factor to perfectly cure acne on thin meshes
+    float activeBias = bias * (1.1 + biasScale * 2.0); 
 
     float currentDepth = projCoords.z - activeBias;
 

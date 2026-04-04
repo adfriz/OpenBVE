@@ -51,6 +51,8 @@ namespace OpenBve {
 			comboboxShadowCascades.Enabled = shadowEnabled;
 			trackbarShadowStrength.Enabled = shadowEnabled;
 			labelShadowStrengthValue.Enabled = shadowEnabled;
+			updownShadowBias.Enabled = shadowEnabled;
+
 
 			if (!shadowEnabled)
 			{
@@ -67,6 +69,12 @@ namespace OpenBve {
 		{
 			labelShadowStrengthValue.Text = trackbarShadowStrength.Value + "%";
 		}
+
+		private void updownShadowBias_ValueChanged(object sender, EventArgs e)
+		{
+			Interface.CurrentOptions.ShadowBias = (double)updownShadowBias.Value;
+		}
+
 		
 		// =======
 		// options
