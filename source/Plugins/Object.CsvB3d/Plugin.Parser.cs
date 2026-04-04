@@ -207,18 +207,15 @@ namespace Object.CsvB3d
 						}
 					}
 				}
-				// collect arguments
-				string[] Arguments = Lines[i].Split(new[] { ',' }, StringSplitOptions.None);
+				// collect arguments, trim whitespaces and remove unused arguments at the end of the chain in one pass
+				string[] Arguments = Lines[i].Split(',');
+				int lastArg = -1;
 				for (int j = 0; j < Arguments.Length; j++) {
 					Arguments[j] = Arguments[j].Trim();
+					if (Arguments[j].Length > 0) lastArg = j;
 				}
-				{
-					// remove unused arguments at the end of the chain
-					int j;
-					for (j = Arguments.Length - 1; j >= 0; j--) {
-						if (Arguments[j].Length != 0) break;
-					}
-					Array.Resize(ref Arguments, j + 1);
+				if (lastArg + 1 != Arguments.Length) {
+					Array.Resize(ref Arguments, lastArg + 1);
 				}
 				// style
 				string Command;
