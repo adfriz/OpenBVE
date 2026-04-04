@@ -16,6 +16,7 @@ using TrainManager.Trains;
 
 namespace OpenBve {
 	internal static class FunctionScripts {
+		private static readonly Random RandomGenerator = new Random();
 		// execute function script
 		internal static void ExecuteFunctionScript(FunctionScript Function, TrainBase Train, int CarIndex, Vector3 Position, double TrackPosition, int SectionIndex, bool IsPartOfTrain, double TimeElapsed, int CurrentState) {
 			int s = 0, c = 0;
@@ -85,21 +86,17 @@ namespace OpenBve {
 						s--; break;
 					case Instructions.MathRandom:
 						{
-							//Generates a random number between two given doubles
 							double min = Function.Stack[s - 2];
 							double max = Function.Stack[s - 1];
-							var randomGenerator = new Random();
-							Function.Stack[s - 2] =  min + randomGenerator.NextDouble() * (max - min);
+							Function.Stack[s - 2] = min + RandomGenerator.NextDouble() * (max - min);
 							s--;
 						}
 						break;
 					case Instructions.MathRandomInt:
 						{
-							//Generates a random number between two given doubles
 							int min = (int)Function.Stack[s - 2];
 							int max = (int)Function.Stack[s - 1];
-							var randomGenerator = new Random();
-							Function.Stack[s - 2] = randomGenerator.Next(min,max);
+							Function.Stack[s - 2] = RandomGenerator.Next(min, max);
 							s--;
 						}
 						break;
@@ -398,38 +395,38 @@ namespace OpenBve {
 						}
 						break;
 					case Instructions.PlayerTrainDistance:
-						double playerDist = double.MaxValue;
+						double playerDistSq = double.MaxValue;
 						for (int j = 0; j < TrainManager.PlayerTrain.Cars.Length; j++)
 						{
 							double fx = TrainManager.PlayerTrain.Cars[j].FrontAxle.Follower.WorldPosition.X - Position.X;
 							double fy = TrainManager.PlayerTrain.Cars[j].FrontAxle.Follower.WorldPosition.Y - Position.Y;
 							double fz = TrainManager.PlayerTrain.Cars[j].FrontAxle.Follower.WorldPosition.Z - Position.Z;
 							double f = fx * fx + fy * fy + fz * fz;
-							if (f < playerDist) playerDist = f;
+							if (f < playerDistSq) playerDistSq = f;
 							double rx = TrainManager.PlayerTrain.Cars[j].RearAxle.Follower.WorldPosition.X - Position.X;
 							double ry = TrainManager.PlayerTrain.Cars[j].RearAxle.Follower.WorldPosition.Y - Position.Y;
 							double rz = TrainManager.PlayerTrain.Cars[j].RearAxle.Follower.WorldPosition.Z - Position.Z;
 							double r = rx * rx + ry * ry + rz * rz;
-							if (r < playerDist) playerDist = r;
+							if (r < playerDistSq) playerDistSq = r;
 						}
-						Function.Stack[s] = Math.Sqrt(playerDist);
+						Function.Stack[s] = Math.Sqrt(playerDistSq); // call sqrt once at the end
 						s++; break;
 					case Instructions.TrainDistance:
 						if (Train != null) {
-							double dist = double.MaxValue;
+							double distSq = double.MaxValue;
 							for (int j = 0; j < Train.Cars.Length; j++) {
 								double fx = Train.Cars[j].FrontAxle.Follower.WorldPosition.X - Position.X;
 								double fy = Train.Cars[j].FrontAxle.Follower.WorldPosition.Y - Position.Y;
 								double fz = Train.Cars[j].FrontAxle.Follower.WorldPosition.Z - Position.Z;
 								double f = fx * fx + fy * fy + fz * fz;
-								if (f < dist) dist = f;
+								if (f < distSq) distSq = f;
 								double rx = Train.Cars[j].RearAxle.Follower.WorldPosition.X - Position.X;
 								double ry = Train.Cars[j].RearAxle.Follower.WorldPosition.Y - Position.Y;
 								double rz = Train.Cars[j].RearAxle.Follower.WorldPosition.Z - Position.Z;
 								double r = rx * rx + ry * ry + rz * rz;
-								if (r < dist) dist = r;
+								if (r < distSq) distSq = r;
 							}
-							Function.Stack[s] = Math.Sqrt(dist);
+							Function.Stack[s] = Math.Sqrt(distSq); // call sqrt once at the end
 						} else {
 							Function.Stack[s] = 0.0;
 						}
@@ -442,7 +439,8 @@ namespace OpenBve {
 								double x = 0.5 * (Train.Cars[j].FrontAxle.Follower.WorldPosition.X + Train.Cars[j].RearAxle.Follower.WorldPosition.X) - Position.X;
 								double y = 0.5 * (Train.Cars[j].FrontAxle.Follower.WorldPosition.Y + Train.Cars[j].RearAxle.Follower.WorldPosition.Y) - Position.Y;
 								double z = 0.5 * (Train.Cars[j].FrontAxle.Follower.WorldPosition.Z + Train.Cars[j].RearAxle.Follower.WorldPosition.Z) - Position.Z;
-								Function.Stack[s - 1] = Math.Sqrt(x * x + y * y + z * z);
+								double distSq = x * x + y * y + z * z;
+								Function.Stack[s - 1] = Math.Sqrt(distSq); // target specific car, single sqrt
 							} else {
 								Function.Stack[s - 1] = 0.0;
 							}
@@ -659,10 +657,10 @@ namespace OpenBve {
 							double a = 0.0;
 							for (int j = 0; j < Train.Cars.Length; j++) {
 								for (int k = 0; k < Train.Cars[j].Doors.Length; k++) {
-									if (Train.Cars[j].Doors[k].State > a) {
-										a = Train.Cars[j].Doors[k].State;
-									}
+									if (Train.Cars[j].Doors[k].State > a) a = Train.Cars[j].Doors[k].State;
+									if (a >= 1.0) break; // if fully open, no need to check other doors
 								}
+								if (a >= 1.0) break;
 							}
 							Function.Stack[s] = a;
 						} else {
@@ -676,9 +674,8 @@ namespace OpenBve {
 							if (j < 0) j += Train.Cars.Length;
 							if (j >= 0 & j < Train.Cars.Length) {
 								for (int k = 0; k < Train.Cars[j].Doors.Length; k++) {
-									if (Train.Cars[j].Doors[k].State > a) {
-										a = Train.Cars[j].Doors[k].State;
-									}
+									if (Train.Cars[j].Doors[k].State > a) a = Train.Cars[j].Doors[k].State;
+									if (a >= 1.0) break; // if fully open, no need to check other doors in this car
 								}
 							}
 							Function.Stack[s - 1] = a;
@@ -691,10 +688,10 @@ namespace OpenBve {
 							double a = 0.0;
 							for (int j = 0; j < Train.Cars.Length; j++) {
 								for (int k = 0; k < Train.Cars[j].Doors.Length; k++) {
-									if (Train.Cars[j].Doors[k].Direction == -1 & Train.Cars[j].Doors[k].State > a) {
-										a = Train.Cars[j].Doors[k].State;
-									}
+									if (Train.Cars[j].Doors[k].Direction == -1 & Train.Cars[j].Doors[k].State > a) a = Train.Cars[j].Doors[k].State;
+									if (a >= 1.0) break; // if fully open, no need to check other doors
 								}
+								if (a >= 1.0) break;
 							}
 							Function.Stack[s] = a;
 						} else {
@@ -708,9 +705,8 @@ namespace OpenBve {
 							if (j < 0) j += Train.Cars.Length;
 							if (j >= 0 & j < Train.Cars.Length) {
 								for (int k = 0; k < Train.Cars[j].Doors.Length; k++) {
-									if (Train.Cars[j].Doors[k].Direction == -1 & Train.Cars[j].Doors[k].State > a) {
-										a = Train.Cars[j].Doors[k].State;
-									}
+									if (Train.Cars[j].Doors[k].Direction == -1 & Train.Cars[j].Doors[k].State > a) a = Train.Cars[j].Doors[k].State;
+									if (a >= 1.0) break; // if fully open, no need to check other doors in this car
 								}
 							}
 							Function.Stack[s - 1] = a;
@@ -723,10 +719,10 @@ namespace OpenBve {
 							double a = 0.0;
 							for (int j = 0; j < Train.Cars.Length; j++) {
 								for (int k = 0; k < Train.Cars[j].Doors.Length; k++) {
-									if (Train.Cars[j].Doors[k].Direction == 1 & Train.Cars[j].Doors[k].State > a) {
-										a = Train.Cars[j].Doors[k].State;
-									}
+									if (Train.Cars[j].Doors[k].Direction == 1 & Train.Cars[j].Doors[k].State > a) a = Train.Cars[j].Doors[k].State;
+									if (a >= 1.0) break; // if fully open, no need to check other doors
 								}
+								if (a >= 1.0) break;
 							}
 							Function.Stack[s] = a;
 						} else {
@@ -740,9 +736,8 @@ namespace OpenBve {
 							if (j < 0) j += Train.Cars.Length;
 							if (j >= 0 & j < Train.Cars.Length) {
 								for (int k = 0; k < Train.Cars[j].Doors.Length; k++) {
-									if (Train.Cars[j].Doors[k].Direction == 1 & Train.Cars[j].Doors[k].State > a) {
-										a = Train.Cars[j].Doors[k].State;
-									}
+									if (Train.Cars[j].Doors[k].Direction == 1 & Train.Cars[j].Doors[k].State > a) a = Train.Cars[j].Doors[k].State;
+									if (a >= 1.0) break; // if fully open, no need to check other doors in this car
 								}
 							}
 							Function.Stack[s - 1] = a;
