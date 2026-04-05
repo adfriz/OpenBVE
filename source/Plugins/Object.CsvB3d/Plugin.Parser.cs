@@ -209,69 +209,51 @@ namespace Object.CsvB3d
 				}
 				// collect arguments, trim whitespaces and remove unused arguments at the end of the chain in one pass
 				string[] Arguments = Lines[i].Split(',');
-				int lastArg = -1;
-				for (int j = 0; j < Arguments.Length; j++) {
-					Arguments[j] = Arguments[j].Trim();
-					if (Arguments[j].Length > 0) lastArg = j;
-				}
-				if (lastArg + 1 != Arguments.Length) {
-					Array.Resize(ref Arguments, lastArg + 1);
-				}
-				// style
-				string Command;
-				if (IsB3D & Arguments.Length != 0) {
-					// b3d
-					int j = Arguments[0].IndexOf(' ');
-					if (j >= 0)
-					{
-						Command = Arguments[0].Substring(0, j).TrimEnd();
-						Arguments[0] = Arguments[0].Substring(j + 1).TrimStart();
-					} else {
-						Command = Arguments[0];
-						bool resetArguments = true;
-						if (Arguments.Length != 1) {
-							if (!enabledHacks.BveTsHacks || !IsCommand(Command, true))
-							{
-								currentHost.AddMessage(MessageType.Error, false, "Invalid syntax at line " + (i + 1).ToString(Culture) + " in file " + FileName);
-							}
-							else
-							{
-								resetArguments = false;
-							}
-						}
-						if (resetArguments)
-						{
-							Arguments = new string[] { };
-						}
-						else
-						{
-							/*
-							 * This handles object files where the author has omitted the FIRST number in a statement, e.g.
-							 * rotate ,,1,30
-							 *
-							 * As this is missing, we don't detect it as a command
-							 *
-							 * Traffic light poles broken in the Neustadt tram routes without this
-							 */
-							Arguments[0] = string.Empty;
-						}
+				string Command = null;
+				int lastArg = -1, start = 0;
 
+				if (Arguments.Length != 0) {
+					if (IsB3D) {
+						int j = Arguments[0].IndexOf(' ');
+						if (j >= 0) {
+							Command = Arguments[0].Substring(0, j).TrimEnd();
+							Arguments[0] = Arguments[0].Substring(j + 1).TrimStart();
+						} else {
+							Command = Arguments[0].Trim();
+							if (Arguments.Length == 1) {
+								Arguments = new string[0];
+							} else if (enabledHacks.BveTsHacks && IsCommand(Command, true)) {
+								Arguments[0] = string.Empty;
+							} else {
+								if (!enabledHacks.BveTsHacks || !IsCommand(Command, true)) {
+									currentHost.AddMessage(MessageType.Error, false, "Invalid syntax at line " + (i + 1).ToString(Culture) + " in file " + FileName);
+								}
+								Arguments = new string[0];
+							}
+						}
+					} else {
+						Command = Arguments[0].Trim();
+						start = 1;
 					}
-				} else if (Arguments.Length != 0) {
-					// csv
-					Command = Arguments[0];
-					for (int j = 0; j < Arguments.Length - 1; j++) {
-						Arguments[j] = Arguments[j + 1];
+
+					for (int j = start; j < Arguments.Length; j++) {
+						Arguments[j - start] = Arguments[j].Trim();
+						if (Arguments[j - start].Length > 0) lastArg = j - start;
 					}
-					Array.Resize(ref Arguments, Arguments.Length - 1);
+					if (lastArg + 1 != Arguments.Length) {
+						Array.Resize(ref Arguments, lastArg + 1);
+					}
 				} else {
-					// empty
 					Command = null;
 				}
 				// parse terms
 				if (Command != null)
 				{
-					Enum.TryParse(Command.TrimStart('[').TrimEnd(']'), true, out B3DCsvCommands cmd);
+					string cmdKey = Command;
+					if (cmdKey.Length > 2 && cmdKey[0] == '[' && cmdKey[cmdKey.Length - 1] == ']') {
+						cmdKey = cmdKey.Substring(1, cmdKey.Length - 2);
+					}
+					Enum.TryParse(cmdKey, true, out B3DCsvCommands cmd);
 					switch(cmd) {
 						case B3DCsvCommands.CreateMeshBuilder:
 						case B3DCsvCommands.MeshBuilder:
