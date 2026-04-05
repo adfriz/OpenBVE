@@ -119,6 +119,26 @@ namespace AssimpNET.Obj
 			ParseFile(lines);
 		}
 
+		public ObjFileParser(string fileName, string modelName, string originalObjFileName)
+		{
+			Model = null;
+			Line = 0;
+			OriginalObjFileName = originalObjFileName;
+			ObjFilePath = fileName;
+
+			// Create the model instance to store all the data
+			Model = new Model(modelName);
+			if (!File.Exists(fileName))
+			{
+				return;
+			}
+			// Start parsing the file
+			using (StreamReader reader = new StreamReader(fileName))
+			{
+				ParseFile(reader);
+			}
+		}
+
 		public Model GetModel()
 		{
 			return Model;
@@ -129,170 +149,184 @@ namespace AssimpNET.Obj
 		{
 			foreach (string buffer in lines)
 			{
-				Buffer = buffer;
-				DataIt = 0;
-				DataEnd = Buffer.Length;
+				ProcessLine(buffer);
+			}
+		}
 
-				if (Buffer.Length == 0)
-				{
-					continue;
-				}
-				int hash = buffer.IndexOf('#');
-				int eq = buffer.IndexOf('=');
-				if (buffer.IndexOf("SketchUp", StringComparison.InvariantCultureIgnoreCase) != -1)
-				{
-					Model.Exporter = ModelExporter.SketchUp;
-				}
+		protected void ParseFile(TextReader reader)
+		{
+			string buffer;
+			while ((buffer = reader.ReadLine()) != null)
+			{
+				ProcessLine(buffer);
+			}
+		}
 
-				if (buffer.IndexOf("BlockBench", StringComparison.InvariantCultureIgnoreCase) != -1)
+		private void ProcessLine(string buffer)
+		{
+			Buffer = buffer;
+			DataIt = 0;
+			DataEnd = Buffer.Length;
+
+			if (Buffer.Length == 0)
+			{
+				return;
+			}
+			int hash = buffer.IndexOf('#');
+			int eq = buffer.IndexOf('=');
+			if (buffer.IndexOf("SketchUp", StringComparison.InvariantCultureIgnoreCase) != -1)
+			{
+				Model.Exporter = ModelExporter.SketchUp;
+			}
+
+			if (buffer.IndexOf("BlockBench", StringComparison.InvariantCultureIgnoreCase) != -1)
+			{
+				Model.Exporter = ModelExporter.BlockBench;
+			}
+			if (buffer.IndexOf("Blender", StringComparison.InvariantCultureIgnoreCase) != -1)
+			{
+				Model.Exporter = ModelExporter.Blender;
+			}
+			if (hash != -1)
+			{
+				string afterHash = buffer.Substring(hash + 1).Trim();
+				if (afterHash.StartsWith("File units", StringComparison.InvariantCultureIgnoreCase))
 				{
-					Model.Exporter = ModelExporter.BlockBench;
-				}
-				if (buffer.IndexOf("Blender", StringComparison.InvariantCultureIgnoreCase) != -1)
-				{
-					Model.Exporter = ModelExporter.Blender;
-				}
-				if(hash != -1)
-				{
-					string afterHash = buffer.Substring(hash + 1).Trim();
-					if (afterHash.StartsWith("File units", StringComparison.InvariantCultureIgnoreCase))
+					string units = buffer.Substring(eq + 1).Trim().ToLowerInvariant();
+					switch (units)
 					{
-						string units = buffer.Substring(eq + 1).Trim().ToLowerInvariant();
-						switch (units)
-						{
-							/*
-							 * Apply unit correction factor
-							 * This is not a default obj feature, but seems to appear in Sketchup exported files
-							 */
-							case "millimeters":
-								Model.ScaleFactor = 0.001;
-								break;
-							case "centimeters":
-								Model.ScaleFactor = 0.01;
-								break;
-							case "meters":
-								Model.ScaleFactor = 1.0;
-								break;
-						}
+						/*
+						 * Apply unit correction factor
+						 * This is not a default obj feature, but seems to appear in Sketchup exported files
+						 */
+						case "millimeters":
+							Model.ScaleFactor = 0.001;
+							break;
+						case "centimeters":
+							Model.ScaleFactor = 0.01;
+							break;
+						case "meters":
+							Model.ScaleFactor = 1.0;
+							break;
 					}
 				}
+			}
 
-				// parse line
-				switch (Buffer[DataIt])
-				{
-					case 'v': // Parse a vertex texture coordinate
+			// parse line
+			switch (Buffer[DataIt])
+			{
+				case 'v': // Parse a vertex texture coordinate
+					{
+						++DataIt;
+						if (Buffer[DataIt] == ' ' || Buffer[DataIt] == '\t')
 						{
+							int numComponents = GetNumComponentsInDataDefinition();
+							switch (numComponents)
+							{
+								case 3:
+									// read in vertex definition
+									GetVector3(Model.Vertices);
+									break;
+								case 4:
+									// read in vertex definition (homogeneous coords)
+									GetHomogeneousVector3(Model.Vertices);
+									break;
+								case 6:
+									// read vertex and vertex-color
+									GetTwoVectors3(Model.Vertices, Model.VertexColors);
+									break;
+								default:
+									throw new InvalidDataException(numComponents + " arguments were supplied. A vertex must supply either 3, 4 or 6 arguments.");
+							}
+							if (Model.Exporter >= ModelExporter.UnknownLeftHanded)
+							{
+								Model.Vertices[Model.Vertices.Count - 1] = new Vector3(Model.Vertices[Model.Vertices.Count - 1].X * -1.0, Model.Vertices[Model.Vertices.Count - 1].Y, Model.Vertices[Model.Vertices.Count - 1].Z);
+							}
+						}
+						else if (Buffer[DataIt] == 't')
+						{
+							// read in texture coordinate ( 2D or 3D )
 							++DataIt;
-							if (Buffer[DataIt] == ' ' || Buffer[DataIt] == '\t')
-							{
-								int numComponents = GetNumComponentsInDataDefinition();
-								switch (numComponents)
-								{
-									case 3:
-										// read in vertex definition
-										GetVector3(Model.Vertices);
-										break;
-									case 4:
-										// read in vertex definition (homogeneous coords)
-										GetHomogeneousVector3(Model.Vertices);
-										break;
-									case 6:
-										// read vertex and vertex-color
-										GetTwoVectors3(Model.Vertices, Model.VertexColors);
-										break;
-									default:
-										throw new InvalidDataException(numComponents + " arguments were supplied. A vertex must supply either 3, 4 or 6 arguments.");
-								}
-								if (Model.Exporter >= ModelExporter.UnknownLeftHanded)
-								{
-									Model.Vertices[Model.Vertices.Count - 1] = new Vector3(Model.Vertices[Model.Vertices.Count - 1].X * -1.0, Model.Vertices[Model.Vertices.Count - 1].Y, Model.Vertices[Model.Vertices.Count - 1].Z);
-								}
-							}
-							else if (Buffer[DataIt] == 't')
-							{
-								// read in texture coordinate ( 2D or 3D )
-								++DataIt;
-								GetVector(Model.TextureCoord);
-							}
-							else if (Buffer[DataIt] == 'n')
-							{
-								// Read in normal vector definition
-								++DataIt;
-								GetVector3(Model.Normals);
-							}
+							GetVector(Model.TextureCoord);
 						}
-						break;
-					case 'p': // Parse a face, line or point statement
-					case 'l':
-					case 'f':
+						else if (Buffer[DataIt] == 'n')
 						{
-							GetFace(Buffer[DataIt] == 'f' ? PrimitiveType.PrimitiveType_POLYGON : (Buffer[DataIt] == 'l' ? PrimitiveType.PrimitiveType_LINE : PrimitiveType.PrimitiveType_POINT));
+							// Read in normal vector definition
+							++DataIt;
+							GetVector3(Model.Normals);
 						}
-						break;
-					case '#': // Parse a comment
-						{
-							GetComment();
-						}
-						break;
-					case 'u': // Parse a material desc. setter
-						{
-							GetNameNoSpace(DataIt, DataEnd, out string name);
+					}
+					break;
+				case 'p': // Parse a face, line or point statement
+				case 'l':
+				case 'f':
+					{
+						GetFace(Buffer[DataIt] == 'f' ? PrimitiveType.PrimitiveType_POLYGON : (Buffer[DataIt] == 'l' ? PrimitiveType.PrimitiveType_LINE : PrimitiveType.PrimitiveType_POINT));
+					}
+					break;
+				case '#': // Parse a comment
+					{
+						GetComment();
+					}
+					break;
+				case 'u': // Parse a material desc. setter
+					{
+						GetNameNoSpace(DataIt, DataEnd, out string name);
 
-							int nextSpace = name.IndexOf(" ", StringComparison.OrdinalIgnoreCase);
-							if (nextSpace != -1)
-							{
-								name = name.Substring(0, nextSpace);
-							}
+						int nextSpace = name.IndexOf(" ", StringComparison.OrdinalIgnoreCase);
+						if (nextSpace != -1)
+						{
+							name = name.Substring(0, nextSpace);
+						}
 
-							if (name == "usemtl")
-							{
-								GetMaterialDesc();
-							}
-						}
-						break;
-					case 'm': // Parse a material library or merging group ('mg')
+						if (name == "usemtl")
 						{
-							GetNameNoSpace(DataIt, DataEnd, out string name);
+							GetMaterialDesc();
+						}
+					}
+					break;
+				case 'm': // Parse a material library or merging group ('mg')
+					{
+						GetNameNoSpace(DataIt, DataEnd, out string name);
 
-							int nextSpace = name.IndexOf(" ", StringComparison.OrdinalIgnoreCase);
-							if (nextSpace != -1)
-							{
-								name = name.Substring(0, nextSpace);
-							}
+						int nextSpace = name.IndexOf(" ", StringComparison.OrdinalIgnoreCase);
+						if (nextSpace != -1)
+						{
+							name = name.Substring(0, nextSpace);
+						}
 
-							if (name == "mg")
-							{
-								GetGroupNumberAndResolution();
-							}
-							else if (name == "mtllib")
-							{
-								GetMaterialLib();
-							}
-							else
-							{
-								DataIt = SkipLine(DataIt, DataEnd, ref Line);
-							}
-						}
-						break;
-					case 'g': // Parse group name
+						if (name == "mg")
 						{
-							GetGroupName();
+							GetGroupNumberAndResolution();
 						}
-						break;
-					case 's': // Parse group number
+						else if (name == "mtllib")
 						{
-							GetGroupNumber();
+							GetMaterialLib();
 						}
-						break;
-					case 'o': // Parse object name
+						else
 						{
-							GetObjectName();
+							DataIt = SkipLine(DataIt, DataEnd, ref Line);
 						}
-						break;
-					default:
-						DataIt = SkipLine(DataIt, DataEnd, ref Line);
-						break;
-				}
+					}
+					break;
+				case 'g': // Parse group name
+					{
+						GetGroupName();
+					}
+					break;
+				case 's': // Parse group number
+					{
+						GetGroupNumber();
+					}
+					break;
+				case 'o': // Parse object name
+					{
+						GetObjectName();
+					}
+					break;
+				default:
+					DataIt = SkipLine(DataIt, DataEnd, ref Line);
+					break;
 			}
 		}
 
@@ -746,7 +780,10 @@ namespace AssimpNET.Obj
 			// Some exporters (e.g. Silo) will happily write out empty
 			// material files if the model doesn't use any materials, so we
 			// allow that.
-			ObjFileMtlImporter importer = new ObjFileMtlImporter(File.ReadAllLines(absName), ref Model);
+			using (StreamReader reader = new StreamReader(absName))
+			{
+				ObjFileMtlImporter importer = new ObjFileMtlImporter(reader, ref Model);
+			}
 		}
 
 		//  Getter for a group name.

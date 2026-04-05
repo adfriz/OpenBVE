@@ -137,116 +137,144 @@ namespace AssimpNET.Obj
 			model = Model;
 		}
 
+		internal ObjFileMtlImporter(TextReader reader, ref Model model)
+		{
+			Model = model;
+			Line = 0;
+
+			Debug.Assert(Model != null);
+			if (Model.DefaultMaterial == null)
+			{
+				Model.DefaultMaterial = new Material("default");
+			}
+			Load(reader);
+			model = Model;
+		}
+
 		/// Load the whole material description
 		private void Load(string[] lines)
 		{
 			foreach (string buffer in lines)
 			{
-				Buffer = buffer;
-				DataIt = 0;
-				DataEnd = Buffer.Length;
+				ProcessLine(buffer);
+			}
+		}
 
-				if (Buffer.Length == 0)
-				{
-					continue;
-				}
+		private void Load(TextReader reader)
+		{
+			string buffer;
+			while ((buffer = reader.ReadLine()) != null)
+			{
+				ProcessLine(buffer);
+			}
+		}
 
-				switch (char.ToLower(Buffer[DataIt], CultureInfo.InvariantCulture))
-				{
-					case 'k':
+		private void ProcessLine(string buffer)
+		{
+			Buffer = buffer;
+			DataIt = 0;
+			DataEnd = Buffer.Length;
+
+			if (Buffer.Length == 0)
+			{
+				return;
+			}
+
+			switch (char.ToLower(Buffer[DataIt], CultureInfo.InvariantCulture))
+			{
+				case 'k':
+					{
+						DataIt++;
+						switch (Buffer[DataIt])
 						{
-							DataIt++;
-							switch (Buffer[DataIt])
-							{
-								// Ambient color
-								case 'a':
-									DataIt++;
-									GetColorRGB(ref Model.CurrentMaterial.Ambient);
-									break;
-								// Diffuse color
-								case 'd':
-									DataIt++;
-									GetColorRGBA(ref Model.CurrentMaterial.Diffuse);
-									break;
-								case 's':
-									DataIt++;
-									GetColorRGB(ref Model.CurrentMaterial.Specular);
-									break;
-								case 'e':
-									DataIt++;
-									GetColorRGB(ref Model.CurrentMaterial.Emissive);
-									break;
-							}
-							DataIt = SkipLine(DataIt, DataEnd, ref Line);
-						}
-						break;
-					case 't':
-						{
-							DataIt++;
-							if (Buffer[DataIt] == 'f')  // Material transmission
-							{
+							// Ambient color
+							case 'a':
 								DataIt++;
-								GetColorRGB(ref Model.CurrentMaterial.Transparent);
-								Model.CurrentMaterial.TransparentUsed = true;
-							}
-							DataIt = SkipLine(DataIt, DataEnd, ref Line);
+								GetColorRGB(ref Model.CurrentMaterial.Ambient);
+								break;
+							// Diffuse color
+							case 'd':
+								DataIt++;
+								GetColorRGBA(ref Model.CurrentMaterial.Diffuse);
+								break;
+							case 's':
+								DataIt++;
+								GetColorRGB(ref Model.CurrentMaterial.Specular);
+								break;
+							case 'e':
+								DataIt++;
+								GetColorRGB(ref Model.CurrentMaterial.Emissive);
+								break;
 						}
-						break;
-					case 'd':
-						{
-							if (Buffer.Length > DataIt + 3 && Buffer.Substring(DataIt + 1, 3) == "isp")
-							{
-								// A displacement map
-								GetTexture();
-							}
-							else
-							{
-								// Alpha value
-								++DataIt;
-								GetFloatValue(out Model.CurrentMaterial.Alpha);
-								DataIt = SkipLine(DataIt, DataEnd, ref Line);
-							}
-						}
-						break;
-					case 'n':
-						{
-							++DataIt;
-							switch (Buffer[DataIt])
-							{
-								case 's':  // Specular exponent
-									++DataIt;
-									GetFloatValue(out Model.CurrentMaterial.Shineness);
-									break;
-								case 'i':  // Index Of refraction
-									++DataIt;
-									GetFloatValue(out Model.CurrentMaterial.Ior);
-									break;
-								case 'e':  // New material
-									CreateMaterial();
-									break;
-							}
-							DataIt = SkipLine(DataIt, DataEnd, ref Line);
-						}
-						break;
-					case 'm':  // Texture
-					case 'b':  // quick'n'dirty - for 'bump' sections
-					case 'r':  // quick'n'dirty - for 'refl' sections
-						{
-							GetTexture();
-							DataIt = SkipLine(DataIt, DataEnd, ref Line);
-						}
-						break;
-					case 'i':  // Illumination model
-						{
-							DataIt = GetNextToken(DataIt, DataEnd);
-							GetIlluminationModel(out Model.CurrentMaterial.IlluminationModel);
-							DataIt = SkipLine(DataIt, DataEnd, ref Line);
-						}
-						break;
-					default:
 						DataIt = SkipLine(DataIt, DataEnd, ref Line);
-						break;
-				}
+					}
+					break;
+				case 't':
+					{
+						DataIt++;
+						if (Buffer[DataIt] == 'f')  // Material transmission
+						{
+							DataIt++;
+							GetColorRGB(ref Model.CurrentMaterial.Transparent);
+							Model.CurrentMaterial.TransparentUsed = true;
+						}
+						DataIt = SkipLine(DataIt, DataEnd, ref Line);
+					}
+					break;
+				case 'd':
+					{
+						if (Buffer.Length > DataIt + 3 && Buffer.Substring(DataIt + 1, 3) == "isp")
+						{
+							// A displacement map
+							GetTexture();
+						}
+						else
+						{
+							// Alpha value
+							++DataIt;
+							GetFloatValue(out Model.CurrentMaterial.Alpha);
+							DataIt = SkipLine(DataIt, DataEnd, ref Line);
+						}
+					}
+					break;
+				case 'n':
+					{
+						++DataIt;
+						switch (Buffer[DataIt])
+						{
+							case 's':  // Specular exponent
+								++DataIt;
+								GetFloatValue(out Model.CurrentMaterial.Shineness);
+								break;
+							case 'i':  // Index Of refraction
+								++DataIt;
+								GetFloatValue(out Model.CurrentMaterial.Ior);
+								break;
+							case 'e':  // New material
+								CreateMaterial();
+								break;
+						}
+						DataIt = SkipLine(DataIt, DataEnd, ref Line);
+					}
+					break;
+				case 'm':  // Texture
+				case 'b':  // quick'n'dirty - for 'bump' sections
+				case 'r':  // quick'n'dirty - for 'refl' sections
+					{
+						GetTexture();
+						DataIt = SkipLine(DataIt, DataEnd, ref Line);
+					}
+					break;
+				case 'i':  // Illumination model
+					{
+						DataIt = GetNextToken(DataIt, DataEnd);
+						GetIlluminationModel(out Model.CurrentMaterial.IlluminationModel);
+						DataIt = SkipLine(DataIt, DataEnd, ref Line);
+					}
+					break;
+				default:
+					DataIt = SkipLine(DataIt, DataEnd, ref Line);
+					break;
 			}
 		}
 

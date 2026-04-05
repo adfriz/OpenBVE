@@ -198,27 +198,19 @@ namespace Plugin
 			}
 
 			int nMaterials = mesh.Materials.Count;
-			int nFaceIndices = mesh.FaceMaterials.Count;
-			for (int i = 0; i < nFaceIndices; i++)
-			{
-				int fMaterial = (int)mesh.FaceMaterials[i];
-				MeshFace f = builder.Faces[i];
-				f.Material = (ushort)(fMaterial + 1);
-				builder.Faces[i] = f;
-			}
+			int mBase = builder.Materials.Length;
+			Array.Resize(ref builder.Materials, mBase + nMaterials);
 			for (int i = 0; i < nMaterials; i++)
 			{
-				int m = builder.Materials.Length;
-				Array.Resize(ref builder.Materials, m + 1);
+				int m = mBase + i;
 				builder.Materials[m] = new OpenBveApi.Objects.Material();
 				builder.Materials[m].Color = new Color32(mesh.Materials[i].Diffuse);
-				double mPower = mesh.Materials[i].SpecularExponent; //TODO: Unsure what this does...
-				Color24 mSpecular = new Color24(mesh.Materials[i].Specular);
+				// Specular color not supported in current renderer
 				builder.Materials[m].EmissiveColor = new Color24(mesh.Materials[i].Emissive);
-				builder.Materials[m].Flags |= MaterialFlags.Emissive; //TODO: Check exact behaviour
+				builder.Materials[m].Flags |= MaterialFlags.Emissive;
 				if (Plugin.EnabledHacks.BlackTransparency)
 				{
-					builder.Materials[m].TransparentColor = Color24.Black; //TODO: Check, also can we optimise which faces have the transparent color set?
+					builder.Materials[m].TransparentColor = Color24.Black;
 					builder.Materials[m].Flags |= MaterialFlags.TransparentColor;
 				}
 				
@@ -229,11 +221,8 @@ namespace Plugin
 					{
 						Plugin.CurrentHost.AddMessage(MessageType.Information, false, $"An empty texture was specified for material { mesh.Materials[i].Name }");
 						builder.Materials[m].DaytimeTexture = null;
-						break;
+						continue;
 					}
-					// If the specified file name is an absolute path, make it the file name only.
-					// Some object files specify absolute paths.
-					// And BVE4/5 doesn't allow textures to be placed in a different directory than the object file.
 					if (Plugin.EnabledHacks.BveTsHacks && OpenBveApi.Path.IsAbsolutePath(texturePath))
 					{
 						texturePath = texturePath.Split('/', '\\').Last();
@@ -255,6 +244,15 @@ namespace Plugin
 						builder.Materials[m].DaytimeTexture = null;
 					}
 				}
+			}
+
+			int nFaceIndices = mesh.FaceMaterials.Count;
+			for (int i = 0; i < nFaceIndices; i++)
+			{
+				int fMaterial = (int)mesh.FaceMaterials[i];
+				MeshFace f = builder.Faces[i];
+				f.Material = (ushort)(mBase + fMaterial + 1);
+				builder.Faces[i] = f;
 			}
 
 			if (mesh.TexCoords.Length > 0 && mesh.TexCoords[0] != null)

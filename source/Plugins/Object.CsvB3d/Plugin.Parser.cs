@@ -15,9 +15,38 @@ namespace Object.CsvB3d
 {
 	public partial class Plugin
 	{
+		private static readonly Dictionary<string, B3DCsvCommands> CommandMap = new Dictionary<string, B3DCsvCommands>(StringComparer.OrdinalIgnoreCase);
+
+		private static readonly string[] ImageExtensions = { ".bmp", ".gif", ".jpg", ".jpeg", ".png" };
+
+		private static readonly string[] CsvCommands =
+		{
+			"createmeshbuilder",
+			"addvertex",
+			"addface", //No need to add Face2, as this is a substring of it
+			"setcolor",
+			"translate",
+			"rotate",
+			"generatenormals", //Useless, but might have a second column
+			"loadtexture",
+			"settexturecoordinates",
+			"setemissivecolor",
+			"setdecaltransparentcolor",
+			"enablecrossfading",
+			"loadlightmap"
+		};
+
+		static Plugin()
+		{
+			foreach (var name in Enum.GetNames(typeof(B3DCsvCommands)))
+			{
+				CommandMap[name] = (B3DCsvCommands)Enum.Parse(typeof(B3DCsvCommands), name);
+			}
+		}
+
 		private static bool IsCommand(string Text, bool IsB3d)
 		{
-			if (!Enum.TryParse(Text, true, out B3DCsvCommands command))
+			if (!CommandMap.TryGetValue(Text, out B3DCsvCommands command))
 			{
 				// not a valid command
 				return false;
@@ -42,44 +71,34 @@ namespace Object.CsvB3d
 			return false;
 		}
 
-		private static readonly string[] CsvCommands =
-		{
-			"createmeshbuilder",
-			"addvertex",
-			"addface", //No need to add Face2, as this is a substring of it
-			"setcolor",
-			"translate",
-			"rotate",
-			"generatenormals", //Useless, but might have a second column
-			"loadtexture",
-			"settexturecoordinates",
-			"setemissivecolor",
-			"setdecaltransparentcolor",
-			"enablecrossfading",
-			"loadlightmap"
-		};
-
 		private static int SecondIndexOfAny(string testString, string[] values)
 		{
-			if (testString == null)
+			if (string.IsNullOrEmpty(testString))
 			{
 				return -1;
 			}
-			int first = -1;
+			int firstOffset = int.MaxValue;
+			string firstItem = null;
 			foreach (string item in values) {
-				int offset = testString.IndexOf(item, StringComparison.CurrentCultureIgnoreCase);
-				if (offset >= 0) {
-					//Found a command in the string
-					foreach (string secondItem in values) {
-						int secondOffset = testString.IndexOf(secondItem, offset + 1, StringComparison.CurrentCultureIgnoreCase);
-						if (secondOffset >= 0) {
-							//Found a second command in the string so return this offset
-							return secondOffset;
-						}
-					}
+				int offset = testString.IndexOf(item, StringComparison.OrdinalIgnoreCase);
+				if (offset >= 0 && offset < firstOffset) {
+					firstOffset = offset;
+					firstItem = item;
 				}
 			}
-			return first;
+			if (firstItem != null) {
+				int secondOffset = int.MaxValue;
+				foreach (string item in values) {
+					int offset = testString.IndexOf(item, firstOffset + 1, StringComparison.OrdinalIgnoreCase);
+					if (offset >= 0 && offset < secondOffset) {
+						secondOffset = offset;
+					}
+				}
+				if (secondOffset != int.MaxValue) {
+					return secondOffset;
+				}
+			}
+			return -1;
 		}
 
 		/// <summary>Loads a CSV or B3D object from a file.</summary>
@@ -91,20 +110,23 @@ namespace Object.CsvB3d
 			bool IsB3D = string.Equals(System.IO.Path.GetExtension(FileName), ".b3d", StringComparison.OrdinalIgnoreCase);
 			// initialize object
 			StaticObject Object = new StaticObject(currentHost);
-			string fileHash = Path.GetChecksum(FileName);
 			bool multiColumn = !IsB3D;
-			switch (fileHash)
+			if (multiColumn)
 			{
-				case "C605832CCDC73883AC4A557EB3AD0D3EAAB678D64B2659D6A342EAD5BEECD2B9":
-				case "5283E317C51CBAB6015C178D425C06724225605D0662530AE93B850A908FE55A":
-				case "3078438BCF679CB1DE2F2372A8791A2C10D29FAED6871C25348EE5C2F977C2E6":
-				case "0F928CE5BC277C056E7174545C8DA9326D99463DA59C541317FC831D3443E273":
-					/*
-					 * RailJet 2012 objects
-					 * Total mess....
-					 */
-					multiColumn = false;
-					break;
+				string fileHash = Path.GetChecksum(FileName);
+				switch (fileHash)
+				{
+					case "C605832CCDC73883AC4A557EB3AD0D3EAAB678D64B2659D6A342EAD5BEECD2B9":
+					case "5283E317C51CBAB6015C178D425C06724225605D0662530AE93B850A908FE55A":
+					case "3078438BCF679CB1DE2F2372A8791A2C10D29FAED6871C25348EE5C2F977C2E6":
+					case "0F928CE5BC277C056E7174545C8DA9326D99463DA59C541317FC831D3443E273":
+						/*
+						 * RailJet 2012 objects
+						 * Total mess....
+						 */
+						multiColumn = false;
+						break;
+				}
 			}
 			// read lines
 			List<string> Lines = System.IO.File.ReadAllLines(FileName, Encoding).ToList();
@@ -151,64 +173,69 @@ namespace Object.CsvB3d
 			bool CommentStarted = false;
 			Color24? lastTransparentColor = null;
 			for (int i = 0; i < Lines.Count; i++) {
+				string line = Lines[i];
+				if (string.IsNullOrWhiteSpace(line)) continue;
 				{
 					// Strip OpenBVE original standard comments
-					int j = Lines[i].IndexOf(';');
+					int j = line.IndexOf(';');
 					if (j >= 0)
 					{
-						Lines[i] = Lines[i].Substring(0, j);
+						line = line.Substring(0, j);
 					}
 					// Strip double backslash comments
-					int k = Lines[i].IndexOf("//", StringComparison.Ordinal);
+					int k = line.IndexOf("//", StringComparison.Ordinal);
 					if (k >= 0)
 					{
-						if (!IsPotentialPath(Lines[i]))
+						if (!IsPotentialPath(line))
 						{
 							//HACK: Handles malformed potential paths
-							Lines[i] = Lines[i].Substring(0, k);
+							line = line.Substring(0, k);
 						}
 						
 					}
 					//Strip star backslash comments
 					if (!CommentStarted)
 					{
-						int l = Lines[i].IndexOf("/*", StringComparison.Ordinal);
+						int l = line.IndexOf("/*", StringComparison.Ordinal);
 						if (l >= 0)
 						{
 							CommentStarted = true;
-							string Part1 = Lines[i].Substring(0, l);
-							int m = Lines[i].IndexOf("*/", StringComparison.Ordinal);
+							string Part1 = line.Substring(0, l);
+							int m = line.IndexOf("*/", StringComparison.Ordinal);
 							string Part2 = "";
 							if (m >= 0)
 							{
-								Part2 = Lines[i].Substring(m + 2, Lines[i].Length - 2);
+								Part2 = line.Substring(m + 2);
 							}
-							Lines[i] = String.Concat(Part1, Part2);
+							line = Part1 + Part2;
 						}
 					}
 					else
 					{
-						int l = Lines[i].IndexOf("*/", StringComparison.Ordinal);
+						int l = line.IndexOf("*/", StringComparison.Ordinal);
 						if (l >= 0)
 						{
 							CommentStarted = false;
-							if (l + 2 != Lines[i].Length)
+							if (l + 2 < line.Length)
 							{
-								Lines[i] = Lines[i].Substring(l + 2, (Lines[i].Length - 2));
+								line = line.Substring(l + 2);
 							}
 							else
 							{
-								Lines[i] = "";
+								line = "";
 							}
 						}
 						else
 						{
-							Lines[i] = "";
+							line = "";
 						}
 					}
 				}
+
+				if (string.IsNullOrWhiteSpace(line)) continue;
+
 				// collect arguments
-				string[] Arguments = Lines[i].Split(new[] { ',' }, StringSplitOptions.None);
+				string[] Arguments = line.Split(',');
 				for (int j = 0; j < Arguments.Length; j++) {
 					Arguments[j] = Arguments[j].Trim();
 				}
@@ -218,7 +245,10 @@ namespace Object.CsvB3d
 					for (j = Arguments.Length - 1; j >= 0; j--) {
 						if (Arguments[j].Length != 0) break;
 					}
-					Array.Resize(ref Arguments, j + 1);
+					if (j < Arguments.Length - 1)
+					{
+						Array.Resize(ref Arguments, j + 1);
+					}
 				}
 				// style
 				string Command;
@@ -263,10 +293,11 @@ namespace Object.CsvB3d
 				} else if (Arguments.Length != 0) {
 					// csv
 					Command = Arguments[0];
+					string[] newArgs = new string[Arguments.Length - 1];
 					for (int j = 0; j < Arguments.Length - 1; j++) {
-						Arguments[j] = Arguments[j + 1];
+						newArgs[j] = Arguments[j + 1];
 					}
-					Array.Resize(ref Arguments, Arguments.Length - 1);
+					Arguments = newArgs;
 				} else {
 					// empty
 					Command = null;
@@ -274,8 +305,9 @@ namespace Object.CsvB3d
 				// parse terms
 				if (Command != null)
 				{
-					Enum.TryParse(Command.TrimStart('[').TrimEnd(']'), true, out B3DCsvCommands cmd);
-					switch(cmd) {
+					string trimmedCommand = Command.TrimStart('[').TrimEnd(']');
+					if (CommandMap.TryGetValue(trimmedCommand, out B3DCsvCommands cmd)) {
+						switch(cmd) {
 						case B3DCsvCommands.CreateMeshBuilder:
 						case B3DCsvCommands.MeshBuilder:
 							{
@@ -1567,6 +1599,7 @@ namespace Object.CsvB3d
 					}
 				}
 			}
+		}
 			// finalize object
 			Builder.Apply(ref Object, enabledHacks.BveTsHacks);
 			Object.Mesh.CreateNormals();
@@ -1600,10 +1633,9 @@ namespace Object.CsvB3d
 
 		private static bool IsPotentialPath(string Line)
 		{
-			string[] Images = {".bmp", ".gif" ,".jpg", ".jpeg", ".png"};
-			for (int i = 0; i < Images.Length; i++)
+			for (int i = 0; i < ImageExtensions.Length; i++)
 			{
-				if (Line.IndexOf(Images[i], StringComparison.OrdinalIgnoreCase) >= 0)
+				if (Line.IndexOf(ImageExtensions[i], StringComparison.OrdinalIgnoreCase) >= 0)
 				{
 					return true;
 				}

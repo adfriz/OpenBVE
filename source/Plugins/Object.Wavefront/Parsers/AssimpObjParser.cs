@@ -1,4 +1,4 @@
-﻿//Simplified BSD License (BSD-2-Clause)
+//Simplified BSD License (BSD-2-Clause)
 //
 //Copyright (c) 2020, S520, The OpenBVE Project
 //
@@ -44,19 +44,19 @@ namespace Plugin
 			currentFolder = Path.GetDirectoryName(fileName);
 			try
 			{
-				ObjFileParser parser = new ObjFileParser(System.IO.File.ReadAllLines(fileName), null, System.IO.Path.GetFileNameWithoutExtension(fileName), fileName);
+				ObjFileParser parser = new ObjFileParser(fileName, null, System.IO.Path.GetFileNameWithoutExtension(fileName));
 				Model model = parser.GetModel();
 
 				StaticObject obj = new StaticObject(Plugin.currentHost);
 				MeshBuilder builder = new MeshBuilder(Plugin.currentHost);
 
-				List<Vertex> allVertices = new List<Vertex>();
+				List<Vertex> allVertices = new List<Vertex>(model.Vertices.Count);
 				foreach (var vertex in model.Vertices)
 				{
 					allVertices.Add(new Vertex(vertex * model.ScaleFactor));
 				}
 
-				List<Vector2> allTexCoords = new List<Vector2>();
+				List<Vector2> allTexCoords = new List<Vector2>(model.TextureCoord.Count);
 				foreach (var texCoord in model.TextureCoord)
 				{
 					Vector2 textureCoordinate = new Vector2(texCoord.X, texCoord.Y);
@@ -75,13 +75,44 @@ namespace Plugin
 					
 				}
 
-				List<Vector3> allNormals = new List<Vector3>();
+				List<Vector3> allNormals = new List<Vector3>(model.Normals.Count);
 				foreach (var normal in model.Normals)
 				{
 					allNormals.Add(new Vector3(normal.X, normal.Y, normal.Z));
 				}
 
-				Material lastMaterial = null;
+				// Map OBJ materials to MeshBuilder materials
+				Dictionary<AssimpNET.Obj.Material, int> materialMap = new Dictionary<AssimpNET.Obj.Material, int>();
+				for (int i = 0; i < model.MaterialLib.Count; i++)
+				{
+					string matName = model.MaterialLib[i];
+					if (model.MaterialMap.TryGetValue(matName, out var material))
+					{
+						int mIdx = builder.Materials.Length;
+						Array.Resize(ref builder.Materials, mIdx + 1);
+						builder.Materials[mIdx] = new OpenBveApi.Objects.Material();
+						builder.Materials[mIdx].Color = new Color32(material.Diffuse);
+						//Current openBVE renderer does not support specular color
+						//Color24 mSpecular = new Color24(material.Specular);
+						builder.Materials[mIdx].EmissiveColor = new Color24(material.Emissive);
+						builder.Materials[mIdx].Flags |= MaterialFlags.Emissive; //TODO: Check exact behaviour
+						if (material.TransparentUsed)
+						{
+							builder.Materials[mIdx].TransparentColor = new Color24(material.Transparent);
+							builder.Materials[mIdx].Flags |= MaterialFlags.TransparentColor;
+						}
+						if (material.Texture != null)
+						{
+							builder.Materials[mIdx].DaytimeTexture = Path.CombineFile(currentFolder, material.Texture);
+							if (!System.IO.File.Exists(builder.Materials[mIdx].DaytimeTexture))
+							{
+								Plugin.currentHost.AddMessage(MessageType.Error, true, "Texture " + builder.Materials[mIdx].DaytimeTexture + " was not found in file " + fileName);
+								builder.Materials[mIdx].DaytimeTexture = null;
+							}
+						}
+						materialMap[material] = mIdx;
+					}
+				}
 
 				foreach (AssimpNET.Obj.Mesh mesh in model.Meshes)
 				{
@@ -91,17 +122,17 @@ namespace Plugin
 						int bVerts = builder.Vertices.Count;
 						if (nVerts == 0)
 						{
-							throw new Exception("nVertices must be greater than zero");
+							continue;
 						}
 						for (int i = 0; i < nVerts; i++)
 						{
-							VertexTemplate v = allVertices[(int)face.Vertices[i]].Clone();
-							if (allTexCoords.Count > 0 && i <= allTexCoords.Count && face.TexturCoords.Count > 0 && i <= face.TexturCoords.Count)
+							int vIdx = (int)face.Vertices[i];
+							VertexTemplate v = allVertices[vIdx].Clone();
+							if (allTexCoords.Count > 0 && face.TexturCoords.Count > i)
 							{
 								v.TextureCoordinates = allTexCoords[(int)face.TexturCoords[i]];
 							}
 							builder.Vertices.Add(v);
-							
 						}
 
 						MeshFace f = new MeshFace(nVerts);
@@ -113,53 +144,22 @@ namespace Plugin
 								f.Vertices[i].Normal = allNormals[(int)face.Normals[i]];
 							}
 						}
-						f.Material = 1;
-						builder.Faces.Add(f);
 						
-
-						int m = builder.Materials.Length;
-						Array.Resize(ref builder.Materials, m + 1);
-						builder.Materials[m] = new OpenBveApi.Objects.Material();
-						uint materialIndex = mesh.MaterialIndex;
-						if (materialIndex != AssimpNET.Obj.Mesh.NoMaterial)
+						if (materialMap.TryGetValue(face.Material, out int m))
 						{
-							AssimpNET.Obj.Material material = model.MaterialMap[model.MaterialLib[(int)materialIndex]];
-							builder.Materials[m].Color = new Color32(material.Diffuse);
-#pragma warning disable 0219
-							//Current openBVE renderer does not support specular color
-							// ReSharper disable once UnusedVariable
-							Color24 mSpecular = new Color24(material.Specular);
-#pragma warning restore 0219
-							builder.Materials[m].EmissiveColor = new Color24(material.Emissive);
-							builder.Materials[m].Flags |= MaterialFlags.Emissive; //TODO: Check exact behaviour
-							if (material.TransparentUsed)
-							{
-								builder.Materials[m].TransparentColor = new Color24(material.Transparent);
-								builder.Materials[m].Flags |= MaterialFlags.TransparentColor;
-							}
-							
-							if (material.Texture != null)
-							{
-								builder.Materials[m].DaytimeTexture = Path.CombineFile(currentFolder, material.Texture);
-								if (!System.IO.File.Exists(builder.Materials[m].DaytimeTexture))
-								{
-									Plugin.currentHost.AddMessage(MessageType.Error, true, "Texture " + builder.Materials[m].DaytimeTexture + " was not found in file " + fileName);
-									builder.Materials[m].DaytimeTexture = null;
-								}
-							}
+							f.Material = (ushort)(m + 1);
 						}
+						else
+						{
+							f.Material = 1;
+						}
+						
+						builder.Faces.Add(f);
 
 						if (model.Exporter >= ModelExporter.UnknownLeftHanded)
 						{
-							Array.Reverse(builder.Faces[builder.Faces.Count -1].Vertices, 0, builder.Faces[builder.Faces.Count -1].Vertices.Length);
+							Array.Reverse(builder.Faces[builder.Faces.Count - 1].Vertices, 0, builder.Faces[builder.Faces.Count - 1].Vertices.Length);
 						}
-
-						if (face.Material != lastMaterial)
-						{
-							builder.Apply(ref obj);
-							builder = new MeshBuilder(Plugin.currentHost);
-						}
-						lastMaterial = face.Material;
 					}
 				}
 				builder.Apply(ref obj);
