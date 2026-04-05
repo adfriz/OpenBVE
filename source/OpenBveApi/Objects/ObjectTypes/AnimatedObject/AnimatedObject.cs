@@ -208,7 +208,6 @@ namespace OpenBveApi.Objects
 			if (this.RotateXFunction != null | this.RotateYFunction != null | this.RotateZFunction != null) return false;
 			if (this.TextureShiftXFunction != null | this.TextureShiftYFunction != null) return false;
 			if (this.LEDFunction != null) return false;
-			if (this.TrackFollowerFunction != null) return false;
 			return true;
 		}
 

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <ProjectGuid>{27134980-4415-4375-A564-40A9014DFA5F}</ProjectGuid>
@@ -109,6 +109,7 @@
     <Compile Include="FunctionScripts\FunctionScript.cs" />
     <Compile Include="FunctionScripts\FunctionScript.Notation.cs" />
     <Compile Include="FunctionScripts\Instructions.cs" />
+    <Compile Include="FunctionScripts\KeyframeScript.cs" />
     <Compile Include="Graphics\Camera.RestrictionModes.cs" />
     <Compile Include="Graphics\Colors.ColorPalettes.cs" />
     <Compile Include="Graphics\Colors.cs" />
@@ -153,6 +154,7 @@
     <Compile Include="Objects\ObjectTypes\AnimatedObject\AnimatedWorldObject.StateSound.cs" />
     <Compile Include="Objects\ObjectTypes\Animations\AbstractAnimation.cs" />
     <Compile Include="Objects\ObjectTypes\Animations\Frames\AbstractFrame.cs" />
+    <Compile Include="Objects\ObjectTypes\Animations\Frames\DoubleFrame.cs" />
     <Compile Include="Objects\ObjectTypes\Animations\Frames\QuaternionFrame.cs" />
     <Compile Include="Objects\ObjectTypes\Animations\Frames\VectorFrame.cs" />
     <Compile Include="Objects\ObjectTypes\Animations\LinearPos.cs" />

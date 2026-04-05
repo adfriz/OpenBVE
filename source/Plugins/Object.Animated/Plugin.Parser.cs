@@ -7,6 +7,8 @@ using OpenBveApi.Sounds;
 using OpenBveApi.Textures;
 using System;
 using System.IO;
+using System.Collections.Generic;
+using System.Linq;
 using Path = OpenBveApi.Path;
 
 namespace Plugin
@@ -367,6 +369,50 @@ namespace Plugin
 							}
 						}
 
+						break;
+					case AnimatedSection.Keyframe:
+						if (ObjectCount > 0)
+						{
+							AnimatedObject obj = Result.Objects[ObjectCount - 1];
+							if (obj == null) break;
+							if (Block.GetValue(AnimatedKey.Property, out string property))
+							{
+								Block.GetFunctionScript(new[] { AnimatedKey.Function }, Folder, out AnimationScript inputScript);
+								if (inputScript == null) break;
+
+								List<DoubleFrame> frames = new List<DoubleFrame>();
+								while (Block.RemainingIndexedValues > 0)
+								{
+									if (Block.GetIndexedValue(out int frameIdx, out string frameValue))
+									{
+										if (OpenBveApi.NumberFormats.TryParseDoubleVb6(frameValue, out double val))
+										{
+											frames.Add(new DoubleFrame(frameIdx, val));
+										}
+									}
+								}
+								if (frames.Count > 0)
+								{
+									KeyframeScript kfs = new KeyframeScript(inputScript, frames.OrderBy(x => x.FrameNumber).ToArray());
+									switch (property.ToLowerInvariant())
+									{
+										case "translatex": obj.TranslateXFunction = kfs; break;
+										case "translatey": obj.TranslateYFunction = kfs; break;
+										case "translatez": obj.TranslateZFunction = kfs; break;
+										case "rotatex": obj.RotateXFunction = kfs; break;
+										case "rotatey": obj.RotateYFunction = kfs; break;
+										case "rotatez": obj.RotateZFunction = kfs; break;
+										case "textureshiftx": obj.TextureShiftXFunction = kfs; break;
+										case "textureshifty": obj.TextureShiftYFunction = kfs; break;
+										case "scalex": obj.ScaleXFunction = kfs; break;
+										case "scaley": obj.ScaleYFunction = kfs; break;
+										case "scalez": obj.ScaleZFunction = kfs; break;
+										case "state": obj.StateFunction = kfs; break;
+										case "trackfollower": obj.TrackFollowerFunction = kfs; break;
+									}
+								}
+							}
+						}
 						break;
 				}
 				Block.ReportErrors();
