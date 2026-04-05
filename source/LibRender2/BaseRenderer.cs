@@ -373,6 +373,7 @@ namespace LibRender2
 					currentHost.AddMessage(MessageType.Error, false, "Initializing the default shaders failed- Falling back to legacy openGL.");
 					currentOptions.IsUseNewRenderer = false;
 					ForceLegacyOpenGL = true;
+					GL.GetError();
 					try
 					{
 						/*
@@ -385,6 +386,7 @@ namespace LibRender2
 					catch 
 					{ 
 						// ignored
+						GL.GetError();
 					}
 					
 				}
@@ -534,6 +536,8 @@ namespace LibRender2
 			{
 				Console.Error.WriteLine($"[CSM] Init failed: {ex.Message}");
 				ShadowsEnabled = false;
+				// Purge lingering OpenGL error state if any, to avoid crashing later in ResetShader
+				GL.GetError();
 			}
 		}
 

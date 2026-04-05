@@ -40,11 +40,19 @@ namespace LibRender2.Shaders
 			if (success == 0)
 			{
 				string infoLog = GL.GetProgramInfoLog(Handle);
-				Console.Error.WriteLine($"[ShadowDepthShader] Link error: {infoLog}");
+				throw new Exception($"[ShadowDepthShader] Link error: {infoLog}");
 			}
 
 			GL.DeleteShader(vertShader);
 			GL.DeleteShader(fragShader);
+
+			// Explicitly bind the uniform block for matrices to binding point 0
+			// This matches BindBufferBase(..., 0, ...) in the rendering pass.
+			int matrixBlockIndex = GL.GetUniformBlockIndex(Handle, "matrices");
+			if (matrixBlockIndex != -1)
+			{
+				GL.UniformBlockBinding(Handle, matrixBlockIndex, 0);
+			}
 
 			// Cache uniform locations
 			uLightSpaceMatrix = GL.GetUniformLocation(Handle, "uLightSpaceMatrix");
@@ -95,8 +103,7 @@ namespace LibRender2.Shaders
 			if (success == 0)
 			{
 				string infoLog = GL.GetShaderInfoLog(shader);
-				Console.Error.WriteLine(
-					$"[ShadowDepthShader] Compile error ({type}): {infoLog}");
+				throw new Exception($"[ShadowDepthShader] Compile error ({type}): {infoLog}");
 			}
 			return shader;
 		}
