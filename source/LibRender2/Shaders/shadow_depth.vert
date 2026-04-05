@@ -1,4 +1,4 @@
-#version 430 core
+#version 410 core
 
 layout(location = 0) in vec3 iPosition;
 layout(location = 2) in vec2 iUv;
@@ -9,9 +9,9 @@ uniform mat4 uModelMatrix;
 
 out vec2 vUv;
 
-layout(std140, binding = 0) uniform matrices
+layout(std140) uniform matrices
 {
-	mat4 uMatrix[255];
+	mat4 uMatrix[128];
 };
 
 vec3 transformVector(vec3 vector, int index)
