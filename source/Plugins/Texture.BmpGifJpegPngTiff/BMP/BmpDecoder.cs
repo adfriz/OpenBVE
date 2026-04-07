@@ -319,232 +319,131 @@ namespace Plugin.BMP
 					fileReader.Seek(dataOffset, SeekOrigin.Begin);
 				}
 				// PIXEL DATA
-				buffer = new byte[(int)fileReader.Length - (int)fileReader.Position];
-				// ReSharper disable once MustUseReturnValue
-				fileReader.Read(buffer, 0, (int)fileReader.Length - (int)fileReader.Position);
-
 				ImageData = new byte[Width * Height * 4];
-				int sourceIdx = 0;
 				int destIdx = 0;
 				switch (CompressionFormat)
 				{
 					case CompressionFormat.BI_RGB:
+						int rowSize = ((Width * (int)BitsPerPixel + 31) / 32) * 4;
+						byte[] rowBuffer = new byte[rowSize];
 						switch (BitsPerPixel)
 						{
 							case BitsPerPixel.Monochrome:
-								// WARNING: Monochrome may actually be any two colors
 								for (currentRow = 0; currentRow < Height; currentRow++)
 								{
-									if (!TopDown)
+									fileReader.Read(rowBuffer, 0, rowSize);
+									if (!TopDown) { destIdx = (Height - currentRow - 1) * Width * 4; }
+									for (int currentPixel = 0; currentPixel < Width; currentPixel++)
 									{
-										destIdx = (Height - currentRow - 1) * Width * 4;
-									}
-									
-									int currentPixel = 0;
-									while (currentPixel < Width)
-									{
+										int byteIdx = currentPixel / 8;
 										int bitIdx = currentPixel % 8;
-										byte bit = ((buffer[sourceIdx] & 1 << (7 - bitIdx % 8)) != 0) ? (byte)1 : (byte)0;
+										byte bit = ((rowBuffer[byteIdx] & 1 << (7 - bitIdx)) != 0) ? (byte)1 : (byte)0;
 										ImageData[destIdx] = ColorTable[bit].R;
 										ImageData[destIdx + 1] = ColorTable[bit].G;
 										ImageData[destIdx + 2] = ColorTable[bit].B;
 										ImageData[destIdx + 3] = byte.MaxValue;
-										currentPixel++;
 										destIdx += 4;
-										if (bitIdx == 7)
-										{
-											sourceIdx++;
-										}
 									}
-
-									// BMP scan lines are zero-padded to the nearest 4-byte boundary
-									sourceIdx = sourceIdx % 4 == 0 ? sourceIdx : sourceIdx + 4 - sourceIdx % 4;
-
 								}
 								break;
 							case BitsPerPixel.TwoBitPalletized:
 								for (currentRow = 0; currentRow < Height; currentRow++)
 								{
-									if (!TopDown)
+									fileReader.Read(rowBuffer, 0, rowSize);
+									if (!TopDown) { destIdx = (Height - currentRow - 1) * Width * 4; }
+									for (int currentPixel = 0; currentPixel < Width; currentPixel++)
 									{
-										destIdx = (Height - currentRow - 1) * Width * 4;
-									}
-									int currentPixel = 0;
-									while(currentPixel < Width)
-									{
-										byte firstNibblet = (byte)((buffer[sourceIdx] >> 6) & 0x03);
-										byte secondNibblet = (byte)((buffer[sourceIdx] >> 4) & 0x03);
-										byte thirdNibblet = (byte)((buffer[sourceIdx] >> 2) & 0x03);
-										byte fourthNibblet = (byte)(buffer[sourceIdx] & 0x03);
-										ImageData[destIdx] = ColorTable[firstNibblet].R;
-										ImageData[destIdx + 1] = ColorTable[firstNibblet].G;
-										ImageData[destIdx + 2] = ColorTable[firstNibblet].B;
+										int byteIdx = currentPixel / 4;
+										int shift = 6 - (currentPixel % 4) * 2;
+										byte val = (byte)((rowBuffer[byteIdx] >> shift) & 0x03);
+										ImageData[destIdx] = ColorTable[val].R;
+										ImageData[destIdx + 1] = ColorTable[val].G;
+										ImageData[destIdx + 2] = ColorTable[val].B;
 										ImageData[destIdx + 3] = byte.MaxValue;
-										currentPixel++;
-										destIdx+= 4;
-										if (currentPixel < Width)
-										{
-											ImageData[destIdx] = ColorTable[secondNibblet].R;
-											ImageData[destIdx + 1] = ColorTable[secondNibblet].G;
-											ImageData[destIdx + 2] = ColorTable[secondNibblet].B;
-											ImageData[destIdx + 3] = byte.MaxValue;
-											currentPixel++;
-											destIdx+= 4;
-										}
-										if (currentPixel < Width)
-										{
-											ImageData[destIdx] = ColorTable[thirdNibblet].R;
-											ImageData[destIdx + 1] = ColorTable[thirdNibblet].G;
-											ImageData[destIdx + 2] = ColorTable[thirdNibblet].B;
-											ImageData[destIdx + 3] = byte.MaxValue;
-											currentPixel++;
-											destIdx+= 4;
-										}
-										if (currentPixel < Width)
-										{
-											ImageData[destIdx] = ColorTable[fourthNibblet].R;
-											ImageData[destIdx + 1] = ColorTable[fourthNibblet].G;
-											ImageData[destIdx + 2] = ColorTable[fourthNibblet].B;
-											ImageData[destIdx + 3] = byte.MaxValue;
-											currentPixel++;
-											destIdx+= 4;
-										}
-										sourceIdx++;
+										destIdx += 4;
 									}
-									// BMP scan lines are zero-padded to the nearest 4-byte boundary
-									sourceIdx = sourceIdx % 4 == 0 ? sourceIdx : sourceIdx + 4 - sourceIdx % 4;
 								}
 								break;
-								//break;
 							case BitsPerPixel.FourBitPalletized:
 								for (currentRow = 0; currentRow < Height; currentRow++)
 								{
-									if (!TopDown)
+									fileReader.Read(rowBuffer, 0, rowSize);
+									if (!TopDown) { destIdx = (Height - currentRow - 1) * Width * 4; }
+									for (int currentPixel = 0; currentPixel < Width; currentPixel++)
 									{
-										destIdx = (Height - currentRow - 1) * Width * 4;
-									}
-									for (int currentPixel = 0; currentPixel < Width; currentPixel+= 2)
-									{
-										byte leftNibble = (byte)((buffer[sourceIdx] & 0xF0) >> 4); // color of left pixel
-										byte rightNibble = (byte) (buffer[sourceIdx] & 0x0F); // color of right pixel
-										ImageData[destIdx] = ColorTable[leftNibble].R;
-										ImageData[destIdx + 1] = ColorTable[leftNibble].G;
-										ImageData[destIdx + 2] = ColorTable[leftNibble].B;
+										int byteIdx = currentPixel / 2;
+										byte val = (currentPixel % 2 == 0) ? (byte)((rowBuffer[byteIdx] & 0xF0) >> 4) : (byte)(rowBuffer[byteIdx] & 0x0F);
+										ImageData[destIdx] = ColorTable[val].R;
+										ImageData[destIdx + 1] = ColorTable[val].G;
+										ImageData[destIdx + 2] = ColorTable[val].B;
 										ImageData[destIdx + 3] = byte.MaxValue;
-										destIdx+= 4;
-										if (currentPixel < Width - 1)
-										{
-											// Final nibble should be discarded if not divisible by 2
-											ImageData[destIdx] = ColorTable[rightNibble].R;
-											ImageData[destIdx + 1] = ColorTable[rightNibble].G;
-											ImageData[destIdx + 2] = ColorTable[rightNibble].B;
-											ImageData[destIdx + 3] = byte.MaxValue;
-											destIdx += 4;
-										}
-										sourceIdx++;
+										destIdx += 4;
 									}
-									// BMP scan lines are zero-padded to the nearest 4-byte boundary
-									sourceIdx = sourceIdx % 4 == 0 ? sourceIdx : sourceIdx + 4 - sourceIdx % 4;
 								}
 								break;
 							case BitsPerPixel.EightBitPalletized:
 								for (currentRow = 0; currentRow < Height; currentRow++)
 								{
-									if (!TopDown)
-									{
-										destIdx = (Height - currentRow - 1) * Width * 4;
-									}
+									fileReader.Read(rowBuffer, 0, rowSize);
+									if (!TopDown) { destIdx = (Height - currentRow - 1) * Width * 4; }
 									for (int currentPixel = 0; currentPixel < Width; currentPixel++)
 									{
-										if (buffer[sourceIdx] >= ColorTable.Length && Plugin.CurrentOptions.EnableBveTsHacks)
-										{
-											/*
-											 * The BMP specification is unclear as to what should happen here
-											 *
-											 * Windows appears to interpret this case as pure black, but other decoders (Photoshop, GIMP)
-											 * interpret this as the *last* color in the color table
-											 *
-											 * https://github.com/leezer3/OpenBVE/issues/1042
-											 */
-											ImageData[destIdx] = 0;
-											ImageData[destIdx + 1] = 0;
-											ImageData[destIdx + 2] = 0;
-											ImageData[destIdx + 3] = byte.MaxValue;
-										}
-										else
-										{
-											int colorIndex = Math.Min(buffer[sourceIdx], ColorTable.Length - 1);
-											ImageData[destIdx] = ColorTable[colorIndex].R;
-											ImageData[destIdx + 1] = ColorTable[colorIndex].G;
-											ImageData[destIdx + 2] = ColorTable[colorIndex].B;
-											ImageData[destIdx + 3] = byte.MaxValue;
-										}
-										sourceIdx++;
-										destIdx+= 4;
+										int colorIndex = Math.Min(rowBuffer[currentPixel], ColorTable.Length - 1);
+										ImageData[destIdx] = ColorTable[colorIndex].R;
+										ImageData[destIdx + 1] = ColorTable[colorIndex].G;
+										ImageData[destIdx + 2] = ColorTable[colorIndex].B;
+										ImageData[destIdx + 3] = byte.MaxValue;
+										destIdx += 4;
 									}
-									// BMP scan lines are zero-padded to the nearest 4-byte boundary
-									sourceIdx = sourceIdx % 4 == 0 ? sourceIdx : sourceIdx + 4 - sourceIdx % 4;
 								}
 								break;
 							case BitsPerPixel.SixteenBitRGB:
 								for (currentRow = 0; currentRow < Height; currentRow++)
 								{
-									if (!TopDown)
-									{
-										destIdx = (Height - currentRow - 1) * Width * 4;
-									}
+									fileReader.Read(rowBuffer, 0, rowSize);
+									if (!TopDown) { destIdx = (Height - currentRow - 1) * Width * 4; }
 									for (int currentPixel = 0; currentPixel < Width; currentPixel++)
 									{
-										short px = LittleEndianBinaryExtensions.ToShort(buffer, sourceIdx);
-										byte r = (byte)((px & 0xF800) >> 11);
-										byte g = (byte)((px & 0x07E0) >> 5);
-										byte b = (byte)(px & 0x1F);
+										ushort px = (ushort)(rowBuffer[currentPixel * 2] | (rowBuffer[currentPixel * 2 + 1] << 8));
+										byte r = (byte)((px & 0x7C00) >> 10); r = (byte)((r << 3) | (r >> 2));
+										byte g = (byte)((px & 0x03E0) >> 5); g = (byte)((g << 3) | (g >> 2));
+										byte b = (byte)(px & 0x001F); b = (byte)((b << 3) | (b >> 2));
 										ImageData[destIdx] = r;
-										ImageData[destIdx + 1] =  g;
-										ImageData[destIdx + 2] =  b;
+										ImageData[destIdx + 1] = g;
+										ImageData[destIdx + 2] = b;
 										ImageData[destIdx + 3] = byte.MaxValue;
-										if (Plugin.EnabledHacks.ReduceTransparencyColorDepth)
-										{
-											Color24 c = new Color24(r, g, b);
-											reducedColorTable.Add(c);
-										}
-										sourceIdx++;
-										destIdx+= 4;
-										
+										destIdx += 4;
 									}
-									// BMP scan lines are zero-padded to the nearest 4-byte boundary
-									sourceIdx = sourceIdx % 4 == 0 ? sourceIdx : sourceIdx + 4 - sourceIdx % 4;
 								}
 								break;
-							default:
+							case BitsPerPixel.TwentyFourBitRGB:
 								for (currentRow = 0; currentRow < Height; currentRow++)
 								{
-									if (!TopDown)
-									{
-										destIdx = (Height - currentRow - 1) * Width * 4;
-									}
+									fileReader.Read(rowBuffer, 0, rowSize);
+									if (!TopDown) { destIdx = (Height - currentRow - 1) * Width * 4; }
 									for (int currentPixel = 0; currentPixel < Width; currentPixel++)
 									{
-										ImageData[destIdx] = buffer[sourceIdx + 2];
-										ImageData[destIdx + 1] =  buffer[sourceIdx + 1];
-										ImageData[destIdx + 2] =  buffer[sourceIdx];
+										ImageData[destIdx] = rowBuffer[currentPixel * 3 + 2];
+										ImageData[destIdx + 1] = rowBuffer[currentPixel * 3 + 1];
+										ImageData[destIdx + 2] = rowBuffer[currentPixel * 3];
 										ImageData[destIdx + 3] = byte.MaxValue;
-										if (Plugin.EnabledHacks.ReduceTransparencyColorDepth)
-										{
-											Color24 c = new Color24(buffer[sourceIdx + 2], buffer[sourceIdx + 1], buffer[sourceIdx]);
-											reducedColorTable.Add(c);
-										}
-										sourceIdx+= 3;
-										if (BitsPerPixel == BitsPerPixel.ThirtyTwoBitRGB)
-										{
-											// Alpha in bitmaps is not currently supported by this decoder
-											sourceIdx++;
-										}
-										destIdx+= 4;
-										
+										destIdx += 4;
 									}
-									// BMP scan lines are zero-padded to the nearest 4-byte boundary
-									sourceIdx = sourceIdx % 4 == 0 ? sourceIdx : sourceIdx + 4 - sourceIdx % 4;
+								}
+								break;
+							case BitsPerPixel.ThirtyTwoBitRGB:
+								for (currentRow = 0; currentRow < Height; currentRow++)
+								{
+									fileReader.Read(rowBuffer, 0, rowSize);
+									if (!TopDown) { destIdx = (Height - currentRow - 1) * Width * 4; }
+									for (int currentPixel = 0; currentPixel < Width; currentPixel++)
+									{
+										ImageData[destIdx] = rowBuffer[currentPixel * 4 + 2];
+										ImageData[destIdx + 1] = rowBuffer[currentPixel * 4 + 1];
+										ImageData[destIdx + 2] = rowBuffer[currentPixel * 4];
+										ImageData[destIdx + 3] = byte.MaxValue;
+										destIdx += 4;
+									}
 								}
 								break;
 						}
@@ -552,6 +451,9 @@ namespace Plugin.BMP
 					case CompressionFormat.BI_RLE4:
 					case CompressionFormat.BI_RLE8:
 					case CompressionFormat.BI_RLE24:
+						byte[] buffer = new byte[(int)fileReader.Length - (int)fileReader.Position];
+						fileReader.Read(buffer, 0, buffer.Length);
+						int sourceIdx = 0;
 						rowBytes = new byte[Width * 4];
 						currentRow = TopDown ? 0 : Height - 1;
 						

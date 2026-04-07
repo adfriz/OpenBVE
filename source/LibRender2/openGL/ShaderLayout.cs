@@ -1,4 +1,4 @@
-﻿namespace LibRender2
+namespace LibRender2
 {
 	/// <summary>
 	/// Vertex layout
@@ -52,6 +52,11 @@
 		/// The handle of "uCurrentTextureMatrix" within the shader
 		/// </summary>
 		public short CurrentTextureMatrix = -1;
+
+		/// <summary>
+		/// The handle of "uNormalMatrix" within the shader
+		/// </summary>
+		public short NormalMatrix = -1;
 
 		/// <summary>
 		/// The handle of "uIsLight" within the shader

@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using OpenBveApi.Hosts;
 using OpenBveApi.Textures;
 
@@ -18,10 +18,21 @@ namespace Texture.Dds {
 		/// <param name="height">Receives the height of the texture.</param>
 		/// <returns>Whether querying the dimensions was successful.</returns>
 		public override bool QueryTextureDimensions(string path, out int width, out int height) {
-			//QueryDimensionsFromFile(path, out width, out height);
-			width = 0;
-			height = 0;
-			return true;
+			using (FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+			{
+				if (stream.Length < 20)
+				{
+					width = 0; height = 0;
+					return false;
+				}
+				stream.Position = 12;
+				using (BinaryReader reader = new BinaryReader(stream))
+				{
+					height = reader.ReadInt32();
+					width = reader.ReadInt32();
+					return true;
+				}
+			}
 		}
 		
 		/// <summary>Checks whether the plugin can load the specified texture.</summary>
@@ -56,8 +67,14 @@ namespace Texture.Dds {
 		/// <returns>Whether loading the texture was successful.</returns>
 		public override bool LoadTexture(string path, out OpenBveApi.Textures.Texture texture)
 		{
-			DDSImage d = new DDSImage(File.ReadAllBytes(path));
-			texture = d.myTexture;
+			using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+			{
+				using (var reader = new BinaryReader(stream))
+				{
+					DDSImage d = new DDSImage(reader);
+					texture = d.myTexture;
+				}
+			}
 			return true;
 		}
 		

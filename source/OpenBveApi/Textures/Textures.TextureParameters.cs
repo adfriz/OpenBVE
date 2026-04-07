@@ -1,4 +1,4 @@
-﻿#pragma warning disable 0659, 0661
+#pragma warning disable 0659, 0661
 using OpenBveApi.Colors;
 // ReSharper disable MergeCastWithTypeCheck
 
@@ -14,6 +14,8 @@ namespace OpenBveApi.Textures
 		private readonly Color24? myTransparentColor;
 		/// <summary>The alpha channel texture</summary>
 		private readonly Texture myTransparencyTexture;
+		/// <summary>Whether to generate mipmaps for this texture</summary>
+		private readonly bool myGenerateMipmaps;
 		// --- properties ---
 		/// <summary>Gets the region in the texture to be extracted, or a null reference for the entire texture.</summary>
 		public TextureClipRegion ClipRegion => myClipRegion;
@@ -24,17 +26,24 @@ namespace OpenBveApi.Textures
 		/// <summary>Gets the separate alpha channel texture</summary>
 		public Texture TransparencyTexture => myTransparencyTexture;
 
+		/// <summary>Gets whether to generate mipmaps for this texture</summary>
+		public bool GenerateMipmaps => myGenerateMipmaps;
+
 		/// <summary>Texture parameters, which apply no changes.</summary>
 		public static TextureParameters NoChange = new TextureParameters(null, null);
+
+		/// <summary>Texture parameters, which apply no changes and disable mipmap generation.</summary>
+		public static TextureParameters FastHUD = new TextureParameters(null, null, null, false);
 
 		/// <summary>Creates new texture parameters.</summary>
 		/// <param name="clipRegion">The region in the texture to be extracted, or a null reference for the entire texture.</param>
 		/// <param name="transparentColor">The color in the texture that should become transparent, or a null reference for no transparent color.</param>
-		public TextureParameters(TextureClipRegion clipRegion, Color24? transparentColor, Texture transparencyTexture = null)
+		public TextureParameters(TextureClipRegion clipRegion, Color24? transparentColor, Texture transparencyTexture = null, bool generateMipmaps = true)
 		{
 			myClipRegion = clipRegion;
 			myTransparentColor = transparentColor;
 			myTransparencyTexture = transparencyTexture;
+			myGenerateMipmaps = generateMipmaps;
 		}
 
 		// --- operators ---

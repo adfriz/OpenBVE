@@ -1,4 +1,4 @@
-﻿using OpenBveApi.Objects;
+using OpenBveApi.Objects;
 
 namespace LibRender2.Objects
 {
@@ -11,6 +11,8 @@ namespace LibRender2.Objects
 		public readonly MeshFace Face;
 		/// <summary>Holds the reference to the base renderer</summary>
 		public readonly BaseRenderer Renderer;
+		/// <summary>The distance to the camera (used for sorting alpha faces)</summary>
+		public double Distance;
 
 		public FaceState(ObjectState _object, MeshFace face, BaseRenderer renderer)
 		{

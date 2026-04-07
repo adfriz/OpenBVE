@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Threading.Tasks;
 using LibRender2.Textures;
 using OpenBveApi.Graphics;
 using OpenBveApi.Math;
@@ -15,19 +14,24 @@ namespace LibRender2.Objects
 	public class VisibleObjectLibrary
 	{
 		private readonly BaseRenderer renderer;
-
 		public readonly QuadTree quadTree;
 
 		private readonly List<ObjectState> myObjects;
-		private readonly List<FaceState> myOpaqueFaces;
+		private readonly HashSet<ObjectState> objectsSet;
+		private readonly Dictionary<int, List<FaceState>> opaqueBuckets;
+		private readonly List<FaceState> myOpaqueFacesFlattened;
 		private readonly List<FaceState> myAlphaFaces;
-		private readonly List<FaceState> myOverlayOpaqueFaces;
-		private List<FaceState> myOverlayAlphaFaces;
+		private readonly List<FaceState> myOverlayOpaqueFacesFlattened;
+		private readonly List<FaceState> myOverlayAlphaFaces;
+		
 		public readonly ReadOnlyCollection<ObjectState> Objects;
-		public readonly ReadOnlyCollection<FaceState> OpaqueFaces;  // StaticOpaque and DynamicOpaque
+		public readonly ReadOnlyCollection<FaceState> OpaqueFaces;  
 		public readonly ReadOnlyCollection<FaceState> OverlayOpaqueFaces;
-		public readonly ReadOnlyCollection<FaceState> AlphaFaces;  // DynamicAlpha
-		public ReadOnlyCollection<FaceState> OverlayAlphaFaces;
+		public readonly ReadOnlyCollection<FaceState> AlphaFaces;  
+		public readonly ReadOnlyCollection<FaceState> OverlayAlphaFaces;
+
+		private bool opaqueChanged = true;
+		private bool overlayOpaqueChanged = true;
 
 		public readonly object LockObject = new object();
 
@@ -35,44 +39,41 @@ namespace LibRender2.Objects
 		{
 			renderer = Renderer;
 			myObjects = new List<ObjectState>();
-			myOpaqueFaces = new List<FaceState>();
+			objectsSet = new HashSet<ObjectState>();
+			opaqueBuckets = new Dictionary<int, List<FaceState>>();
+			myOpaqueFacesFlattened = new List<FaceState>();
 			myAlphaFaces = new List<FaceState>();
-			myOverlayOpaqueFaces = new List<FaceState>();
+			myOverlayOpaqueFacesFlattened = new List<FaceState>();
 			myOverlayAlphaFaces = new List<FaceState>();
 
 			Objects = myObjects.AsReadOnly();
-			OpaqueFaces = myOpaqueFaces.AsReadOnly();
+			OpaqueFaces = myOpaqueFacesFlattened.AsReadOnly();
 			AlphaFaces = myAlphaFaces.AsReadOnly();
-			OverlayOpaqueFaces = myOverlayOpaqueFaces.AsReadOnly();
+			OverlayOpaqueFaces = myOverlayOpaqueFacesFlattened.AsReadOnly();
 			OverlayAlphaFaces = myOverlayAlphaFaces.AsReadOnly();
+
 			quadTree = new QuadTree(renderer.currentOptions.ViewingDistance);
-		}
-
-		private bool AddObject(ObjectState state)
-		{
-			if (state.Prototype != null &&!myObjects.Contains(state))
-			{
-				myObjects.Add(state);
-				return true;
-			}
-
-			return false;
 		}
 
 		private void RemoveObject(ObjectState state)
 		{
 			lock (LockObject)
 			{
-				if (myObjects.Contains(state))
+				if (objectsSet.Remove(state))
 				{
 					myObjects.Remove(state);
-					myOpaqueFaces.RemoveAll(x => x.Object == state);
+					foreach (var bucket in opaqueBuckets.Values)
+					{
+						if (bucket.RemoveAll(x => x.Object == state) > 0)
+						{
+							opaqueChanged = true;
+							overlayOpaqueChanged = true;
+						}
+					}
 					myAlphaFaces.RemoveAll(x => x.Object == state);
-					myOverlayOpaqueFaces.RemoveAll(x => x.Object == state);
 					myOverlayAlphaFaces.RemoveAll(x => x.Object == state);
 				}	
 			}
-			
 		}
 
 		public void Clear()
@@ -80,202 +81,109 @@ namespace LibRender2.Objects
 			lock (LockObject)
 			{
 				myObjects.Clear();
-				myOpaqueFaces.Clear();
+				objectsSet.Clear();
+				opaqueBuckets.Clear();
+				myOpaqueFacesFlattened.Clear();
 				myAlphaFaces.Clear();
-				myOverlayOpaqueFaces.Clear();
+				myOverlayOpaqueFacesFlattened.Clear();
 				myOverlayAlphaFaces.Clear();
 				renderer.StaticObjectStates.Clear();
 				renderer.DynamicObjectStates.Clear();
+				opaqueChanged = true;
+				overlayOpaqueChanged = true;
 			}
 		}
 
 		public void ShowObject(ObjectState State, ObjectType Type)
 		{
-			bool result = AddObject(State);
-			
-			if (!result)
+			lock (LockObject)
 			{
-				return;
-			}
-
-			foreach (MeshFace face in State.Prototype.Mesh.Faces)
-			{
-				OpenGlTextureWrapMode wrap = OpenGlTextureWrapMode.ClampClamp;
-
-				if (State.Prototype.Mesh.Materials[face.Material].DaytimeTexture != null || State.Prototype.Mesh.Materials[face.Material].NighttimeTexture != null)
+				if (State.Prototype == null) return;
+				if (objectsSet.Add(State))
 				{
-					if (State.Prototype.Mesh.Materials[face.Material].WrapMode == null)
-					{
-						/*
-						 * If the object does not have a stored wrapping mode determine it now. However:
-						 * https://github.com/leezer3/OpenBVE/issues/971
-						 *
-						 * Unfortunately, there appear to be X objects in the wild which expect a non-default wrapping mode
-						 * which means the best fast exit we can do is to check for RepeatRepeat....
-						 *
-						 */ 
-						foreach (VertexTemplate vertex in State.Prototype.Mesh.Vertices)
-						{
-							if (vertex.TextureCoordinates.X < 0.0f || vertex.TextureCoordinates.X > 1.0f)
-							{
-								wrap |= OpenGlTextureWrapMode.RepeatClamp;
-							}
-
-							if (vertex.TextureCoordinates.Y < 0.0f || vertex.TextureCoordinates.Y > 1.0f)
-							{
-								wrap |= OpenGlTextureWrapMode.ClampRepeat;
-							}
-
-							if (wrap == OpenGlTextureWrapMode.RepeatRepeat)
-							{
-								break;
-							}
-						}
-						State.Prototype.Mesh.Materials[face.Material].WrapMode = wrap;
-					}
-				}
-
-				bool alpha = false;
-
-				if (Type == ObjectType.Overlay && renderer.Camera.CurrentRestriction != CameraRestrictionMode.NotAvailable)
-				{
-					alpha = true;
-				}
-				else if (State.Prototype.Mesh.Materials[face.Material].Color.A != 255)
-				{
-					alpha = true;
-				}
-				else if (State.Prototype.Mesh.Materials[face.Material].BlendMode == MeshMaterialBlendMode.Additive)
-				{
-					alpha = true;
-				}
-				else if (State.Prototype.Mesh.Materials[face.Material].GlowAttenuationData != 0)
-				{
-					alpha = true;
+					myObjects.Add(State);
 				}
 				else
 				{
-					if (State.Prototype.Mesh.Materials[face.Material].DaytimeTexture != null)
-					{
-						// Have to load the texture bytes in order to determine transparency type
-						Texture daytimeTexture; 
-						if (TextureManager.textureCache.ContainsKey(State.Prototype.Mesh.Materials[face.Material].DaytimeTexture.Origin))
-						{
-							daytimeTexture = TextureManager.textureCache[State.Prototype.Mesh.Materials[face.Material].DaytimeTexture.Origin];
-						}
-						else
-						{
-							State.Prototype.Mesh.Materials[face.Material].DaytimeTexture.Origin.GetTexture(out daytimeTexture);
-							if (!TextureManager.textureCache.ContainsKey(State.Prototype.Mesh.Materials[face.Material].DaytimeTexture.Origin)) // because getting the Origin may change the ref
-							{
-								TextureManager.textureCache.Add(State.Prototype.Mesh.Materials[face.Material].DaytimeTexture.Origin, daytimeTexture);
-							}
-							
-						}
+					return;
+				}
 
-						TextureTransparencyType transparencyType = TextureTransparencyType.Opaque;
-						if (daytimeTexture != null)
+				foreach (MeshFace face in State.Prototype.Mesh.Faces)
+				{
+					MeshMaterial material = State.Prototype.Mesh.Materials[face.Material];
+					
+					if ((material.DaytimeTexture != null || material.NighttimeTexture != null) && material.WrapMode == null)
+					{
+						OpenGlTextureWrapMode wrap = OpenGlTextureWrapMode.ClampClamp;
+						foreach (VertexTemplate vertex in State.Prototype.Mesh.Vertices)
 						{
-							// as loading the cached texture may have failed, e.g. corrupt file etc
-							transparencyType = daytimeTexture.GetTransparencyType();
+							if (vertex.TextureCoordinates.X < 0.0f || vertex.TextureCoordinates.X > 1.0f) wrap |= OpenGlTextureWrapMode.RepeatClamp;
+							if (vertex.TextureCoordinates.Y < 0.0f || vertex.TextureCoordinates.Y > 1.0f) wrap |= OpenGlTextureWrapMode.ClampRepeat;
+							if (wrap == OpenGlTextureWrapMode.RepeatRepeat) break;
 						}
-						
-						if (transparencyType == TextureTransparencyType.Alpha)
+						State.Prototype.Mesh.Materials[face.Material].WrapMode = wrap;
+					}
+
+					bool alpha = false;
+					if (Type == ObjectType.Overlay && renderer.Camera.CurrentRestriction != CameraRestrictionMode.NotAvailable)
+					{
+						alpha = true;
+					}
+					else if (material.Color.A != 255 || material.BlendMode == MeshMaterialBlendMode.Additive || material.GlowAttenuationData != 0)
+					{
+						alpha = true;
+					}
+					else if (material.DaytimeTexture != null)
+					{
+						Texture tex;
+						if (!TextureManager.textureCache.TryGetValue(material.DaytimeTexture.Origin, out tex))
 						{
-							alpha = true;
+							material.DaytimeTexture.Origin.GetTexture(out tex);
 						}
-						else if (transparencyType == TextureTransparencyType.Partial && renderer.currentOptions.TransparencyMode == TransparencyMode.Quality)
+						if (tex != null && (tex.GetTransparencyType() == TextureTransparencyType.Alpha || (tex.GetTransparencyType() == TextureTransparencyType.Partial && renderer.currentOptions.TransparencyMode == TransparencyMode.Quality)))
 						{
 							alpha = true;
 						}
 					}
 
-					if (State.Prototype.Mesh.Materials[face.Material].NighttimeTexture != null)
+					FaceState fs = new FaceState(State, face, renderer);
+					if (alpha)
 					{
-						Texture nighttimeTexture; 
-						if (TextureManager.textureCache.ContainsKey(State.Prototype.Mesh.Materials[face.Material].NighttimeTexture.Origin))
-						{
-							nighttimeTexture = TextureManager.textureCache[State.Prototype.Mesh.Materials[face.Material].NighttimeTexture.Origin];
-						}
-						else
-						{
-							State.Prototype.Mesh.Materials[face.Material].NighttimeTexture.Origin.GetTexture(out nighttimeTexture);
-							TextureManager.textureCache.Add(State.Prototype.Mesh.Materials[face.Material].NighttimeTexture.Origin, nighttimeTexture);
-						}
-						TextureTransparencyType transparencyType = TextureTransparencyType.Opaque;
-						if (nighttimeTexture != null)
-						{
-							// as loading the cached texture may have failed, e.g. corrupt file etc
-							transparencyType = nighttimeTexture.GetTransparencyType();
-						}
-						if (transparencyType == TextureTransparencyType.Alpha)
-						{
-							alpha = true;
-						}
-						else if (transparencyType == TextureTransparencyType.Partial && renderer.currentOptions.TransparencyMode == TransparencyMode.Quality)
-						{
-							alpha = true;
-						}
-					}
-				}
-				
-				List<FaceState> list;
-
-				switch (Type)
-				{
-					case ObjectType.Static:
-					case ObjectType.Dynamic:
-						list = alpha ? myAlphaFaces : myOpaqueFaces;
-						break;
-					case ObjectType.Overlay:
-						list = alpha ? myOverlayAlphaFaces : myOverlayOpaqueFaces;
-						break;
-					default:
-						throw new ArgumentOutOfRangeException(nameof(Type), Type, null);
-				}
-
-				lock (LockObject)
-				{
-					if (!alpha)
-					{
-						/*
-						 * If an opaque face, itinerate through the list to see if the prototype is present in the list
-						 * When the new renderer is in use, this prevents re-binding the VBO as it is simply re-drawn with
-						 * a different translation matrix
-						 * NOTE: The shader isn't currently smart enough to do depth discards, so if this changes may need to
-						 * be revisited
-						 */
-						if (list.Count == 0)
-						{
-							list.Add(new FaceState(State, face, renderer));
-						}
-						else
-						{
-							for (int i = 0; i < list.Count; i++)
-							{
-
-								if (list[i].Object.Prototype == State.Prototype)
-								{
-									list.Insert(i, new FaceState(State, face, renderer));
-									break;
-								}
-
-								if (i == list.Count - 1)
-								{
-									list.Add(new FaceState(State, face, renderer));
-									break;
-								}
-							}
-						}
+						if (Type == ObjectType.Overlay) myOverlayAlphaFaces.Add(fs);
+						else myAlphaFaces.Add(fs);
 					}
 					else
 					{
-						/*
-						 * Alpha faces should be inserted at the end of the list- We're going to sort it anyway so it makes no odds
-						 */
-						list.Add(new FaceState(State, face, renderer));
+						int hash = material.GetHashCode();
+						if (!opaqueBuckets.ContainsKey(hash)) opaqueBuckets.Add(hash, new List<FaceState>());
+						opaqueBuckets[hash].Add(fs);
+						opaqueChanged = true;
+						if (Type == ObjectType.Overlay) overlayOpaqueChanged = true;
 					}
 				}
+			}
+		}
+
+		public List<FaceState> GetOpaqueFaces(bool overlay = false)
+		{
+			lock (LockObject)
+			{
+				bool changed = overlay ? overlayOpaqueChanged : opaqueChanged;
+				List<FaceState> flattened = overlay ? myOverlayOpaqueFacesFlattened : myOpaqueFacesFlattened;
+
+				if (changed)
+				{
+					flattened.Clear();
+					foreach (var bucket in opaqueBuckets.Values)
+					{
+						// Sort bucket by Mesh to ensure instances of the same mesh are consecutive
+						bucket.Sort((a, b) => a.Object.Prototype.Mesh.GetHashCode().CompareTo(b.Object.Prototype.Mesh.GetHashCode()));
+						flattened.AddRange(bucket);
+					}
+					if (overlay) overlayOpaqueChanged = false;
+					else opaqueChanged = false;
+				}
+				return flattened;
 			}
 		}
 
@@ -284,54 +192,54 @@ namespace LibRender2.Objects
 			RemoveObject(State);
 		}
 
+		private readonly List<FaceState> myAlphaFacesSorted = new List<FaceState>();
+		private readonly List<FaceState> myOverlayAlphaFacesSorted = new List<FaceState>();
+
 		public List<FaceState> GetSortedPolygons(bool overlay = false)
 		{
-			if (overlay)
+			lock (LockObject)
 			{
-				myOverlayAlphaFaces = GetSortedPolygons(myOverlayAlphaFaces.AsReadOnly());
-				OverlayAlphaFaces = myOverlayAlphaFaces.AsReadOnly();
-				return OverlayAlphaFaces.ToList();
-			}
-			return GetSortedPolygons(AlphaFaces);
-		}
-
-		private List<FaceState> GetSortedPolygons(ReadOnlyCollection<FaceState> faces)
-		{
-			// calculate distance
-			double[] distances = new double[faces.Count];
-
-			Parallel.For(0, faces.Count, i =>
-			{
-				if (faces[i].Face.Vertices.Length >= 3)
+				List<FaceState> source = overlay ? myOverlayAlphaFaces : myAlphaFaces;
+				List<FaceState> result = overlay ? myOverlayAlphaFacesSorted : myAlphaFacesSorted;
+				
+				if (source.Count == 0)
 				{
-					Vector4 v0 = new Vector4(faces[i].Object.Prototype.Mesh.Vertices[faces[i].Face.Vertices[0].Index].Coordinates, 1.0);
-					Vector4 v1 = new Vector4(faces[i].Object.Prototype.Mesh.Vertices[faces[i].Face.Vertices[1].Index].Coordinates, 1.0);
-					Vector4 v2 = new Vector4(faces[i].Object.Prototype.Mesh.Vertices[faces[i].Face.Vertices[2].Index].Coordinates, 1.0);
-					Vector4 w1 = v1 - v0;
-					Vector4 w2 = v2 - v0;
-					v0.Z *= -1.0;
-					w1.Z *= -1.0;
-					w2.Z *= -1.0;
-					v0 = Vector4.Transform(v0, faces[i].Object.ModelMatrix);
-					w1 = Vector4.Transform(w1, faces[i].Object.ModelMatrix);
-					w2 = Vector4.Transform(w2, faces[i].Object.ModelMatrix);
-					v0.Z *= -1.0;
-					w1.Z *= -1.0;
-					w2.Z *= -1.0;
-					Vector3 d = Vector3.Cross(w1.Xyz, w2.Xyz);
-					double t = d.Norm();
-
-					if (t != 0.0)
-					{
-						d /= t;
-						Vector3 w0 = v0.Xyz - renderer.Camera.AbsolutePosition;
-						t = Vector3.Dot(d, w0);
-						distances[i] = -t * t;
-					}
+					result.Clear();
+					return result;
 				}
-			});
-			// sort
-			return faces.Select((face, index) => new { Face = face, Distance = distances[index] }).OrderBy(list => list.Distance).Select(list => list.Face).ToList();
+
+				result.Clear();
+				result.AddRange(source);
+
+				Vector3 cameraPos = renderer.Camera.AbsolutePosition;
+				double cameraDistSq = (cameraPos - lastCameraSortPosition).SizeSquared();
+				
+				if (cameraDistSq > 0.25 || source.Count != lastSortCount) 
+				{
+					for (int i = 0; i < result.Count; i++)
+					{
+						if (result[i].Face.Vertices.Length >= 3)
+						{
+							Vector3 v0 = result[i].Object.Prototype.Mesh.Vertices[result[i].Face.Vertices[0].Index].Coordinates;
+							v0.Z *= -1.0;
+							v0.Rotate(result[i].Object.Rotate);
+							v0 += result[i].Object.WorldPosition;
+
+							double dx = v0.X - cameraPos.X;
+							double dy = v0.Y - cameraPos.Y;
+							double dz = v0.Z - cameraPos.Z;
+							result[i].Distance = dx * dx + dy * dy + dz * dz;
+						}
+					}
+					result.Sort((a, b) => b.Distance.CompareTo(a.Distance));
+					lastCameraSortPosition = cameraPos;
+					lastSortCount = source.Count;
+				}
+				return result; 
+			}
 		}
+
+		private Vector3 lastCameraSortPosition = new Vector3(double.MaxValue, 0, 0);
+		private int lastSortCount = -1;
 	}
 }

@@ -73,50 +73,28 @@ void main(void)
 	 * Numbers used are those from the GL.AlphaFunction enum to allow
 	 * for direct casts
 	 */
-	if(uAlphaTest.x == 513) // Less
+	if(uAlphaTest.x > 0.0)
 	{
-		if(finalColor.a >= uAlphaTest.y)
-		{
-			discard;
-		}
-	}
-	else if(uAlphaTest.x == 514) // Equal
-	{
-		if(!(abs(finalColor.a - uAlphaTest.y) < 0.00001))
-		{
-			discard;
-		}
-	}
-	else if(uAlphaTest.x == 516) // Greater
-	{
-		if(finalColor.a <= uAlphaTest.y)
-		{
-			discard;
-		}
-	}
+		// Reduced branching alpha test
+		bool discardFrag = false;
+		if(uAlphaTest.x == 513.0) discardFrag = (finalColor.a >= uAlphaTest.y); // Less
+		else if(uAlphaTest.x == 514.0) discardFrag = (abs(finalColor.a - uAlphaTest.y) >= 0.00001); // Equal
+		else if(uAlphaTest.x == 516.0) discardFrag = (finalColor.a <= uAlphaTest.y); // Greater
 		
-	/*
-	 * Apply the lighting results *after* the final color has been calculated
-	 * This *must* also be done after the discard check to get correct results,
-	 * as otherwise light coming through a semi-transparent material will 
-	 * affect it's final opacity, and hence whether its discarded or not
-	 */
+		if(discardFrag) discard;
+	}
+
 	finalColor *= oLightResult;
 	
-	// Fog
-	float fogFactor = 1.0;
-
 	if (uIsFog)
 	{
-		if(uFogIsLinear)
-		{
-			fogFactor = clamp((uFogEnd - length(oViewPos)) / (uFogEnd - uFogStart), 0.0, 1.0);
-		}
-		else
-		{
-			fogFactor = exp(-pow(uFogDensity * (gl_FragCoord.z / gl_FragCoord.w), 2.0));
-		}
+		float fogFactor = uFogIsLinear ? 
+			clamp((uFogEnd - length(oViewPos)) / (uFogEnd - uFogStart), 0.0, 1.0) : 
+			exp(-pow(uFogDensity * (gl_FragCoord.z / gl_FragCoord.w), 2.0));
+		fragColor = vec4(mix(uFogColor, finalColor.rgb, fogFactor), finalColor.a);
 	}
-
-	fragColor = vec4(mix(uFogColor, finalColor.rgb, fogFactor), finalColor.a);
+	else
+	{
+		fragColor = finalColor;
+	}
 }

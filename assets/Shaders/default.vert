@@ -52,6 +52,7 @@ layout(location = 4) in ivec3 iMatrixChain;
 
 uniform mat4 uCurrentProjectionMatrix;
 uniform mat4 uCurrentModelViewMatrix;
+uniform mat3 uNormalMatrix;
 uniform mat4 uCurrentTextureMatrix;
 
 uniform bool uIsLight;
@@ -63,25 +64,26 @@ layout (std140) uniform uAnimationMatricies {
     mat4 modelMatricies[128];
 };
 
+layout (std140) uniform uInstanceMatricies {
+    mat4 instanceMatricies[128];
+    mat4 instanceNormalMatricies[128];
+};
+
 out vec4 oViewPos;
 out vec2 oUv;
 out vec4 oColor;
 out vec4 oLightResult;
 
-vec4 getLightResult()
+vec4 getLightResult(mat3 normalMatrix)
 {
-	vec3 normal = normalize(mat3(transpose(inverse(uCurrentModelViewMatrix))) * vec3(iNormal.x, iNormal.y, -iNormal.z));
+	vec3 normal = normalize(normalMatrix * vec3(iNormal.x, iNormal.y, -iNormal.z));
 	float nDotVP = max(0.0, dot(normal, normalize(vec3(uLight.position))));
 	float nDotHV = max(0.0, dot(normal, normalize(vec3(oViewPos.xyz + uLight.position))));
 	float pf = nDotVP == 0.0 ? 0.0 : pow(nDotHV, uMaterial.shininess);
 
-	vec4 ambient = vec4(uLight.ambient, 1.0);
-	vec4 diffuse = vec4(uLight.diffuse, 1.0) * nDotVP;
-	vec4 specular = vec4(uLight.specular, 1.0) * pf;
-
+	vec3 lightColor = uLight.ambient * uMaterial.ambient.rgb + uLight.diffuse * uMaterial.diffuse.rgb * nDotVP + uLight.specular * uMaterial.specular.rgb * pf;
 	vec4 sceneColor = (uMaterialFlags & 1) != 0 ? vec4(uMaterial.emission, 1.0) + uMaterial.ambient * uLight.lightModel : uLight.lightModel;
-	vec4 finalColor = sceneColor + ambient * uMaterial.ambient + diffuse * uMaterial.diffuse + specular * uMaterial.specular;
-	return clamp(finalColor, 0.0, 1.0);
+	return clamp(sceneColor + vec4(lightColor, uMaterial.diffuse.a), 0.0, 1.0);
 }
 
 vec3 transformVector(vec3 initialVector, int matrixIndex)
@@ -192,10 +194,26 @@ void main()
 	pos.z = -pos.z;
 	vec4 transformedPosition = vec4(pos, 1.0);
 
-	oViewPos = uCurrentModelViewMatrix * transformedPosition;
+	// Hardware Instancing Support
+	// If flag 256 is set, use gl_InstanceID to pick the instance matrix
+	if((uMaterialFlags & 256) != 0)
+	{
+		mat4 instMatrix = instanceMatricies[gl_InstanceID];
+		oViewPos = uCurrentModelViewMatrix * (instMatrix * transformedPosition);
+	}
+	else
+	{
+		oViewPos = uCurrentModelViewMatrix * transformedPosition;
+	}
 	gl_Position = uCurrentProjectionMatrix * oViewPos;
 
 	oUv = (uCurrentTextureMatrix * vec4(iUv, 1.0, 1.0)).xy;
 	
-	oLightResult = uIsLight && (uMaterialFlags & 4) == 0 ? getLightResult() : uMaterial.ambient;
+	mat3 effectiveNormalMatrix = uNormalMatrix;
+	if((uMaterialFlags & 256) != 0)
+	{
+		effectiveNormalMatrix = mat3(instanceNormalMatricies[gl_InstanceID]);
+	}
+
+	oLightResult = uIsLight && (uMaterialFlags & 4) == 0 ? getLightResult(effectiveNormalMatrix) : uMaterial.ambient;
 }

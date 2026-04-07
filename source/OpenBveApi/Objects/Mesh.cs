@@ -1,4 +1,4 @@
-﻿using OpenBveApi.Colors;
+using OpenBveApi.Colors;
 using OpenBveApi.Math;
 
 namespace OpenBveApi.Objects
@@ -123,6 +123,28 @@ namespace OpenBveApi.Objects
 			}
 		}
 
-		
+		/// <summary>Creates the bounding box for this mesh</summary>
+		public void CreateBoundingBox()
+		{
+			if (Vertices.Length == 0)
+			{
+				BoundingBox = new[] { Vector3.Zero, Vector3.Zero };
+				return;
+			}
+			double minX = Vertices[0].Coordinates.X;
+			double minY = Vertices[0].Coordinates.Y;
+			double minZ = Vertices[0].Coordinates.Z;
+			double maxX = minX, maxY = minY, maxZ = minZ;
+			for (int i = 1; i < Vertices.Length; i++)
+			{
+				if (Vertices[i].Coordinates.X < minX) minX = Vertices[i].Coordinates.X;
+				if (Vertices[i].Coordinates.X > maxX) maxX = Vertices[i].Coordinates.X;
+				if (Vertices[i].Coordinates.Y < minY) minY = Vertices[i].Coordinates.Y;
+				if (Vertices[i].Coordinates.Y > maxY) maxY = Vertices[i].Coordinates.Y;
+				if (Vertices[i].Coordinates.Z < minZ) minZ = Vertices[i].Coordinates.Z;
+				if (Vertices[i].Coordinates.Z > maxZ) maxZ = Vertices[i].Coordinates.Z;
+			}
+			BoundingBox = new[] { new Vector3(minX, minY, minZ), new Vector3(maxX, maxY, maxZ) };
+		}
 	}
 }

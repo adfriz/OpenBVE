@@ -128,13 +128,22 @@ namespace OpenBveApi.Textures {
 
 		private static Color24 GetClosestColor(Color24[] colorArray, Color24 baseColor)
 		{
-			if (colorArray.Contains(baseColor))
+			int minDiff = int.MaxValue;
+			int minIndex = 0;
+			for (int i = 0; i < colorArray.Length; i++)
 			{
-				return baseColor;
+				if (colorArray[i].R == baseColor.R && colorArray[i].G == baseColor.G && colorArray[i].B == baseColor.B)
+				{
+					return baseColor;
+				}
+				int diff = GetDiff(colorArray[i], baseColor);
+				if (diff < minDiff)
+				{
+					minDiff = diff;
+					minIndex = i;
+				}
 			}
-			int colorDiffs = colorArray.Select(n => GetDiff(n, baseColor)).Min(n => n);
-			Color24 c = colorArray[Array.FindIndex(colorArray,n => GetDiff(n, baseColor) == colorDiffs)];
-			return new Color24(c.R, c.G, c.B);
+			return colorArray[minIndex];
 		}
 
 		private static int GetDiff(Color24 c1, Color24 c2)

@@ -119,6 +119,14 @@ namespace LibRender2
 		}
 
 		/// <summary>
+		/// Draw multiple instances using VAO
+		/// </summary>
+		public void DrawInstanced(PrimitiveType DrawMode, int Start, int Count, int InstanceCount)
+		{
+			ibo.DrawInstanced(DrawMode, Start, Count, InstanceCount);
+		}
+
+		/// <summary>
 		/// Unbinds the VAO deactivating the VAO from use
 		/// </summary>
 		public void UnBind()

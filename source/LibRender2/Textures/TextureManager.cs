@@ -29,6 +29,8 @@ namespace LibRender2.Textures
 
 		/// <summary>The number of currently registered textures.</summary>
 		public int RegisteredTexturesCount;
+		/// <summary>A dictionary for fast texture lookup by path</summary>
+		private readonly Dictionary<string, Texture> pathLookup = new Dictionary<string, Texture>();
 
 		internal TextureManager(HostInterface CurrentHost, BaseRenderer Renderer)
 		{
@@ -60,82 +62,38 @@ namespace LibRender2.Textures
 		{
 			if (!File.Exists(path))
 			{
-				// shouldn't happen, but handle gracefully
 				handle = null;
 				return false;
 			}
-			/* BUG:
-			 * Attempt to delete null texture handles from the end of the array
-			 * These sometimes seem to end up there
-			 * 
-			 * Have also seen a registered textures count of 72 and an array length of 64
-			 * Is it possible for a texture to fail to register, but still increment the registered textures count?
-			 * 
-			 * There appears to be a timing issue somewhere whilst loading, as this only happens intermittently
-			 */
+
+			// Fast lookup using dictionary
+			if (pathLookup.TryGetValue(path, out handle))
+			{
+				// Check if parameters match. If not, it's a different internal representation, 
+				// but usually in OpenBVE paths + parameters are unique.
+				PathOrigin source = handle.Origin as PathOrigin;
+				if (source != null && source.Parameters == parameters)
+				{
+					return true;
+				}
+			}
+
 			if (RegisteredTexturesCount > RegisteredTextures.Length)
 			{
-				/* BUG:
-				 * The registered textures count very occasional becomes greater than the array length (Texture loader crashes possibly?)
-				 * This then crashes when we attempt to itinerate the array, so reset it...
-				 */
 				RegisteredTexturesCount = RegisteredTextures.Length;
 			}
 
-			if (RegisteredTexturesCount != 0)
-			{
-				try
-				{
-					for (int i = RegisteredTexturesCount - 1; i >= 0; i--)
-					{
-						if (RegisteredTextures[i] != null)
-						{
-							break;
-						}
-
-						Array.Resize(ref RegisteredTextures, RegisteredTextures.Length - 1);
-					}
-				}
-				catch
-				{
-					// ignored
-				}
-			}
-
-			/*
-			 * Check if the texture is already registered.
-			 * If so, return the existing handle.
-			 * */
-			for (int i = 0; i < RegisteredTexturesCount; i++)
-			{
-				if (RegisteredTextures[i] != null)
-				{
-					try
-					{
-						//The only exceptions thrown were these when it barfed
-						PathOrigin source = RegisteredTextures[i].Origin as PathOrigin;
-
-						if (source != null && source.Path == path && source.Parameters == parameters)
-						{
-							handle = RegisteredTextures[i];
-							return true;
-						}
-					}
-					catch
-					{
-						// ignored
-					}
-				}
-
-			}
-
-			/*
-			 * Register the texture and return the newly created handle.
-			 * */
 			int idx = GetNextFreeTexture();
-			RegisteredTextures[idx] = new Texture(path, parameters, currentHost);
+			handle = new Texture(path, parameters, currentHost);
+			RegisteredTextures[idx] = handle;
 			RegisteredTexturesCount++;
-			handle = RegisteredTextures[idx];
+			
+			// Add to dictionary for subsequent lookups
+			if (!pathLookup.ContainsKey(path))
+			{
+				pathLookup.Add(path, handle);
+			}
+			
 			return true;
 		}
 
@@ -361,39 +319,38 @@ namespace LibRender2.Textures
 								break;
 							case PixelFormat.RGBAlpha:
 								/*
-								* If the texture is fully opaque, the alpha channel is not used.
-								* If the graphics driver and card support 24-bits per channel,
-								* it is best to convert the bitmap data to that format in order
-								* to save memory on the card. If the card does not support the
-								* format, it will likely be upconverted to 32-bits per channel
-								* again, and this is wasted effort.
+								* If the texture is fully opaque, we can save VRAM if the card supports it.
+								* However, manual byte conversion is slow and allocates memory.
+								* We check if the CPU overhead is worth the VRAM saving.
 								* */
-								int stride = (3 * (texture.Width + 1) >> 2) << 2;
-								byte[] oldBytes = texture.Bytes;
-								byte[] newBytes = new byte[stride * texture.Height];
-								int i = 0, j = 0;
-
-								for (int y = 0; y < texture.Height; y++)
+								if (texture.Width * texture.Height > 1024 * 1024) // Only convert large textures if worth it
 								{
-									for (int x = 0; x < texture.Width; x++)
+									int stride = (3 * (texture.Width + 1) >> 2) << 2;
+									byte[] oldBytes = texture.Bytes;
+									byte[] newBytes = new byte[stride * texture.Height];
+									// Use a more efficient copy loop if possible, but keep it simple for now
+									for (int y = 0; y < texture.Height; y++)
 									{
-										newBytes[j + 0] = oldBytes[i + 0];
-										newBytes[j + 1] = oldBytes[i + 1];
-										newBytes[j + 2] = oldBytes[i + 2];
-										i += 4;
-										j += 3;
+										int srcOff = y * texture.Width * 4;
+										int dstOff = y * stride;
+										for (int x = 0; x < texture.Width; x++)
+										{
+											newBytes[dstOff + 0] = oldBytes[srcOff + 0];
+											newBytes[dstOff + 1] = oldBytes[srcOff + 1];
+											newBytes[dstOff + 2] = oldBytes[srcOff + 2];
+											srcOff += 4;
+											dstOff += 3;
+										}
 									}
-
-									j += stride - 3 * texture.Width;
+									GL.PixelStore(PixelStoreParameter.UnpackAlignment, 4);
+									GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgb8, texture.Width, texture.Height, 0, OpenTK.Graphics.OpenGL.PixelFormat.Rgb, PixelType.UnsignedByte, newBytes);
 								}
-								// send as is
-								// n.b. Must reset the unpack alignment in case of changes
-								GL.PixelStore(PixelStoreParameter.UnpackAlignment, 4);
-								GL.TexImage2D(TextureTarget.Texture2D, 0,
-									PixelInternalFormat.Rgb8,
-									texture.Width, texture.Height, 0,
-									OpenTK.Graphics.OpenGL.PixelFormat.Rgb,
-									PixelType.UnsignedByte, newBytes);
+								else
+								{
+									// For smaller textures, just send as RGBA but hint OpenGL to store as RGB
+									GL.PixelStore(PixelStoreParameter.UnpackAlignment, 4);
+									GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgb8, texture.Width, texture.Height, 0, OpenTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, texture.Bytes);
+								}
 								break;
 						}
 						
@@ -429,12 +386,41 @@ namespace LibRender2.Textures
 					}
 					if (renderer.ForceLegacyOpenGL == false)
 					{
-						GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+						bool generateMipmaps = true;
+						if (handle.Origin is PathOrigin pathOrigin)
+						{
+							generateMipmaps = pathOrigin.Parameters.GenerateMipmaps;
+						}
+						else if (handle.Origin is BitmapOrigin bitmapOrigin && bitmapOrigin.Parameters != null)
+						{
+							generateMipmaps = bitmapOrigin.Parameters.GenerateMipmaps;
+						}
+
+						if (generateMipmaps)
+						{
+							GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+						}
+						else
+						{
+							// When mipmaps are disabled, ensure the min filter doesn't expect them
+							// If it was a mipmapped filter, downgrade it to nearest/linear
+							GL.GetTexParameter(TextureTarget.Texture2D, GetTextureParameter.TextureMinFilter, out int minFilter);
+							if (minFilter != (int)TextureMinFilter.Nearest && minFilter != (int)TextureMinFilter.Linear)
+							{
+								GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
+							}
+						}
 					}
 					handle.OpenGlTextures[(int)wrap].Valid = true;
 					if (texture.MultipleFrames)
 					{
 						texture.OpenGlTextures[(int)wrap].Valid = true;
+					}
+					// If the texture is from a file path, we can safely discard the RAM bytes 
+					// after upload because they can be re-read from disk if needed later.
+					if (handle.Origin is PathOrigin)
+					{
+						handle.DiscardData();
 					}
 					return true;
 				}

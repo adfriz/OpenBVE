@@ -601,6 +601,7 @@ namespace OpenBveApi.Objects
 			int m = Mesh.Materials.Length;
 			int f = Mesh.Faces.Length;
 			
+			Mesh.CreateBoundingBox();
 			if (m >= f / 500 && f >= faceThreshold && f < 20000 && currentHost.Platform != HostPlatform.AppleOSX)
 			{
 				/*

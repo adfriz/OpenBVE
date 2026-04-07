@@ -379,7 +379,7 @@ namespace OpenBveApi.Textures {
 		{
 			for (int frame = 0; frame < MyBytes.Length; frame++)
 			{
-				for (int i = 0; i < MyBytes.Length; i += 4)
+				for (int i = 0; i < MyBytes[frame].Length; i += 4)
 				{
 					if (MyBytes[frame][i] != 0 | MyBytes[frame][i + 1] != 0 | MyBytes[frame][i + 2] != 0)
 					{
@@ -405,6 +405,21 @@ namespace OpenBveApi.Textures {
 							MyBytes[frame][i + 2] = (byte)(255 + b - r - g);
 						}
 					}
+				}
+			}
+		}
+		/// <summary>Discards the pixel data from RAM. Use this after the texture has been uploaded to the GPU to save memory.</summary>
+		public void DiscardData()
+		{
+			if (!MultipleFrames)
+			{
+				MyBytes[0] = null;
+			}
+			else
+			{
+				for (int i = 0; i < MyBytes.Length; i++)
+				{
+					MyBytes[i] = null;
 				}
 			}
 		}

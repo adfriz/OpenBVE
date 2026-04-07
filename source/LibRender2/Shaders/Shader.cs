@@ -165,6 +165,7 @@ namespace LibRender2.Shaders
 				CurrentAnimationMatricies = (short)GL.GetUniformBlockIndex(handle, "uAnimationMatricies"),
 				CurrentProjectionMatrix = (short)GL.GetUniformLocation(handle, "uCurrentProjectionMatrix"),
 				CurrentModelViewMatrix = (short)GL.GetUniformLocation(handle, "uCurrentModelViewMatrix"),
+				NormalMatrix = (short)GL.GetUniformLocation(handle, "uNormalMatrix"),
 				CurrentTextureMatrix = (short)GL.GetUniformLocation(handle, "uCurrentTextureMatrix"),
 				IsLight = (short)GL.GetUniformLocation(handle, "uIsLight"),
 				LightPosition = (short)GL.GetUniformLocation(handle, "uLight.position"),
@@ -221,16 +222,6 @@ namespace LibRender2.Shaders
 			}
 		}
 
-		private Matrix4 ConvertToMatrix4(Matrix4D mat)
-		{
-			return new Matrix4(
-				(float)mat.Row0.X, (float)mat.Row0.Y, (float)mat.Row0.Z, (float)mat.Row0.W,
-				(float)mat.Row1.X, (float)mat.Row1.Y, (float)mat.Row1.Z, (float)mat.Row1.W,
-				(float)mat.Row2.X, (float)mat.Row2.Y, (float)mat.Row2.Z, (float)mat.Row2.W,
-				(float)mat.Row3.X, (float)mat.Row3.Y, (float)mat.Row3.Z, (float)mat.Row3.W
-			);
-		}
-
 		#region SetUniform
 
 		/// <summary>
@@ -240,13 +231,10 @@ namespace LibRender2.Shaders
 		public void SetCurrentProjectionMatrix(Matrix4D ProjectionMatrix)
 		{
 			renderer.lastObjectState = null; // clear the cached object state, as otherwise it might be stale
-			Matrix4 matrix = ConvertToMatrix4(ProjectionMatrix);
+			Matrix4 matrix = renderer.ConvertToMatrix4(ProjectionMatrix);
 			GL.ProgramUniformMatrix4(handle, UniformLayout.CurrentProjectionMatrix, false, ref matrix);
 		}
 
-		/// <summary>
-		/// Set the animation matricies
-		/// </summary>
 		public void SetCurrentAnimationMatricies(ObjectState objectState)
 		{
 			renderer.lastObjectState = null; // clear the cached object state, as otherwise it might be stale
@@ -254,7 +242,7 @@ namespace LibRender2.Shaders
 
 			for (int i = 0; i < objectState.Matricies.Length; i++)
 			{
-				matriciesToShader[i] = ConvertToMatrix4(objectState.Matricies[i]);
+				matriciesToShader[i] = renderer.ConvertToMatrix4(objectState.Matricies[i]);
 			}
 
 			unsafe
@@ -266,42 +254,39 @@ namespace LibRender2.Shaders
 
 				GL.BindBuffer(BufferTarget.UniformBuffer, objectState.MatrixBufferIndex);
 				GL.BufferData(BufferTarget.UniformBuffer, sizeof(Matrix4) * matriciesToShader.Length, matriciesToShader, BufferUsageHint.StaticDraw);
+				GL.BindBufferBase(BufferRangeTarget.UniformBuffer, 0, objectState.MatrixBufferIndex);
 			}
-
 		}
 
-		/// <summary>
-		/// Set the model view matrix
-		/// </summary>
-		/// <param name="ModelViewMatrix">
-		/// <para>The model view matrix computed with row-major</para>
-		/// <para>ScaleMatrix * RotateMatrix * TranslationMatrix * ViewMatrix</para>
-		/// </param>
+		#endregion
+
+		public void SetInstanceMatricies(Matrix4[] matrices, Matrix4[] normalMatrices, int count)
+		{
+			if (renderer.instanceBuffer == 0)
+			{
+				renderer.instanceBuffer = GL.GenBuffer();
+			}
+
+			GL.BindBuffer(BufferTarget.UniformBuffer, renderer.instanceBuffer);
+			// Total size: 128 mat4 positions + 128 mat4 normals = 16384 bytes
+			GL.BufferData(BufferTarget.UniformBuffer, (IntPtr)16384, IntPtr.Zero, BufferUsageHint.DynamicDraw);
+			GL.BufferSubData(BufferTarget.UniformBuffer, (IntPtr)0, (IntPtr)(64 * count), matrices);
+			GL.BufferSubData(BufferTarget.UniformBuffer, (IntPtr)8192, (IntPtr)(64 * count), normalMatrices);
+			GL.BindBufferBase(BufferRangeTarget.UniformBuffer, 1, renderer.instanceBuffer); // Bind to binding point 1 (Instancing)
+		}
+
 		public void SetCurrentModelViewMatrix(Matrix4D ModelViewMatrix)
 		{
 			renderer.lastObjectState = null; // clear the cached object state, as otherwise it might be stale
-			Matrix4 matrix = ConvertToMatrix4(ModelViewMatrix);
-
-			// When transpose is false, B is equal to the transposed matrix of A.
-			// B = transpose(A) = transpose(M * V) = transpose(V) * transpose(M)
-			//
-			// The symbols are defined as follows:
-			// M: ModelMatrix, V: ViewMatrix
-			//
-			// Matrix4 (row-major)
-			// A =
-			// | m11 m12 m13 m14 |
-			// | m21 m22 m23 m24 |
-			// | m31 m32 m33 m34 |
-			// | m41 m42 m43 m44 |
-			//
-			// OpenGL (column-major)
-			// B =
-			// | m11 m21 m31 m41 |
-			// | m12 m22 m32 m42 |
-			// | m13 m23 m33 m43 |
-			// | m14 m24 m34 m44 |
+			Matrix4 matrix = renderer.ConvertToMatrix4(ModelViewMatrix);
 			GL.ProgramUniformMatrix4(handle, UniformLayout.CurrentModelViewMatrix, false, ref matrix);
+			
+			// Calculate and set Normal Matrix (the inverse transpose of the top-left 3x3 of the model-view matrix)
+			// This is significantly faster than calculating it in the shader for every vertex
+			Matrix3 normalMatrix = new Matrix3(matrix);
+			normalMatrix.Invert();
+			normalMatrix.Transpose();
+			GL.ProgramUniformMatrix3(handle, UniformLayout.NormalMatrix, false, ref normalMatrix);
 		}
 		
 		/// <summary>
@@ -442,6 +427,11 @@ namespace LibRender2.Shaders
 		public void SetColor(Color128 color)
 		{
 			GL.ProgramUniform4(handle, UniformLayout.Color, color.R, color.G, color.B, color.A);
+		}
+
+		public void SetColor(Color32 color)
+		{
+			GL.ProgramUniform4(handle, UniformLayout.Color, color.R / 255.0f, color.G / 255.0f, color.B / 255.0f, color.A / 255.0f);
 		}
 
 		public void SetCoordinates(Vector2 coordinates)

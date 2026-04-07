@@ -31,9 +31,21 @@ namespace Texture.Tga
 		/// <returns>Whether querying the dimensions was successful.</returns>
 		public override bool QueryTextureDimensions(string path, out int width, out int height)
 		{
-			width = 0;
-			height = 0;
-			return true;
+			using (FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+			{
+				if (stream.Length < 16)
+				{
+					width = 0; height = 0;
+					return false;
+				}
+				stream.Position = 12;
+				using (BinaryReader reader = new BinaryReader(stream))
+				{
+					width = reader.ReadInt16();
+					height = reader.ReadInt16();
+					return true;
+				}
+			}
 		}
 
 		/// <summary>Checks whether the plugin can load the specified texture.</summary>
@@ -67,15 +79,6 @@ namespace Texture.Tga
 
 		public void Dispose()
 		{
-			Dispose(true);
-		}
-
-		private void Dispose(bool currentlyDisposing)
-		{
-			if(currentlyDisposing)
-			{
-				bitmap.Dispose();
-			}
 		}
 
 	}

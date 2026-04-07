@@ -40,6 +40,7 @@ namespace OpenBve.Graphics
 		private Events events;
 		private Overlays overlays;
 		internal Touch Touch;
+		private readonly OpenTK.Matrix4[] instanceMatrices = new OpenTK.Matrix4[128];
 
 		public override void Initialize()
 		{
@@ -229,17 +230,88 @@ namespace OpenBve.Graphics
 			}
 			ResetOpenGlState();
 			List<FaceState> opaqueFaces, alphaFaces, overlayOpaqueFaces, overlayAlphaFaces;
-			lock (VisibleObjects.LockObject)
-			{
-				opaqueFaces = VisibleObjects.OpaqueFaces.ToList();
-				alphaFaces = VisibleObjects.GetSortedPolygons();
-				overlayOpaqueFaces = VisibleObjects.OverlayOpaqueFaces.ToList();
-				overlayAlphaFaces = VisibleObjects.GetSortedPolygons(true);
-			}
+			opaqueFaces = VisibleObjects.GetOpaqueFaces();
+			alphaFaces = VisibleObjects.GetSortedPolygons();
+			overlayOpaqueFaces = VisibleObjects.GetOpaqueFaces(true);
+			overlayAlphaFaces = VisibleObjects.GetSortedPolygons(true);
 
-			foreach (FaceState face in opaqueFaces)
+			int i = 0;
+			while (i < opaqueFaces.Count)
 			{
-				face.Draw();
+				FaceState firstFace = opaqueFaces[i];
+				Mesh currentMesh = firstFace.Object.Prototype.Mesh;
+				MeshFace currentFace = firstFace.Face;
+				int meshFaceIndex = firstFace.Face.Material;
+				
+				// Count how many consecutive instances of the same Mesh+Face+Material we have
+				int count = 1;
+				while (i + count < opaqueFaces.Count && count < 128)
+				{
+					FaceState nextFace = opaqueFaces[i + count];
+					if (nextFace.Object.Prototype.Mesh == currentMesh && nextFace.Face == currentFace)
+					{
+						count++;
+					}
+					else
+					{
+						break;
+					}
+				}
+
+				if (count > 1 && AvailableNewRenderer)
+				{
+					// Prepare Material State Once
+					// Render the first face to set up all uniforms/textures (but with a custom flag)
+					// We need to tell the renderer NOT to draw immediately?
+					// Or just set the instancing flag!
+					
+					OpenTK.Matrix4[] instanceNormalMatrices = new OpenTK.Matrix4[128];
+					for (int j = 0; j < count; j++)
+					{
+						ObjectState os = opaqueFaces[i + j].Object;
+						Matrix4D model = os.ModelMatrix;
+						Matrix4D modelView = model * CurrentViewMatrix;
+						
+						instanceMatrices[j] = ConvertToMatrix4(model); // We send world matrix for position (shader transforms to view)
+						// Wait, shader does: oViewPos = uCurrentModelViewMatrix * (instMatrix * transformedPosition);
+						// So instMatrix should be WORLD matrix.
+						
+						// Now for Normal Matrix. It should be the Model Normal Matrix? 
+						// Or Model-View Normal Matrix?
+						// Shader does: vec3 normal = normalize(normalMatrix * vec3(iNormal.x, iNormal.y, -iNormal.z));
+						// If light is in View Space, normalMatrix must be Model-View Normal Matrix.
+						
+						Matrix4D nm = modelView;
+						nm.Invert();
+						nm.Transpose();
+						instanceNormalMatrices[j] = ConvertToMatrix4(nm);
+					}
+
+					// Prepare Shader
+					DefaultShader.SetInstanceMatricies(instanceMatrices, instanceNormalMatrices, count);
+					
+					// Set flag 256 for instancing
+					int oldFlags = (int)currentMesh.Materials[meshFaceIndex].Flags;
+					DefaultShader.SetMaterialFlags((MaterialFlags)(oldFlags | 256));
+
+					// Draw!
+					// RenderFace will handle textures/blending, but it will also call VAO.Draw.
+					// We need a way to tell RenderFace to use DRAW INSTANCED.
+					// Let's add a parameter to the renderer? or just hijack.
+					
+					// Actually, simpler: call RenderFace for the first one to set state, 
+					// but it will draw ONCE. We then draw the rest? No.
+					
+					// Let's modify BaseRenderer.RenderFace to handle instancing.
+					rendererInstancingCount = count;
+					firstFace.Draw();
+					rendererInstancingCount = 1; // Reset
+				}
+				else
+				{
+					firstFace.Draw();
+				}
+				i += count;
 			}
 
 			// alpha face

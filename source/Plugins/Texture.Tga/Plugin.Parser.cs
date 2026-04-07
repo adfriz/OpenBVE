@@ -1,93 +1,13 @@
-﻿#pragma warning disable 169, 414, IDE0052 //We don't use a bunch of fields, but keep them in case required later
-// ReSharper disable NotAccessedField.Local
-// ReSharper disable UnusedMember.Local
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.Runtime.InteropServices;
 using OpenBveApi.Hosts;
-using PixelFormat = System.Drawing.Imaging.PixelFormat;
+using OpenBveApi.Textures;
+using OpenBveApi.Colors;
 
 namespace Texture.Tga
 {
 	public partial class Plugin
 	{
-		//Extension area information
-		private int ExtensionAreaSize;
-        //Date, time, author name, job name, job time and comments not needed....
-        //Version number
-        private Color ExtensionAreaKeyColor;
-        private int PixelAspectRatioNumerator;
-		private int PixelAspectRatioDenominator;
-		private int GammaNumerator;
-		private int GammaDenominator;
-		private int ColorCorrectionOffset;
-		private int PostageStampOffset;
-		private int ScanLineOffset;
-		private int AttributesType;
-
-
-		//Basic footer information
-		private bool NewTGA;
-		private int ExtensionAreaOffset;
-		private int DeveloperDirectoryOffset;
-		private string ReservedCharacter;
-		//Basic header information
-		private byte ImageIDLength;
-		private byte PixelDepth;
-		private byte ImageDescriptor;
-		private bool HasColorMap;
-		private int AttributeBits;
-		private VerticalTransferOrder verticalTransferOrder;
-		private HorizontalTransferOrder horizontalTransferOrder;
-
-		internal FirstPixelDestination firstPixelDestination
-		{
-			get
-			{
-				if (verticalTransferOrder == VerticalTransferOrder.Unknown || horizontalTransferOrder == HorizontalTransferOrder.Unknown)
-				{
-					return FirstPixelDestination.Unknown;
-				}
-				if (verticalTransferOrder == VerticalTransferOrder.Bottom && horizontalTransferOrder == HorizontalTransferOrder.Left)
-				{
-					return FirstPixelDestination.BottomLeft;
-				}
-				if (verticalTransferOrder == VerticalTransferOrder.Bottom && horizontalTransferOrder == HorizontalTransferOrder.Right)
-				{
-					return FirstPixelDestination.BottomRight;
-				}
-				if (verticalTransferOrder == VerticalTransferOrder.Top && horizontalTransferOrder == HorizontalTransferOrder.Left)
-				{
-					return FirstPixelDestination.TopLeft;
-				}
-				return FirstPixelDestination.TopRight;
-			}
-		}
-
-		private string ImageID;
-		private short ImageWidth;
-		private short ImageHeight;
-
-		//Color map
-		private int ColorMapType;
-		private ImageTypes ImageType;
-		private int ColorMapLength;
-		private byte ColorMapEntrySize;
-		private readonly List<Color> ColorMap = new List<Color>();
-
-		//Scan line table
-		private readonly List<int> ScanLineTable = new List<int>();
-
-		//Color correction table
-		private readonly List<Color> ColorCorrectionTable = new List<Color>();
-
-		//Other
-		private GCHandle ByteArrayHandle;
-		private Bitmap bitmap;
-
 		private enum ImageTypes : byte
 		{
 			None = 0,
@@ -101,622 +21,199 @@ namespace Texture.Tga
 
 		internal bool Parse(string fileName, out OpenBveApi.Textures.Texture texture)
 		{
-
-			byte[] filebytes = File.ReadAllBytes(fileName);
-			if (filebytes.Length > 0)
+			try
 			{
-				using (MemoryStream filestream = new MemoryStream(filebytes))
+				using (FileStream stream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
 				{
-					if (filestream.Length > 0 && filestream.CanSeek)
+					if (stream.Length < 18)
 					{
-						using (BinaryReader binReader = new BinaryReader(filestream))
+						texture = null;
+						return false;
+					}
+
+					using (BinaryReader binReader = new BinaryReader(stream))
+					{
+						// Header parsing
+						byte imageIDLength = binReader.ReadByte();
+						bool hasColorMap = binReader.ReadByte() != 0;
+						ImageTypes imageType = (ImageTypes)binReader.ReadByte();
+						binReader.ReadInt16(); // colorMapStart
+						int colorMapLength = binReader.ReadInt16();
+						byte colorMapEntrySize = binReader.ReadByte();
+						binReader.ReadInt16(); // xOrigin
+						binReader.ReadInt16(); // yOrigin
+						int width = binReader.ReadInt16();
+						int height = binReader.ReadInt16();
+						byte pixelDepth = binReader.ReadByte();
+						byte descriptor = binReader.ReadByte();
+
+						if (width <= 0 || height <= 0)
 						{
-							//First we need to read the footer
-							try
-							{
-								//Start reading at 18 bytes from the end of the file
-								binReader.BaseStream.Seek(-18, SeekOrigin.End);
-								//Read the signature string to it's textual representation
-								var Signature = System.Text.Encoding.ASCII.GetString(binReader.ReadBytes(16)).TrimEnd('\0');
-								if (string.CompareOrdinal(Signature, "TRUEVISION-XFILE") == 0)
-								{
-									//This is a new TGA format file, so we must read the footer information
-									NewTGA = true;
-									//Reset seek position
-									binReader.BaseStream.Seek((-26), SeekOrigin.End);
-									//Read the extension area offset
-									ExtensionAreaOffset = binReader.ReadInt32();
-									//Read the developer directory offset
-									DeveloperDirectoryOffset = binReader.ReadInt32();
-									//Skip signature
-									binReader.ReadBytes(16);
-									//Read the reserved character
-									ReservedCharacter = System.Text.Encoding.ASCII.GetString(binReader.ReadBytes(1)).TrimEnd('\0');
-								}
-							}
-							catch
-							{
-								//Failed to load the footer information from the TGA file....
-								CurrentHost.ReportProblem(ProblemType.InvalidOperation, "Failed to load TGA footer.");
-								texture = null;
-								return false;
-							}
-							//Now read the basic header....
-							try
-							{
-								//Start reading at the start of the file
-								binReader.BaseStream.Seek(0, SeekOrigin.Begin);
-								//ImageID Length
-								ImageIDLength = binReader.ReadByte();
-								//Byte showing the color map type ==> Either none or has a color map
-								HasColorMap = binReader.ReadByte() != 0;
-								//Byte showing the image type
-								ImageType = (ImageTypes)binReader.ReadByte();
-								//16-bit integer showing the first entry in the color map
-								binReader.ReadInt16();
-								//16-bit integer showing the length of the color map
-								ColorMapLength = binReader.ReadInt16();
-								//Byte showing the size of a color map entry
-								ColorMapEntrySize = binReader.ReadByte();
-								//16-bit integer showing the X-origin
-								binReader.ReadInt16();
-								//16-bit integer showing the Y-origin
-								binReader.ReadInt16();
-								//16-bit integer showing the image width
-								ImageWidth = binReader.ReadInt16();
-								//16-bit integer showing the image height
-								ImageHeight = binReader.ReadInt16();
-								//Byte showing the pixel depth
-								PixelDepth = binReader.ReadByte();
-
-								ImageDescriptor = binReader.ReadByte();
-								AttributeBits = (ImageDescriptor >> 0) & ((1 << 4) - 1);
-								verticalTransferOrder = (VerticalTransferOrder)((ImageDescriptor >> 5) & ((1 << 1) - 1));
-								horizontalTransferOrder = (HorizontalTransferOrder)((ImageDescriptor >> 4) & ((1 << 1) - 1));
-								
-
-								// load ImageID value if any
-								if (ImageIDLength > 0)
-								{
-									ImageID = System.Text.Encoding.ASCII.GetString(binReader.ReadBytes(ImageIDLength)).TrimEnd('\0');
-								}
-							}
-							catch
-							{
-								//Failed to load the basic header information from the TGA file....
-								CurrentHost.ReportProblem(ProblemType.InvalidOperation, "Failed to load TGA header.");
-								texture = null;
-								return false;
-							}
-							//Next, we need to read the color map if one is included
-							if (HasColorMap)
-							{
-								if (ColorMapLength > 0)
-								{
-									try
-									{
-										for (int i = 0; i < ColorMapLength; i++)
-										{
-											int a, b, g, r;
-											// load each color map entry based on the ColorMapEntrySize value
-											switch (ColorMapEntrySize)
-											{
-												case 15:
-													byte[] color15 = binReader.ReadBytes(2);
-													ColorMap.Add(GetColorFrom2Bytes(color15[1], color15[0]));
-													break;
-												case 16:
-													byte[] color16 = binReader.ReadBytes(2);
-													ColorMap.Add(GetColorFrom2Bytes(color16[1], color16[0]));
-													break;
-												case 24:
-													b = Convert.ToInt32(binReader.ReadByte());
-													g = Convert.ToInt32(binReader.ReadByte());
-													r = Convert.ToInt32(binReader.ReadByte());
-													ColorMap.Add(Color.FromArgb(r, g, b));
-													break;
-												case 32:
-													a = Convert.ToInt32(binReader.ReadByte());
-													b = Convert.ToInt32(binReader.ReadByte());
-													g = Convert.ToInt32(binReader.ReadByte());
-													r = Convert.ToInt32(binReader.ReadByte());
-													ColorMap.Add(Color.FromArgb(a, r, g, b));
-													break;
-												default:
-													//No other entry sizes than 15, 16, 24 & 32 are supported....
-													throw new NotSupportedException();
-
-											}
-
-
-										}
-									}
-									catch
-									{
-										CurrentHost.ReportProblem(ProblemType.InvalidOperation, "TGA ColorMap not correctly formatted.");
-										//Color map not correctly formatted
-										texture = null;
-										return false;
-									}
-								}
-								else
-								{
-									//Image requires a color map, and one is not present
-									CurrentHost.ReportProblem(ProblemType.InvalidOperation, "TGA Image requires a color map which is not present.");
-									texture = null;
-									return false;
-								}
-							}
-							//Read the extension area if applicable
-							if (NewTGA)
-							{
-								try
-								{
-									//Reset seek position to the start of the extension area
-									binReader.BaseStream.Seek(ExtensionAreaOffset, SeekOrigin.Begin);
-									//Get the size of the extension area
-									ExtensionAreaSize = binReader.ReadInt16();
-									//Skip the author name- We don't need this
-									binReader.ReadBytes(41);
-									//Skip the author comments- We don't need this
-									binReader.ReadBytes(324);
-									//Date & time values, again we don't need these
-									binReader.ReadInt16();
-									binReader.ReadInt16();
-									binReader.ReadInt16();
-									binReader.ReadInt16();
-									binReader.ReadInt16();
-									binReader.ReadInt16();
-									//Skip the job name
-									binReader.ReadBytes(41);
-									//Job date & time values
-									binReader.ReadInt16();
-									binReader.ReadInt16();
-									binReader.ReadInt16();
-									//ID name of software which wrote the file, skip
-									binReader.ReadBytes(41);
-									//Software version number & letter
-									binReader.ReadInt16();
-									binReader.ReadBytes(1);
-									//Aha- Something useful, set the key color
-									var a = (int)binReader.ReadByte();
-									var r = (int)binReader.ReadByte();
-									var b = (int)binReader.ReadByte();
-									var g = (int)binReader.ReadByte();
-									ExtensionAreaKeyColor = Color.FromArgb(a, r, g, b);
-									PixelAspectRatioNumerator = binReader.ReadInt16();
-									PixelAspectRatioDenominator = binReader.ReadInt16();
-									GammaNumerator = binReader.ReadInt16();
-									GammaDenominator = binReader.ReadInt16();
-									ColorCorrectionOffset = binReader.ReadInt32();
-									PostageStampOffset = binReader.ReadInt32();
-									ScanLineOffset = binReader.ReadInt32();
-									AttributesType = binReader.ReadByte();
-									//If a scan line table offset is included, read this
-									if (ScanLineOffset > 0)
-									{
-										binReader.BaseStream.Seek(ScanLineOffset, SeekOrigin.Begin);
-										for (int i = 0; i < ImageHeight; i++)
-										{
-											ScanLineTable.Add(binReader.ReadInt32());
-										}
-									}
-									//If a color correction table is included, read this
-									if (ColorCorrectionOffset > 0)
-									{
-										binReader.BaseStream.Seek(ColorCorrectionOffset, SeekOrigin.Begin);
-										for (int i = 0; i < 256; i++)
-										{
-											a = binReader.ReadInt16();
-											r = binReader.ReadInt16();
-											b = binReader.ReadInt16();
-											g = binReader.ReadInt16();
-											ColorCorrectionTable.Add(Color.FromArgb(a, r, g, b));
-										}
-									}
-								}
-								catch
-								{
-									//Extension area not correctly formatted
-									CurrentHost.ReportProblem(ProblemType.InvalidOperation, "TGA Extension Area not correctly formatted.");
-									texture = null;
-									return false;
-								}
-								//We should now have all the data required to read our image into memory
-
-								//Calculate the stride value
-								var stride = ((ImageWidth * PixelDepth + 31) & ~31) >> 3;
-								//Calculate the padding value
-								var padding = stride - (((ImageWidth * PixelDepth) + 7) / 8);
-								//Next, load the image data into memory
-
-								//Create the padding array, as stride must be a multiple of 4
-								byte[] paddingBytes = new byte[padding];
-								//Create the temporary row lists
-								var rows = new List<List<byte>>();
-								var row = new List<byte>();
-
-								//Calculate the offset & seek to the start of the image data
-								var ImageDataOffset = 18 + ImageIDLength;
-								int Bytes = 0;
-								switch (ColorMapEntrySize)
-								{
-									case 15:
-										ImageDataOffset += 2 * ColorMapLength;
-										break;
-									case 16:
-										Bytes = 2 * ColorMapLength;
-										break;
-									case 24:
-										Bytes = 3 * ColorMapLength;
-										break;
-									case 32:
-										Bytes = 4 * ColorMapLength;
-										break;
-
-								}
-								ImageDataOffset += Bytes;
-								binReader.BaseStream.Seek(ImageDataOffset, SeekOrigin.Begin);
-
-								//Size in bytes for each row
-								int ImageRowByteSize = ImageWidth * (PixelDepth / 8);
-
-								//Size in bytes for whole image
-								int ImageByteSize = ImageRowByteSize * ImageHeight;
-
-								if (ImageType == ImageTypes.CompressedColorMapped || ImageType == ImageTypes.CompressedRGB || ImageType == ImageTypes.CompressedGreyscale)
-								{
-									var BytesRead = 0;
-									var RowBytesRead = 0;
-									//Read image
-									while (BytesRead < ImageByteSize)
-									{
-										var Packet = binReader.ReadByte();
-										var PacketType = (Packet >> 7) & ((1 << 1) - 1);
-										var PixelCount = ((Packet >> 0) & ((1 << 7) - 1)) + 1;
-										if (PacketType == 1)
-										{
-											byte[] Pixel = binReader.ReadBytes(PixelDepth / 8);
-											for (int i = 0; i < PixelCount; i++)
-											{
-
-												foreach (byte b in Pixel)
-												{
-													row.Add(b);
-												}
-												RowBytesRead += Pixel.Length;
-												BytesRead += Pixel.Length;
-
-												//If this is a full row, addit to the list of rows, clear it and restart the counter
-												if (RowBytesRead == ImageRowByteSize)
-												{
-													rows.Add(row);
-													row = new List<byte>();
-													RowBytesRead = 0;
-												}
-											}
-										}
-										else
-										{
-											int BytesToRead = PixelCount * (PixelDepth / 8);
-											for (int i = 0; i < BytesToRead; i++)
-											{
-												row.Add(binReader.ReadByte());
-												BytesRead++;
-												RowBytesRead++;
-
-												//If this is a full row, addit to the list of rows, clear it and restart the counter
-												if (RowBytesRead == ImageRowByteSize)
-												{
-													rows.Add(row);
-													row = new List<byte>();
-													RowBytesRead = 0;
-												}
-
-											}
-										}
-
-									}
-								}
-								else
-								{
-									for (int i = 0; i < ImageHeight; i++)
-									{
-										for (int j = 0; j < ImageRowByteSize; j++)
-										{
-											row.Add(binReader.ReadByte());
-										}
-										rows.Add(row);
-										row = new List<byte>();
-									}
-								}
-								bool reverseRows = false;
-								bool reverseBytes = false;
-								//We now need to get the location of the first pixel to see if the rows need to be reversed when converted to bitmap
-								switch (firstPixelDestination)
-								{
-									case FirstPixelDestination.TopLeft:
-										reverseRows = false;
-										reverseBytes = true;
-										break;
-									case FirstPixelDestination.TopRight:
-										reverseRows = false;
-										reverseBytes = false;
-										break;
-									case FirstPixelDestination.BottomLeft:
-										reverseRows = true;
-										reverseBytes = true;
-										break;
-									case FirstPixelDestination.BottomRight:
-									case FirstPixelDestination.Unknown:
-										reverseRows = true;
-										reverseBytes = true;
-										break;
-								}
-								
-								//Check and reverse rows & bytes if necessary
-								if (reverseRows)
-								{
-									rows.Reverse();
-								}
-								if (reverseBytes)
-								{
-									for (int i = 0; i < rows.Count; i++)
-									{
-										rows[i].Reverse();
-									}
-								}
-								byte[] ImageData;
-								//Now create the final array using MemoryStream
-								using (MemoryStream memoryStream = new MemoryStream())
-								{
-									for (int i = 0; i < rows.Count; i++)
-									{
-										byte[] RowBytes = rows[i].ToArray();
-										//Write out the row and padding into the memorystream
-										memoryStream.Write(RowBytes, 0, RowBytes.Length);
-										memoryStream.Write(paddingBytes, 0, paddingBytes.Length);
-									}
-									//Convert the contents of the memorystream to our array
-									ImageData = memoryStream.ToArray();
-
-								}
-								//Convert the byte array into a bitmap
-
-								//First, calculate the stride
-								var Stride = ((ImageWidth * PixelDepth + 31) & ~31) >> 3;
-								//We now need to calculate the pixel depth from the image attributes
-								PixelFormat CurrentPixelFormat = PixelFormat.Undefined;
-								switch (PixelDepth)
-								{
-									case 8:
-										CurrentPixelFormat = PixelFormat.Format8bppIndexed;
-										break;
-									case 16:
-										if (NewTGA && ExtensionAreaOffset > 0)
-										{
-											switch (AttributesType)
-											{
-												case 0:
-												case 1:
-												case 2:
-													CurrentPixelFormat = PixelFormat.Format16bppRgb555;
-													break;
-
-												case 3:
-													CurrentPixelFormat = PixelFormat.Format16bppArgb1555;
-													break;
-											}
-										}
-										else
-										{
-											if (AttributeBits == 0)
-											{
-												CurrentPixelFormat = PixelFormat.Format16bppRgb555;
-											}
-											if (AttributeBits == 1)
-											{
-												CurrentPixelFormat = PixelFormat.Format16bppArgb1555;
-											}
-										}
-										break;
-									case 24:
-										CurrentPixelFormat = PixelFormat.Format24bppRgb;
-										break;
-									case 32:
-										if (NewTGA && ExtensionAreaOffset > 0)
-										{
-											switch (AttributesType)
-											{
-
-												case 0:
-												case 1:
-												case 2:
-													CurrentPixelFormat = PixelFormat.Format32bppRgb;
-													break;
-
-												case 3:
-													CurrentPixelFormat = PixelFormat.Format32bppArgb;
-													break;
-
-												case 4:
-													CurrentPixelFormat = PixelFormat.Format32bppPArgb;
-													break;
-
-											}
-										}
-										else
-										{
-											if (AttributeBits == 0)
-											{
-												CurrentPixelFormat = PixelFormat.Format32bppRgb;
-											}
-											if (AttributeBits == 8)
-											{
-												CurrentPixelFormat = PixelFormat.Format32bppArgb;
-											}
-										}
-										break;
-								}
-								//Create a pinned GC handle to our new byte array
-								ByteArrayHandle = GCHandle.Alloc(ImageData, GCHandleType.Pinned);
-								bitmap = new Bitmap(ImageWidth, ImageHeight, Stride, CurrentPixelFormat, ByteArrayHandle.AddrOfPinnedObject());
-								//Free it again
-								ByteArrayHandle.Free();
-								//Load color map
-								if (ColorMap.Count > 0)
-								{
-									ColorPalette currentPalette = bitmap.Palette;
-									for (int i = 0; i < ColorMap.Count; i++)
-									{
-										bool forceopaque = false;
-										if (NewTGA && ExtensionAreaOffset > 0)
-										{
-											if (AttributesType == 0 || AttributesType == 1)
-											{
-												forceopaque = true;
-											}
-										}
-										else if (AttributeBits == 0 || AttributeBits == 1)
-										{
-											forceopaque = true;
-										}
-										if (forceopaque)
-										{
-											// use 255 for alpha ( 255 = opaque/visible ) so we can see the image
-											currentPalette.Entries[i] = Color.FromArgb(255, ColorMap[i].R, ColorMap[i].G, ColorMap[i].B);
-										}
-										else
-										{
-											// use whatever value is there
-											currentPalette.Entries[i] = ColorMap[i];
-										}
-									}
-
-									// set the new palette back to the Bitmap object
-									bitmap.Palette = currentPalette;
-								}
-								else
-								{
-									if (PixelDepth == 8 && (ImageType == ImageTypes.UncompressedGreyscale || ImageType == ImageTypes.CompressedGreyscale))
-									{
-										// get the current palette
-										ColorPalette currentPalette = bitmap.Palette;
-
-										// create the Greyscale palette
-										for (int i = 0; i < 256; i++)
-										{
-											currentPalette.Entries[i] = Color.FromArgb(i, i, i);
-										}
-
-										// set the new palette back to the Bitmap object
-										bitmap.Palette = currentPalette;
-									}
-								}
-							}
-
-
+							texture = null;
+							return false;
 						}
+
+						// Skip Image ID
+						if (imageIDLength > 0)
+						{
+							binReader.BaseStream.Seek(imageIDLength, SeekOrigin.Current);
+						}
+
+						// Read Color Map if any
+						Color32[] colorMap = null;
+						if (hasColorMap && colorMapLength > 0)
+						{
+							colorMap = new Color32[colorMapLength];
+							for (int i = 0; i < colorMapLength; i++)
+							{
+								if (colorMapEntrySize == 15 || colorMapEntrySize == 16)
+								{
+									ushort val = binReader.ReadUInt16();
+									colorMap[i] = GetColorFrom2Bytes((byte)(val >> 8), (byte)(val & 0xFF), true);
+								}
+								else if (colorMapEntrySize == 24)
+								{
+									byte b = binReader.ReadByte();
+									byte g = binReader.ReadByte();
+									byte r = binReader.ReadByte();
+									colorMap[i] = new Color32(r, g, b, 255);
+								}
+								else if (colorMapEntrySize == 32)
+								{
+									byte b = binReader.ReadByte();
+									byte g = binReader.ReadByte();
+									byte r = binReader.ReadByte();
+									byte a = binReader.ReadByte();
+									colorMap[i] = new Color32(r, g, b, a);
+								}
+							}
+						}
+
+						// Orientation and attributes
+						bool isTopDown = (descriptor & 0x20) != 0;
+						bool isRightLeft = (descriptor & 0x10) != 0;
+						int alphaBits = descriptor & 0x0F;
+
+						// Allocation for target RGBA buffer
+						byte[] result = new byte[width * height * 4];
+						
+						// Pixel reading logic
+						bool compressed = imageType == ImageTypes.CompressedColorMapped || imageType == ImageTypes.CompressedRGB || imageType == ImageTypes.CompressedGreyscale;
+
+						int totalPixels = width * height;
+						int p = 0;
+
+						while (p < totalPixels)
+						{
+							int count;
+							bool isRle = false;
+							if (compressed)
+							{
+								byte packet = binReader.ReadByte();
+								count = (packet & 0x7F) + 1;
+								isRle = (packet & 0x80) != 0;
+							}
+							else
+							{
+								count = totalPixels - p;
+							}
+
+							if (isRle)
+							{
+								// Read one pixel and repeat
+								Color32 color = ReadPixel(binReader, pixelDepth, colorMap, alphaBits);
+								for (int i = 0; i < count && p < totalPixels; i++, p++)
+								{
+									WritePixel(result, p, width, height, isTopDown, isRightLeft, color);
+								}
+							}
+							else
+							{
+								// Read 'count' raw pixels
+								for (int i = 0; i < count && p < totalPixels; i++, p++)
+								{
+									Color32 color = ReadPixel(binReader, pixelDepth, colorMap, alphaBits);
+									WritePixel(result, p, width, height, isTopDown, isRightLeft, color);
+								}
+							}
+						}
+
+						texture = new OpenBveApi.Textures.Texture(width, height, PixelFormat.RGBAlpha, result, null);
+						return true;
 					}
 				}
 			}
-
-
-			/*
-			 * Read the bitmap. This will be a bitmap of just
-			 * any format, not necessarily the one that allows
-			 * us to extract the bitmap data easily.
-			 * */
-			Rectangle rect = new Rectangle(0, 0, bitmap.Width, bitmap.Height);
-			/* 
-			 * If the bitmap format is not already 32-bit BGRA,
-			 * then convert it to 32-bit BGRA.
-			 * */
-			if (bitmap.PixelFormat != PixelFormat.Format32bppArgb)
+			catch (Exception ex)
 			{
-				Bitmap compatibleBitmap = new Bitmap(bitmap.Width, bitmap.Height, PixelFormat.Format32bppArgb);
-				Graphics graphics = Graphics.FromImage(compatibleBitmap);
-				graphics.DrawImage(bitmap, rect, rect, GraphicsUnit.Pixel);
-				graphics.Dispose();
-				bitmap.Dispose();
-				bitmap = compatibleBitmap;
-			}
-			/*
-			 * Extract the raw bitmap data.
-			 * */
-			BitmapData data = bitmap.LockBits(rect, ImageLockMode.ReadOnly, bitmap.PixelFormat);
-			if (data.Stride == 4 * data.Width)
-			{
-				/*
-				 * Copy the data from the bitmap
-				 * to the array in BGRA format.
-				 * */
-				byte[] raw = new byte[data.Stride * data.Height];
-				Marshal.Copy(data.Scan0, raw, 0, data.Stride * data.Height);
-				bitmap.UnlockBits(data);
-				int width = bitmap.Width;
-				int height = bitmap.Height;
-				bitmap.Dispose();
-				/*
-				 * Change the byte order from BGRA to RGBA.
-				 * */
-				for (int i = 0; i < raw.Length; i += 4)
-				{
-					byte temp = raw[i];
-					raw[i] = raw[i + 2];
-					raw[i + 2] = temp;
-				}
-				texture = new OpenBveApi.Textures.Texture(width, height, OpenBveApi.Textures.PixelFormat.RGBAlpha, raw, null);
-				return true;
-			}
-			else
-			{
-				/*
-				 * The stride is invalid. This indicates that the
-				 * CLI either does not implement the conversion to
-				 * 32-bit BGRA correctly, or that the CLI has
-				 * applied additional padding that we do not
-				 * support.
-				 * */
-				bitmap.UnlockBits(data);
-				bitmap.Dispose();
-				CurrentHost.ReportProblem(ProblemType.InvalidOperation, "Invalid stride encountered.");
+				CurrentHost.ReportProblem(ProblemType.InvalidOperation, "Failed to load TGA: " + ex.Message);
 				texture = null;
 				return false;
 			}
 		}
-		internal static Color GetColorFrom2Bytes(byte one, byte two)
+
+		private Color32 ReadPixel(BinaryReader reader, int depth, Color32[] colorMap, int alphaBits)
 		{
-			// get the 5 bits used for the RED value from the first byte
-			int r1 = GetBits(one, 2, 5);
-			int r = r1 << 3;
-
-			// get the two high order bits for GREEN from the from the first byte
-			int bit = GetBits(one, 0, 2);
-			// shift bits to the high order
-			int g1 = bit << 6;
-
-			// get the 3 low order bits for GREEN from the from the second byte
-			bit = GetBits(two, 5, 3);
-			// shift the low order bits
-			int g2 = bit << 3;
-			// add the shifted values together to get the full GREEN value
-			int g = g1 + g2;
-
-			// get the 5 bits used for the BLUE value from the second byte
-			int b1 = GetBits(two, 0, 5);
-			int b = b1 << 3;
-
-			// get the 1 bit used for the ALPHA value from the first byte
-			int a1 = GetBits(one, 7, 1);
-			int a = a1 * 255;
-
-			// return the resulting Color
-			return Color.FromArgb(a, r, g, b);
+			switch (depth)
+			{
+				case 8:
+					byte idx = reader.ReadByte();
+					if (colorMap != null && idx < colorMap.Length)
+					{
+						return colorMap[idx];
+					}
+					// Greyscale
+					return new Color32(idx, idx, idx, 255);
+				case 15:
+				case 16:
+					ushort val = reader.ReadUInt16();
+					return GetColorFrom2Bytes((byte)(val >> 8), (byte)(val & 0xFF), alphaBits > 0);
+				case 24:
+					byte b = reader.ReadByte();
+					byte g = reader.ReadByte();
+					byte r = reader.ReadByte();
+					return new Color32(r, g, b, 255);
+				case 32:
+					byte b4 = reader.ReadByte();
+					byte g4 = reader.ReadByte();
+					byte r4 = reader.ReadByte();
+					byte a4 = reader.ReadByte();
+					if (alphaBits == 0) a4 = 255; // Opaque 32-bit TGA
+					return new Color32(r4, g4, b4, a4);
+				default:
+					return new Color32(0, 0, 0, 255);
+			}
 		}
-		internal static int GetBits(byte b, int offset, int count)
+
+		private void WritePixel(byte[] buffer, int pixelIndex, int width, int height, bool topDown, bool rightLeft, Color32 color)
 		{
-			return (b >> offset) & ((1 << count) - 1);
+			int x = pixelIndex % width;
+			int y = pixelIndex / width;
+
+			if (rightLeft) x = width - 1 - x;
+			if (!topDown) y = height - 1 - y;
+
+			int offset = (y * width + x) * 4;
+			buffer[offset] = color.R;
+			buffer[offset + 1] = color.G;
+			buffer[offset + 2] = color.B;
+			buffer[offset + 3] = color.A;
+		}
+
+		internal static Color32 GetColorFrom2Bytes(byte one, byte two, bool hasAlpha)
+		{
+			int r = ((one & 0x7C) >> 2) << 3;
+			int g = (((one & 0x03) << 3) | ((two & 0xE0) >> 5)) << 3;
+			int b = (two & 0x1F) << 3;
+			// Accurate 5-bit to 8-bit mapping
+			r |= (r >> 5);
+			g |= (g >> 5);
+			b |= (b >> 5);
+			int a = 255;
+			if (hasAlpha)
+			{
+				a = (one & 0x80) != 0 ? 255 : 0;
+			}
+			return new Color32((byte)r, (byte)g, (byte)b, (byte)a);
 		}
 	}
 }

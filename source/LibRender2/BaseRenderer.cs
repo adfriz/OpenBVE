@@ -71,6 +71,20 @@ namespace LibRender2
 		public bool ReShadeInUse;
 		/// <summary>A dummy VAO used when working with procedural data within the shader</summary>
 		public VertexArrayObject dummyVao;
+		/// <summary>A UBO used for hardware instancing matrices</summary>
+		internal int instanceBuffer;
+		/// <summary>Used by derived classes to indicate an instanced draw call is in progress</summary>
+		protected int rendererInstancingCount = 1;
+
+		internal OpenTK.Matrix4 ConvertToMatrix4(Matrix4D mat)
+		{
+			return new OpenTK.Matrix4(
+				(float)mat.Row0.X, (float)mat.Row0.Y, (float)mat.Row0.Z, (float)mat.Row0.W,
+				(float)mat.Row1.X, (float)mat.Row1.Y, (float)mat.Row1.Z, (float)mat.Row1.W,
+				(float)mat.Row2.X, (float)mat.Row2.Y, (float)mat.Row2.Z, (float)mat.Row2.W,
+				(float)mat.Row3.X, (float)mat.Row3.Y, (float)mat.Row3.Z, (float)mat.Row3.W
+			);
+		}
 
 		public Screen Screen;
 
@@ -247,15 +261,15 @@ namespace LibRender2
 				{
 					if (Screen.Width > 1024)
 					{
-						currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("In-game"), "logo_1024.png"), TextureParameters.NoChange, out _programLogo, true);
+						currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("In-game"), "logo_1024.png"), TextureParameters.FastHUD, out _programLogo, true);
 					}
 					else if (Screen.Width > 512)
 					{
-						currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("In-game"), "logo_512.png"), TextureParameters.NoChange, out _programLogo, true);
+						currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("In-game"), "logo_512.png"), TextureParameters.FastHUD, out _programLogo, true);
 					}
 					else
 					{
-						currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("In-game"), "logo_256.png"), TextureParameters.NoChange, out _programLogo, true);
+						currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("In-game"), "logo_256.png"), TextureParameters.FastHUD, out _programLogo, true);
 					}
 				}
 				catch
@@ -431,12 +445,12 @@ namespace LibRender2
 				}
 			}
 			// icons for use in GL menus
-			currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("Menu"), "keyboard.png"), TextureParameters.NoChange, out KeyboardTexture);
-			currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("Menu"), "gamepad.png"), TextureParameters.NoChange, out GamepadTexture);
-			currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("Menu"), "xbox.png"), TextureParameters.NoChange, out XInputTexture);
-			currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("Menu"), "zuki.png"), TextureParameters.NoChange, out MasconTexture);
-			currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("Menu"), "joystick.png"), TextureParameters.NoChange, out JoystickTexture);
-			currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("Menu"), "raildriver.png"), TextureParameters.NoChange, out RailDriverTexture);
+			currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("Menu"), "keyboard.png"), TextureParameters.FastHUD, out KeyboardTexture);
+			currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("Menu"), "gamepad.png"), TextureParameters.FastHUD, out GamepadTexture);
+			currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("Menu"), "xbox.png"), TextureParameters.FastHUD, out XInputTexture);
+			currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("Menu"), "zuki.png"), TextureParameters.FastHUD, out MasconTexture);
+			currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("Menu"), "joystick.png"), TextureParameters.FastHUD, out JoystickTexture);
+			currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("Menu"), "raildriver.png"), TextureParameters.FastHUD, out RailDriverTexture);
 		}
 
 		/// <summary>Deinitializes the renderer</summary>
@@ -1400,7 +1414,14 @@ namespace LibRender2
 				shader.SetOpacity(inv255 * material.Color.A * alphaFactor);
 
 				// render polygon
-				VAO.Draw(drawMode, face.IboStartIndex, face.Vertices.Length);
+				if (rendererInstancingCount > 1)
+				{
+					VAO.DrawInstanced(drawMode, face.IboStartIndex, face.Vertices.Length, rendererInstancingCount);
+				}
+				else
+				{
+					VAO.Draw(drawMode, face.IboStartIndex, face.Vertices.Length);
+				}
 			}
 
 			// nighttime polygon
@@ -1426,7 +1447,14 @@ namespace LibRender2
 				shader.SetOpacity(inv255 * material.Color.A * alphaFactor);
 
 				// render polygon
-				VAO.Draw(drawMode, face.IboStartIndex, face.Vertices.Length);
+				if (rendererInstancingCount > 1)
+				{
+					VAO.DrawInstanced(drawMode, face.IboStartIndex, face.Vertices.Length, rendererInstancingCount);
+				}
+				else
+				{
+					VAO.Draw(drawMode, face.IboStartIndex, face.Vertices.Length);
+				}
 				RestoreBlendFunc();
 				RestoreAlphaFunc();
 			}
