@@ -228,36 +228,6 @@
 		<Message></Message>
 	</Object>
 	<Object>
-		<Name>UchiboX\hamano.x</Name>
-		<Path>UchiboX\hamano.csv</Path>
-		<Message></Message>
-	</Object>
-	<Object>
-		<Name>UchiboX\honchiba.x</Name>
-		<Path>UchiboX\honchiba.csv</Path>
-		<Message></Message>
-	</Object>
-	<Object>
-		<Name>UchiboX\honchiba.x</Name>
-		<Path>UchiboX\honchiba.csv</Path>
-		<Message></Message>
-	</Object>
-	<Object>
-		<Name>UchiboX\ichi-zyou.x</Name>
-		<Path>UchiboX\ichi-zyou.csv</Path>
-		<Message></Message>
-	</Object>
-	<Object>
-		<Name>UchiboX\kuda-jo.x</Name>
-		<Path>UchiboX\kuda-jo.csv</Path>
-		<Message></Message>
-	</Object>
-	<Object>
-		<Name>UchiboX\kuda-shu.x</Name>
-		<Path>UchiboX\kuda-shu.csv</Path>
-		<Message></Message>
-	</Object>
-	<Object>
 		<Name>UchiboX\kurukuru.x</Name>
 		<Path>UchiboX\repeater.csv</Path>
 		<Message></Message>
@@ -340,6 +310,66 @@
 	<Object>
 		<Name>UchiboX\re15.x</Name>
 		<Path>UchiboX\re15.csv</Path>
+		<Message></Message>
+	</Object>
+	<Object>
+		<Name>UchiboX\River.x</Name>
+		<Path>Uchibo\River.csv</Path>
+		<Message></Message>
+	</Object>
+	<Object>
+		<Name>UchiboX\RoofCL.x</Name>
+		<Path>Uchibo\RoofCL.csv</Path>
+		<Message></Message>
+	</Object>
+	<Object>
+		<Name>UchiboX\RoofCR.x</Name>
+		<Path>Uchibo\RoofCR.csv</Path>
+		<Message></Message>
+	</Object>
+	<Object>
+		<Name>UchiboX\RoofL.x</Name>
+		<Path>Uchibo\RoofL.csv</Path>
+		<Message></Message>
+	</Object>
+	<Object>
+		<Name>UchiboX\RoofR.x</Name>
+		<Path>Uchibo\RoofR.csv</Path>
+		<Message></Message>
+	</Object>
+	<Object>
+		<Name>UchiboX\TollBarDL.x</Name>
+		<Path>Uchibo\TollBarDL.csv</Path>
+		<Message></Message>
+	</Object>
+	<Object>
+		<Name>UchiboX\TollBarDR.x</Name>
+		<Path>Uchibo\TollBarDR.csv</Path>
+		<Message></Message>
+	</Object>
+	<Object>
+		<Name>UchiboX\TollBarSL.x</Name>
+		<Path>Uchibo\TollBarSL.csv</Path>
+		<Message></Message>
+	</Object>
+	<Object>
+		<Name>UchiboX\TollBarSR.x</Name>
+		<Path>Uchibo\TollBarSR.csv</Path>
+		<Message></Message>
+	</Object>
+	<Object>
+		<Name>UchiboX\WallL.x</Name>
+		<Path>Uchibo\WallL.csv</Path>
+		<Message></Message>
+	</Object>
+	<Object>
+		<Name>UchiboX\WallR.x</Name>
+		<Path>Uchibo\WallR.csv</Path>
+		<Message></Message>
+	</Object>
+	<Object>
+		<Name>UchiboX\Re15.x</Name>
+		<Path>Uchibo\Re15.csv</Path>
 		<Message></Message>
 	</Object>
   </ObjectList>
