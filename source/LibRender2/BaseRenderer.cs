@@ -754,6 +754,7 @@ namespace LibRender2
 				if (updateVisibility == VisibilityUpdate.None)
 				{
 					Thread.Sleep(100);
+					updateVisibility = VisibilityUpdate.Normal;
 				}
 				else
 				{
