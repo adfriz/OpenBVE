@@ -46,6 +46,7 @@ namespace RouteViewer
         /// <summary>Last time the route was reloaded (UTC).</summary>
         internal static DateTime LastReloadTime = DateTime.UtcNow;
         private static double reloadCheckTimer;
+        private static string[] lastRouteFileLines;
 
 		// keys
 		private static bool ShiftPressed = false;
@@ -201,7 +202,7 @@ namespace RouteViewer
 		}
 		
 		// load route
-		internal static bool LoadRoute(byte[] textureBytes = null, bool autoReload = false) {
+		internal static bool LoadRoute(byte[] textureBytes = null, bool autoReload = false, double startPosition = 0) {
 			if (string.IsNullOrEmpty(CurrentRouteFile))
 			{
 				return false;
@@ -211,7 +212,11 @@ namespace RouteViewer
 			try
 			{
 				Encoding encoding = TextEncoding.GetSystemEncodingFromFile(CurrentRouteFile);
-				Loading.Load(CurrentRouteFile, encoding, textureBytes);
+				if (lastRouteFileLines == null)
+				{
+					lastRouteFileLines = System.IO.File.ReadAllLines(CurrentRouteFile, encoding);
+				}
+				Loading.Load(CurrentRouteFile, encoding, textureBytes, startPosition);
 				result = true;
 			} catch (Exception ex) {
 				if (!autoReload)
@@ -264,7 +269,8 @@ namespace RouteViewer
 
 		/// <summary>Called to reload the current route file.</summary>
 		/// <param name="autoReload">Whether this is an automatic reload (triggered by a file change).</param>
-		internal static void ReloadRoute(bool autoReload = false)
+		/// <param name="startPosition">The starting track position for a selective reload.</param>
+		internal static void ReloadRoute(bool autoReload = false, double startPosition = 0)
 		{
 			if (CurrentRouteFile != null && CurrentlyLoading == false)
 			{
@@ -294,15 +300,17 @@ namespace RouteViewer
 						}
 					}
 
-					Renderer.Reset();
+					// Note: Game.ResetSelective / Game.Reset is called inside Loading.Load,
+					// so we don't do it here. Doing it here would bypass the animated object cleanup.
 					CameraAlignment a = Renderer.Camera.Alignment;
 
-					if (LoadRoute(textureBytes, autoReload))
+					if (LoadRoute(textureBytes, autoReload, startPosition))
 					{
 						Renderer.Camera.Alignment = a;
 						Renderer.CameraTrackFollower.UpdateAbsolute(-1.0, true, false);
 						Renderer.CameraTrackFollower.UpdateAbsolute(a.TrackPosition, true, false);
 						ObjectManager.UpdateAnimatedWorldObjects(0.0, true);
+						Renderer.InitializeVisibility();
 					}
 					else
 					{
@@ -340,6 +348,72 @@ namespace RouteViewer
 				}
 				if (time > LastReloadTime)
 				{
+					if (CurrentRouteFile.EndsWith(".csv", StringComparison.InvariantCultureIgnoreCase) || CurrentRouteFile.EndsWith(".rw", StringComparison.InvariantCultureIgnoreCase))
+					{
+						try
+						{
+							string[] currentLines = System.IO.File.ReadAllLines(CurrentRouteFile, TextEncoding.GetSystemEncodingFromFile(CurrentRouteFile));
+							if (lastRouteFileLines != null && currentLines.Length > 0)
+							{
+								int firstChangedLine = -1;
+								for (int i = 0; i < Math.Min(currentLines.Length, lastRouteFileLines.Length); i++)
+								{
+									if (currentLines[i] != lastRouteFileLines[i])
+									{
+										firstChangedLine = i;
+										break;
+									}
+								}
+
+									// find the first line that actually changed
+									if (firstChangedLine == -1 && currentLines.Length != lastRouteFileLines.Length)
+									{
+										firstChangedLine = Math.Min(currentLines.Length, lastRouteFileLines.Length);
+									}
+
+									if (firstChangedLine != -1)
+									{
+										// find the track position at or before the change in both versions.
+										// we take the minimum of both to avoid "ghost" objects if a track marker was moved forward.
+									double startPosNew = 0;
+									for (int i = firstChangedLine; i >= 0; i--)
+									{
+										string line = currentLines[i];
+										int commentIdx = line.IndexOf(';');
+										if (commentIdx != -1) line = line.Substring(0, commentIdx);
+										string[] parts = line.Split(',');
+										if (parts.Length > 0 && double.TryParse(parts[0].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out double p))
+										{
+											startPosNew = p;
+											break;
+										}
+									}
+									double startPosOld = 0;
+									for (int i = Math.Min(firstChangedLine, lastRouteFileLines.Length - 1); i >= 0; i--)
+									{
+										string line = lastRouteFileLines[i];
+										int commentIdx = line.IndexOf(';');
+										if (commentIdx != -1) line = line.Substring(0, commentIdx);
+										string[] parts = line.Split(',');
+										if (parts.Length > 0 && double.TryParse(parts[0].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out double p))
+										{
+											startPosOld = p;
+											break;
+										}
+									}
+									double startPos = Math.Min(startPosNew, startPosOld);
+									lastRouteFileLines = currentLines;
+									ReloadRoute(true, startPos);
+									return;
+								}
+							}
+							lastRouteFileLines = currentLines;
+						}
+						catch
+						{
+							// fallback
+						}
+					}
 					ReloadRoute(true);
 				}
 			}
