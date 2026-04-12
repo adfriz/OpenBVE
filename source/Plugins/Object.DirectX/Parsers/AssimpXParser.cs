@@ -33,7 +33,7 @@ using AssimpNET.X;
 
 namespace Plugin
 {
-	class AssimpXParser
+	internal class AssimpXParser
 	{
 		private static string currentFolder;
 		private static string currentFile;
