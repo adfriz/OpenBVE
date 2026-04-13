@@ -644,6 +644,7 @@ namespace LibRender2
 						foreach (var face in faces)
 						{
 							if (face.Object.Prototype.Mesh.VAO == null) continue;
+							if (face.Object.DisableShadowCasting) continue;
 
 							Matrix4D modelMatrix = face.Object.ModelMatrix * Camera.TranslationMatrix;
 							ShadowDepthShaderProgram.SetModelMatrix(modelMatrix);
@@ -666,6 +667,7 @@ namespace LibRender2
 							// geometry (e.g. glass with Color,80,80,160,90) is also correctly discarded
 							ShadowDepthShaderProgram.SetAlphaCutoff(0.5f);
 							ShadowDepthShaderProgram.SetMaterialAlpha(material.Color.A / 255.0f);
+							ShadowDepthShaderProgram.SetMaterialFlags(material.Flags);
 
 #pragma warning disable CS0618
 							ObjectState state = face.Object;
@@ -860,14 +862,14 @@ namespace LibRender2
 			VisibleObjects.Clear();
 		}
 
-		public int CreateStaticObject(StaticObject Prototype, Vector3 Position, Transformation WorldTransformation, Transformation LocalTransformation, ObjectDisposalMode AccurateObjectDisposal, double AccurateObjectDisposalZOffset, double StartingDistance, double EndingDistance, double BlockLength, double TrackPosition)
+		public int CreateStaticObject(StaticObject Prototype, Vector3 Position, Transformation WorldTransformation, Transformation LocalTransformation, ObjectDisposalMode AccurateObjectDisposal, double AccurateObjectDisposalZOffset, double StartingDistance, double EndingDistance, double BlockLength, double TrackPosition, bool DisableShadowCasting)
 		{
 			Matrix4D Translate = Matrix4D.CreateTranslation(Position.X, Position.Y, -Position.Z);
 			Matrix4D Rotate = (Matrix4D)new Transformation(LocalTransformation, WorldTransformation);
-			return CreateStaticObject(Position, Prototype, LocalTransformation, Rotate, Translate, AccurateObjectDisposal, AccurateObjectDisposalZOffset, StartingDistance, EndingDistance, BlockLength, TrackPosition);
+			return CreateStaticObject(Position, Prototype, LocalTransformation, Rotate, Translate, AccurateObjectDisposal, AccurateObjectDisposalZOffset, StartingDistance, EndingDistance, BlockLength, TrackPosition, DisableShadowCasting);
 		}
 
-		public int CreateStaticObject(Vector3 Position, StaticObject Prototype, Transformation LocalTransformation, Matrix4D Rotate, Matrix4D Translate, ObjectDisposalMode AccurateObjectDisposal, double AccurateObjectDisposalZOffset, double StartingDistance, double EndingDistance, double BlockLength, double TrackPosition)
+		public int CreateStaticObject(Vector3 Position, StaticObject Prototype, Transformation LocalTransformation, Matrix4D Rotate, Matrix4D Translate, ObjectDisposalMode AccurateObjectDisposal, double AccurateObjectDisposalZOffset, double StartingDistance, double EndingDistance, double BlockLength, double TrackPosition, bool DisableShadowCasting = false)
 		{
 			if (Prototype == null)
 			{
@@ -943,7 +945,8 @@ namespace LibRender2
 				Rotate = Rotate,
 				StartingDistance = startingDistance,
 				EndingDistance = endingDistance,
-				WorldPosition = Position
+				WorldPosition = Position,
+				DisableShadowCasting = DisableShadowCasting
 			});
 			
 			foreach (MeshFace face in Prototype.Mesh.Faces)

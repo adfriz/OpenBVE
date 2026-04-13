@@ -348,9 +348,9 @@ namespace ObjectViewer {
 			FunctionScripts.ExecuteFunctionScript(functionScript, (TrainBase)train, CarIndex, Position, TrackPosition, SectionIndex, IsPartOfTrain, TimeElapsed, CurrentState);
 		}
 
-		public override int CreateStaticObject(StaticObject Prototype, Vector3 Position, Transformation WorldTransformation, Transformation LocalTransformation, double AccurateObjectDisposalZOffset, double StartingDistance, double EndingDistance, double TrackPosition)
+		public override int CreateStaticObject(StaticObject Prototype, Vector3 Position, Transformation WorldTransformation, Transformation LocalTransformation, double AccurateObjectDisposalZOffset, double StartingDistance, double EndingDistance, double TrackPosition, bool DisableShadowCasting)
 		{
-			return Program.Renderer.CreateStaticObject(Prototype, Position, WorldTransformation, LocalTransformation, ObjectDisposalMode.Accurate, AccurateObjectDisposalZOffset, StartingDistance, EndingDistance, 25.0, TrackPosition);
+			return Program.Renderer.CreateStaticObject(Prototype, Position, WorldTransformation, LocalTransformation, ObjectDisposalMode.Accurate, AccurateObjectDisposalZOffset, StartingDistance, EndingDistance, 25.0, TrackPosition, DisableShadowCasting);
 		}
 
 		public override int CreateStaticObject(StaticObject Prototype, Vector3 Position, Transformation LocalTransformation, Matrix4D Rotate, Matrix4D Translate, double AccurateObjectDisposalZOffset, double StartingDistance, double EndingDistance, double TrackPosition)

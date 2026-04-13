@@ -81,7 +81,7 @@ namespace OpenBve.Graphics
 				Interface.AddMessage(MessageType.Error, false, "Attempted to use an animated object where only static objects are allowed.");
 				return -1;
 			}
-			return base.CreateStaticObject(obj, Position, WorldTransformation, LocalTransformation, AccurateObjectDisposal, AccurateObjectDisposalZOffset, StartingDistance, EndingDistance, BlockLength, TrackPosition);
+			return base.CreateStaticObject(obj, Position, WorldTransformation, LocalTransformation, AccurateObjectDisposal, AccurateObjectDisposalZOffset, StartingDistance, EndingDistance, BlockLength, TrackPosition, false);
 		}
 
 		protected override void UpdateViewport(int width, int height)

@@ -1,6 +1,7 @@
  using System;
 using System.IO;
 using System.Reflection;
+using OpenBveApi.Objects;
 using OpenTK.Graphics.OpenGL;
 
 namespace LibRender2.Shaders
@@ -21,6 +22,7 @@ namespace LibRender2.Shaders
 		private int uHasTexture;
 		private int uAlphaCutoff;
 		private int uMaterialAlpha; // Uniform location for material color alpha
+		private int uMaterialFlags;
 
 		public ShadowDepthShader()
 		{
@@ -61,6 +63,7 @@ namespace LibRender2.Shaders
 			uHasTexture = GL.GetUniformLocation(Handle, "uHasTexture");
 			uAlphaCutoff = GL.GetUniformLocation(Handle, "uAlphaCutoff");
 			uMaterialAlpha = GL.GetUniformLocation(Handle, "uMaterialAlpha"); // Cache the material alpha location
+			uMaterialFlags = GL.GetUniformLocation(Handle, "uMaterialFlags");
 		}
 
 		private static string LoadEmbeddedShader(string filename)
@@ -138,6 +141,12 @@ namespace LibRender2.Shaders
 		public void SetMaterialAlpha(float alpha)
 		{
 			GL.Uniform1(uMaterialAlpha, alpha);
+		}
+
+		/// <summary>Sets the material flags for shadow discard</summary>
+		public void SetMaterialFlags(MaterialFlags flags)
+		{
+			GL.Uniform1(uMaterialFlags, (int)flags);
 		}
 
 		public void SetModelMatrix(OpenBveApi.Math.Matrix4D m)

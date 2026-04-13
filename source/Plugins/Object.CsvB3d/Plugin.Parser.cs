@@ -1551,6 +1551,32 @@ namespace Object.CsvB3d
 								}
 							}
 							break;
+						case B3DCsvCommands.DisableShadowCasting:
+							if (Arguments.Length > 1)
+							{
+								currentHost.AddMessage(MessageType.Warning, false, $"At most 1 arguments are expected in {Command} at line {(i + 1).ToString(Culture)} in file {FileName}");
+							}
+
+							bool noShadow = false;
+
+							if (Arguments.Length >= 1 && Arguments[0].Length > 0 && !bool.TryParse(Arguments[0], out noShadow))
+							{
+								currentHost.AddMessage(MessageType.Error, false, $"Invalid argument Value in {Command} at line {(i + 1).ToString(Culture)} in file {FileName}");
+								noShadow = false;
+							}
+
+							foreach (Material material in Builder.Materials)
+							{
+								if (noShadow)
+								{
+									material.Flags |= MaterialFlags.NoShadow;
+								}
+								else
+								{
+									material.Flags &= ~MaterialFlags.NoShadow;
+								}
+							}
+							break;
 						default:
 							if (Command.Length != 0) {
 								if (IsUtf(Encoding))

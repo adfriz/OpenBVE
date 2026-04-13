@@ -403,8 +403,9 @@ namespace OpenBveApi.Hosts {
 		/// <param name="StartingDistance">The absolute route based starting distance for the object</param>
 		/// <param name="EndingDistance">The absolute route based ending distance for the object</param>
 		/// <param name="TrackPosition">The absolute route based track position</param>
+		/// <param name="DisableShadowCasting">Whether to disable shadow casting for this object</param>
 		/// <returns>The index to the created object, or -1 if this call fails</returns>
-		public virtual int CreateStaticObject(StaticObject Prototype, Vector3 Position, Transformation WorldTransformation, Transformation LocalTransformation, double AccurateObjectDisposalZOffset, double StartingDistance, double EndingDistance, double TrackPosition)
+		public virtual int CreateStaticObject(StaticObject Prototype, Vector3 Position, Transformation WorldTransformation, Transformation LocalTransformation, double AccurateObjectDisposalZOffset, double StartingDistance, double EndingDistance, double TrackPosition, bool DisableShadowCasting)
 		{
 			return -1;
 		}

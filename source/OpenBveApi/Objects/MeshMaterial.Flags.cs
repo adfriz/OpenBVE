@@ -18,6 +18,8 @@ namespace OpenBveApi.Objects
 		/// <remarks>Disabled by default</remarks>
 		CrossFadeTexture = 8,
 		/// <summary>Alpha is disabled when rendering</summary>
-		DisableTextureAlpha = 16
+		DisableTextureAlpha = 16,
+		/// <summary>The material casts no shadows</summary>
+		NoShadow = 32
 	}
 }

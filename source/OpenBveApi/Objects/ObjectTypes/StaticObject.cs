@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Linq;
 using OpenBveApi.Colors;
 using OpenBveApi.Hosts;
@@ -585,9 +584,9 @@ namespace OpenBveApi.Objects
 		/// <summary>Callback function to create the object within the world</summary>
 		public override void CreateObject(Vector3 position, Transformation worldTransformation, Transformation localTransformation,
 			int sectionIndex, double startingDistance, double endingDistance,
-			double trackPosition, double brightness, bool duplicateMaterials = false)
+			double trackPosition, double brightness, bool disableShadowCasting = false)
 		{
-			currentHost.CreateStaticObject(this, position, worldTransformation, localTransformation, 0.0, startingDistance, endingDistance, trackPosition);
+			currentHost.CreateStaticObject(this, position, worldTransformation, localTransformation, 0.0, startingDistance, endingDistance, trackPosition, disableShadowCasting);
 		}
 
 		/// <inheritdoc />
