@@ -487,7 +487,7 @@ namespace LibRender2
 			{
 				DisposeShadows();
 				ShadowsEnabled = false;
-				Console.WriteLine("[CSM] Shadows disabled by user setting.");
+				fileSystem.AppendToLogFile("[CSM] Shadows disabled by user setting.");
 				return;
 			}
 
@@ -534,14 +534,11 @@ namespace LibRender2
 
 				ShadowsEnabled = true;
 
-				Console.WriteLine(
-					$"[CSM] Initialized: {cascadeCount} cascades, " +
-					$"{resolution}×{resolution}, distance={shadowDistance}m, " +
-					$"strength={shadowStrength:P0}");
+				fileSystem.AppendToLogFile($"[CSM] Initialized: {cascadeCount} cascades, " + $"{resolution}×{resolution}, distance={shadowDistance}m, " + $"strength={shadowStrength:P0}");
 			}
 			catch (Exception ex)
 			{
-				Console.Error.WriteLine($"[CSM] Init failed: {ex.Message}");
+				fileSystem.AppendToLogFile($"[CSM] Init failed: {ex.Message}");
 				ShadowsEnabled = false;
 				// Purge lingering OpenGL error state if any, to avoid crashing later in ResetShader
 				GL.GetError();
@@ -566,7 +563,7 @@ namespace LibRender2
 		/// </summary>
 		public void ReloadShadowSettings()
 		{
-			Console.WriteLine("[CSM] Reloading shadow settings from options...");
+			fileSystem.AppendToLogFile("[CSM] Reloading shadow settings from options...");
 			InitializeShadows();
 		}
 
