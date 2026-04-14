@@ -62,8 +62,7 @@ namespace ObjectViewer
 		internal Options()
 		{
 			ObjectOptimizationMode = ObjectOptimizationMode.Low;
-			ShadowResolution = ShadowMapResolution.High;
-			ShadowBias = 0.000005;
+			// Shadow settings use synced base defaults
 		}
 
 		public override void Save(string fileName)

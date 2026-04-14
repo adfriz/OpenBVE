@@ -61,7 +61,7 @@ namespace ObjectViewer
 			numericUpDownShadowNormalBias.Value = (decimal)Interface.CurrentOptions.ShadowNormalBias;
 			if (numericUpDownShadowBias.Value == 0)
 			{
-				numericUpDownShadowBias.Value = 0.000005m;
+				numericUpDownShadowBias.Value = 0.000050m;
 			}
 
 

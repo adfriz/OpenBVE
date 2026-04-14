@@ -601,7 +601,7 @@ namespace ObjectViewer
             this.numericUpDownShadowBias.Name = "numericUpDownShadowBias";
             this.numericUpDownShadowBias.Size = new System.Drawing.Size(120, 20);
             this.numericUpDownShadowBias.TabIndex = 51;
-            this.numericUpDownShadowBias.Value = new decimal(new int[] { 5, 0, 0, 393216 });
+            this.numericUpDownShadowBias.Value = new decimal(new int[] { 50, 0, 0, 393216 });
             // 
             // labelShadowNormalBias
             // 

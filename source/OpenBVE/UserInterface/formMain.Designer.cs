@@ -163,6 +163,8 @@ namespace OpenBve {
             this.labelShadowNormalBias = new System.Windows.Forms.Label();
             this.updownShadowNormalBias = new System.Windows.Forms.NumericUpDown();
             this.panelOptionsLeft = new System.Windows.Forms.Panel();
+            this.panelOptionsRight = new System.Windows.Forms.Panel();
+            this.panelOptionsRightMost = new System.Windows.Forms.Panel();
             this.groupboxDisplayMode = new System.Windows.Forms.GroupBox();
             this.comboBoxFont = new System.Windows.Forms.ComboBox();
             this.labelFontName = new System.Windows.Forms.Label();
@@ -198,7 +200,6 @@ namespace OpenBve {
             this.comboboxInterpolation = new System.Windows.Forms.ComboBox();
             this.labelInterpolation = new System.Windows.Forms.Label();
             this.trackbarTransparency = new System.Windows.Forms.TrackBar();
-            this.panelOptionsRight = new System.Windows.Forms.Panel();
             this.groupBoxOther = new System.Windows.Forms.GroupBox();
             this.comboBoxTimeTableDisplayMode = new System.Windows.Forms.ComboBox();
             this.labelTimeTableDisplayMode = new System.Windows.Forms.Label();
@@ -517,6 +518,8 @@ namespace OpenBve {
             ((System.ComponentModel.ISupportInitialize)(this.updownTimeAccelerationFactor)).BeginInit();
             this.groupBoxPackageOptions.SuspendLayout();
             this.panelOptionsLeft.SuspendLayout();
+            this.panelOptionsRight.SuspendLayout();
+            this.panelOptionsRightMost.SuspendLayout();
             this.groupboxDisplayMode.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.trackBarHUDSize)).BeginInit();
             this.groupboxWindow.SuspendLayout();
@@ -1550,6 +1553,7 @@ namespace OpenBve {
             this.panelOptions.Controls.Add(this.panelOptionsPage2);
             this.panelOptions.Controls.Add(this.panelOptionsLeft);
             this.panelOptions.Controls.Add(this.panelOptionsRight);
+            this.panelOptions.Controls.Add(this.panelOptionsRightMost);
             this.panelOptions.Controls.Add(this.pictureboxLanguage);
             this.panelOptions.Controls.Add(this.comboboxLanguages);
             this.panelOptions.Controls.Add(this.labelOptionsTitleSeparator);
@@ -1983,7 +1987,7 @@ namespace OpenBve {
             this.groupboxShadows.ForeColor = System.Drawing.Color.Black;
             this.groupboxShadows.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.groupboxShadows.Location = new System.Drawing.Point(0, 551);
+            this.groupboxShadows.Location = new System.Drawing.Point(0, 0);
             this.groupboxShadows.Name = "groupboxShadows";
             this.groupboxShadows.Size = new System.Drawing.Size(299, 210);
             this.groupboxShadows.TabIndex = 30;
@@ -2102,11 +2106,7 @@ namespace OpenBve {
             // updownShadowBias
             // 
             this.updownShadowBias.DecimalPlaces = 6;
-            this.updownShadowBias.Increment = new decimal(new int[] {
-            1,
-            0,
-            0,
-            393216});
+            this.updownShadowBias.Increment = new decimal(new int[] { 1, 0, 0, 393216 });
             this.updownShadowBias.Location = new System.Drawing.Point(120, 151);
             this.updownShadowBias.Maximum = new decimal(new int[] {
             1,
@@ -2116,11 +2116,7 @@ namespace OpenBve {
             this.updownShadowBias.Name = "updownShadowBias";
             this.updownShadowBias.Size = new System.Drawing.Size(120, 20);
             this.updownShadowBias.TabIndex = 9;
-            this.updownShadowBias.Value = new decimal(new int[] {
-            5,
-            0,
-            0,
-            393216});
+            this.updownShadowBias.Value = new decimal(new int[] { 50, 0, 0, 393216 });
             this.updownShadowBias.ValueChanged += new System.EventHandler(this.updownShadowBias_ValueChanged);
             // 
             // labelShadowNormalBias
@@ -2323,12 +2319,20 @@ namespace OpenBve {
             this.panelOptionsLeft.Controls.Add(this.groupboxWindow);
             this.panelOptionsLeft.Controls.Add(this.groupboxFullscreen);
             this.panelOptionsLeft.Controls.Add(this.groupboxInterpolation);
-            this.panelOptionsLeft.Controls.Add(this.groupboxShadows);
             this.panelOptionsLeft.Location = new System.Drawing.Point(8, 72);
             this.panelOptionsLeft.Name = "panelOptionsLeft";
             this.panelOptionsLeft.Size = new System.Drawing.Size(316, 576);
             this.panelOptionsLeft.TabIndex = 16;
             this.panelOptionsLeft.AutoScroll = true;
+            // 
+            // panelOptionsRightMost
+            // 
+            this.panelOptionsRightMost.AutoScroll = true;
+            this.panelOptionsRightMost.Controls.Add(this.groupboxShadows);
+            this.panelOptionsRightMost.Location = new System.Drawing.Point(656, 72);
+            this.panelOptionsRightMost.Name = "panelOptionsRightMost";
+            this.panelOptionsRightMost.Size = new System.Drawing.Size(316, 579);
+            this.panelOptionsRightMost.TabIndex = 18;
             // 
             // groupboxDisplayMode
             // 
@@ -6238,6 +6242,7 @@ namespace OpenBve {
             ((System.ComponentModel.ISupportInitialize)(this.updownAnisotropic)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackbarTransparency)).EndInit();
             this.panelOptionsRight.ResumeLayout(false);
+            this.panelOptionsRightMost.ResumeLayout(false);
             this.groupBoxOther.ResumeLayout(false);
             this.groupBoxRailDriver.ResumeLayout(false);
             this.groupBoxRailDriver.PerformLayout();
@@ -6328,6 +6333,7 @@ namespace OpenBve {
         private System.Windows.Forms.TrackBar trackbarTransparency;
         private System.Windows.Forms.Panel panelOptionsLeft;
         private System.Windows.Forms.Panel panelOptionsRight;
+        private System.Windows.Forms.Panel panelOptionsRightMost;
         private System.Windows.Forms.Label labelShadowResolution;
         private System.Windows.Forms.ComboBox comboboxShadowResolution;
         private System.Windows.Forms.Label labelShadowDistance;
