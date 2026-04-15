@@ -608,8 +608,8 @@ namespace OpenBve {
 					break;
 				}
 			}
-
-			panelOptionsPage2.Visible = false; // Deliberately hide, as changing font can glitch this into visibility
+			panelOptionsPage2.Visible = false;
+			panelOptionsPage3.Visible = false; // Deliberately hide, as changing font can glitch this into visibility
 			comboBoxFont.DrawItem += comboBoxFont_DrawItem;
 		}
 
@@ -1126,15 +1126,23 @@ namespace OpenBve {
 			//Uninstall result panel
 			// *** All labels set at runtime ***
 
+			
 			//HACK- WHY IS THIS NEEDED???
-			if (panelOptionsPage2.Visible)
+			if (panelOptionsPage3.Visible)
+			{
+				panelOptionsPage3.Hide();
+				panelOptionsPage3.Show();
+			}
+			else if (panelOptionsPage2.Visible)
 			{
 				panelOptionsPage2.Hide();
+				panelOptionsPage3.Hide();
 				panelOptionsPage2.Show();
 			}
 			else
 			{
 				panelOptionsPage2.Hide();
+				panelOptionsPage3.Hide();
 			}
 
 
@@ -1454,39 +1462,10 @@ namespace OpenBve {
 
 			try
 			{
-				// Split options area into 3 balanced columns
-				int width = (panelOptions.Width - 32) / 3;
-				
-				panelOptionsLeft.Anchor = AnchorStyles.Top | AnchorStyles.Left;
-				panelOptionsLeft.Left = 8;
+				int width = Math.Min((panelOptions.Width - 24) / 2, 420);
 				panelOptionsLeft.Width = width;
-				
-				panelOptionsRight.Anchor = AnchorStyles.Top | AnchorStyles.Left;
-				panelOptionsRight.Left = panelOptionsLeft.Right + 8;
+				panelOptionsRight.Left = panelOptionsLeft.Left + width + 8;
 				panelOptionsRight.Width = width;
-				
-				panelOptionsRightMost.Anchor = AnchorStyles.Top | AnchorStyles.Left;
-				panelOptionsRightMost.Left = panelOptionsRight.Right + 8;
-				panelOptionsRightMost.Width = width;
-
-				// Explicitly sync inner groupbox widths to fix potential AutoScroll anchoring issues
-				int innerLeft = panelOptionsLeft.ClientSize.Width;
-				groupboxDisplayMode.Width = innerLeft;
-				groupboxWindow.Width = innerLeft;
-				groupboxFullscreen.Width = innerLeft;
-				groupboxInterpolation.Width = innerLeft;
-
-				int innerRight = panelOptionsRight.ClientSize.Width;
-				groupBoxOther.Width = innerRight;
-				groupBoxRailDriver.Width = innerRight;
-				groupboxDistance.Width = innerRight;
-				groupboxControls.Width = innerRight;
-				groupboxVerbosity.Width = innerRight;
-				groupboxSimulation.Width = innerRight;
-				groupboxSound.Width = innerRight;
-
-				int innerMost = panelOptionsRightMost.ClientSize.Width;
-				groupboxShadows.Width = innerMost;
 			}
 			catch
 			{
@@ -2059,9 +2038,14 @@ namespace OpenBve {
 				//HACK: Column Header in list view won't appear in Mono without resizing it...
 				listviewInputDevice.AutoResizeColumns(ColumnHeaderAutoResizeStyle.None);
 			}
-			else
+			else if(panelOptionsPage2.Visible)
 			{
 				panelOptionsPage2.Hide();
+				panelOptionsPage3.Show();
+			}
+			else
+			{
+				panelOptionsPage3.Hide();
 				panelOptionsLeft.Show();
 				panelOptionsRight.Show();
 			}
