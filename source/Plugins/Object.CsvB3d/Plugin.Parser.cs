@@ -108,6 +108,8 @@ namespace Object.CsvB3d
 			}
 			// read lines
 			List<string> Lines = System.IO.File.ReadAllLines(FileName, Encoding).ToList();
+			// Cache results of File.Exists locally during this load operation to avoid redundant disk IO.
+			// This is created fresh every time the object is loaded/reloaded, so it is safe against file additions/deletions between loads.
 			Dictionary<string, bool> fileExistsCache = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
 			if (enabledHacks.BveTsHacks && multiColumn)
 			{
@@ -525,10 +527,20 @@ namespace Object.CsvB3d
 											}
 										}
 
-										/*
-										 * Optimization: Use a HashSet to track existing faces by their vertex indices.
-										 * This avoids the O(N^2) loop through all previous faces in the MeshBuilder.
+										/* 
+										 * Some BVE2 content declares a Face2 twice with the vertices in a differing order, e.g.
+										 * Face2 0, 1, 3, 2
+										 * Face2 1, 0, 2, 3
+										 * Doing this in OpenBVE causes some very funky glitches with Z-fighting,
+										 * as it attempts to render both faces in the same space
+										 *
+										 * With this hack, the lighting may be off but the Z-fighting is gone
+										 * (BVE2 / BVE4 operate in a strict draw-order, so the most recent face is always on top,
+										 * wheras OpenBVE has no fixed draw order)
 										 */
+
+										// Optimization: Use a HashSet to track existing faces by their vertex indices.
+										// This avoids the O(N^2) loop through all previous faces in the MeshBuilder.
 										if (isFace2)
 										{
 											int[] vertexIndices = (int[])a.Clone();
