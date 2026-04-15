@@ -88,8 +88,6 @@ namespace ObjectViewer
             this.numericUpDownShadowBias = new System.Windows.Forms.NumericUpDown();
             this.labelShadowNormalBias = new System.Windows.Forms.Label();
             this.numericUpDownShadowNormalBias = new System.Windows.Forms.NumericUpDown();
-            this.labelAutoReloadChanged = new System.Windows.Forms.Label();
-            this.checkBoxAutoReload = new System.Windows.Forms.CheckBox();
             this.tabControl1.SuspendLayout();
             this.tabPageOptions.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.AntialiasingLevel)).BeginInit();
@@ -859,8 +857,6 @@ namespace ObjectViewer
 		private System.Windows.Forms.Label labelLeft;
 		private System.Windows.Forms.Button CloseButton;
 		private System.Windows.Forms.Label labelControls;
-		private System.Windows.Forms.CheckBox checkBoxAutoReload;
-		private System.Windows.Forms.Label labelAutoReloadChanged;
 		private System.Windows.Forms.TabPage tabPageShadows;
 		private System.Windows.Forms.ComboBox comboBoxShadowResolution;
 		private System.Windows.Forms.Label labelShadowResolution;
