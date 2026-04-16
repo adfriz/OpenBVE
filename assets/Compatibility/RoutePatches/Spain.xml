@@ -76,5 +76,24 @@
 		<AccurateObjectDisposal>true</AccurateObjectDisposal>
 		<ReducedColorTransparency>true</ReducedColorTransparency>
 	</Patch>
+	<!-- Submarina -->
+	<Patch>
+		<Hash>481430BB87DACD205387290B0B4472136695DA25487A4B0C8B40D794392BD3A3</Hash>
+		<FileName>submarina_rapid.rw</FileName>
+		<AccurateObjectDisposal>true</AccurateObjectDisposal>
+		<ReducedColorTransparency>true</ReducedColorTransparency>
+	</Patch>
+	<Patch>
+		<Hash>8A1883F9C0D4516B45464A06F209FA42C9F3DF934CC2360A420C44B6EB2DE1AD</Hash>
+		<FileName>submarina_regular.rw</FileName>
+		<AccurateObjectDisposal>true</AccurateObjectDisposal>
+		<ReducedColorTransparency>true</ReducedColorTransparency>
+	</Patch>
+	<Patch>
+		<Hash>B7EC646294F81D97B5EA64208AFA1D4183315A4636624FA8F069ADE02407CE9A</Hash>
+		<FileName>submarina_toteestacions.rw</FileName>
+		<AccurateObjectDisposal>true</AccurateObjectDisposal>
+		<ReducedColorTransparency>true</ReducedColorTransparency>
+	</Patch>
   </RoutePatches>
 </openBVE>
