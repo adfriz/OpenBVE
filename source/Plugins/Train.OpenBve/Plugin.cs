@@ -450,7 +450,7 @@ namespace Train.OpenBve
 			    {
 				    if (encoding == null)
 				    {
-					    return File.ReadAllText(descriptionFile);
+					    return File.ReadAllText(descriptionFile, TextEncoding.GetSystemEncodingFromFile(descriptionFile));
 				    }
 				    return File.ReadAllText(descriptionFile, encoding);
 
