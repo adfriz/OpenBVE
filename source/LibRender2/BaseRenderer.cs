@@ -1599,7 +1599,15 @@ namespace LibRender2
 				{
 					shader.SetMaterialAmbient(material.Color);
 					shader.SetMaterialDiffuse(material.Color);
-					shader.SetMaterialSpecular(material.Color);
+					if ((material.Flags & MaterialFlags.Specular) != 0)
+					{
+						shader.SetMaterialSpecular(material.SpecularColor);
+					}
+					else
+					{
+						shader.SetMaterialSpecular(material.Color);
+					}
+						
 					//TODO: Ambient and specular colors are not set by any current parsers
 				}
 				if ((material.Flags & MaterialFlags.Emissive) != 0)

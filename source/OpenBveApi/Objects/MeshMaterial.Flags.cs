@@ -20,6 +20,8 @@ namespace OpenBveApi.Objects
 		/// <summary>Alpha is disabled when rendering</summary>
 		DisableTextureAlpha = 16,
 		/// <summary>The material casts no shadows</summary>
-		NoShadow = 32
+		NoShadow = 32,
+		/// <summary>The material has a separate specular light color</summary>
+		Specular = 64
 	}
 }

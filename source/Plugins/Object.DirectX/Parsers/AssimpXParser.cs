@@ -213,7 +213,11 @@ namespace Plugin
 				builder.Materials[m] = new OpenBveApi.Objects.Material();
 				builder.Materials[m].Color = new Color32(mesh.Materials[i].Diffuse);
 				double mPower = mesh.Materials[i].SpecularExponent; //TODO: Unsure what this does...
-				Color24 mSpecular = new Color24(mesh.Materials[i].Specular);
+				builder.Materials[m].SpecularColor = new Color24(mesh.Materials[i].Specular);
+				if (builder.Materials[m].SpecularColor != Color24.Black)
+				{
+					builder.Materials[m].Flags |= MaterialFlags.Specular;
+				}
 				// Wrap Color24 in Color32 for RGBA support; alpha defaults to 255 (opaque)
 				builder.Materials[m].EmissiveColor = new Color32(new Color24(mesh.Materials[i].Emissive));
 				if (builder.Materials[m].EmissiveColor != Color32.Black)

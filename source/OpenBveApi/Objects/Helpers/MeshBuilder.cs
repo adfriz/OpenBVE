@@ -85,6 +85,7 @@ namespace OpenBveApi.Objects
 					Object.Mesh.Materials[mm + i].Flags = Materials[i].Flags;
 					Object.Mesh.Materials[mm + i].Color = Materials[i].Color;
 					Object.Mesh.Materials[mm + i].TransparentColor = Materials[i].TransparentColor;
+					Object.Mesh.Materials[mm + i].SpecularColor = Materials[i].SpecularColor;
 					Texture transparency = null;
 					if (Materials[i].TransparencyTexture != null)
 					{

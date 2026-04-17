@@ -10,6 +10,8 @@ namespace OpenBveApi.Objects
 		public Color32 Color;
 		/// <summary>The emissive color (RGBA — supports optional alpha for advanced transparency effects)</summary>
 		public Color32 EmissiveColor;
+		/// <summary>The specular color</summary>
+		public Color24 SpecularColor;
 		/// <summary>The transparent color</summary>
 		public Color24 TransparentColor;
 		/// <summary>Describes the special properties (if any) of the material</summary>
@@ -46,6 +48,7 @@ namespace OpenBveApi.Objects
 			this.Color = Color32.White;
 			this.EmissiveColor = Color32.Black;
 			this.TransparentColor = Color24.Black;
+			this.SpecularColor = Color24.Black;
 			this.Flags = MaterialFlags.None;
 			this.DaytimeTexture = null;
 			this.NighttimeTexture = null;
@@ -64,6 +67,7 @@ namespace OpenBveApi.Objects
 			this.Color = Color32.White;
 			this.EmissiveColor = Color32.Black;
 			this.TransparentColor = Color24.Black;
+			this.SpecularColor = Color24.Black;
 			this.Flags = MaterialFlags.None;
 			this.DaytimeTexture = null;
 			this.NighttimeTexture = null;
@@ -82,6 +86,7 @@ namespace OpenBveApi.Objects
 			this.Color = prototypeMaterial.Color;
 			this.EmissiveColor = prototypeMaterial.EmissiveColor;
 			this.TransparentColor = prototypeMaterial.TransparentColor;
+			this.SpecularColor = prototypeMaterial.SpecularColor;
 			this.Flags = prototypeMaterial.Flags;
 			this.DaytimeTexture = prototypeMaterial.DaytimeTexture;
 			this.NighttimeTexture = prototypeMaterial.NighttimeTexture;
