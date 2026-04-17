@@ -421,7 +421,11 @@ namespace Plugin
 					Color24 mSpecular = new Color24(block.ReadColor96);
 					// Convert Color96 → Color24 → Color32; alpha defaults to 255 (opaque)
 					newMaterial.EmissiveColor = new Color32(new Color24(block.ReadColor96));
-					newMaterial.Flags |= MaterialFlags.Emissive; //TODO: Check exact behaviour
+					if (newMaterial.EmissiveColor != Color32.Black)
+					{
+						newMaterial.Flags |= MaterialFlags.Emissive;
+					}
+					
 					if (Plugin.EnabledHacks.BlackTransparency)
 					{
 						newMaterial.TransparentColor = Color24.Black; //TODO: Check, also can we optimise which faces have the transparent color set?

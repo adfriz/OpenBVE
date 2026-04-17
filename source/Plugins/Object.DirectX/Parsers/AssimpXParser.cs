@@ -216,7 +216,11 @@ namespace Plugin
 				Color24 mSpecular = new Color24(mesh.Materials[i].Specular);
 				// Wrap Color24 in Color32 for RGBA support; alpha defaults to 255 (opaque)
 				builder.Materials[m].EmissiveColor = new Color32(new Color24(mesh.Materials[i].Emissive));
-				builder.Materials[m].Flags |= MaterialFlags.Emissive; //TODO: Check exact behaviour
+				if (builder.Materials[m].EmissiveColor != Color32.Black)
+				{
+					builder.Materials[m].Flags |= MaterialFlags.Emissive;
+				}
+				
 				if (Plugin.EnabledHacks.BlackTransparency)
 				{
 					builder.Materials[m].TransparentColor = Color24.Black; //TODO: Check, also can we optimise which faces have the transparent color set?
