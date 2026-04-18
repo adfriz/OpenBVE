@@ -67,6 +67,10 @@ namespace RouteViewer
             if (numericUpDownShadowStrength.Value < 1) numericUpDownShadowStrength.Value = 1;
             numericUpDownShadowStrength.Refresh();
             numericUpDownShadowBias.Value = (decimal)Interface.CurrentOptions.ShadowBias;
+            if (numericUpDownShadowBias.Value == 0)
+            {
+                numericUpDownShadowBias.Value = 0.000050m;
+            }
             numericUpDownShadowNormalBias.Value = (decimal)Interface.CurrentOptions.ShadowNormalBias;
 
 
@@ -88,7 +92,7 @@ namespace RouteViewer
 
         private void UpdateShadowControlsEnabled()
         {
-            bool enabled = comboBoxShadowResolution.SelectedIndex != 0; // 0 = Off
+            bool enabled = comboBoxShadowResolution.SelectedIndex != 0 && Program.Renderer.AvailableNewRenderer;
             comboBoxShadowDistance.Enabled = enabled;
             comboBoxShadowCascades.Enabled = enabled;
             numericUpDownShadowStrength.Enabled = enabled;
@@ -280,8 +284,10 @@ namespace RouteViewer
                 Math.Abs(prevShadowBias - Interface.CurrentOptions.ShadowBias) > 0.000001f ||
                 Math.Abs(prevShadowNormalBias - Interface.CurrentOptions.ShadowNormalBias) > 0.01f)
             {
-
-                Program.Renderer.ReloadShadowSettings();
+                if (Program.Renderer.AvailableNewRenderer)
+                {
+                    Program.Renderer.ReloadShadowSettings();
+                }
             }
 
             // Sun direction is already updated in real-time via slider events
