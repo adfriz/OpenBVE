@@ -101,7 +101,7 @@ namespace OpenBve {
             this.panelOptions = new System.Windows.Forms.Panel();
             this.buttonOptionsPrevious = new System.Windows.Forms.Button();
             this.buttonOptionsNext = new System.Windows.Forms.Button();
-            this.panelOptionsPage2 = new System.Windows.Forms.Panel();
+            this.panelOptionsPage3 = new System.Windows.Forms.Panel();
             this.groupBoxInputDevice = new System.Windows.Forms.GroupBox();
             this.labelInputDevice = new System.Windows.Forms.Label();
             this.listviewInputDevice = new System.Windows.Forms.ListView();
@@ -184,6 +184,20 @@ namespace OpenBve {
             this.comboboxInterpolation = new System.Windows.Forms.ComboBox();
             this.labelInterpolation = new System.Windows.Forms.Label();
             this.trackbarTransparency = new System.Windows.Forms.TrackBar();
+            this.groupboxShadows = new System.Windows.Forms.GroupBox();
+            this.labelShadowResolution = new System.Windows.Forms.Label();
+            this.comboboxShadowResolution = new System.Windows.Forms.ComboBox();
+            this.labelShadowDistance = new System.Windows.Forms.Label();
+            this.comboboxShadowDistance = new System.Windows.Forms.ComboBox();
+            this.labelShadowCascades = new System.Windows.Forms.Label();
+            this.comboboxShadowCascades = new System.Windows.Forms.ComboBox();
+            this.labelShadowStrength = new System.Windows.Forms.Label();
+            this.trackbarShadowStrength = new System.Windows.Forms.TrackBar();
+            this.labelShadowStrengthValue = new System.Windows.Forms.Label();
+            this.labelShadowBias = new System.Windows.Forms.Label();
+            this.updownShadowBias = new System.Windows.Forms.NumericUpDown();
+            this.labelShadowNormalBias = new System.Windows.Forms.Label();
+            this.updownShadowNormalBias = new System.Windows.Forms.NumericUpDown();
             this.panelOptionsRight = new System.Windows.Forms.Panel();
             this.groupBoxOther = new System.Windows.Forms.GroupBox();
             this.comboBoxTimeTableDisplayMode = new System.Windows.Forms.ComboBox();
@@ -462,6 +476,7 @@ namespace OpenBve {
             this.labelNewGUID = new System.Windows.Forms.Label();
             this.openPackageFileDialog = new System.Windows.Forms.OpenFileDialog();
             this.savePackageDialog = new System.Windows.Forms.SaveFileDialog();
+            this.panelOptionsPage2 = new System.Windows.Forms.Panel();
             ((System.ComponentModel.ISupportInitialize)(this.pictureboxLogo)).BeginInit();
             this.panelStart.SuspendLayout();
             this.groupboxTrainSelection.SuspendLayout();
@@ -493,7 +508,7 @@ namespace OpenBve {
             this.tabpageRouteSettings.SuspendLayout();
             this.panelRouteEncoding.SuspendLayout();
             this.panelOptions.SuspendLayout();
-            this.panelOptionsPage2.SuspendLayout();
+            this.panelOptionsPage3.SuspendLayout();
             this.groupBoxInputDevice.SuspendLayout();
             this.groupBoxObjectParser.SuspendLayout();
             this.groupBoxKioskMode.SuspendLayout();
@@ -515,6 +530,10 @@ namespace OpenBve {
             ((System.ComponentModel.ISupportInitialize)(this.updownAntiAliasing)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.updownAnisotropic)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackbarTransparency)).BeginInit();
+            this.groupboxShadows.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.trackbarShadowStrength)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.updownShadowBias)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.updownShadowNormalBias)).BeginInit();
             this.panelOptionsRight.SuspendLayout();
             this.groupBoxOther.SuspendLayout();
             this.groupBoxRailDriver.SuspendLayout();
@@ -569,6 +588,7 @@ namespace OpenBve {
             this.panelReplacePackage.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewReplacePackage)).BeginInit();
             this.panelNewPackage.SuspendLayout();
+            this.panelOptionsPage2.SuspendLayout();
             this.SuspendLayout();
             // 
             // labelFillerOne
@@ -1531,11 +1551,12 @@ namespace OpenBve {
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.panelOptions.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(243)))), ((int)(((byte)(255)))), ((int)(((byte)(243)))));
-            this.panelOptions.Controls.Add(this.buttonOptionsPrevious);
-            this.panelOptions.Controls.Add(this.buttonOptionsNext);
-            this.panelOptions.Controls.Add(this.panelOptionsPage2);
             this.panelOptions.Controls.Add(this.panelOptionsLeft);
             this.panelOptions.Controls.Add(this.panelOptionsRight);
+            this.panelOptions.Controls.Add(this.panelOptionsPage2);
+            this.panelOptions.Controls.Add(this.buttonOptionsPrevious);
+            this.panelOptions.Controls.Add(this.buttonOptionsNext);
+            this.panelOptions.Controls.Add(this.panelOptionsPage3);
             this.panelOptions.Controls.Add(this.pictureboxLanguage);
             this.panelOptions.Controls.Add(this.comboboxLanguages);
             this.panelOptions.Controls.Add(this.labelOptionsTitleSeparator);
@@ -1570,20 +1591,20 @@ namespace OpenBve {
             this.buttonOptionsNext.UseVisualStyleBackColor = true;
             this.buttonOptionsNext.Click += new System.EventHandler(this.buttonOptionsPrevious_Click);
             // 
-            // panelOptionsPage2
+            // panelOptionsPage3
             // 
-            this.panelOptionsPage2.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            this.panelOptionsPage3.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.panelOptionsPage2.Controls.Add(this.groupBoxInputDevice);
-            this.panelOptionsPage2.Controls.Add(this.groupBoxObjectParser);
-            this.panelOptionsPage2.Controls.Add(this.groupBoxKioskMode);
-            this.panelOptionsPage2.Controls.Add(this.groupBoxAdvancedOptions);
-            this.panelOptionsPage2.Controls.Add(this.groupBoxPackageOptions);
-            this.panelOptionsPage2.Location = new System.Drawing.Point(0, 72);
-            this.panelOptionsPage2.Name = "panelOptionsPage2";
-            this.panelOptionsPage2.Size = new System.Drawing.Size(683, 583);
-            this.panelOptionsPage2.TabIndex = 20;
+            this.panelOptionsPage3.Controls.Add(this.groupBoxInputDevice);
+            this.panelOptionsPage3.Controls.Add(this.groupBoxObjectParser);
+            this.panelOptionsPage3.Controls.Add(this.groupBoxKioskMode);
+            this.panelOptionsPage3.Controls.Add(this.groupBoxAdvancedOptions);
+            this.panelOptionsPage3.Controls.Add(this.groupBoxPackageOptions);
+            this.panelOptionsPage3.Location = new System.Drawing.Point(0, 72);
+            this.panelOptionsPage3.Name = "panelOptionsPage3";
+            this.panelOptionsPage3.Size = new System.Drawing.Size(683, 583);
+            this.panelOptionsPage3.TabIndex = 20;
             // 
             // groupBoxInputDevice
             // 
@@ -1945,7 +1966,7 @@ namespace OpenBve {
             this.groupBoxPackageOptions.Controls.Add(this.labelRouteInstallDirectory);
             this.groupBoxPackageOptions.Controls.Add(this.textBoxRouteDirectory);
             this.groupBoxPackageOptions.ForeColor = System.Drawing.Color.Black;
-            this.groupBoxPackageOptions.Location = new System.Drawing.Point(6, 0);
+            this.groupBoxPackageOptions.Location = new System.Drawing.Point(0, 0);
             this.groupBoxPackageOptions.Name = "groupBoxPackageOptions";
             this.groupBoxPackageOptions.Size = new System.Drawing.Size(674, 183);
             this.groupBoxPackageOptions.TabIndex = 19;
@@ -2112,6 +2133,7 @@ namespace OpenBve {
             // 
             // panelOptionsLeft
             // 
+            this.panelOptionsLeft.AutoScroll = true;
             this.panelOptionsLeft.Controls.Add(this.groupboxDisplayMode);
             this.panelOptionsLeft.Controls.Add(this.groupboxWindow);
             this.panelOptionsLeft.Controls.Add(this.groupboxFullscreen);
@@ -2592,16 +2614,207 @@ namespace OpenBve {
             this.trackbarTransparency.TabIndex = 7;
             this.trackbarTransparency.TickStyle = System.Windows.Forms.TickStyle.Both;
             // 
+            // groupboxShadows
+            // 
+            this.groupboxShadows.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupboxShadows.Controls.Add(this.labelShadowResolution);
+            this.groupboxShadows.Controls.Add(this.comboboxShadowResolution);
+            this.groupboxShadows.Controls.Add(this.labelShadowDistance);
+            this.groupboxShadows.Controls.Add(this.comboboxShadowDistance);
+            this.groupboxShadows.Controls.Add(this.labelShadowCascades);
+            this.groupboxShadows.Controls.Add(this.comboboxShadowCascades);
+            this.groupboxShadows.Controls.Add(this.labelShadowStrength);
+            this.groupboxShadows.Controls.Add(this.trackbarShadowStrength);
+            this.groupboxShadows.Controls.Add(this.labelShadowStrengthValue);
+            this.groupboxShadows.Controls.Add(this.labelShadowBias);
+            this.groupboxShadows.Controls.Add(this.updownShadowBias);
+            this.groupboxShadows.Controls.Add(this.labelShadowNormalBias);
+            this.groupboxShadows.Controls.Add(this.updownShadowNormalBias);
+            this.groupboxShadows.ForeColor = System.Drawing.Color.Black;
+            this.groupboxShadows.Location = new System.Drawing.Point(0, 80);
+            this.groupboxShadows.Name = "groupboxShadows";
+            this.groupboxShadows.Size = new System.Drawing.Size(321, 210);
+            this.groupboxShadows.TabIndex = 30;
+            this.groupboxShadows.TabStop = false;
+            this.groupboxShadows.Text = "Shadows";
+            // 
+            // labelShadowResolution
+            // 
+            this.labelShadowResolution.AutoSize = true;
+            this.labelShadowResolution.Location = new System.Drawing.Point(8, 22);
+            this.labelShadowResolution.Name = "labelShadowResolution";
+            this.labelShadowResolution.Size = new System.Drawing.Size(102, 13);
+            this.labelShadowResolution.TabIndex = 0;
+            this.labelShadowResolution.Text = "Shadow Resolution:";
+            // 
+            // comboboxShadowResolution
+            // 
+            this.comboboxShadowResolution.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboboxShadowResolution.FormattingEnabled = true;
+            this.comboboxShadowResolution.Items.AddRange(new object[] {
+            "Off",
+            "Low (512×512)",
+            "Medium (1024×1024)",
+            "High (2048×2048)",
+            "Ultra (4096×4096)"});
+            this.comboboxShadowResolution.Location = new System.Drawing.Point(120, 19);
+            this.comboboxShadowResolution.Name = "comboboxShadowResolution";
+            this.comboboxShadowResolution.Size = new System.Drawing.Size(168, 21);
+            this.comboboxShadowResolution.TabIndex = 1;
+            this.comboboxShadowResolution.SelectedIndexChanged += new System.EventHandler(this.comboboxShadowResolution_SelectedIndexChanged);
+            // 
+            // labelShadowDistance
+            // 
+            this.labelShadowDistance.AutoSize = true;
+            this.labelShadowDistance.Location = new System.Drawing.Point(8, 50);
+            this.labelShadowDistance.Name = "labelShadowDistance";
+            this.labelShadowDistance.Size = new System.Drawing.Size(94, 13);
+            this.labelShadowDistance.TabIndex = 2;
+            this.labelShadowDistance.Text = "Shadow Distance:";
+            // 
+            // comboboxShadowDistance
+            // 
+            this.comboboxShadowDistance.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboboxShadowDistance.FormattingEnabled = true;
+            this.comboboxShadowDistance.Items.AddRange(new object[] {
+            "Near (150m)",
+            "Medium (300m)",
+            "Far (500m)",
+            "Very Far (800m)",
+            "Follow Viewing Distance"});
+            this.comboboxShadowDistance.Location = new System.Drawing.Point(120, 47);
+            this.comboboxShadowDistance.Name = "comboboxShadowDistance";
+            this.comboboxShadowDistance.Size = new System.Drawing.Size(168, 21);
+            this.comboboxShadowDistance.TabIndex = 3;
+            // 
+            // labelShadowCascades
+            // 
+            this.labelShadowCascades.AutoSize = true;
+            this.labelShadowCascades.Location = new System.Drawing.Point(8, 78);
+            this.labelShadowCascades.Name = "labelShadowCascades";
+            this.labelShadowCascades.Size = new System.Drawing.Size(99, 13);
+            this.labelShadowCascades.TabIndex = 4;
+            this.labelShadowCascades.Text = "Shadow Cascades:";
+            // 
+            // comboboxShadowCascades
+            // 
+            this.comboboxShadowCascades.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboboxShadowCascades.FormattingEnabled = true;
+            this.comboboxShadowCascades.Items.AddRange(new object[] {
+            "2 Cascades (Fastest)",
+            "3 Cascades (Balanced)",
+            "4 Cascades (Best Quality)"});
+            this.comboboxShadowCascades.Location = new System.Drawing.Point(120, 75);
+            this.comboboxShadowCascades.Name = "comboboxShadowCascades";
+            this.comboboxShadowCascades.Size = new System.Drawing.Size(168, 21);
+            this.comboboxShadowCascades.TabIndex = 5;
+            // 
+            // labelShadowStrength
+            // 
+            this.labelShadowStrength.AutoSize = true;
+            this.labelShadowStrength.Location = new System.Drawing.Point(8, 106);
+            this.labelShadowStrength.Name = "labelShadowStrength";
+            this.labelShadowStrength.Size = new System.Drawing.Size(92, 13);
+            this.labelShadowStrength.TabIndex = 6;
+            this.labelShadowStrength.Text = "Shadow Strength:";
+            // 
+            // trackbarShadowStrength
+            // 
+            this.trackbarShadowStrength.Location = new System.Drawing.Point(120, 103);
+            this.trackbarShadowStrength.Maximum = 100;
+            this.trackbarShadowStrength.Name = "trackbarShadowStrength";
+            this.trackbarShadowStrength.Size = new System.Drawing.Size(130, 45);
+            this.trackbarShadowStrength.TabIndex = 7;
+            this.trackbarShadowStrength.TickFrequency = 10;
+            this.trackbarShadowStrength.Value = 70;
+            this.trackbarShadowStrength.Scroll += new System.EventHandler(this.trackbarShadowStrength_Scroll);
+            // 
+            // labelShadowStrengthValue
+            // 
+            this.labelShadowStrengthValue.AutoSize = true;
+            this.labelShadowStrengthValue.Location = new System.Drawing.Point(255, 106);
+            this.labelShadowStrengthValue.Name = "labelShadowStrengthValue";
+            this.labelShadowStrengthValue.Size = new System.Drawing.Size(27, 13);
+            this.labelShadowStrengthValue.TabIndex = 8;
+            this.labelShadowStrengthValue.Text = "70%";
+            // 
+            // labelShadowBias
+            // 
+            this.labelShadowBias.AutoSize = true;
+            this.labelShadowBias.Location = new System.Drawing.Point(8, 154);
+            this.labelShadowBias.Name = "labelShadowBias";
+            this.labelShadowBias.Size = new System.Drawing.Size(72, 13);
+            this.labelShadowBias.TabIndex = 8;
+            this.labelShadowBias.Text = "Shadow Bias:";
+            // 
+            // updownShadowBias
+            // 
+            this.updownShadowBias.DecimalPlaces = 6;
+            this.updownShadowBias.Increment = new decimal(new int[] {
+            1,
+            0,
+            0,
+            393216});
+            this.updownShadowBias.Location = new System.Drawing.Point(120, 151);
+            this.updownShadowBias.Maximum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.updownShadowBias.Name = "updownShadowBias";
+            this.updownShadowBias.Size = new System.Drawing.Size(120, 20);
+            this.updownShadowBias.TabIndex = 9;
+            this.updownShadowBias.Value = new decimal(new int[] {
+            50,
+            0,
+            0,
+            393216});
+            this.updownShadowBias.ValueChanged += new System.EventHandler(this.updownShadowBias_ValueChanged);
+            // 
+            // labelShadowNormalBias
+            // 
+            this.labelShadowNormalBias.AutoSize = true;
+            this.labelShadowNormalBias.Location = new System.Drawing.Point(8, 178);
+            this.labelShadowNormalBias.Name = "labelShadowNormalBias";
+            this.labelShadowNormalBias.Size = new System.Drawing.Size(66, 13);
+            this.labelShadowNormalBias.TabIndex = 10;
+            this.labelShadowNormalBias.Text = "Normal Bias:";
+            // 
+            // updownShadowNormalBias
+            // 
+            this.updownShadowNormalBias.DecimalPlaces = 2;
+            this.updownShadowNormalBias.Increment = new decimal(new int[] {
+            1,
+            0,
+            0,
+            65536});
+            this.updownShadowNormalBias.Location = new System.Drawing.Point(120, 175);
+            this.updownShadowNormalBias.Maximum = new decimal(new int[] {
+            10,
+            0,
+            0,
+            0});
+            this.updownShadowNormalBias.Name = "updownShadowNormalBias";
+            this.updownShadowNormalBias.Size = new System.Drawing.Size(120, 20);
+            this.updownShadowNormalBias.TabIndex = 11;
+            this.updownShadowNormalBias.Value = new decimal(new int[] {
+            2,
+            0,
+            0,
+            0});
+            this.updownShadowNormalBias.ValueChanged += new System.EventHandler(this.updownShadowNormalBias_ValueChanged);
+            // 
             // panelOptionsRight
             // 
+            this.panelOptionsRight.AutoScroll = true;
             this.panelOptionsRight.Controls.Add(this.groupBoxOther);
             this.panelOptionsRight.Controls.Add(this.groupBoxRailDriver);
-            this.panelOptionsRight.Controls.Add(this.groupboxDistance);
             this.panelOptionsRight.Controls.Add(this.groupboxControls);
             this.panelOptionsRight.Controls.Add(this.groupboxVerbosity);
             this.panelOptionsRight.Controls.Add(this.groupboxSimulation);
             this.panelOptionsRight.Controls.Add(this.groupboxSound);
-            this.panelOptionsRight.Location = new System.Drawing.Point(332, 72);
+            this.panelOptionsRight.Location = new System.Drawing.Point(360, 72);
             this.panelOptionsRight.Name = "panelOptionsRight";
             this.panelOptionsRight.Size = new System.Drawing.Size(316, 579);
             this.panelOptionsRight.TabIndex = 17;
@@ -2613,7 +2826,7 @@ namespace OpenBve {
             this.groupBoxOther.Controls.Add(this.comboBoxTimeTableDisplayMode);
             this.groupBoxOther.Controls.Add(this.labelTimeTableDisplayMode);
             this.groupBoxOther.ForeColor = System.Drawing.Color.Black;
-            this.groupBoxOther.Location = new System.Drawing.Point(0, 468);
+            this.groupBoxOther.Location = new System.Drawing.Point(0, 347);
             this.groupBoxOther.Name = "groupBoxOther";
             this.groupBoxOther.Size = new System.Drawing.Size(316, 48);
             this.groupBoxOther.TabIndex = 19;
@@ -2652,7 +2865,7 @@ namespace OpenBve {
             this.groupBoxRailDriver.Controls.Add(this.comboBoxRailDriverUnits);
             this.groupBoxRailDriver.Controls.Add(this.labelRailDriverSpeedUnits);
             this.groupBoxRailDriver.ForeColor = System.Drawing.Color.Black;
-            this.groupBoxRailDriver.Location = new System.Drawing.Point(0, 230);
+            this.groupBoxRailDriver.Location = new System.Drawing.Point(0, 128);
             this.groupBoxRailDriver.Name = "groupBoxRailDriver";
             this.groupBoxRailDriver.Size = new System.Drawing.Size(316, 75);
             this.groupBoxRailDriver.TabIndex = 21;
@@ -2714,7 +2927,7 @@ namespace OpenBve {
             this.groupboxDistance.ForeColor = System.Drawing.Color.Black;
             this.groupboxDistance.Location = new System.Drawing.Point(0, 0);
             this.groupboxDistance.Name = "groupboxDistance";
-            this.groupboxDistance.Size = new System.Drawing.Size(316, 80);
+            this.groupboxDistance.Size = new System.Drawing.Size(321, 80);
             this.groupboxDistance.TabIndex = 8;
             this.groupboxDistance.TabStop = false;
             this.groupboxDistance.Text = "Distance effects";
@@ -2724,7 +2937,7 @@ namespace OpenBve {
             this.comboboxMotionBlur.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.comboboxMotionBlur.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboboxMotionBlur.FormattingEnabled = true;
-            this.comboboxMotionBlur.Location = new System.Drawing.Point(144, 48);
+            this.comboboxMotionBlur.Location = new System.Drawing.Point(149, 48);
             this.comboboxMotionBlur.Name = "comboboxMotionBlur";
             this.comboboxMotionBlur.Size = new System.Drawing.Size(152, 21);
             this.comboboxMotionBlur.TabIndex = 4;
@@ -2736,7 +2949,7 @@ namespace OpenBve {
             this.labelMotionBlur.AutoEllipsis = true;
             this.labelMotionBlur.Location = new System.Drawing.Point(5, 51);
             this.labelMotionBlur.Name = "labelMotionBlur";
-            this.labelMotionBlur.Size = new System.Drawing.Size(140, 18);
+            this.labelMotionBlur.Size = new System.Drawing.Size(145, 18);
             this.labelMotionBlur.TabIndex = 3;
             this.labelMotionBlur.Text = "Motion blur:";
             this.labelMotionBlur.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
@@ -2745,7 +2958,7 @@ namespace OpenBve {
             // 
             this.labelDistanceUnit.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.labelDistanceUnit.AutoEllipsis = true;
-            this.labelDistanceUnit.Location = new System.Drawing.Point(272, 24);
+            this.labelDistanceUnit.Location = new System.Drawing.Point(277, 24);
             this.labelDistanceUnit.Name = "labelDistanceUnit";
             this.labelDistanceUnit.Size = new System.Drawing.Size(24, 18);
             this.labelDistanceUnit.TabIndex = 2;
@@ -2754,7 +2967,7 @@ namespace OpenBve {
             // updownDistance
             // 
             this.updownDistance.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.updownDistance.Location = new System.Drawing.Point(144, 24);
+            this.updownDistance.Location = new System.Drawing.Point(149, 24);
             this.updownDistance.Maximum = new decimal(new int[] {
             100000,
             0,
@@ -2781,7 +2994,7 @@ namespace OpenBve {
             this.labelDistance.AutoEllipsis = true;
             this.labelDistance.Location = new System.Drawing.Point(9, 26);
             this.labelDistance.Name = "labelDistance";
-            this.labelDistance.Size = new System.Drawing.Size(136, 18);
+            this.labelDistance.Size = new System.Drawing.Size(141, 18);
             this.labelDistance.TabIndex = 0;
             this.labelDistance.Text = "Viewing distance:";
             this.labelDistance.TextAlign = System.Drawing.ContentAlignment.TopRight;
@@ -2795,7 +3008,7 @@ namespace OpenBve {
             this.groupboxControls.Controls.Add(this.checkboxJoysticksUsed);
             this.groupboxControls.Controls.Add(this.labelJoystickAxisThreshold);
             this.groupboxControls.ForeColor = System.Drawing.Color.Black;
-            this.groupboxControls.Location = new System.Drawing.Point(0, 144);
+            this.groupboxControls.Location = new System.Drawing.Point(0, 48);
             this.groupboxControls.Name = "groupboxControls";
             this.groupboxControls.Size = new System.Drawing.Size(316, 80);
             this.groupboxControls.TabIndex = 10;
@@ -2856,7 +3069,7 @@ namespace OpenBve {
             this.groupboxVerbosity.Controls.Add(this.checkboxErrorMessages);
             this.groupboxVerbosity.Controls.Add(this.checkboxWarningMessages);
             this.groupboxVerbosity.ForeColor = System.Drawing.Color.Black;
-            this.groupboxVerbosity.Location = new System.Drawing.Point(0, 396);
+            this.groupboxVerbosity.Location = new System.Drawing.Point(0, 283);
             this.groupboxVerbosity.Name = "groupboxVerbosity";
             this.groupboxVerbosity.Size = new System.Drawing.Size(316, 64);
             this.groupboxVerbosity.TabIndex = 12;
@@ -2903,7 +3116,7 @@ namespace OpenBve {
             this.groupboxSimulation.Controls.Add(this.checkboxCollisions);
             this.groupboxSimulation.Controls.Add(this.checkboxToppling);
             this.groupboxSimulation.ForeColor = System.Drawing.Color.Black;
-            this.groupboxSimulation.Location = new System.Drawing.Point(0, 310);
+            this.groupboxSimulation.Location = new System.Drawing.Point(0, 203);
             this.groupboxSimulation.Name = "groupboxSimulation";
             this.groupboxSimulation.Size = new System.Drawing.Size(316, 80);
             this.groupboxSimulation.TabIndex = 11;
@@ -2973,7 +3186,7 @@ namespace OpenBve {
             this.groupboxSound.Controls.Add(this.updownSoundNumber);
             this.groupboxSound.Controls.Add(this.labelSoundNumber);
             this.groupboxSound.ForeColor = System.Drawing.Color.Black;
-            this.groupboxSound.Location = new System.Drawing.Point(0, 88);
+            this.groupboxSound.Location = new System.Drawing.Point(0, 0);
             this.groupboxSound.Name = "groupboxSound";
             this.groupboxSound.Size = new System.Drawing.Size(316, 48);
             this.groupboxSound.TabIndex = 9;
@@ -5937,6 +6150,16 @@ namespace OpenBve {
             this.labelNewGUID.TabIndex = 24;
             this.labelNewGUID.Text = "The new package has been assigned the following GUID:";
             // 
+            // panelOptionsPage2
+            // 
+            this.panelOptionsPage2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(243)))), ((int)(((byte)(255)))), ((int)(((byte)(243)))));
+            this.panelOptionsPage2.Controls.Add(this.groupboxDistance);
+            this.panelOptionsPage2.Controls.Add(this.groupboxShadows);
+            this.panelOptionsPage2.Location = new System.Drawing.Point(0, 72);
+            this.panelOptionsPage2.Name = "panelOptionsPage2";
+            this.panelOptionsPage2.Size = new System.Drawing.Size(683, 583);
+            this.panelOptionsPage2.TabIndex = 21;
+            // 
             // formMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
@@ -5999,7 +6222,7 @@ namespace OpenBve {
             this.panelRouteEncoding.ResumeLayout(false);
             this.panelOptions.ResumeLayout(false);
             this.panelOptions.PerformLayout();
-            this.panelOptionsPage2.ResumeLayout(false);
+            this.panelOptionsPage3.ResumeLayout(false);
             this.groupBoxInputDevice.ResumeLayout(false);
             this.groupBoxObjectParser.ResumeLayout(false);
             this.groupBoxKioskMode.ResumeLayout(false);
@@ -6026,6 +6249,11 @@ namespace OpenBve {
             ((System.ComponentModel.ISupportInitialize)(this.updownAntiAliasing)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.updownAnisotropic)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackbarTransparency)).EndInit();
+            this.groupboxShadows.ResumeLayout(false);
+            this.groupboxShadows.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.trackbarShadowStrength)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.updownShadowBias)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.updownShadowNormalBias)).EndInit();
             this.panelOptionsRight.ResumeLayout(false);
             this.groupBoxOther.ResumeLayout(false);
             this.groupBoxRailDriver.ResumeLayout(false);
@@ -6106,6 +6334,7 @@ namespace OpenBve {
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewReplacePackage)).EndInit();
             this.panelNewPackage.ResumeLayout(false);
             this.panelNewPackage.PerformLayout();
+            this.panelOptionsPage2.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -6117,6 +6346,20 @@ namespace OpenBve {
         private System.Windows.Forms.TrackBar trackbarTransparency;
         private System.Windows.Forms.Panel panelOptionsLeft;
         private System.Windows.Forms.Panel panelOptionsRight;
+        private System.Windows.Forms.Label labelShadowResolution;
+        private System.Windows.Forms.ComboBox comboboxShadowResolution;
+        private System.Windows.Forms.Label labelShadowDistance;
+        private System.Windows.Forms.ComboBox comboboxShadowDistance;
+        private System.Windows.Forms.Label labelShadowCascades;
+        private System.Windows.Forms.ComboBox comboboxShadowCascades;
+        private System.Windows.Forms.Label labelShadowStrength;
+        private System.Windows.Forms.TrackBar trackbarShadowStrength;
+        private System.Windows.Forms.Label labelShadowStrengthValue;
+        private System.Windows.Forms.Label labelShadowBias;
+        private System.Windows.Forms.NumericUpDown updownShadowBias;
+        private System.Windows.Forms.Label labelShadowNormalBias;
+        private System.Windows.Forms.NumericUpDown updownShadowNormalBias;
+        private System.Windows.Forms.GroupBox groupboxShadows;
         private System.Windows.Forms.ComboBox comboboxVSync;
         private System.Windows.Forms.Label labelVSync;
         private System.Windows.Forms.CheckBox checkboxWarningMessages;
@@ -6438,7 +6681,7 @@ namespace OpenBve {
 		private System.Windows.Forms.LinkLabel linkLabelCheckUpdates;
 		private System.Windows.Forms.Button buttonOptionsPrevious;
 		private System.Windows.Forms.Button buttonOptionsNext;
-		private System.Windows.Forms.Panel panelOptionsPage2;
+		private System.Windows.Forms.Panel panelOptionsPage3;
 		private System.Windows.Forms.GroupBox groupBoxPackageOptions;
 		private System.Windows.Forms.ComboBox comboBoxCompressionFormat;
 		private System.Windows.Forms.Label labelPackageCompression;
@@ -6550,5 +6793,6 @@ namespace OpenBve {
 		private System.Windows.Forms.Button buttonMSTSTrainsetDirectory;
 		private System.Windows.Forms.Label label1;
 		private System.Windows.Forms.TextBox textBoxMSTSTrainsetDirectory;
+		private System.Windows.Forms.Panel panelOptionsPage2;
 	}
 }

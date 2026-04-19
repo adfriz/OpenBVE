@@ -1,4 +1,4 @@
-﻿namespace LibRender2
+namespace LibRender2
 {
 	/// <summary>
 	/// Vertex layout
@@ -197,5 +197,14 @@
 		/// The handle of "uAlphaFunction" within the shader
 		/// </summary>
 		public short AlphaFunction;
+
+		// Cascaded Shadow Mapping
+		public short LightSpaceMatrix0 = -1;
+		public short LightSpaceMatrix1 = -1;
+		public short LightSpaceMatrix2 = -1;
+		public short ShadowMap0 = -1;
+		public short ShadowMap1 = -1;
+		public short ShadowMap2 = -1;
+		public short CurrentViewMatrix = -1;
 	}
 }

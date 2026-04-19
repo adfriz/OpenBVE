@@ -633,7 +633,7 @@ namespace CsvRwRouteParser
 					int gi = Data.Blocks[i].Cycle[ci];
 					if (Data.Structure.Ground.ContainsKey(gi))
 					{
-						Data.Structure.Ground[Data.Blocks[i].Cycle[ci]].CreateObject(Position + new Vector3(0.0, -Data.Blocks[i].Height, 0.0), GroundTransformation, StartingDistance, EndingDistance, StartingDistance);
+						Data.Structure.Ground[Data.Blocks[i].Cycle[ci]].CreateObject(Position + new Vector3(0.0, -Data.Blocks[i].Height, 0.0), GroundTransformation, Transformation.NullTransformation, -1, StartingDistance, EndingDistance, StartingDistance, 1.0, true);
 					}
 				}
 				// ground-aligned free objects

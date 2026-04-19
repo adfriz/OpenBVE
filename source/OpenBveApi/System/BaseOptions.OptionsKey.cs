@@ -1,4 +1,4 @@
-﻿// ReSharper disable UnusedMember.Global
+// ReSharper disable UnusedMember.Global
 // ReSharper disable InconsistentNaming
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 namespace OpenBveApi
@@ -44,6 +44,15 @@ namespace OpenBveApi
 		OldTransparencyMode,
 		MotionBlur,
 		FPSLimit,
+		ShadowResolution,
+		ShadowDrawDistance,
+		ShadowCascades,
+		ShadowStrength,
+		ShadowBias,
+		ShadowNormalBias,
+		LightAzimuth,
+
+		LightElevation,
 		// Object Optimization
 		BasicThreshold,
 		FullThreshold,
