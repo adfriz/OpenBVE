@@ -73,7 +73,7 @@ namespace LibRender2.Shaders
 				{
 					if (stream != null)
 					{
-						using (StreamReader reader = new StreamReader(stream))
+						using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
 						{
 							LoadShader(reader.ReadToEnd(), ShaderType.VertexShader);
 						}
@@ -83,7 +83,7 @@ namespace LibRender2.Shaders
 				{
 					if (stream != null)
 					{
-						using (StreamReader reader = new StreamReader(stream))
+						using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
 						{
 							LoadShader(reader.ReadToEnd(), ShaderType.FragmentShader);
 						}

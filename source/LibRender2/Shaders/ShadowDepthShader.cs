@@ -1,8 +1,10 @@
  using System;
 using System.IO;
 using System.Reflection;
+using System.Text;
 using OpenBveApi.Objects;
 using OpenTK.Graphics.OpenGL;
+using Path = System.IO.Path;
 
 namespace LibRender2.Shaders
 {
@@ -77,7 +79,7 @@ namespace LibRender2.Shaders
 			{
 				if (stream != null)
 				{
-					using (StreamReader reader = new StreamReader(stream))
+					using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
 					{
 						return reader.ReadToEnd();
 					}
@@ -89,7 +91,7 @@ namespace LibRender2.Shaders
 			string path = Path.Combine(dir, "Data\\Shaders", filename);
 			if (File.Exists(path))
 			{
-				return File.ReadAllText(path);
+				return File.ReadAllText(path, Encoding.UTF8);
 			}
 
 			throw new FileNotFoundException(
