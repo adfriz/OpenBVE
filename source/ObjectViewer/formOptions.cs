@@ -274,6 +274,7 @@ namespace ObjectViewer
 			
 			Interface.CurrentOptions.Save(Path.CombineFile(Program.FileSystem.SettingsFolder, "1.5.0/options_ov.cfg"));
 			Program.RefreshObjects();
+			this.DialogResult = DialogResult.OK;
 			Close();
 		}
 	}
