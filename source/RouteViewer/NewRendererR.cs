@@ -157,7 +157,9 @@ namespace RouteViewer
 
 			// render background
 			GL.Disable(EnableCap.DepthTest);
+			DefaultShader.SetShadowEnabled(false);
 			Program.CurrentRoute.UpdateBackground(timeElapsed, false);
+			DefaultShader.SetShadowEnabled(ShadowsEnabled);
 
 			// fog
 			float aa = Program.CurrentRoute.CurrentFog.Start;

@@ -157,6 +157,13 @@ namespace RouteViewer
 
         private void button1_Click(object sender, EventArgs e)
         {
+            ShadowMapResolution previousShadowResolution = Interface.CurrentOptions.ShadowResolution;
+	        ShadowDistance previousShadowDistance = Interface.CurrentOptions.ShadowDrawDistance;
+	        ShadowCascadeCount previousShadowCascades = Interface.CurrentOptions.ShadowCascades;
+	        double previousShadowStrength = Interface.CurrentOptions.ShadowStrength;
+	        double previousShadowBias = Interface.CurrentOptions.ShadowBias;
+	        double previousShadowNormalBias = Interface.CurrentOptions.ShadowNormalBias;
+
 			//Interpolation mode
 			InterpolationMode previousInterpolationMode = Interface.CurrentOptions.Interpolation;
 			switch (InterpolationMode.SelectedIndex)
@@ -282,7 +289,9 @@ namespace RouteViewer
 				}
 			}
 			//Check if interpolation mode or anisotropic filtering level has changed, and trigger a reload
-			if (previousInterpolationMode != Interface.CurrentOptions.Interpolation || previousAnisotropicLevel != Interface.CurrentOptions.AnisotropicFilteringLevel || GraphicsModeChanged || Interface.CurrentOptions.ViewingDistance != previousViewingDistance)
+			if (previousInterpolationMode != Interface.CurrentOptions.Interpolation || previousAnisotropicLevel != Interface.CurrentOptions.AnisotropicFilteringLevel || GraphicsModeChanged || Interface.CurrentOptions.ViewingDistance != previousViewingDistance ||
+			    previousShadowResolution != Interface.CurrentOptions.ShadowResolution || previousShadowDistance != Interface.CurrentOptions.ShadowDrawDistance || previousShadowCascades != Interface.CurrentOptions.ShadowCascades ||
+			    previousShadowStrength != Interface.CurrentOptions.ShadowStrength || previousShadowBias != Interface.CurrentOptions.ShadowBias || previousShadowNormalBias != Interface.CurrentOptions.ShadowNormalBias)
 			{
 				this.DialogResult = DialogResult.OK;
 			}
