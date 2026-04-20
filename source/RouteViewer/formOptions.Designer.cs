@@ -725,6 +725,8 @@ namespace RouteViewer
             ((System.ComponentModel.ISupportInitialize)(this.AntialiasingLevel)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownViewingDistance)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownShadowStrength)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownShadowBias)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownShadowNormalBias)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBarSunAzimuth)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBarSunElevation)).EndInit();
             this.ResumeLayout(false);
