@@ -705,7 +705,14 @@ namespace ObjectViewer {
 	                {
 		                return;
 	                }
-					formOptions.ShowOptions();
+
+	                if (formOptions.ShowOptions() == DialogResult.OK)
+	                {
+		                // Sun direction is already updated in real-time via slider events
+
+		                // Appy shadow map settings immediately
+		                Renderer.ReloadShadowSettings();
+					}
                     Application.DoEvents();
                     break;
                 case Key.F10:

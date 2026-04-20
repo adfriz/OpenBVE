@@ -271,12 +271,7 @@ namespace ObjectViewer
 			Interface.CurrentOptions.ShadowStrength = (double)numericUpDownShadowStrength.Value / 100.0;
 			Interface.CurrentOptions.ShadowBias = (double)numericUpDownShadowBias.Value;
 			Interface.CurrentOptions.ShadowNormalBias = (double)numericUpDownShadowNormalBias.Value;
-
-			// Sun direction is already updated in real-time via slider events
 			
-			// Appy shadow map settings immediately
-			Program.Renderer.ReloadShadowSettings();
-
 			Interface.CurrentOptions.Save(Path.CombineFile(Program.FileSystem.SettingsFolder, "1.5.0/options_ov.cfg"));
 			Program.RefreshObjects();
 			Close();

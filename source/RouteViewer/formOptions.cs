@@ -238,15 +238,6 @@ namespace RouteViewer
 			Interface.CurrentOptions.ViewingDistance = (int)numericUpDownViewingDistance.Value;
 			Interface.CurrentOptions.QuadTreeLeafSize = Math.Max(50, (int)Math.Ceiling(Interface.CurrentOptions.ViewingDistance / 10.0d) * 10); // quad tree size set to 10% of viewing distance to the nearest 10
 
-            // Shadows
-            var prevShadowRes = Interface.CurrentOptions.ShadowResolution;
-            var prevShadowDist = Interface.CurrentOptions.ShadowDrawDistance;
-            var prevShadowCasc = Interface.CurrentOptions.ShadowCascades;
-            var prevShadowStr = Interface.CurrentOptions.ShadowStrength;
-            var prevShadowBias = Interface.CurrentOptions.ShadowBias;
-            var prevShadowNormalBias = Interface.CurrentOptions.ShadowNormalBias;
-
-
             switch (comboBoxShadowResolution.SelectedIndex)
             {
                 case 0: Interface.CurrentOptions.ShadowResolution = ShadowMapResolution.Off; break;
@@ -277,18 +268,7 @@ namespace RouteViewer
             Interface.CurrentOptions.ShadowNormalBias = (double)numericUpDownShadowNormalBias.Value;
 
 
-            if (prevShadowRes != Interface.CurrentOptions.ShadowResolution ||
-                prevShadowDist != Interface.CurrentOptions.ShadowDrawDistance ||
-                prevShadowCasc != Interface.CurrentOptions.ShadowCascades ||
-                Math.Abs(prevShadowStr - Interface.CurrentOptions.ShadowStrength) > 0.01f ||
-                Math.Abs(prevShadowBias - Interface.CurrentOptions.ShadowBias) > 0.000001f ||
-                Math.Abs(prevShadowNormalBias - Interface.CurrentOptions.ShadowNormalBias) > 0.01f)
-            {
-                if (Program.Renderer.AvailableNewRenderer)
-                {
-                    Program.Renderer.ReloadShadowSettings();
-                }
-            }
+            
 
             // Sun direction is already updated in real-time via slider events
 
