@@ -257,9 +257,61 @@ namespace RouteViewer
 
         }
 
-	    protected override void OnClosing(CancelEventArgs cancelEventArgs)
-	    {
-			
-	    }
+
+        private void InitializeSunSliders()
+        {
+            trackBarSunElevation.Value = (int)Interface.CurrentOptions.LightElevation;
+            trackBarSunAzimuth.Value = (int)Interface.CurrentOptions.LightAzimuth;
+            labelSunAzimuthValue.Text = trackBarSunAzimuth.Value + "\u00b0";
+            labelSunElevationValue.Text = trackBarSunElevation.Value + "\u00b0";
+        }
+
+        private void UpdateShadowControlsEnabled()
+        {
+            bool enabled = comboBoxShadowResolution.SelectedIndex != 0;
+            comboBoxShadowDistance.Enabled = enabled;
+            comboBoxShadowCascades.Enabled = enabled;
+            numericUpDownShadowStrength.Enabled = enabled;
+            numericUpDownShadowBias.Enabled = enabled;
+            numericUpDownShadowBias.ReadOnly = !enabled;
+            numericUpDownShadowNormalBias.Enabled = enabled;
+            numericUpDownShadowNormalBias.ReadOnly = !enabled;
+
+            trackBarSunAzimuth.Enabled = enabled;
+            trackBarSunElevation.Enabled = enabled;
+        }
+
+        private void comboBoxShadowResolution_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            UpdateShadowControlsEnabled();
+        }
+
+        private void UpdateSunDirection()
+        {
+            Interface.CurrentOptions.LightAzimuth = trackBarSunAzimuth.Value;
+            Interface.CurrentOptions.LightElevation = trackBarSunElevation.Value;
+
+            double azimuthRad = Interface.CurrentOptions.LightAzimuth * Math.PI / 180.0;
+            double elevationRad = Interface.CurrentOptions.LightElevation * Math.PI / 180.0;
+
+            // Convert spherical to direction vector
+            float x = (float)(Math.Sin(azimuthRad) * Math.Cos(elevationRad));
+            float y = (float)(Math.Sin(elevationRad));
+            float z = (float)(Math.Cos(azimuthRad) * Math.Cos(elevationRad));
+
+            Program.Renderer.Lighting.OptionLightPosition = new Vector3(x, y, z);
+        }
+
+        private void trackBarSunAzimuth_Scroll(object sender, EventArgs e)
+        {
+            labelSunAzimuthValue.Text = trackBarSunAzimuth.Value + "\u00b0";
+            UpdateSunDirection();
+        }
+
+        private void trackBarSunElevation_Scroll(object sender, EventArgs e)
+        {
+            labelSunElevationValue.Text = trackBarSunElevation.Value + "\u00b0";
+            UpdateSunDirection();
+        }
     }
 }

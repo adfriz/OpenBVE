@@ -201,7 +201,6 @@ namespace OpenBve.Graphics
 			GL.Disable(EnableCap.DepthTest);
 			DefaultShader.SetShadowEnabled(false);
 			Program.CurrentRoute.UpdateBackground(TimeElapsed, Program.Renderer.CurrentInterface != InterfaceType.Normal);
-			Program.CurrentRoute.UpdateBackground(TimeElapsed, Program.Renderer.CurrentInterface != InterfaceType.Normal);
 
 			// RealSky
 			totalTime += TimeElapsed;
