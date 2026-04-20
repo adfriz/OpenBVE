@@ -1057,18 +1057,13 @@ namespace LibRender2
 				if (updateVisibility == VisibilityUpdate.None)
 				{
 					Thread.Sleep(100);
-					updateVisibility = VisibilityUpdate.Normal;
-				}
-				else
-				{
-					updateVisibility = VisibilityUpdate.None;
 				}
 			}
 		}
 
 		public void UpdateVisibility(bool force)
 		{
-			updateVisibility = force ? VisibilityUpdate.Force : VisibilityUpdate.None;
+			updateVisibility = force ? VisibilityUpdate.Force : VisibilityUpdate.Normal;
 		}
 
 		private void UpdateVisibility(double trackPosition)
@@ -1096,6 +1091,8 @@ namespace LibRender2
 				}
 				
 			}
+
+			updateVisibility = VisibilityUpdate.None;
 		}
 
 		private void UpdateQuadTreeVisibility()

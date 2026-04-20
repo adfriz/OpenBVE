@@ -605,7 +605,7 @@ namespace RouteManager2
 				double n = 3.0 + 0.5 * Math.Sqrt(PointsOfInterest[j].Text.Length);
 				currentHost.AddMessage(PointsOfInterest[j].Text, MessageDependency.PointOfInterest, GameMode.Expert, MessageColor.White, n, null);
 			}
-
+			renderer.UpdateVisibility(true);
 			return true;
 		}
 
