@@ -7,6 +7,9 @@ using System;
 using System.ComponentModel;
 using System.Windows.Forms;
 
+using OpenBveApi.Interface;
+using OpenBveApi.Math;
+
 namespace RouteViewer
 {
     public partial class FormOptions : Form
@@ -29,6 +32,65 @@ namespace RouteViewer
 			checkBoxRealSky.Checked = Interface.CurrentOptions.RealSkyEnabled;
 			numericUpDownAzimuth.Value = (decimal)Interface.CurrentOptions.RealSkyAzimuth;
 			numericUpDownElevation.Value = (decimal)Interface.CurrentOptions.RealSkyElevation;
+
+            // Shadows
+            switch (Interface.CurrentOptions.ShadowResolution)
+            {
+                case ShadowMapResolution.Off: comboBoxShadowResolution.SelectedIndex = 0; break;
+                case ShadowMapResolution.Low: comboBoxShadowResolution.SelectedIndex = 1; break;
+                case ShadowMapResolution.Medium: comboBoxShadowResolution.SelectedIndex = 2; break;
+                case ShadowMapResolution.High: comboBoxShadowResolution.SelectedIndex = 3; break;
+                case ShadowMapResolution.Ultra: comboBoxShadowResolution.SelectedIndex = 4; break;
+                default: comboBoxShadowResolution.SelectedIndex = 3; break;
+            }
+
+            switch (Interface.CurrentOptions.ShadowDrawDistance)
+            {
+                case ShadowDistance.Near: comboBoxShadowDistance.SelectedIndex = 0; break;
+                case ShadowDistance.Medium: comboBoxShadowDistance.SelectedIndex = 1; break;
+                case ShadowDistance.Far: comboBoxShadowDistance.SelectedIndex = 2; break;
+                case ShadowDistance.VeryFar: comboBoxShadowDistance.SelectedIndex = 3; break;
+                case ShadowDistance.ViewingDistance: comboBoxShadowDistance.SelectedIndex = 4; break;
+                default: comboBoxShadowDistance.SelectedIndex = 1; break;
+            }
+
+            switch (Interface.CurrentOptions.ShadowCascades)
+            {
+                case ShadowCascadeCount.Two: comboBoxShadowCascades.SelectedIndex = 0; break;
+                case ShadowCascadeCount.Three: comboBoxShadowCascades.SelectedIndex = 1; break;
+                case ShadowCascadeCount.Four: comboBoxShadowCascades.SelectedIndex = 2; break;
+                default: comboBoxShadowCascades.SelectedIndex = 1; break;
+            }
+
+            numericUpDownShadowStrength.Minimum = 1;
+            numericUpDownShadowStrength.Maximum = 100;
+            numericUpDownShadowStrength.Increment = 5;
+            numericUpDownShadowStrength.DecimalPlaces = 0;
+            numericUpDownShadowStrength.Value = (decimal)Math.Round(Interface.CurrentOptions.ShadowStrength * 100.0);
+            if (numericUpDownShadowStrength.Value < 1) numericUpDownShadowStrength.Value = 1;
+            numericUpDownShadowStrength.Refresh();
+            numericUpDownShadowBias.Value = (decimal)Interface.CurrentOptions.ShadowBias;
+            if (numericUpDownShadowBias.Value == 0)
+            {
+                numericUpDownShadowBias.Value = 0.000050m;
+            }
+            numericUpDownShadowBias.Refresh();
+
+            numericUpDownShadowNormalBias.DecimalPlaces = 2;
+            numericUpDownShadowNormalBias.Minimum = 0;
+            numericUpDownShadowNormalBias.Maximum = 10;
+            numericUpDownShadowNormalBias.Increment = 0.1m;
+            numericUpDownShadowNormalBias.Value = (decimal)Interface.CurrentOptions.ShadowNormalBias;
+            numericUpDownShadowNormalBias.Refresh();
+
+
+            // Initialize sun direction sliders from current light position
+            InitializeSunSliders();
+
+            // Wire up shadow resolution change to enable/disable related controls
+            comboBoxShadowResolution.SelectedIndexChanged += comboBoxShadowResolution_SelectedIndexChanged;
+            UpdateShadowControlsEnabled();
+
         }
 
         internal static DialogResult ShowOptions()
@@ -50,6 +112,13 @@ namespace RouteViewer
 
         private void button1_Click(object sender, EventArgs e)
         {
+            ShadowMapResolution previousShadowResolution = Interface.CurrentOptions.ShadowResolution;
+	        ShadowDistance previousShadowDistance = Interface.CurrentOptions.ShadowDrawDistance;
+	        ShadowCascadeCount previousShadowCascades = Interface.CurrentOptions.ShadowCascades;
+	        double previousShadowStrength = Interface.CurrentOptions.ShadowStrength;
+	        double previousShadowBias = Interface.CurrentOptions.ShadowBias;
+	        double previousShadowNormalBias = Interface.CurrentOptions.ShadowNormalBias;
+
 			//Interpolation mode
 			InterpolationMode previousInterpolationMode = Interface.CurrentOptions.Interpolation;
 			switch (InterpolationMode.SelectedIndex)
@@ -133,6 +202,36 @@ namespace RouteViewer
 			Interface.CurrentOptions.RealSkyEnabled = checkBoxRealSky.Checked;
 			Interface.CurrentOptions.RealSkyAzimuth = (double)numericUpDownAzimuth.Value;
 			Interface.CurrentOptions.RealSkyElevation = (double)numericUpDownElevation.Value;
+
+            switch (comboBoxShadowResolution.SelectedIndex)
+            {
+                case 0: Interface.CurrentOptions.ShadowResolution = ShadowMapResolution.Off; break;
+                case 1: Interface.CurrentOptions.ShadowResolution = ShadowMapResolution.Low; break;
+                case 2: Interface.CurrentOptions.ShadowResolution = ShadowMapResolution.Medium; break;
+                case 3: Interface.CurrentOptions.ShadowResolution = ShadowMapResolution.High; break;
+                case 4: Interface.CurrentOptions.ShadowResolution = ShadowMapResolution.Ultra; break;
+            }
+
+            switch (comboBoxShadowDistance.SelectedIndex)
+            {
+                case 0: Interface.CurrentOptions.ShadowDrawDistance = ShadowDistance.Near; break;
+                case 1: Interface.CurrentOptions.ShadowDrawDistance = ShadowDistance.Medium; break;
+                case 2: Interface.CurrentOptions.ShadowDrawDistance = ShadowDistance.Far; break;
+                case 3: Interface.CurrentOptions.ShadowDrawDistance = ShadowDistance.VeryFar; break;
+                case 4: Interface.CurrentOptions.ShadowDrawDistance = ShadowDistance.ViewingDistance; break;
+            }
+
+            switch (comboBoxShadowCascades.SelectedIndex)
+            {
+                case 0: Interface.CurrentOptions.ShadowCascades = ShadowCascadeCount.Two; break;
+                case 1: Interface.CurrentOptions.ShadowCascades = ShadowCascadeCount.Three; break;
+                case 2: Interface.CurrentOptions.ShadowCascades = ShadowCascadeCount.Four; break;
+            }
+
+            Interface.CurrentOptions.ShadowStrength = (double)numericUpDownShadowStrength.Value / 100.0;
+            Interface.CurrentOptions.ShadowBias = (double)numericUpDownShadowBias.Value;
+            Interface.CurrentOptions.ShadowNormalBias = (double)numericUpDownShadowNormalBias.Value;
+
 			Interface.CurrentOptions.Save(Path.CombineFile(Program.FileSystem.SettingsFolder, "1.5.0/options_rv.cfg"));
 			for (int i = 0; i < Program.CurrentHost.Plugins.Length; i++)
 			{
@@ -143,7 +242,10 @@ namespace RouteViewer
 				}
 			}
 			//Check if interpolation mode or anisotropic filtering level has changed, and trigger a reload
-			if (previousInterpolationMode != Interface.CurrentOptions.Interpolation || previousAnisotropicLevel != Interface.CurrentOptions.AnisotropicFilteringLevel || GraphicsModeChanged || Interface.CurrentOptions.ViewingDistance != previousViewingDistance || Interface.CurrentOptions.RealSkyEnabled != checkBoxRealSky.Checked)
+			if (previousInterpolationMode != Interface.CurrentOptions.Interpolation || previousAnisotropicLevel != Interface.CurrentOptions.AnisotropicFilteringLevel || GraphicsModeChanged || Interface.CurrentOptions.ViewingDistance != previousViewingDistance || Interface.CurrentOptions.RealSkyEnabled != checkBoxRealSky.Checked ||
+			    previousShadowResolution != Interface.CurrentOptions.ShadowResolution || previousShadowDistance != Interface.CurrentOptions.ShadowDrawDistance || previousShadowCascades != Interface.CurrentOptions.ShadowCascades ||
+			    previousShadowStrength != Interface.CurrentOptions.ShadowStrength || previousShadowBias != Interface.CurrentOptions.ShadowBias || previousShadowNormalBias != Interface.CurrentOptions.ShadowNormalBias)
+
 			{
 				this.DialogResult = DialogResult.OK;
 			}

@@ -150,13 +150,17 @@ namespace RouteViewer
 
 			if (AvailableNewRenderer)
 			{
+				PerformCSMShadowPass();
 				DefaultShader.Activate();
-            }
+				BindCSMToDefaultShader();
+			}
 			
 
 			// render background
 			GL.Disable(EnableCap.DepthTest);
+			DefaultShader.SetShadowEnabled(false);
 			Program.CurrentRoute.UpdateBackground(timeElapsed, false);
+			DefaultShader.SetShadowEnabled(ShadowsEnabled);
 
 			// RealSky
 			totalTime += timeElapsed;

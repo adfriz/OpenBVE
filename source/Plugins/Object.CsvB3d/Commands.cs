@@ -27,6 +27,7 @@
 		Font,
 		Coordinates,
 		CrossFading,
+		DisableShadowCasting,
 
 		// CSV COMMANDS
 		CreateMeshBuilder = 100,

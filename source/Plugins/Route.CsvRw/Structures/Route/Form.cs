@@ -78,7 +78,7 @@ namespace CsvRwRouteParser
 				}
 				else
 				{
-					Plugin.CurrentHost.CreateStaticObject((StaticObject) Structure.FormCL[FormType], pos, railTransformation, Transformation.NullTransformation, 0.0, startingDistance, endingDistance, startingDistance);
+					Plugin.CurrentHost.CreateStaticObject((StaticObject) Structure.FormCL[FormType], pos, railTransformation, Transformation.NullTransformation, 0.0, startingDistance, endingDistance, startingDistance, false);
 				}
 
 				if (RoofType > 0)
@@ -98,7 +98,7 @@ namespace CsvRwRouteParser
 					}
 					else
 					{
-						Plugin.CurrentHost.CreateStaticObject((StaticObject) Structure.RoofCL[RoofType], pos, railTransformation, Transformation.NullTransformation, 0.0, startingDistance, endingDistance, startingDistance);
+						Plugin.CurrentHost.CreateStaticObject((StaticObject) Structure.RoofCL[RoofType], pos, railTransformation, Transformation.NullTransformation, 0.0, startingDistance, endingDistance, startingDistance, false);
 					}
 				}
 			}
@@ -119,7 +119,7 @@ namespace CsvRwRouteParser
 				}
 				else
 				{
-					Plugin.CurrentHost.CreateStaticObject((StaticObject) Structure.FormCR[FormType], pos, railTransformation, Transformation.NullTransformation, 0.0, startingDistance, endingDistance, startingDistance);
+					Plugin.CurrentHost.CreateStaticObject((StaticObject) Structure.FormCR[FormType], pos, railTransformation, Transformation.NullTransformation, 0.0, startingDistance, endingDistance, startingDistance, false);
 				}
 
 				if (RoofType > 0)
@@ -139,7 +139,7 @@ namespace CsvRwRouteParser
 					}
 					else
 					{
-						Plugin.CurrentHost.CreateStaticObject((StaticObject) Structure.RoofCR[RoofType], pos, railTransformation, Transformation.NullTransformation, 0.0, startingDistance, endingDistance, startingDistance);
+						Plugin.CurrentHost.CreateStaticObject((StaticObject) Structure.RoofCR[RoofType], pos, railTransformation, Transformation.NullTransformation, 0.0, startingDistance, endingDistance, startingDistance, false);
 					}
 				}
 			}
@@ -173,7 +173,7 @@ namespace CsvRwRouteParser
 						else
 						{
 							StaticObject formC = (StaticObject) Structure.FormCL[FormType].Transform(d0, d1);
-							Plugin.CurrentHost.CreateStaticObject(formC, pos, railTransformation, Transformation.NullTransformation, 0.0, startingDistance, endingDistance, startingDistance);
+							Plugin.CurrentHost.CreateStaticObject(formC, pos, railTransformation, Transformation.NullTransformation, 0.0, startingDistance, endingDistance, startingDistance, false);
 						}
 
 						if (RoofType > 0)
@@ -194,7 +194,7 @@ namespace CsvRwRouteParser
 							else
 							{
 								StaticObject roofC = (StaticObject) Structure.RoofCL[RoofType].Transform(d0, d1);
-								Plugin.CurrentHost.CreateStaticObject(roofC, pos, railTransformation, Transformation.NullTransformation, 0.0, startingDistance, endingDistance, startingDistance);
+								Plugin.CurrentHost.CreateStaticObject(roofC, pos, railTransformation, Transformation.NullTransformation, 0.0, startingDistance, endingDistance, startingDistance, false);
 							}
 						}
 					}
@@ -216,7 +216,7 @@ namespace CsvRwRouteParser
 						else
 						{
 							StaticObject formC = (StaticObject) Structure.FormCR[FormType].Transform(d0, d1);
-							Plugin.CurrentHost.CreateStaticObject(formC, pos, railTransformation, Transformation.NullTransformation, 0.0, startingDistance, endingDistance, startingDistance);
+							Plugin.CurrentHost.CreateStaticObject(formC, pos, railTransformation, Transformation.NullTransformation, 0.0, startingDistance, endingDistance, startingDistance, false);
 						}
 
 						if (RoofType > 0)
@@ -237,7 +237,7 @@ namespace CsvRwRouteParser
 							else
 							{
 								StaticObject roofC = (StaticObject) Structure.RoofCR[RoofType].Transform(d0, d1);
-								Plugin.CurrentHost.CreateStaticObject(roofC, pos, railTransformation, Transformation.NullTransformation, 0.0, startingDistance, endingDistance, startingDistance);
+								Plugin.CurrentHost.CreateStaticObject(roofC, pos, railTransformation, Transformation.NullTransformation, 0.0, startingDistance, endingDistance, startingDistance, false);
 							}
 						}
 					}

@@ -26,6 +26,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.Remoting.Messaging;
 using System.Text;
 using Object.DirectX;
 using OpenBve.Formats.DirectX;
@@ -418,9 +419,19 @@ namespace Plugin
 					Material newMaterial = new Material();
 					newMaterial.Color = new Color32(block.ReadColor128);
 					double mPower = block.ReadSingle(); //TODO: Unsure what this does...
-					Color24 mSpecular = new Color24(block.ReadColor96);
-					newMaterial.EmissiveColor = new Color24(block.ReadColor96);
-					newMaterial.Flags |= MaterialFlags.Emissive; //TODO: Check exact behaviour
+					newMaterial.SpecularColor = new Color24(block.ReadColor96);
+					if (newMaterial.SpecularColor != Color24.Black)
+					{
+						Color24 c = (Color24)newMaterial.Color;
+						newMaterial.Flags |= MaterialFlags.Specular;
+					}
+					// Convert Color96 → Color24 → Color32; alpha defaults to 255 (opaque)
+					newMaterial.EmissiveColor = new Color32(new Color24(block.ReadColor96));
+					if (newMaterial.EmissiveColor != Color32.Black)
+					{
+						newMaterial.Flags |= MaterialFlags.Emissive;
+					}
+					
 					if (Plugin.EnabledHacks.BlackTransparency)
 					{
 						newMaterial.TransparentColor = Color24.Black; //TODO: Check, also can we optimise which faces have the transparent color set?

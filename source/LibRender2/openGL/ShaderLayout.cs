@@ -206,5 +206,15 @@ namespace LibRender2
 		public short RealSkyResolution = -1;
 		/// <summary>The handle of "uCameraPos" within the shader</summary>
 		public short RealSkyCameraPos = -1;
+
+		// Cascaded Shadow Mapping
+		public short LightSpaceMatrix0 = -1;
+		public short LightSpaceMatrix1 = -1;
+		public short LightSpaceMatrix2 = -1;
+		public short ShadowMap0 = -1;
+		public short ShadowMap1 = -1;
+		public short ShadowMap2 = -1;
+		public short CurrentViewMatrix = -1;
+
 	}
 }

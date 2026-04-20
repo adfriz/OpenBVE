@@ -2,6 +2,7 @@ using OpenBveApi.Graphics;
 using OpenBveApi.Objects;
 using OpenBveApi.Routes;
 using OpenBveApi.Trains;
+using OpenBveApi.Interface;
 
 namespace OpenBveApi
 {
@@ -80,6 +81,24 @@ namespace OpenBveApi
 		public int SoundNumber;
 		/// <summary>Whether to use the new rendering method.</summary>
 		public bool IsUseNewRenderer;
+		/// <summary>Shadow map resolution per cascade. Off disables shadows.</summary>
+		public ShadowMapResolution ShadowResolution = ShadowMapResolution.Off;
+		/// <summary>Maximum distance from the camera at which shadows appear.</summary>
+		public ShadowDistance ShadowDrawDistance = ShadowDistance.Medium;
+		/// <summary>Number of shadow cascades.</summary>
+		public ShadowCascadeCount ShadowCascades = ShadowCascadeCount.Three;
+		/// <summary>Shadow darkness strength. 0.0 = invisible, 1.0 = full black.</summary>
+		public double ShadowStrength = 0.7;
+		/// <summary>Shadow bias to prevent shadow acne.</summary>
+		public double ShadowBias = 0.000050; // default synced to 0.000050
+		/// <summary>Shadow normal bias (slope scale multiplier) to perfectly cure acne on curved/thin meshes.</summary>
+		public double ShadowNormalBias = 2.0;
+
+
+		/// <summary>The sun azimuth in degrees</summary>
+		public double LightAzimuth = 240.0;
+		/// <summary>The sun elevation in degrees</summary>
+		public double LightElevation = 60.0;
 		/// <summary>Whether debug logs should be generated</summary>
 		public bool GenerateDebugLogging;
 		/// <summary>Whether loading sway is added</summary>

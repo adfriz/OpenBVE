@@ -44,6 +44,15 @@ namespace OpenBveApi
 		OldTransparencyMode,
 		MotionBlur,
 		FPSLimit,
+		ShadowResolution,
+		ShadowDrawDistance,
+		ShadowCascades,
+		ShadowStrength,
+		ShadowBias,
+		ShadowNormalBias,
+		LightAzimuth,
+
+		LightElevation,
 		// Object Optimization
 		BasicThreshold,
 		FullThreshold,

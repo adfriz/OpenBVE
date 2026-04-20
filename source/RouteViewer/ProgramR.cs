@@ -608,9 +608,30 @@ namespace RouteViewer
 						//Don't allow the user to update the settings during loading, bad idea..
 						break;
 					}
+
+					// Shadows
+					var prevShadowRes = Interface.CurrentOptions.ShadowResolution;
+					var prevShadowDist = Interface.CurrentOptions.ShadowDrawDistance;
+					var prevShadowCasc = Interface.CurrentOptions.ShadowCascades;
+					var prevShadowStr = Interface.CurrentOptions.ShadowStrength;
+					var prevShadowBias = Interface.CurrentOptions.ShadowBias;
+					var prevShadowNormalBias = Interface.CurrentOptions.ShadowNormalBias;
+
 					if (FormOptions.ShowOptions() == DialogResult.OK)
 					{
 						UpdateGraphicsSettings();
+						if (prevShadowRes != Interface.CurrentOptions.ShadowResolution ||
+						    prevShadowDist != Interface.CurrentOptions.ShadowDrawDistance ||
+						    prevShadowCasc != Interface.CurrentOptions.ShadowCascades ||
+						    Math.Abs(prevShadowStr - Interface.CurrentOptions.ShadowStrength) > 0.01f ||
+						    Math.Abs(prevShadowBias - Interface.CurrentOptions.ShadowBias) > 0.000001f ||
+						    Math.Abs(prevShadowNormalBias - Interface.CurrentOptions.ShadowNormalBias) > 0.01f)
+						{
+							if (Program.Renderer.AvailableNewRenderer)
+							{
+								Program.Renderer.ReloadShadowSettings();
+							}
+						}
 					}
 					Application.DoEvents();
 					Renderer.Camera.AlignmentDirection.TrackPosition = 0;
