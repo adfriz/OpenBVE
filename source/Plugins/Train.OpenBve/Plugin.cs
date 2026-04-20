@@ -109,12 +109,39 @@ namespace Train.OpenBve
 			}
 		}
 
+		private static readonly string[] BlockedDirectories = new[]
+		{
+			"Application Data",
+			"Documents and Settings",
+			"Default User",
+			"Cookies",
+			"Local Settings",
+			"My Documents",
+			"MSOCache",
+			"NetHood",
+			"PrintHood",
+			"Recent",
+			"Recovery",
+			"SendTo",
+			"Start Menu",
+			"System Volume Information",
+			"Templates"
+		};
+
 		public override bool CanLoadTrain(string path)
 		{
-			if (string.IsNullOrEmpty(path) || !Directory.Exists(Path.GetDirectoryName(path)))
+			if (string.IsNullOrEmpty(path))
 			{
 				return false;
 			}
+			string directoryName = new DirectoryInfo(path).Name;
+			if (!Directory.Exists(Path.GetDirectoryName(path)) || BlockedDirectories.Contains(directoryName))
+			{
+				return false;
+			}
+
+			
+
 			if (Directory.Exists(path))
 			{
 				string vehicleTxt;
