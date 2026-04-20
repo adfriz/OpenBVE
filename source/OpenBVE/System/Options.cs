@@ -303,8 +303,8 @@ namespace OpenBve
 				Builder.AppendLine("viewingDistance = " + ViewingDistance.ToString(Culture));
 				Builder.AppendLine("quadLeafSize = " + QuadTreeLeafSize.ToString(Culture));
 				Builder.AppendLine("motionBlur = " + MotionBlur);
-				Builder.AppendLine("shadowresolution = " + (int)ShadowResolution);
-				Builder.AppendLine("shadowdrawdistance = " + (int)ShadowDrawDistance);
+				Builder.AppendLine("shadowresolution = " + ShadowResolution);
+				Builder.AppendLine("shadowdrawdistance = " + ShadowDrawDistance);
 				Builder.AppendLine("shadowcascades = " + (int)ShadowCascades);
 				Builder.AppendLine("shadowstrength = " + ShadowStrength.ToString(Culture));
 				Builder.AppendLine("shadowbias = " + ShadowBias.ToString(Culture));
@@ -482,9 +482,9 @@ namespace OpenBve
 							block.TryGetValue(OptionsKey.ViewingDistance, ref Interface.CurrentOptions.ViewingDistance);
 							block.TryGetValue(OptionsKey.QuadLeafSize, ref CurrentOptions.QuadTreeLeafSize);
 							block.GetEnumValue(OptionsKey.MotionBlur, out CurrentOptions.MotionBlur);
-							block.GetEnumValue(OptionsKey.ShadowResolution, out Interface.CurrentOptions.ShadowResolution);
-							block.GetEnumValue(OptionsKey.ShadowDrawDistance, out Interface.CurrentOptions.ShadowDrawDistance);
-							block.GetEnumValue(OptionsKey.ShadowCascades, out Interface.CurrentOptions.ShadowCascades);
+							block.TryGetEnumValue(OptionsKey.ShadowResolution, ref Interface.CurrentOptions.ShadowResolution);
+							block.TryGetEnumValue(OptionsKey.ShadowDrawDistance, ref Interface.CurrentOptions.ShadowDrawDistance);
+							block.TryGetEnumValue(OptionsKey.ShadowCascades, ref Interface.CurrentOptions.ShadowCascades);
 							block.TryGetValue(OptionsKey.ShadowStrength, ref CurrentOptions.ShadowStrength);
 							block.TryGetValue(OptionsKey.ShadowBias, ref CurrentOptions.ShadowBias);
 							if (CurrentOptions.ShadowBias < 0.0) CurrentOptions.ShadowBias = 0.0;
