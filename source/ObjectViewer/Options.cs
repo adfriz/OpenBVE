@@ -88,7 +88,7 @@ namespace ObjectViewer
 				Builder.AppendLine("antialiasinglevel = " + AntiAliasingLevel.ToString(Culture));
 				Builder.AppendLine("transparencyMode = " + ((int)TransparencyMode).ToString(Culture));
 				Builder.AppendLine("shadowresolution = " + (int)ShadowResolution);
-				Builder.AppendLine("shadowdistance = " + (int)ShadowDrawDistance);
+				Builder.AppendLine("shadowdrawdistance = " + ShadowDrawDistance);
 				Builder.AppendLine("shadowcascades = " + (int)ShadowCascades);
 				Builder.AppendLine("shadowstrength = " + ShadowStrength.ToString("0.00", Culture));
 				Builder.AppendLine("shadowbias = " + ShadowBias.ToString("0.000000", Culture));
@@ -173,9 +173,9 @@ namespace ObjectViewer
 							block.TryGetValue(OptionsKey.AnisotropicFilteringLevel, ref Interface.CurrentOptions.AnisotropicFilteringLevel);
 							block.TryGetValue(OptionsKey.AntiAliasingLevel, ref Interface.CurrentOptions.AntiAliasingLevel);
 							block.GetEnumValue(OptionsKey.TransparencyMode, out Interface.CurrentOptions.TransparencyMode);
-							block.GetEnumValue(OptionsKey.ShadowResolution, out Interface.CurrentOptions.ShadowResolution);
-							block.GetEnumValue(OptionsKey.ShadowDrawDistance, out Interface.CurrentOptions.ShadowDrawDistance);
-							block.GetEnumValue(OptionsKey.ShadowCascades, out Interface.CurrentOptions.ShadowCascades);
+							block.TryGetEnumValue(OptionsKey.ShadowResolution, ref Interface.CurrentOptions.ShadowResolution);
+							block.TryGetEnumValue(OptionsKey.ShadowDrawDistance, ref Interface.CurrentOptions.ShadowDrawDistance);
+							block.TryGetEnumValue(OptionsKey.ShadowCascades, ref Interface.CurrentOptions.ShadowCascades);
 							block.TryGetValue(OptionsKey.ShadowStrength, ref Interface.CurrentOptions.ShadowStrength, NumberRange.Positive);
 							block.TryGetValue(OptionsKey.ShadowBias, ref Interface.CurrentOptions.ShadowBias);
 							block.TryGetValue(OptionsKey.ShadowNormalBias, ref Interface.CurrentOptions.ShadowNormalBias);
