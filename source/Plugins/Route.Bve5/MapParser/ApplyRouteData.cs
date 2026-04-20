@@ -327,7 +327,7 @@ namespace Route.Bve5
 
 								wpos += Data.Blocks[i].FreeObjects[railKey][k].Position * Transformation;
 								Data.Objects.TryGetValue(key, out UnifiedObject obj);
-								obj?.CreateObject(wpos, Transformation, new Transformation(Data.Blocks[i].FreeObjects[railKey][k].Yaw, Data.Blocks[i].FreeObjects[railKey][k].Pitch, Data.Blocks[i].FreeObjects[railKey][k].Roll), -1, StartingDistance, EndingDistance, Data.Blocks[i].FreeObjects[railKey][k].TrackPosition, 1.0);
+								obj?.CreateObject(wpos, Transformation, new Transformation(Data.Blocks[i].FreeObjects[railKey][k].Yaw, Data.Blocks[i].FreeObjects[railKey][k].Pitch, Data.Blocks[i].FreeObjects[railKey][k].Roll), new ObjectCreationParameters(Data.Blocks[i].FreeObjects[railKey][k].TrackPosition, StartingDistance, EndingDistance));
 							}
 						}
 
@@ -369,7 +369,7 @@ namespace Route.Bve5
 								if(Data.Objects.TryGetValue(key, out UnifiedObject obj) && obj != null)
 								{
 									UnifiedObject crack = d0 < 0.0 ? obj.TransformRight(d0, d1) : obj.TransformLeft(d0, d1);
-									crack.CreateObject(wpos, Transformation, new Transformation(0.0, 0.0, 0.0), -1, StartingDistance, EndingDistance, tpos, 1.0);
+									crack.CreateObject(wpos, Transformation, new Transformation(0.0, 0.0, 0.0), new ObjectCreationParameters(tpos, StartingDistance, EndingDistance));
 								}
 							}
 						}
@@ -433,7 +433,7 @@ namespace Route.Bve5
 											aoc.Objects[m].RefreshRate = refreshRate;
 										}
 
-										aoc.CreateObject(wpos, Transformation, new Transformation(Data.Blocks[i].Signals[j][k].Yaw, Data.Blocks[i].Signals[j][k].Pitch, Data.Blocks[i].Signals[j][k].Roll), Data.Blocks[i].Signals[j][k].SectionIndex, StartingDistance, EndingDistance, Data.Blocks[i].Signals[j][k].TrackPosition, 1.0);
+										aoc.CreateObject(wpos, Transformation, new Transformation(Data.Blocks[i].Signals[j][k].Yaw, Data.Blocks[i].Signals[j][k].Pitch, Data.Blocks[i].Signals[j][k].Roll), new ObjectCreationParameters(Data.Blocks[i].Signals[j][k].TrackPosition, StartingDistance, EndingDistance, 1.0, Data.Blocks[i].Signals[j][k].SectionIndex));
 									}
 								}
 							}
