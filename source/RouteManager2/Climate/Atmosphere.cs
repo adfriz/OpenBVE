@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using OpenBveApi.Colors;
 using OpenBveApi.Math;
 
@@ -9,6 +9,15 @@ namespace RouteManager2.Climate
 	{
 		/// <summary>The position of the light (sun) in the sky</summary>
 		public Vector3 LightPosition = new Vector3(0.223606797749979f, 0.86602540378444f, -0.447213595499958f);
+
+		/// <summary>The azimuth of the sun in degrees (0 = North, 180 = South)</summary>
+		public double RealSkyAzimuth = 180.0;
+
+		/// <summary>The elevation of the sun in degrees (0 = Horizon, 90 = Zenith)</summary>
+		public double RealSkyElevation = 45.0;
+
+		/// <summary>Whether the RealSky parameters are overridden by the route</summary>
+		public bool RealSkyOverride = false;
 		
 		/// <summary>The diffuse light color</summary>
 		public Color24 DiffuseLightColor = Color24.LightGrey;

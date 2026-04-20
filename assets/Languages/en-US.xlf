@@ -1339,6 +1339,18 @@
 					<trans-unit id="ui_scalefactor">
 						<source>UI Scale Factor:</source>
 					</trans-unit>
+					<trans-unit id="realsky_group">
+						<source>RealSky Atmosphere</source>
+					</trans-unit>
+					<trans-unit id="realsky_enable">
+						<source>Enable RealSky (Volumetric Clouds &amp; Scattering)</source>
+					</trans-unit>
+					<trans-unit id="realsky_azimuth">
+						<source>Sun Azimuth</source>
+					</trans-unit>
+					<trans-unit id="realsky_elevation">
+						<source>Sun Elevation</source>
+					</trans-unit>
 				</group>
 				<group id="dialog">
 					<trans-unit id="csvfiles">

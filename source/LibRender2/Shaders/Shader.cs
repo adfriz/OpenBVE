@@ -20,7 +20,7 @@ namespace LibRender2.Shaders
 	/// </summary>
 	public class Shader : IDisposable
 	{
-		private readonly int handle;
+		internal readonly int handle;
 		private int vertexShader;
 		private int fragmentShader;
 		public readonly VertexLayout VertexLayout;
@@ -195,6 +195,10 @@ namespace LibRender2.Shaders
 				Coordinates = (short)GL.GetUniformLocation(handle, "uCoordinates"),
 				AtlasLocation = (short)GL.GetUniformLocation(handle, "uAtlasLocation"),
 				AlphaFunction = (short)GL.GetUniformLocation(handle, "uAlphaTest"),
+				RealSkySunDirection = (short)GL.GetUniformLocation(handle, "uSunDirection"),
+				RealSkyTime = (short)GL.GetUniformLocation(handle, "uTime"),
+				RealSkyResolution = (short)GL.GetUniformLocation(handle, "uResolution"),
+				RealSkyCameraPos = (short)GL.GetUniformLocation(handle, "uCameraPos"),
 			};
 		}
 

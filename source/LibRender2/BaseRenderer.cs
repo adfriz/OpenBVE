@@ -38,6 +38,7 @@ using Path = OpenBveApi.Path;
 using PixelFormat = OpenBveApi.Textures.PixelFormat;
 using Vector2 = OpenBveApi.Math.Vector2;
 using Vector3 = OpenBveApi.Math.Vector3;
+using Vector4 = OpenBveApi.Math.Vector4;
 
 namespace LibRender2
 {
@@ -55,7 +56,7 @@ namespace LibRender2
 		internal FileSystem fileSystem;
 
 		/// <summary>Holds a reference to the current options</summary>
-		internal BaseOptions currentOptions;
+		public BaseOptions currentOptions;
 
 		public List<ObjectState> StaticObjectStates;
 		public List<ObjectState> DynamicObjectStates;
@@ -155,6 +156,12 @@ namespace LibRender2
 		protected internal Shader CurrentShader;
 
 		public Shader DefaultShader;
+
+		/// <summary>The shader used for the RealSky atmospheric system</summary>
+		public Shader RealSkyShader;
+
+		/// <summary>VAO used for the RealSky skybox</summary>
+		protected VertexArrayObject skyboxVao;
 
 		/// <summary>Whether lighting is enabled in the debug options</summary>
 		public bool OptionLighting = true;
@@ -380,6 +387,8 @@ namespace LibRender2
 					currentOptions.IsUseNewRenderer = false;
 					ForceLegacyOpenGL = true;
 				}
+
+				InitializeRealSky();
 			}
 
 			Background = new Background(this);
@@ -1787,7 +1796,7 @@ namespace LibRender2
 		/// <summary>This method is used during loading to run commands requiring an OpenGL context in the main render loop</summary>
 		/// <param name="job">The OpenGL command</param>
 		/// <param name="timeout">The timeout</param>
-		public void RunInRenderThread(ThreadStart job, int timeout)
+		public void RunInRenderThread(ThreadStart job, int timeout = 10000)
 		{
 			RenderThreadJobs.Enqueue(job);
 			//Don't set the job to available until after it's been loaded into the queue
@@ -1797,6 +1806,119 @@ namespace LibRender2
 			lock (job)
 			{
 				Monitor.Wait(job, timeout);
+			}
+		}
+
+		private bool hasLoggedRealSkyCall = false;
+
+		/// <summary>Renders the RealSky atmospheric system</summary>
+		/// <param name="Time">The current time in seconds</param>
+		/// <param name="SunDirection">The direction of the sun</param>
+		public void RenderRealSky(double Time, Vector3 SunDirection)
+		{
+			if (RealSkyShader == null || skyboxVao == null)
+			{
+				InitializeRealSky();
+			}
+			if (RealSkyShader == null)
+			{
+				return;
+			}
+			
+			RealSkyShader.Activate();
+			// Skybox is always centered around camera but follows rotation
+			Matrix4D viewMatrix = CurrentViewMatrix;
+			viewMatrix.Row3 = new Vector4(0, 0, 0, 1);
+			RealSkyShader.SetCurrentModelViewMatrix(viewMatrix);
+			RealSkyShader.SetCurrentProjectionMatrix(CurrentProjectionMatrix);
+
+			Vector3 sunDir = SunDirection;
+			sunDir.Normalize();
+			GL.Uniform3(RealSkyShader.UniformLayout.RealSkySunDirection, (float)sunDir.X, (float)sunDir.Y, (float)sunDir.Z);
+			GL.Uniform1(RealSkyShader.UniformLayout.RealSkyTime, (float)Time);
+			GL.Uniform2(RealSkyShader.UniformLayout.RealSkyResolution, (float)Screen.Width, (float)Screen.Height);
+			GL.Uniform3(RealSkyShader.UniformLayout.RealSkyCameraPos, (float)Camera.AbsolutePosition.X, (float)Camera.AbsolutePosition.Y, (float)Camera.AbsolutePosition.Z);
+
+			GL.Disable(EnableCap.DepthTest);
+			GL.DepthMask(false);
+			GL.Disable(EnableCap.CullFace);
+			
+			skyboxVao.Bind();
+			GL.DrawArrays(PrimitiveType.Triangles, 0, 36);
+			skyboxVao.UnBind();
+
+			GL.Enable(EnableCap.CullFace);
+			GL.DepthMask(true);
+			GL.Enable(EnableCap.DepthTest);
+			
+			RealSkyShader.Deactivate();
+		}
+
+		private void InitializeRealSky()
+		{
+			try
+			{
+				if (RealSkyShader == null)
+				{
+					string shaderPath = fileSystem.GetDataFolder("Shaders", "Atmosphere");
+					RealSkyShader = new Shader(this, Path.CombineFile(shaderPath, "RealSky.vert"), Path.CombineFile(shaderPath, "RealSky.frag"));
+				}
+				if (skyboxVao == null)
+				{
+					// Create a large skybox cube
+					LibRenderVertex[] vertices = {
+						new LibRenderVertex(new Vector3f(-1.0f,  1.0f, -1.0f)),
+						new LibRenderVertex(new Vector3f(-1.0f, -1.0f, -1.0f)),
+						new LibRenderVertex(new Vector3f( 1.0f, -1.0f, -1.0f)),
+						new LibRenderVertex(new Vector3f( 1.0f, -1.0f, -1.0f)),
+						new LibRenderVertex(new Vector3f( 1.0f,  1.0f, -1.0f)),
+						new LibRenderVertex(new Vector3f(-1.0f,  1.0f, -1.0f)),
+
+						new LibRenderVertex(new Vector3f(-1.0f, -1.0f,  1.0f)),
+						new LibRenderVertex(new Vector3f(-1.0f, -1.0f, -1.0f)),
+						new LibRenderVertex(new Vector3f(-1.0f,  1.0f, -1.0f)),
+						new LibRenderVertex(new Vector3f(-1.0f,  1.0f, -1.0f)),
+						new LibRenderVertex(new Vector3f(-1.0f,  1.0f,  1.0f)),
+						new LibRenderVertex(new Vector3f(-1.0f, -1.0f,  1.0f)),
+
+						new LibRenderVertex(new Vector3f( 1.0f, -1.0f, -1.0f)),
+						new LibRenderVertex(new Vector3f( 1.0f, -1.0f,  1.0f)),
+						new LibRenderVertex(new Vector3f( 1.0f,  1.0f,  1.0f)),
+						new LibRenderVertex(new Vector3f( 1.0f,  1.0f,  1.0f)),
+						new LibRenderVertex(new Vector3f( 1.0f,  1.0f, -1.0f)),
+						new LibRenderVertex(new Vector3f( 1.0f, -1.0f, -1.0f)),
+
+						new LibRenderVertex(new Vector3f(-1.0f, -1.0f,  1.0f)),
+						new LibRenderVertex(new Vector3f(-1.0f,  1.0f,  1.0f)),
+						new LibRenderVertex(new Vector3f( 1.0f,  1.0f,  1.0f)),
+						new LibRenderVertex(new Vector3f( 1.0f,  1.0f,  1.0f)),
+						new LibRenderVertex(new Vector3f( 1.0f, -1.0f,  1.0f)),
+						new LibRenderVertex(new Vector3f(-1.0f, -1.0f,  1.0f)),
+
+						new LibRenderVertex(new Vector3f(-1.0f,  1.0f, -1.0f)),
+						new LibRenderVertex(new Vector3f( 1.0f,  1.0f, -1.0f)),
+						new LibRenderVertex(new Vector3f( 1.0f,  1.0f,  1.0f)),
+						new LibRenderVertex(new Vector3f( 1.0f,  1.0f,  1.0f)),
+						new LibRenderVertex(new Vector3f(-1.0f,  1.0f,  1.0f)),
+						new LibRenderVertex(new Vector3f(-1.0f,  1.0f, -1.0f)),
+
+						new LibRenderVertex(new Vector3f(-1.0f, -1.0f, -1.0f)),
+						new LibRenderVertex(new Vector3f(-1.0f, -1.0f,  1.0f)),
+						new LibRenderVertex(new Vector3f( 1.0f, -1.0f, -1.0f)),
+						new LibRenderVertex(new Vector3f( 1.0f, -1.0f, -1.0f)),
+						new LibRenderVertex(new Vector3f(-1.0f, -1.0f,  1.0f)),
+						new LibRenderVertex(new Vector3f( 1.0f, -1.0f,  1.0f)),
+					};
+					skyboxVao = new VertexArrayObject();
+					skyboxVao.Bind();
+					skyboxVao.SetVBO(new VertexBufferObject(vertices, BufferUsageHint.StaticDraw));
+					skyboxVao.SetAttributes(RealSkyShader.VertexLayout);
+					skyboxVao.UnBind();
+				}
+			}
+			catch (Exception ex)
+			{
+				currentHost.AddMessage(MessageType.Error, false, "RealSky: Fatal failure during initialization: " + ex.Message);
 			}
 		}
 	}

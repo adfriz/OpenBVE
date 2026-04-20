@@ -115,6 +115,12 @@ namespace OpenBveApi
 		public int UserInterfaceScaleFactor;
 		/// <summary>Whether loaded objects are automatically reloaded on change</summary>
 		public bool AutoReloadObjects;
+		/// <summary>Whether RealSky atmospheric clouds are enabled</summary>
+		public bool RealSkyEnabled;
+		/// <summary>The azimuth of the RealSky sun</summary>
+		public double RealSkyAzimuth;
+		/// <summary>The elevation of the RealSky sun</summary>
+		public double RealSkyElevation;
 		
 		/// <summary>Saves the options to the specified filename</summary>
 		/// <param name="fileName">The filename to save the options to</param>

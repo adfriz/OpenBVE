@@ -1,4 +1,4 @@
-﻿namespace OpenBveApi
+namespace OpenBveApi
 {
 	/// <summary>The sections of an options file</summary>
 	public enum OptionsSection
@@ -44,6 +44,8 @@
 		/// <summary>Contains touch control options</summary>
 		Touch = 18,
 		/// <summary>Contains loading related options</summary>
-		Loading = 19
+		Loading = 19,
+		/// <summary>Contains RealSky atmosphere options</summary>
+		RealSky = 20
 	}
 }

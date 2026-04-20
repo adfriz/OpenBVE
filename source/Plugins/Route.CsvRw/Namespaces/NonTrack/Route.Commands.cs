@@ -1,4 +1,4 @@
-﻿namespace CsvRwRouteParser
+namespace CsvRwRouteParser
 {
 	internal enum RouteCommand
 	{
@@ -43,6 +43,8 @@
 		/// <summary>Sets the initial viewpoint for the camera</summary>
 		InitialViewPoint,
 		/// <summary>Adds AI trains</summary>
-		TfoXML
+		TfoXML,
+		/// <summary>Controls the RealSky atmospheric parameters</summary>
+		RealSky
 	}
 }

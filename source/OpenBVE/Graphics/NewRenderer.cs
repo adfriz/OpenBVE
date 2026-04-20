@@ -40,6 +40,8 @@ namespace OpenBve.Graphics
 		private Events events;
 		private Overlays overlays;
 		internal Touch Touch;
+		private double totalTime;
+
 
 		public override void Initialize()
 		{
@@ -189,6 +191,28 @@ namespace OpenBve.Graphics
 			// render background
 			GL.Disable(EnableCap.DepthTest);
 			Program.CurrentRoute.UpdateBackground(TimeElapsed, Program.Renderer.CurrentInterface != InterfaceType.Normal);
+
+			// RealSky
+			totalTime += TimeElapsed;
+			if (Interface.CurrentOptions.RealSkyEnabled || Program.CurrentRoute.Atmosphere.RealSkyOverride)
+			{
+				double az = Interface.CurrentOptions.RealSkyAzimuth;
+				double el = Interface.CurrentOptions.RealSkyElevation;
+				if (Program.CurrentRoute.Atmosphere.RealSkyOverride)
+				{
+					az = Program.CurrentRoute.Atmosphere.RealSkyAzimuth;
+					el = Program.CurrentRoute.Atmosphere.RealSkyElevation;
+				}
+				double ra = az * 0.0174532925199433;
+				double re = el * 0.0174532925199433;
+				Vector3 sunDir = new Vector3(Math.Sin(ra) * Math.Cos(re), Math.Sin(re), Math.Cos(ra) * Math.Cos(re));
+				RenderRealSky(totalTime, sunDir);
+				if (AvailableNewRenderer)
+				{
+					DefaultShader.Activate();
+				}
+			}
+
 			
 			// fog
 			float aa = Program.CurrentRoute.CurrentFog.Start;

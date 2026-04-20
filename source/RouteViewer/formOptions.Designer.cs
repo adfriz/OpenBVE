@@ -57,11 +57,19 @@ namespace RouteViewer
 			this.comboBoxNewXParser = new System.Windows.Forms.ComboBox();
 			this.label15 = new System.Windows.Forms.Label();
 			this.numericUpDownViewingDistance = new System.Windows.Forms.NumericUpDown();
+			this.labelRealSky = new System.Windows.Forms.Label();
+			this.checkBoxRealSky = new System.Windows.Forms.CheckBox();
+			this.labelAzimuth = new System.Windows.Forms.Label();
+			this.numericUpDownAzimuth = new System.Windows.Forms.NumericUpDown();
+			this.labelElevation = new System.Windows.Forms.Label();
+			this.numericUpDownElevation = new System.Windows.Forms.NumericUpDown();
 			((System.ComponentModel.ISupportInitialize)(this.width)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.height)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.AnsiotropicLevel)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.AntialiasingLevel)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.numericUpDownViewingDistance)).BeginInit();
+			((System.ComponentModel.ISupportInitialize)(this.numericUpDownAzimuth)).BeginInit();
+			((System.ComponentModel.ISupportInitialize)(this.numericUpDownElevation)).BeginInit();
 			this.SuspendLayout();
 			// 
 			// InterpolationMode
@@ -139,7 +147,7 @@ namespace RouteViewer
 			// 
 			// button1
 			// 
-			this.button1.Location = new System.Drawing.Point(211, 447);
+			this.button1.Location = new System.Drawing.Point(211, 560);
 			this.button1.Name = "button1";
 			this.button1.Size = new System.Drawing.Size(75, 23);
 			this.button1.TabIndex = 9;
@@ -389,11 +397,84 @@ namespace RouteViewer
             0,
             0});
 			// 
+			// labelRealSky
+			// 
+			this.labelRealSky.AutoSize = true;
+			this.labelRealSky.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+			this.labelRealSky.Location = new System.Drawing.Point(99, 440);
+			this.labelRealSky.Name = "labelRealSky";
+			this.labelRealSky.Size = new System.Drawing.Size(120, 15);
+			this.labelRealSky.TabIndex = 35;
+			this.labelRealSky.Text = "RealSky Settings";
+			// 
+			// checkBoxRealSky
+			// 
+			this.checkBoxRealSky.AutoSize = true;
+			this.checkBoxRealSky.Location = new System.Drawing.Point(15, 465);
+			this.checkBoxRealSky.Name = "checkBoxRealSky";
+			this.checkBoxRealSky.Size = new System.Drawing.Size(165, 17);
+			this.checkBoxRealSky.TabIndex = 36;
+			this.checkBoxRealSky.Text = "Enable RealSky Atmosphere";
+			this.checkBoxRealSky.UseVisualStyleBackColor = true;
+			// 
+			// labelAzimuth
+			// 
+			this.labelAzimuth.AutoSize = true;
+			this.labelAzimuth.Location = new System.Drawing.Point(15, 495);
+			this.labelAzimuth.Name = "labelAzimuth";
+			this.labelAzimuth.Size = new System.Drawing.Size(47, 13);
+			this.labelAzimuth.TabIndex = 37;
+			this.labelAzimuth.Text = "Azimuth:";
+			// 
+			// numericUpDownAzimuth
+			// 
+			this.numericUpDownAzimuth.Location = new System.Drawing.Point(166, 493);
+			this.numericUpDownAzimuth.Maximum = new decimal(new int[] {
+            360,
+            0,
+            0,
+            0});
+			this.numericUpDownAzimuth.Name = "numericUpDownAzimuth";
+			this.numericUpDownAzimuth.Size = new System.Drawing.Size(120, 20);
+			this.numericUpDownAzimuth.TabIndex = 38;
+			// 
+			// labelElevation
+			// 
+			this.labelElevation.AutoSize = true;
+			this.labelElevation.Location = new System.Drawing.Point(15, 525);
+			this.labelElevation.Name = "labelElevation";
+			this.labelElevation.Size = new System.Drawing.Size(54, 13);
+			this.labelElevation.TabIndex = 39;
+			this.labelElevation.Text = "Elevation:";
+			// 
+			// numericUpDownElevation
+			// 
+			this.numericUpDownElevation.Location = new System.Drawing.Point(166, 523);
+			this.numericUpDownElevation.Maximum = new decimal(new int[] {
+            90,
+            0,
+            0,
+            0});
+			this.numericUpDownElevation.Minimum = new decimal(new int[] {
+            10,
+            0,
+            0,
+            -2147483648});
+			this.numericUpDownElevation.Name = "numericUpDownElevation";
+			this.numericUpDownElevation.Size = new System.Drawing.Size(120, 20);
+			this.numericUpDownElevation.TabIndex = 40;
+			// 
 			// formOptions
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-			this.ClientSize = new System.Drawing.Size(311, 482);
+			this.ClientSize = new System.Drawing.Size(311, 600);
+			this.Controls.Add(this.labelElevation);
+			this.Controls.Add(this.numericUpDownElevation);
+			this.Controls.Add(this.labelAzimuth);
+			this.Controls.Add(this.numericUpDownAzimuth);
+			this.Controls.Add(this.checkBoxRealSky);
+			this.Controls.Add(this.labelRealSky);
 			this.Controls.Add(this.label15);
 			this.Controls.Add(this.numericUpDownViewingDistance);
 			this.Controls.Add(this.label12);
@@ -433,6 +514,8 @@ namespace RouteViewer
 			((System.ComponentModel.ISupportInitialize)(this.AnsiotropicLevel)).EndInit();
 			((System.ComponentModel.ISupportInitialize)(this.AntialiasingLevel)).EndInit();
 			((System.ComponentModel.ISupportInitialize)(this.numericUpDownViewingDistance)).EndInit();
+			((System.ComponentModel.ISupportInitialize)(this.numericUpDownAzimuth)).EndInit();
+			((System.ComponentModel.ISupportInitialize)(this.numericUpDownElevation)).EndInit();
 			this.ResumeLayout(false);
 			this.PerformLayout();
 
@@ -469,5 +552,11 @@ namespace RouteViewer
 		private System.Windows.Forms.ComboBox comboBoxNewXParser;
 		private System.Windows.Forms.Label label15;
 		private System.Windows.Forms.NumericUpDown numericUpDownViewingDistance;
+		private System.Windows.Forms.Label labelRealSky;
+		private System.Windows.Forms.CheckBox checkBoxRealSky;
+		private System.Windows.Forms.Label labelAzimuth;
+		private System.Windows.Forms.NumericUpDown numericUpDownAzimuth;
+		private System.Windows.Forms.Label labelElevation;
+		private System.Windows.Forms.NumericUpDown numericUpDownElevation;
 	}
 }

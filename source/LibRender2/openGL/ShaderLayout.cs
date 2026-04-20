@@ -1,4 +1,4 @@
-﻿namespace LibRender2
+namespace LibRender2
 {
 	/// <summary>
 	/// Vertex layout
@@ -197,5 +197,14 @@
 		/// The handle of "uAlphaFunction" within the shader
 		/// </summary>
 		public short AlphaFunction;
+
+		/// <summary>The handle of "uSunDirection" within the shader</summary>
+		public short RealSkySunDirection = -1;
+		/// <summary>The handle of "uTime" within the shader</summary>
+		public short RealSkyTime = -1;
+		/// <summary>The handle of "uResolution" within the shader</summary>
+		public short RealSkyResolution = -1;
+		/// <summary>The handle of "uCameraPos" within the shader</summary>
+		public short RealSkyCameraPos = -1;
 	}
 }

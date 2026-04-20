@@ -516,6 +516,12 @@ namespace OpenBve {
             ((System.ComponentModel.ISupportInitialize)(this.updownAnisotropic)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackbarTransparency)).BeginInit();
             this.panelOptionsRight.SuspendLayout();
+            this.groupboxRealSky = new System.Windows.Forms.GroupBox();
+            this.checkboxRealSky = new System.Windows.Forms.CheckBox();
+            this.trackbarRealSkyAzimuth = new System.Windows.Forms.TrackBar();
+            this.trackbarRealSkyElevation = new System.Windows.Forms.TrackBar();
+            this.labelRealSkyAzimuth = new System.Windows.Forms.Label();
+            this.labelRealSkyElevation = new System.Windows.Forms.Label();
             this.groupBoxOther.SuspendLayout();
             this.groupBoxRailDriver.SuspendLayout();
             this.groupboxDistance.SuspendLayout();
@@ -2601,10 +2607,81 @@ namespace OpenBve {
             this.panelOptionsRight.Controls.Add(this.groupboxVerbosity);
             this.panelOptionsRight.Controls.Add(this.groupboxSimulation);
             this.panelOptionsRight.Controls.Add(this.groupboxSound);
+            this.panelOptionsRight.Controls.Add(this.groupboxRealSky);
             this.panelOptionsRight.Location = new System.Drawing.Point(332, 72);
             this.panelOptionsRight.Name = "panelOptionsRight";
             this.panelOptionsRight.Size = new System.Drawing.Size(316, 579);
             this.panelOptionsRight.TabIndex = 17;
+            // 
+            // groupboxRealSky
+            // 
+            this.groupboxRealSky.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupboxRealSky.Controls.Add(this.labelRealSkyElevation);
+            this.groupboxRealSky.Controls.Add(this.labelRealSkyAzimuth);
+            this.groupboxRealSky.Controls.Add(this.trackbarRealSkyElevation);
+            this.groupboxRealSky.Controls.Add(this.trackbarRealSkyAzimuth);
+            this.groupboxRealSky.Controls.Add(this.checkboxRealSky);
+            this.groupboxRealSky.ForeColor = System.Drawing.Color.Black;
+            this.groupboxRealSky.Location = new System.Drawing.Point(0, 520);
+            this.groupboxRealSky.Name = "groupboxRealSky";
+            this.groupboxRealSky.Size = new System.Drawing.Size(316, 80);
+            this.groupboxRealSky.TabIndex = 22;
+            this.groupboxRealSky.TabStop = false;
+            this.groupboxRealSky.Text = "RealSky Atmosphere";
+            // 
+            // labelRealSkyElevation
+            // 
+            this.labelRealSkyElevation.Location = new System.Drawing.Point(158, 40);
+            this.labelRealSkyElevation.Name = "labelRealSkyElevation";
+            this.labelRealSkyElevation.Size = new System.Drawing.Size(152, 13);
+            this.labelRealSkyElevation.TabIndex = 4;
+            this.labelRealSkyElevation.Text = "Elevation: 45°";
+            this.labelRealSkyElevation.TextAlign = System.Drawing.ContentAlignment.TopCenter;
+            // 
+            // labelRealSkyAzimuth
+            // 
+            this.labelRealSkyAzimuth.Location = new System.Drawing.Point(6, 40);
+            this.labelRealSkyAzimuth.Name = "labelRealSkyAzimuth";
+            this.labelRealSkyAzimuth.Size = new System.Drawing.Size(152, 13);
+            this.labelRealSkyAzimuth.TabIndex = 3;
+            this.labelRealSkyAzimuth.Text = "Azimuth: 180°";
+            this.labelRealSkyAzimuth.TextAlign = System.Drawing.ContentAlignment.TopCenter;
+            // 
+            // trackbarRealSkyElevation
+            // 
+            this.trackbarRealSkyElevation.Location = new System.Drawing.Point(158, 55);
+            this.trackbarRealSkyElevation.Name = "trackbarRealSkyElevation";
+            this.trackbarRealSkyElevation.Size = new System.Drawing.Size(152, 45);
+            this.trackbarRealSkyElevation.TabIndex = 2;
+            this.trackbarRealSkyElevation.Minimum = -10;
+            this.trackbarRealSkyElevation.Maximum = 90;
+            this.trackbarRealSkyElevation.Value = 45;
+            this.trackbarRealSkyElevation.TickStyle = System.Windows.Forms.TickStyle.None;
+            this.trackbarRealSkyElevation.Scroll += new System.EventHandler(this.trackbarRealSkyElevation_Scroll);
+            // 
+            // trackbarRealSkyAzimuth
+            // 
+            this.trackbarRealSkyAzimuth.Location = new System.Drawing.Point(6, 55);
+            this.trackbarRealSkyAzimuth.Name = "trackbarRealSkyAzimuth";
+            this.trackbarRealSkyAzimuth.Size = new System.Drawing.Size(152, 45);
+            this.trackbarRealSkyAzimuth.TabIndex = 1;
+            this.trackbarRealSkyAzimuth.Minimum = 0;
+            this.trackbarRealSkyAzimuth.Maximum = 360;
+            this.trackbarRealSkyAzimuth.Value = 180;
+            this.trackbarRealSkyAzimuth.TickStyle = System.Windows.Forms.TickStyle.None;
+            this.trackbarRealSkyAzimuth.Scroll += new System.EventHandler(this.trackbarRealSkyAzimuth_Scroll);
+            // 
+            // checkboxRealSky
+            // 
+            this.checkboxRealSky.AutoSize = true;
+            this.checkboxRealSky.Location = new System.Drawing.Point(8, 20);
+            this.checkboxRealSky.Name = "checkboxRealSky";
+            this.checkboxRealSky.Size = new System.Drawing.Size(200, 17);
+            this.checkboxRealSky.TabIndex = 0;
+            this.checkboxRealSky.Text = "Enable RealSky Atmospheric Clouds";
+            this.checkboxRealSky.UseVisualStyleBackColor = true;
+            this.checkboxRealSky.CheckedChanged += new System.EventHandler(this.checkboxRealSky_CheckedChanged);
             // 
             // groupBoxOther
             // 
@@ -6550,5 +6627,11 @@ namespace OpenBve {
 		private System.Windows.Forms.Button buttonMSTSTrainsetDirectory;
 		private System.Windows.Forms.Label label1;
 		private System.Windows.Forms.TextBox textBoxMSTSTrainsetDirectory;
+		private System.Windows.Forms.GroupBox groupboxRealSky;
+		private System.Windows.Forms.CheckBox checkboxRealSky;
+		private System.Windows.Forms.TrackBar trackbarRealSkyAzimuth;
+		private System.Windows.Forms.TrackBar trackbarRealSkyElevation;
+		private System.Windows.Forms.Label labelRealSkyAzimuth;
+		private System.Windows.Forms.Label labelRealSkyElevation;
 	}
 }

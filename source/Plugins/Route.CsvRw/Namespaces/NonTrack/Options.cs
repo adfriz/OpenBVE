@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using OpenBveApi.Interface;
 using OpenBveApi.Math;
 using OpenBveApi.Objects;
@@ -193,6 +193,30 @@ namespace CsvRwRouteParser
 						else
 						{
 							CurrentRoute.Tracks[0].Direction = a == 1 ? TrackDirection.Reverse : TrackDirection.Forwards;
+						}
+					}
+					break;
+				case OptionsCommand.RealSky:
+					if (Arguments.Length < 2)
+					{
+						Plugin.CurrentHost.AddMessage(MessageType.Error, false, Command + " is expected to have two arguments (azimuth, elevation) at line " + Expression.Line.ToString(Culture) + ", column " + Expression.Column.ToString(Culture) + " in file " + Expression.File);
+					}
+					else
+					{
+						double azimuth = 0, elevation = 0;
+						if (!NumberFormats.TryParseDoubleVb6(Arguments[0], out azimuth))
+						{
+							Plugin.CurrentHost.AddMessage(MessageType.Error, false, "Azimuth is invalid in " + Command + " at line " + Expression.Line.ToString(Culture) + ", column " + Expression.Column.ToString(Culture) + " in file " + Expression.File);
+						}
+						else if (!NumberFormats.TryParseDoubleVb6(Arguments[1], out elevation))
+						{
+							Plugin.CurrentHost.AddMessage(MessageType.Error, false, "Elevation is invalid in " + Command + " at line " + Expression.Line.ToString(Culture) + ", column " + Expression.Column.ToString(Culture) + " in file " + Expression.File);
+						}
+						else
+						{
+							CurrentRoute.Atmosphere.RealSkyAzimuth = azimuth;
+							CurrentRoute.Atmosphere.RealSkyElevation = elevation;
+							CurrentRoute.Atmosphere.RealSkyOverride = true;
 						}
 					}
 					break;

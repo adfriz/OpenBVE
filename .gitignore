@@ -59,3 +59,4 @@ debian/debhelper-build-stamp
 
 # NuGet Packages
 **/[Pp]ackages/*
+route-test/*

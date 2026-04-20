@@ -252,6 +252,9 @@ namespace OpenBve
 						Font = "Microsoft Sans Serif";
 						break;
 				}
+				RealSkyEnabled = false;
+				RealSkyAzimuth = 180.0;
+				RealSkyElevation = 45.0;
 			}
 
 			/// <summary>Saves the options to the specified filename</summary>
@@ -390,6 +393,11 @@ namespace OpenBve
 				Builder.AppendLine("cursor = " + CursorFileName);
 				Builder.AppendLine("panel2extended = " + (Panel2ExtendedMode ? "true" : "false"));
 				Builder.AppendLine("panel2extendedminsize = " + Panel2ExtendedMinSize.ToString(Culture));
+				Builder.AppendLine();
+				Builder.AppendLine("[RealSky]");
+				Builder.AppendLine("RealSkyEnabled = " + (RealSkyEnabled ? "true" : "false"));
+				Builder.AppendLine("RealSkyAzimuth = " + RealSkyAzimuth.ToString(Culture));
+				Builder.AppendLine("RealSkyElevation = " + RealSkyElevation.ToString(Culture));
 				try
 				{
 					File.WriteAllText(fileName, Builder.ToString(), new UTF8Encoding(true));
@@ -594,6 +602,11 @@ namespace OpenBve
 							block.TryGetValue(OptionsKey.Cursor, ref CurrentOptions.CursorFileName);
 							block.GetValue(OptionsKey.Panel2Extended, out CurrentOptions.Panel2ExtendedMode);
 							block.GetValue(OptionsKey.Panel2ExtendedMinSize, out CurrentOptions.Panel2ExtendedMinSize);
+							break;
+						case OptionsSection.RealSky:
+							block.GetValue(OptionsKey.RealSkyEnabled, out CurrentOptions.RealSkyEnabled);
+							block.TryGetValue(OptionsKey.RealSkyAzimuth, ref CurrentOptions.RealSkyAzimuth);
+							block.TryGetValue(OptionsKey.RealSkyElevation, ref CurrentOptions.RealSkyElevation);
 							break;
 					}
 				}

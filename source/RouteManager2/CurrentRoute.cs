@@ -511,7 +511,10 @@ namespace RouteManager2
 			if (TargetBackground == null || TargetBackground == CurrentBackground)
 			{
 				//No target background, so call the render function
-				renderer.Background.Render(CurrentBackground, scale * clipAdjustment);
+				if (!renderer.currentOptions.RealSkyEnabled && !Atmosphere.RealSkyOverride)
+				{
+					renderer.Background.Render(CurrentBackground, scale * clipAdjustment);
+				}
 				return;
 			}
 
@@ -523,17 +526,20 @@ namespace RouteManager2
 
 			TargetBackground.UpdateBackground(SecondsSinceMidnight, TimeElapsed, true);
 
-			switch (TargetBackground.Mode)
+			if (!renderer.currentOptions.RealSkyEnabled && !Atmosphere.RealSkyOverride)
 			{
-				//Render, switching on the transition mode
-				case BackgroundTransitionMode.FadeIn:
-					renderer.Background.Render(CurrentBackground, 1.0f, scale * clipAdjustment);
-					renderer.Background.Render(TargetBackground, TargetBackground.CurrentAlpha, scale * clipAdjustment);
-					break;
-				case BackgroundTransitionMode.FadeOut:
-					renderer.Background.Render(TargetBackground, 1.0f, scale * clipAdjustment);
-					renderer.Background.Render(CurrentBackground, TargetBackground.CurrentAlpha, scale * clipAdjustment);
-					break;
+				switch (TargetBackground.Mode)
+				{
+					//Render, switching on the transition mode
+					case BackgroundTransitionMode.FadeIn:
+						renderer.Background.Render(CurrentBackground, 1.0f, scale * clipAdjustment);
+						renderer.Background.Render(TargetBackground, TargetBackground.CurrentAlpha, scale * clipAdjustment);
+						break;
+					case BackgroundTransitionMode.FadeOut:
+						renderer.Background.Render(TargetBackground, 1.0f, scale * clipAdjustment);
+						renderer.Background.Render(CurrentBackground, TargetBackground.CurrentAlpha, scale * clipAdjustment);
+						break;
+				}
 			}
 
 			//If our target alpha is greater than or equal to 1.0f, the background is fully displayed

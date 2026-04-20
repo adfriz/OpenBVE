@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -16,11 +16,14 @@ namespace RouteViewer
 		internal bool LoadingLogo;
 		internal bool LoadingBackground;
 		internal string RouteSearchDirectory;
-
+		
 		internal Options()
 		{
 			ViewingDistance = 600;
 			SoundNumber = 16;
+			RealSkyEnabled = false;
+			RealSkyAzimuth = 180.0;
+			RealSkyElevation = 45.0;
 		}
 
 		public override void Save(string fileName)
@@ -58,6 +61,11 @@ namespace RouteViewer
 				Builder.AppendLine();
 				Builder.AppendLine("[Folders]");
 				Builder.AppendLine($"routesearch = {RouteSearchDirectory}");
+				Builder.AppendLine();
+				Builder.AppendLine("[RealSky]");
+				Builder.AppendLine("RealSkyEnabled = " + (RealSkyEnabled ? "true" : "false"));
+				Builder.AppendLine("RealSkyAzimuth = " + RealSkyAzimuth.ToString(Culture));
+				Builder.AppendLine("RealSkyElevation = " + RealSkyElevation.ToString(Culture));
 				File.WriteAllText(fileName, Builder.ToString(), new System.Text.UTF8Encoding(true));
 			}
 			catch
@@ -130,6 +138,11 @@ namespace RouteViewer
 							{
 								Interface.CurrentOptions.RouteSearchDirectory = folder;
 							}
+							break;
+						case OptionsSection.RealSky:
+							block.GetValue(OptionsKey.RealSkyEnabled, out Interface.CurrentOptions.RealSkyEnabled);
+							block.TryGetValue(OptionsKey.RealSkyAzimuth, ref Interface.CurrentOptions.RealSkyAzimuth);
+							block.TryGetValue(OptionsKey.RealSkyElevation, ref Interface.CurrentOptions.RealSkyElevation);
 							break;
 					}
 				}

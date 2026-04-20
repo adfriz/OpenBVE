@@ -25,7 +25,10 @@ namespace RouteViewer
 			checkBoxProgressBar.Checked = Interface.CurrentOptions.LoadingProgressBar;
 			comboBoxNewXParser.SelectedIndex = (int) Interface.CurrentOptions.CurrentXParser;
 			comboBoxNewObjParser.SelectedIndex = (int) Interface.CurrentOptions.CurrentObjParser;
-			numericUpDownViewingDistance.Value = Math.Min(Interface.CurrentOptions.ViewingDistance, numericUpDownViewingDistance.Minimum);
+			numericUpDownViewingDistance.Value = Math.Min(Interface.CurrentOptions.ViewingDistance, numericUpDownViewingDistance.Maximum);
+			checkBoxRealSky.Checked = Interface.CurrentOptions.RealSkyEnabled;
+			numericUpDownAzimuth.Value = (decimal)Interface.CurrentOptions.RealSkyAzimuth;
+			numericUpDownElevation.Value = (decimal)Interface.CurrentOptions.RealSkyElevation;
         }
 
         internal static DialogResult ShowOptions()
@@ -127,6 +130,9 @@ namespace RouteViewer
 			}
 			Interface.CurrentOptions.ViewingDistance = (int)numericUpDownViewingDistance.Value;
 			Interface.CurrentOptions.QuadTreeLeafSize = Math.Max(50, (int)Math.Ceiling(Interface.CurrentOptions.ViewingDistance / 10.0d) * 10); // quad tree size set to 10% of viewing distance to the nearest 10
+			Interface.CurrentOptions.RealSkyEnabled = checkBoxRealSky.Checked;
+			Interface.CurrentOptions.RealSkyAzimuth = (double)numericUpDownAzimuth.Value;
+			Interface.CurrentOptions.RealSkyElevation = (double)numericUpDownElevation.Value;
 			Interface.CurrentOptions.Save(Path.CombineFile(Program.FileSystem.SettingsFolder, "1.5.0/options_rv.cfg"));
 			for (int i = 0; i < Program.CurrentHost.Plugins.Length; i++)
 			{
@@ -137,7 +143,7 @@ namespace RouteViewer
 				}
 			}
 			//Check if interpolation mode or anisotropic filtering level has changed, and trigger a reload
-			if (previousInterpolationMode != Interface.CurrentOptions.Interpolation || previousAnisotropicLevel != Interface.CurrentOptions.AnisotropicFilteringLevel || GraphicsModeChanged || Interface.CurrentOptions.ViewingDistance != previousViewingDistance)
+			if (previousInterpolationMode != Interface.CurrentOptions.Interpolation || previousAnisotropicLevel != Interface.CurrentOptions.AnisotropicFilteringLevel || GraphicsModeChanged || Interface.CurrentOptions.ViewingDistance != previousViewingDistance || Interface.CurrentOptions.RealSkyEnabled != checkBoxRealSky.Checked)
 			{
 				this.DialogResult = DialogResult.OK;
 			}

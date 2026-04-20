@@ -1,4 +1,4 @@
-﻿namespace CsvRwRouteParser
+namespace CsvRwRouteParser
 {
 	internal enum OptionsCommand
 	{
@@ -25,5 +25,7 @@
 		EnableBveTsHacks,
 		/// <summary>Controls whether the route is driven in the reverse direction to construction</summary>
 		ReverseDirection,
+		/// <summary>Controls the RealSky atmospheric parameters</summary>
+		RealSky,
 	}
 }
