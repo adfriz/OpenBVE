@@ -579,13 +579,16 @@ namespace LibRender2
 		/// <remarks>We need to purge the current shader state and update lighting to avoid glitches</remarks>
 		public void SwitchOpenGLVersion()
 		{
+			GL.UseProgram(0);
+			currentOptions.IsUseNewRenderer = !currentOptions.IsUseNewRenderer;
+			ResetOpenGlState();
+			Lighting.Initialize();
 			if (currentOptions.IsUseNewRenderer && AvailableNewRenderer)
 			{
-				DefaultShader.Activate();
-				DefaultShader.Deactivate();
+				ReloadShadowSettings();
 			}
-			currentOptions.IsUseNewRenderer = !currentOptions.IsUseNewRenderer;
-			Lighting.Initialize();
+			// Drain errors to ensure the shader reset in the next frame doesn't pick up legacy errors
+			while (GL.GetError() != ErrorCode.NoError) { }
 		}
 
 		/// <summary>

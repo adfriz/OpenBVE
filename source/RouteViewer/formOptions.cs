@@ -71,7 +71,14 @@ namespace RouteViewer
             {
                 numericUpDownShadowBias.Value = 0.000050m;
             }
+            numericUpDownShadowBias.Refresh();
+
+            numericUpDownShadowNormalBias.DecimalPlaces = 2;
+            numericUpDownShadowNormalBias.Minimum = 0;
+            numericUpDownShadowNormalBias.Maximum = 10;
+            numericUpDownShadowNormalBias.Increment = 0.1m;
             numericUpDownShadowNormalBias.Value = (decimal)Interface.CurrentOptions.ShadowNormalBias;
+            numericUpDownShadowNormalBias.Refresh();
 
 
             // Initialize sun direction sliders from current light position
@@ -92,7 +99,7 @@ namespace RouteViewer
 
         private void UpdateShadowControlsEnabled()
         {
-            bool enabled = comboBoxShadowResolution.SelectedIndex != 0 && Program.Renderer.AvailableNewRenderer;
+            bool enabled = comboBoxShadowResolution.SelectedIndex != 0;
             comboBoxShadowDistance.Enabled = enabled;
             comboBoxShadowCascades.Enabled = enabled;
             numericUpDownShadowStrength.Enabled = enabled;
