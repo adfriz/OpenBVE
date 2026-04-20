@@ -91,7 +91,6 @@ namespace RouteViewer
             comboBoxShadowResolution.SelectedIndexChanged += comboBoxShadowResolution_SelectedIndexChanged;
             UpdateShadowControlsEnabled();
 
-        }
 
         internal static DialogResult ShowOptions()
         {
