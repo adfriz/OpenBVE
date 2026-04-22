@@ -74,6 +74,7 @@ namespace OpenBve
 			Program.FileSystem.AppendToLogFile("Creating game window with forwards-compatible context.");
 			if (Program.CurrentHost.Platform == HostPlatform.AppleOSX && IntPtr.Size != 4)
 			{
+				Interface.CurrentOptions.ForceForwardsCompatibleContext = true;
 				return;
 			}
 			try

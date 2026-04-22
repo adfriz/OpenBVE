@@ -432,12 +432,11 @@ namespace LibRender2
 				GL.Hint(HintTarget.GenerateMipmapHint, HintMode.Nicest);
 				GL.Disable(EnableCap.Lighting);
 				GL.Disable(EnableCap.Fog);
+				GL.Hint(HintTarget.LineSmoothHint, HintMode.Fastest);
+				GL.Hint(HintTarget.PointSmoothHint, HintMode.Fastest);
+				GL.Hint(HintTarget.PolygonSmoothHint, HintMode.Fastest);
 			}
 
-			GL.Hint(HintTarget.LineSmoothHint, HintMode.Fastest);
-			GL.Hint(HintTarget.PointSmoothHint, HintMode.Fastest);
-			GL.Hint(HintTarget.PolygonSmoothHint, HintMode.Fastest);
-			
 			GL.Enable(EnableCap.CullFace);
 			GL.CullFace(CullFaceMode.Front);
 			GL.Disable(EnableCap.Dither);
