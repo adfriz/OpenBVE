@@ -247,6 +247,8 @@ namespace LibRender2
 		protected internal Texture _programLogo;
 
 		protected internal Texture whitePixel;
+		/// <summary>A dummy 1x1 depth texture with comparison enabled, used when shadows are disabled to satisfy driver requirements.</summary>
+		private int nullDepthMap; 
 
 		private bool logoError;
 
@@ -419,6 +421,16 @@ namespace LibRender2
 			DynamicObjectStates = new List<ObjectState>();
 			VisibleObjects = new VisibleObjectLibrary(this);
 			whitePixel = new Texture(new Texture(1, 1, PixelFormat.RGBAlpha, new byte[] {255, 255, 255, 255}, null));
+			if (AvailableNewRenderer)
+			{
+				nullDepthMap = GL.GenTexture();
+				GL.BindTexture(TextureTarget.Texture2D, nullDepthMap);
+				GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent16, 1, 1, 0, OpenTK.Graphics.OpenGL.PixelFormat.DepthComponent, PixelType.Float, IntPtr.Zero);
+				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureCompareMode, (int)TextureCompareMode.CompareRefToTexture);
+				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
+				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
+				GL.BindTexture(TextureTarget.Texture2D, 0);
+			}
 			GL.ClearColor(0.67f, 0.67f, 0.67f, 1.0f);
 			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 			GL.Enable(EnableCap.DepthTest);
@@ -569,6 +581,11 @@ namespace LibRender2
 		/// <summary>Deinitializes the renderer</summary>
 		public void DeInitialize()
 		{
+			if (nullDepthMap != 0)
+			{
+				GL.DeleteTexture(nullDepthMap);
+				nullDepthMap = 0;
+			}
 			GameWindow?.Dispose();
 			// terminate spinning thread
 			VisibilityThreadShouldRun = false;
@@ -718,6 +735,14 @@ namespace LibRender2
 			if (!ShadowsEnabled || CSMShadowMaps == null || CSMCaster == null)
 			{
 				DefaultShader.SetShadowEnabled(false);
+				// To satisfy strict OpenGL drivers (e.g. Apple/Intel), we must still bind a depth-compatible
+				// texture even if shadows are disabled, as the shader contains sampler2DShadow uniforms.
+				for (int i = 0; i < 4; i++)
+				{
+					GL.ActiveTexture(TextureUnit.Texture4 + i);
+					GL.BindTexture(TextureTarget.Texture2D, nullDepthMap);
+				}
+				GL.ActiveTexture(TextureUnit.Texture0);
 				return;
 			}
 

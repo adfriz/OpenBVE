@@ -138,6 +138,17 @@ namespace LibRender2.Shaders
 
 			VertexLayout = GetVertexLayout();
 			UniformLayout = GetUniformLayout();
+
+			// Initialise shadow map units to something non-zero to avoid sampler collision with uTexture
+			// Note: GL spec forbids different sampler types (sampler2D and sampler2DShadow) targeting the same unit
+			GL.ProgramUniform1(handle, uShadowMap0Location, 4);
+			GL.ProgramUniform1(handle, uShadowMap1Location, 5);
+			GL.ProgramUniform1(handle, uShadowMap2Location, 6);
+			GL.ProgramUniform1(handle, uShadowMap3Location, 7);
+			// Also ensure shadow is disabled by default
+			GL.ProgramUniform1(handle, uShadowEnabledLocation, 0);
+			GL.ProgramUniform1(handle, uCascadeCountLocation, 0);
+			GL.ProgramUniform1(handle, uShadowStrengthLocation, 1.0f);
 		}
 
 		/// <summary>Loads the shader source and compiles the shader</summary>
@@ -529,7 +540,7 @@ namespace LibRender2.Shaders
 
 		public void SetShadowEnabled(bool enabled)
 		{
-			GL.Uniform1(uShadowEnabledLocation, enabled ? 1 : 0);
+			GL.ProgramUniform1(handle, uShadowEnabledLocation, enabled ? 1 : 0);
 		}
 
 		public void SetCascadeLightSpaceMatrix(int cascade, OpenBveApi.Math.Matrix4D matrix)
@@ -544,7 +555,7 @@ namespace LibRender2.Shaders
 				default: return;
 			}
 			Matrix4 OpenTKMatrix = ConvertToMatrix4(matrix);
-			GL.UniformMatrix4(loc, false, ref OpenTKMatrix);
+			GL.ProgramUniformMatrix4(handle, loc, false, ref OpenTKMatrix);
 		}
 
 		public void SetCascadeShadowMapUnit(int cascade, int textureUnit)
@@ -558,7 +569,7 @@ namespace LibRender2.Shaders
 				case 3: loc = uShadowMap3Location; break;
 				default: return;
 			}
-			GL.Uniform1(loc, textureUnit);
+			GL.ProgramUniform1(handle, loc, textureUnit);
 		}
 
 		public void SetCascadeFarDistance(int cascade, float distance)
@@ -572,7 +583,7 @@ namespace LibRender2.Shaders
 				case 3: loc = uCascadeFarDist3Location; break;
 				default: return;
 			}
-			GL.Uniform1(loc, distance);
+			GL.ProgramUniform1(handle, loc, distance);
 		}
 
 		public void SetCascadeBias(int cascade, float bias)
@@ -586,7 +597,7 @@ namespace LibRender2.Shaders
 				case 3: loc = uCascadeBias3Location; break;
 				default: return;
 			}
-			GL.Uniform1(loc, bias);
+			GL.ProgramUniform1(handle, loc, bias);
 		}
 
 		public void SetNormalBias(int cascade, float bias)
@@ -600,17 +611,17 @@ namespace LibRender2.Shaders
 				case 3: loc = uNormalBias3Location; break;
 				default: return;
 			}
-			GL.Uniform1(loc, bias);
+			GL.ProgramUniform1(handle, loc, bias);
 		}
 
 		public void SetCascadeCount(int count)
 		{
-			GL.Uniform1(uCascadeCountLocation, count);
+			GL.ProgramUniform1(handle, uCascadeCountLocation, count);
 		}
 
 		public void SetShadowStrength(float strength)
 		{
-			GL.Uniform1(uShadowStrengthLocation, strength);
+			GL.ProgramUniform1(handle, uShadowStrengthLocation, strength);
 		}
 
 		public void SetCurrentViewMatrix(OpenBveApi.Math.Matrix4D viewMatrix)
@@ -622,7 +633,7 @@ namespace LibRender2.Shaders
 		public void SetCurrentModelMatrix(OpenBveApi.Math.Matrix4D modelMatrix)
 		{
 			Matrix4 matrix = ConvertToMatrix4(modelMatrix);
-			GL.UniformMatrix4(uModelMatrixLocation, false, ref matrix);
+			GL.ProgramUniformMatrix4(handle, uModelMatrixLocation, false, ref matrix);
 		}
 
 		private static float[] Matrix4DToFloatArray(OpenBveApi.Math.Matrix4D m)
