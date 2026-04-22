@@ -94,6 +94,8 @@ namespace OpenBve
 					Instance.Reset();
 					//Launch the game!
 					Loading.Complete = false;
+					MainLoop.currentResult.RouteFile = currentFile;
+					MainLoop.currentResult.TrainFolder = Interface.CurrentOptions.TrainFolder;
 					Loading.LoadAsynchronously(currentFile, Encoding.UTF8, Interface.CurrentOptions.TrainFolder, Encoding.UTF8);
 					OpenBVEGame g = Program.Renderer.GameWindow as OpenBVEGame;
 					// ReSharper disable once PossibleNullReferenceException
