@@ -370,6 +370,7 @@ namespace OpenBve
 				// call the show method again to trigger resize
 				Game.SwitchChangeDialog.Show();
 			}
+			Game.Menu.OnResize();
 		}
 
 		[DllImport("user32.dll")]

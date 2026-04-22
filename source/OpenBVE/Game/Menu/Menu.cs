@@ -101,7 +101,7 @@ namespace OpenBve
 		}
 
 		/// <summary>Should be called when the screen resolution changes to re-position all items on the menu appropriately</summary>
-		private void OnResize()
+		internal void OnResize()
 		{
 			// choose the text font size according to screen height
 			// the boundaries follow approximately the progression
@@ -118,7 +118,7 @@ namespace OpenBve
 				MenuFont = Program.Renderer.Fonts.NextLargestFont(MenuFont);
 			}
 
-			lineHeight = (int)(MenuFont.FontSize * LineSpacing);
+			LineHeight = (int)(MenuFont.FontSize * LineSpacing);
 			int quarterWidth = (int)(Program.Renderer.Screen.Width / 4.0);
 			int quarterHeight = (int)(Program.Renderer.Screen.Height / 4.0);
 			nextStepButton.Location = new Vector2(Program.Renderer.Screen.Width - 10, Program.Renderer.Screen.Height - 10);
@@ -160,6 +160,11 @@ namespace OpenBve
 			controlTextBox.Location = new Vector2(Program.Renderer.Screen.Width / 2.0, Program.Renderer.Screen.Height / 8.0 + quarterWidth);
 			controlTextBox.Size = new Vector2(quarterWidth, quarterWidth);
 			controlTextBox.BackgroundColor = Color128.Black;
+			if (CurrMenu >= 0)
+			{
+				Menus[CurrMenu].ComputeExtent(Menus[CurrMenu].Type, MenuFont, Renderer.Screen.Width / 2.0, LineHeight);
+			}
+			ComputePosition();
 		}
 
 		public override void Reset()
@@ -318,7 +323,7 @@ namespace OpenBve
 				return false;
 			}
 
-			int item = (int) ((y - topItemY) / lineHeight + menu.TopItem);
+			int item = (int) ((y - topItemY) / LineHeight + menu.TopItem);
 			// if the mouse is above a command item, select it
 			if (item >= 0 && item < menu.Items.Length && (menu.Items[item] is MenuCommand || menu.Items[item] is MenuOption))
 			{
@@ -398,8 +403,7 @@ namespace OpenBve
 								}
 								Instance.PopMenu();
 								OnResize();
-								Menus[CurrMenu].ComputeExtent(Menus[CurrMenu].Type, MenuFont, 0);
-								Menus[CurrMenu].Height = Menus[CurrMenu].Items.Length * lineHeight;
+								Menus[CurrMenu].ComputeExtent(Menus[CurrMenu].Type, MenuFont, 0, LineHeight);
 								ComputePosition();
 								break;
 							case MenuTag.MenuJumpToStation:     // TO STATIONS MENU
@@ -850,7 +854,7 @@ namespace OpenBve
 					Program.Renderer.OpenGlString.Draw(MenuFont, opt.CurrentOption.ToString(), new Vector2((menuMax.X - menuMin.X + 2.0f * Border.X) + 4.0f, itemY),
 						menu.Align, backgroundColor, false);
 				}
-				itemY += lineHeight;
+				itemY += LineHeight;
 				if (menu.Items[i].Icon != null)
 				{
 					Program.Renderer.Rectangle.DrawAlpha(menu.Items[i].Icon, new Vector2(iconX, itemY - itemHeight * 1.5), new Vector2(itemHeight, itemHeight), Color128.White);

@@ -602,8 +602,7 @@ namespace OpenBve
 						break;
 				}
 				
-				ComputeExtent(menuType, Game.Menu.MenuFont, MaxWidth);
-				Height = Items.Length * Game.Menu.lineHeight;
+				ComputeExtent(menuType, Game.Menu.MenuFont, MaxWidth, Game.Menu.LineHeight);
 				TopItem = 0;
 			}
 		}
