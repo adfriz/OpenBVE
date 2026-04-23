@@ -116,8 +116,8 @@ namespace OpenBve
 						const short Version = 1;
 						Writer.Write(Identifier);
 						Writer.Write(Version);
-						Writer.Write(Game.LogRouteName);
-						Writer.Write(Game.LogTrainName);
+						Writer.Write(Game.LogRouteName == null ? "Unknown" : Game.LogRouteName);
+						Writer.Write(Game.LogTrainName == null ? "Unknown" : Game.LogTrainName);
 						Writer.Write(Game.LogDateTime.ToBinary());
 						Writer.Write((short) CurrentOptions.GameMode);
 						Writer.Write(Game.BlackBoxEntries.Count);

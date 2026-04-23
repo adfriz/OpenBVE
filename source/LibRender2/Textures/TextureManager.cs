@@ -333,7 +333,9 @@ namespace LibRender2.Textures
 					{
 						GL.TexParameter(TextureTarget.Texture2D, (TextureParameterName)ExtTextureFilterAnisotropic.TextureMaxAnisotropyExt, AnisotropicFilteringLevel);
 					}
-
+					
+					bool noLuminanceChannel = currentHost.Platform == HostPlatform.AppleOSX | renderer.currentOptions.ForceForwardsCompatibleContext;
+					
 					if (handle.Transparency == TextureTransparencyType.Opaque)
 					{
 						switch (texture.PixelFormat)
@@ -343,11 +345,12 @@ namespace LibRender2.Textures
 								// n.b. Make sure to set the unpack alignment as otherwise we corrupt textures where stride > width
 								GL.PixelStore(PixelStoreParameter.UnpackAlignment, 1);
 								GL.TexImage2D(TextureTarget.Texture2D, 0,
-									renderer.currentOptions.ForceForwardsCompatibleContext ? PixelInternalFormat.R8 : PixelInternalFormat.Luminance,
+									noLuminanceChannel ? PixelInternalFormat.R8 : PixelInternalFormat.Luminance,
 									texture.Width, texture.Height, 0,
-									renderer.currentOptions.ForceForwardsCompatibleContext ? OpenTK.Graphics.OpenGL.PixelFormat.Red : OpenTK.Graphics.OpenGL.PixelFormat.Luminance,
+									noLuminanceChannel ? OpenTK.Graphics.OpenGL.PixelFormat.Red : OpenTK.Graphics.OpenGL.PixelFormat.Luminance,
 									PixelType.UnsignedByte, texture.Bytes);
-								if (renderer.currentOptions.ForceForwardsCompatibleContext)
+								
+								if (noLuminanceChannel)
 								{
 									// small cheat: Use GL_RED (6403) to swizzle our R channel when called by the shader
 									GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureSwizzleRgba, new[] { 6403, 6403, 6403, 1});
@@ -399,7 +402,7 @@ namespace LibRender2.Textures
 						{
 							case PixelFormat.GrayscaleAlpha:
 								// NOTE: LuminanceAlpha is deprecated in GL4, so just upconvert to RGBA
-								if (renderer.currentOptions.ForceForwardsCompatibleContext)
+								if (noLuminanceChannel)
 								{
 									int stride = (2 * (texture.Width + 1) >> 2) << 2;
 									byte[] newBytes = new byte[stride * texture.Height];

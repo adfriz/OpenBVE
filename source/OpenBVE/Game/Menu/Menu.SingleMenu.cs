@@ -73,6 +73,7 @@ namespace OpenBve
 							// n.b. only cycling between two images at the minute, so use the same method
 							nextImageButton.OnClick += nextImageButton_Click;
 							previousImageButton.OnClick += nextImageButton_Click;
+							nextStepButton.OnClick += nextStepButton_Click;
 						}
 						Items = new MenuEntry[5];
 						Items[0] = new MenuCommand(menu, "Open Route File", MenuTag.RouteList, 0);
@@ -601,8 +602,7 @@ namespace OpenBve
 						break;
 				}
 				
-				ComputeExtent(menuType, Game.Menu.MenuFont, MaxWidth);
-				Height = Items.Length * Game.Menu.lineHeight;
+				ComputeExtent(menuType, Game.Menu.MenuFont, MaxWidth, Game.Menu.LineHeight);
 				TopItem = 0;
 			}
 		}

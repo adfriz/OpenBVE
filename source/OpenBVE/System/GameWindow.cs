@@ -74,6 +74,7 @@ namespace OpenBve
 			Program.FileSystem.AppendToLogFile("Creating game window with forwards-compatible context.");
 			if (Program.CurrentHost.Platform == HostPlatform.AppleOSX && IntPtr.Size != 4)
 			{
+				Interface.CurrentOptions.ForceForwardsCompatibleContext = true;
 				return;
 			}
 			try
@@ -370,6 +371,7 @@ namespace OpenBve
 				// call the show method again to trigger resize
 				Game.SwitchChangeDialog.Show();
 			}
+			Game.Menu.OnResize();
 		}
 
 		[DllImport("user32.dll")]
