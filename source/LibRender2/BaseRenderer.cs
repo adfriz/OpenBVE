@@ -153,7 +153,7 @@ namespace LibRender2
 #pragma warning restore 0219, CS0169
 
 		/// <summary>The current shader in use</summary>
-		protected internal Shader CurrentShader;
+		protected internal AbstractShader CurrentShader;
 
 		public Shader DefaultShader;
 		
@@ -540,7 +540,7 @@ namespace LibRender2
 
 				if (ShadowDepthShaderProgram == null)
 				{
-					ShadowDepthShaderProgram = new ShadowDepthShader();
+					ShadowDepthShaderProgram = new ShadowDepthShader(this, "shadow_depth", "shadow_depth", true);
 				}
 
 				ShadowsEnabled = true;
@@ -640,7 +640,7 @@ namespace LibRender2
 
 			// 3. Setup rendering state
 			CurrentShader?.Deactivate();
-			ShadowDepthShaderProgram.Use();
+			ShadowDepthShaderProgram.Activate();
 			GL.Enable(EnableCap.DepthTest);
 			GL.DepthFunc(DepthFunction.Less);
 			GL.Disable(EnableCap.CullFace);
@@ -1408,7 +1408,7 @@ namespace LibRender2
 			shader.SetMaterialEmission(Color24.White);
 			lastColor = Color32.White;
 			shader.SetMaterialShininess(1.0f);
-			shader.SetIsFog(false);
+			shader.SetFog(false);
 			shader.DisableTexturing();
 			shader.SetTexture(0);
 			shader.SetBrightness(1.0f);
@@ -1534,7 +1534,7 @@ namespace LibRender2
 		/// <param name="isDebugTouchMode">Whether debug touch mode</param>
 		public void RenderFace(FaceState state, bool isDebugTouchMode = false)
 		{
-			RenderFace(CurrentShader, state.Object, state.Face, isDebugTouchMode);
+			RenderFace(CurrentShader as Shader, state.Object, state.Face, isDebugTouchMode);
 		}
 
 		/// <summary>Draws a face using the specified shader and matricies</summary>
@@ -1713,7 +1713,7 @@ namespace LibRender2
 					factor = 1.0f;
 					GL.Enable(EnableCap.Blend);
 					GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.One);
-					shader.SetIsFog(false);
+					shader.SetFog(false);
 				}
 				else if (material.NighttimeTexture == null || material.NighttimeTexture == material.DaytimeTexture)
 				{
@@ -1784,7 +1784,7 @@ namespace LibRender2
 			if (material.BlendMode == MeshMaterialBlendMode.Additive)
 			{
 				RestoreBlendFunc();
-				shader.SetIsFog(Fog.Enabled);
+				shader.SetFog(Fog.Enabled);
 			}
 			if (OptionWireFrame || debugTouchMode)
 			{
