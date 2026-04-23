@@ -111,6 +111,7 @@
     <Compile Include="Screen\OutputModes.cs" />
     <Compile Include="Screen\Resolution.cs" />
     <Compile Include="Screen\Screen.cs" />
+    <Compile Include="Shaders\AbstractShader.cs" />
     <Compile Include="Shaders\Shader.cs" />
     <Compile Include="Shaders\ShadowDepthShader.cs" />
     <Compile Include="Smoke\Particle.cs" />

@@ -1,23 +1,35 @@
- using System;
-using System.IO;
-using System.Reflection;
-using System.Text;
+//Simplified BSD License (BSD-2-Clause)
+//
+//Copyright (c) 2024, Aditiya Afrizal, The OpenBVE Project
+//
+//Redistribution and use in source and binary forms, with or without
+//modification, are permitted provided that the following conditions are met:
+//
+//1. Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer.
+//2. Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+//
+//THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+//ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+//WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+//DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+//ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+//(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+//LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+//ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+//(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+//SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 using OpenBveApi.Objects;
 using OpenTK.Graphics.OpenGL;
-using Path = System.IO.Path;
 
 namespace LibRender2.Shaders
 {
-	/// <summary>
-	/// Shader program used for the shadow map depth pass.
-	/// </summary>
-	public class ShadowDepthShader : IDisposable
+	/// <summary>Shader program used for the shadow map depth pass.</summary>
+	public class ShadowDepthShader : AbstractShader
 	{
-		public int Handle
-		{
-			get; private set;
-		}
-
 		private int uLightSpaceMatrix;
 		private int uModelMatrix;
 		private int uTexture;
@@ -26,30 +38,8 @@ namespace LibRender2.Shaders
 		private int uMaterialAlpha; // Uniform location for material color alpha
 		private int uMaterialFlags;
 
-		public ShadowDepthShader()
+		public ShadowDepthShader(BaseRenderer Renderer,  string vertexShaderName, string fragmentShaderName, bool isFromStream = false) : base(Renderer, vertexShaderName, fragmentShaderName, isFromStream, false)
 		{
-			// Load shader source from embedded resources or files
-			string vertSource = LoadEmbeddedShader("shadow_depth.vert");
-			string fragSource = LoadEmbeddedShader("shadow_depth.frag");
-
-			int vertShader = CompileShader(ShaderType.VertexShader, vertSource);
-			int fragShader = CompileShader(ShaderType.FragmentShader, fragSource);
-
-			Handle = GL.CreateProgram();
-			GL.AttachShader(Handle, vertShader);
-			GL.AttachShader(Handle, fragShader);
-			GL.LinkProgram(Handle);
-
-			GL.GetProgram(Handle, GetProgramParameterName.LinkStatus, out int success);
-			if (success == 0)
-			{
-				string infoLog = GL.GetProgramInfoLog(Handle);
-				throw new Exception($"[ShadowDepthShader] Link error: {infoLog}");
-			}
-
-			GL.DeleteShader(vertShader);
-			GL.DeleteShader(fragShader);
-
 			// Explicitly bind the uniform block for matrices to binding point 0
 			// This matches BindBufferBase(..., 0, ...) in the rendering pass.
 			int matrixBlockIndex = GL.GetUniformBlockIndex(Handle, "matrices");
@@ -66,56 +56,6 @@ namespace LibRender2.Shaders
 			uAlphaCutoff = GL.GetUniformLocation(Handle, "uAlphaCutoff");
 			uMaterialAlpha = GL.GetUniformLocation(Handle, "uMaterialAlpha"); // Cache the material alpha location
 			uMaterialFlags = GL.GetUniformLocation(Handle, "uMaterialFlags");
-		}
-
-		private static string LoadEmbeddedShader(string filename)
-		{
-			// Try to load from the same directory as the existing shaders
-			// OpenBVE typically loads shaders as embedded resources in LibRender2
-			var assembly = Assembly.GetExecutingAssembly();
-			string resourceName = $"LibRender2.{filename}";
-
-			using (Stream stream = assembly.GetManifestResourceStream(resourceName))
-			{
-				if (stream != null)
-				{
-					using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
-					{
-						return reader.ReadToEnd();
-					}
-				}
-			}
-
-			// Fallback: try file-based loading next to the assembly
-			string dir = Path.GetDirectoryName(assembly.Location) ?? ".";
-			string path = Path.Combine(dir, "Data\\Shaders", filename);
-			if (File.Exists(path))
-			{
-				return File.ReadAllText(path, Encoding.UTF8);
-			}
-
-			throw new FileNotFoundException(
-				$"Could not find shadow shader: {filename}");
-		}
-
-		private static int CompileShader(ShaderType type, string source)
-		{
-			int shader = GL.CreateShader(type);
-			GL.ShaderSource(shader, source);
-			GL.CompileShader(shader);
-
-			GL.GetShader(shader, ShaderParameter.CompileStatus, out int success);
-			if (success == 0)
-			{
-				string infoLog = GL.GetShaderInfoLog(shader);
-				throw new Exception($"[ShadowDepthShader] Compile error ({type}): {infoLog}");
-			}
-			return shader;
-		}
-
-		public void Use()
-		{
-			GL.UseProgram(Handle);
 		}
 
 		public void SetLightSpaceMatrix(OpenBveApi.Math.Matrix4D m)
@@ -199,15 +139,6 @@ namespace LibRender2.Shaders
 				(float)m.Row2.X, (float)m.Row2.Y, (float)m.Row2.Z, (float)m.Row2.W,
 				(float)m.Row3.X, (float)m.Row3.Y, (float)m.Row3.Z, (float)m.Row3.W
 			};
-		}
-
-		public void Dispose()
-		{
-			if (Handle != 0)
-			{
-				GL.DeleteProgram(Handle);
-				Handle = 0;
-			}
 		}
 	}
 }
