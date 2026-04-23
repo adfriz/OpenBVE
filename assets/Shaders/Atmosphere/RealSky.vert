@@ -1,6 +1,5 @@
-#version 150
-
-in vec3 iPosition;
+#version 330 core
+layout(location = 0) in vec3 iPosition;
 out vec3 vWorldPos;
 
 uniform mat4 uCurrentProjectionMatrix;

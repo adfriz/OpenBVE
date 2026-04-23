@@ -1,4 +1,4 @@
-﻿//Simplified BSD License (BSD-2-Clause)
+//Simplified BSD License (BSD-2-Clause)
 //
 //Copyright (c) 2024, Christopher Lees, S520, Aditiya Afrizal, The OpenBVE Project
 //
@@ -79,8 +79,6 @@ namespace LibRender2.Shaders
 			GL.AttachShader(Handle, VertexShader);
 			GL.AttachShader(Handle, FragmentShader);
 
-			GL.DeleteShader(VertexShader);
-			GL.DeleteShader(FragmentShader);
 			if (fragColor)
 			{
 				GL.BindFragDataLocation(Handle, 0, "fragColor");
@@ -93,6 +91,8 @@ namespace LibRender2.Shaders
 				string infoLog = GL.GetProgramInfoLog(Handle);
 				throw new Exception($"Shader Link error: {infoLog}");
 			}
+			GL.DeleteShader(VertexShader);
+			GL.DeleteShader(FragmentShader);
 		}
 
 		/// <summary>Loads the shader source and compiles the shader</summary>

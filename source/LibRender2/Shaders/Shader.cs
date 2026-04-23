@@ -176,10 +176,10 @@ namespace LibRender2.Shaders
 				ShadowMap1 = (short)GL.GetUniformLocation(Handle, "uShadowMap1"),
 				ShadowMap2 = (short)GL.GetUniformLocation(Handle, "uShadowMap2"),
 				CurrentViewMatrix = (short)GL.GetUniformLocation(Handle, "uCurrentViewMatrix"),
-				RealSkySunDirection = (short)GL.GetUniformLocation(Handle, "uSunDirection"),
-				RealSkyTime = (short)GL.GetUniformLocation(Handle, "uTime"),
-				RealSkyResolution = (short)GL.GetUniformLocation(Handle, "uResolution"),
-				RealSkyCameraPos = (short)GL.GetUniformLocation(Handle, "uCameraPos"),
+				RealSkySunDirection = (short)GL.GetUniformLocation(Handle, "uRealSkySunDirection"),
+				RealSkyTime = (short)GL.GetUniformLocation(Handle, "uRealSkyTime"),
+				RealSkyResolution = (short)GL.GetUniformLocation(Handle, "uRealSkyResolution"),
+				RealSkyCameraPos = (short)GL.GetUniformLocation(Handle, "uRealSkyCameraPos"),
 			};
 		}
 

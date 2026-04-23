@@ -2162,10 +2162,10 @@ namespace LibRender2
 
 			Vector3 sunDir = SunDirection;
 			sunDir.Normalize();
-			GL.Uniform3(RealSkyShader.UniformLayout.RealSkySunDirection, (float)sunDir.X, (float)sunDir.Y, (float)sunDir.Z);
-			GL.Uniform1(RealSkyShader.UniformLayout.RealSkyTime, (float)Time);
-			GL.Uniform2(RealSkyShader.UniformLayout.RealSkyResolution, (float)Screen.Width, (float)Screen.Height);
-			GL.Uniform3(RealSkyShader.UniformLayout.RealSkyCameraPos, (float)Camera.AbsolutePosition.X, (float)Camera.AbsolutePosition.Y, (float)Camera.AbsolutePosition.Z);
+			GL.ProgramUniform3(RealSkyShader.Handle, RealSkyShader.UniformLayout.RealSkySunDirection, (float)sunDir.X, (float)sunDir.Y, (float)sunDir.Z);
+			GL.ProgramUniform1(RealSkyShader.Handle, RealSkyShader.UniformLayout.RealSkyTime, (float)Time);
+			GL.ProgramUniform2(RealSkyShader.Handle, RealSkyShader.UniformLayout.RealSkyResolution, (float)Screen.Width, (float)Screen.Height);
+			GL.ProgramUniform3(RealSkyShader.Handle, RealSkyShader.UniformLayout.RealSkyCameraPos, (float)Camera.AbsolutePosition.X, (float)Camera.AbsolutePosition.Y, (float)Camera.AbsolutePosition.Z);
 
 			GL.Disable(EnableCap.DepthTest);
 			GL.DepthMask(false);

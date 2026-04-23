@@ -1,13 +1,13 @@
-#version 150
+#version 330 core
 precision highp float;
 
 in vec3 vWorldPos;
 out vec4 fragColor;
 
-uniform vec3 uSunDirection;
-uniform vec3 uCameraPos;
-uniform float uTime;
-uniform vec2 uResolution;
+uniform vec3 uRealSkySunDirection;
+uniform vec3 uRealSkyCameraPos;
+uniform float uRealSkyTime;
+uniform vec2 uRealSkyResolution;
 
 // Atmospheric Scattering & Volumetric Clouds
 // (Optimized Raymarching with AMD/NaN safeguards)
@@ -39,7 +39,7 @@ float fbm(vec3 p) {
 }
 
 vec3 getAtmosphere(vec3 dir) {
-    float sun = max(dot(dir, uSunDirection), 0.0);
+    float sun = max(dot(dir, uRealSkySunDirection), 0.0);
     vec3 skyColor = mix(vec3(0.05, 0.2, 0.5), vec3(0.4, 0.6, 0.9), pow(max(dir.y, 0.0), 0.5));
     skyColor += vec3(1.0, 0.8, 0.6) * pow(sun, 256.0); // Sun disk
     skyColor += vec3(1.0, 0.4, 0.2) * pow(sun, 8.0) * 0.5; // Glow
@@ -47,7 +47,7 @@ vec3 getAtmosphere(vec3 dir) {
 }
 
 float getCloudDensity(vec3 p) {
-    float d = fbm(p * 0.0005 + uTime * 0.05);
+    float d = fbm(p * 0.0005 + uRealSkyTime * 0.05);
     d = smoothstep(0.4, 0.8, d);
     float heightFade = smoothstep(cloudMinHeight, cloudMinHeight + 200.0, p.y) * 
                       (1.0 - smoothstep(cloudMaxHeight - 500.0, cloudMaxHeight, p.y));
@@ -65,13 +65,13 @@ void main() {
     
     // Division-by-zero safeguard for horizon
     if (viewDir.y > 1e-4) {
-        float t = (cloudMinHeight - uCameraPos.y) / viewDir.y;
+        float t = (cloudMinHeight - uRealSkyCameraPos.y) / viewDir.y;
         if (t > 0.0) {
             for(int i = 0; i < 16; i++) {
-                vec3 p = uCameraPos + viewDir * t;
+                vec3 p = uRealSkyCameraPos + viewDir * t;
                 float d = getCloudDensity(p);
                 if (d > 0.01) {
-                    float light = max(dot(uSunDirection, vec3(0,1,0)), 0.2);
+                    float light = max(dot(uRealSkySunDirection, vec3(0,1,0)), 0.2);
                     vec3 c = mix(vec3(0.6, 0.6, 0.7), vec3(1.0), d) * light;
                     cloudColor += c * d * (1.0 - alpha);
                     alpha += d * 0.2;
