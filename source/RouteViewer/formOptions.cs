@@ -90,6 +90,7 @@ namespace RouteViewer
             // Wire up shadow resolution change to enable/disable related controls
             comboBoxShadowResolution.SelectedIndexChanged += comboBoxShadowResolution_SelectedIndexChanged;
             UpdateShadowControlsEnabled();
+        }
 
 
         internal static DialogResult ShowOptions()
