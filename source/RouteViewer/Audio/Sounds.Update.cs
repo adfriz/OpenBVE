@@ -247,7 +247,7 @@ namespace RouteViewer
 			}
 
 			double desiredLogClampFactor;
-			int index = Math.Min(systemMaxSounds, Interface.CurrentOptions.SoundNumber);
+			int index = Math.Min(SystemMaxSounds, Interface.CurrentOptions.SoundNumber);
 			if (toBePlayed.Count <= index)
 			{
 				desiredLogClampFactor = MinLogClampFactor;
