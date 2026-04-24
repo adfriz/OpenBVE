@@ -326,6 +326,7 @@ namespace ObjectViewer
         {
 	        Interface.CurrentOptions.Save(Path.CombineFile(Program.FileSystem.SettingsFolder, "1.5.0/options_ov.cfg"));
 			Program.Renderer.VisibilityThreadShouldRun = false;
+			Program.Renderer.DeInitialize();
 			if (Program.CurrentHost.MonoRuntime)
 			{
 				Environment.Exit(0);

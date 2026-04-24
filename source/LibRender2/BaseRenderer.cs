@@ -344,10 +344,6 @@ namespace LibRender2
 			RenderThreadJobs = new ConcurrentQueue<ThreadStart>();
 		}
 
-		~BaseRenderer()
-		{
-			DeInitialize();
-		}
 
 		/// <summary>Call this once to initialise the renderer</summary>
 		/// <remarks>A call to DeInitialize should be made when closing the program to release resources</remarks>
