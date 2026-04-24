@@ -30,13 +30,13 @@ namespace LibRender2.Shaders
 	/// <summary>Shader program used for the shadow map depth pass.</summary>
 	public class ShadowDepthShader : AbstractShader
 	{
-		private int uLightSpaceMatrix;
-		private int uModelMatrix;
-		private int uTexture;
-		private int uHasTexture;
-		private int uAlphaCutoff;
-		private int uMaterialAlpha; // Uniform location for material color alpha
-		private int uMaterialFlags;
+		private readonly int uLightSpaceMatrix;
+		private readonly int uModelMatrix;
+		private readonly int uTexture;
+		private readonly int uHasTexture;
+		private readonly int uAlphaCutoff;
+		private readonly int uMaterialAlpha; // Uniform location for material color alpha
+		private readonly int uMaterialFlags;
 
 		public ShadowDepthShader(BaseRenderer Renderer,  string vertexShaderName, string fragmentShaderName, bool isFromStream = false) : base(Renderer, vertexShaderName, fragmentShaderName, isFromStream, false)
 		{

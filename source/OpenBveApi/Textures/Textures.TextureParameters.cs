@@ -30,6 +30,7 @@ namespace OpenBveApi.Textures
 		/// <summary>Creates new texture parameters.</summary>
 		/// <param name="clipRegion">The region in the texture to be extracted, or a null reference for the entire texture.</param>
 		/// <param name="transparentColor">The color in the texture that should become transparent, or a null reference for no transparent color.</param>
+		/// <param name="transparencyTexture">The texture to be applied to the alpha channel</param>
 		public TextureParameters(TextureClipRegion clipRegion, Color24? transparentColor, Texture transparencyTexture = null)
 		{
 			myClipRegion = clipRegion;

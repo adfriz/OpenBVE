@@ -1,13 +1,5 @@
-// ╔═════════════════════════════════════════════════════════════╗
-// ║ Program.cs for the Structure Viewer                         ║
-// ╠═════════════════════════════════════════════════════════════╣
-// ║ This file cannot be used in the openBVE main program.       ║
-// ║ The file from the openBVE main program cannot be used here. ║
-// ╚═════════════════════════════════════════════════════════════╝
-
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using LibRender2.Menu;
@@ -521,7 +513,10 @@ namespace ObjectViewer {
 						FileWatchers.Add(watcher);
 					}
 				}
-				catch { }
+				catch
+				{
+					// ignored
+				}
 			}
 		}
 

@@ -15,10 +15,10 @@ namespace LibRender2.Shadows
         /// <summary>The maximum distance from the camera that receives shadows.</summary>
         public double ShadowDistance { get; set; } = 400.0;
 
-        /// <summary>PSSM lambda (0=linear, 1=log). Higher = more resolution for near shadows.</summary>
+        /// <summary>PSSM lambda (0=linear, 1=log)</summary>
+        /// <remarks>Higher values provide more resolution for near shadows</remarks>
         public double SplitLambda { get; set; } = 0.75;
 
-        /// <summary>Extra depth behind the sub-frustum to catch tall occluders.</summary>
         /// <summary>Extra depth behind the sub-frustum to catch tall occluders.</summary>
         public double DepthMargin { get; set; } = 40.0;
 
@@ -28,9 +28,9 @@ namespace LibRender2.Shadows
         /// <summary>Per-cascade light-space VP matrices.</summary>
         public Matrix4D[] LightSpaceMatrices { get; private set; }
 
-        /// <summary>Per-cascade split distances (view-space Z). 
-        /// Length = CascadeCount. Used in fragment shader to pick cascade.</summary>
-        public float[] CascadeFarDistances { get; private set; }
+		/// <summary>Per-cascade split distances (view-space Z).</summary>
+		///<remarks>>Length = CascadeCount. Used in the fragment shader to pick cascade.</remarks> 
+		public float[] CascadeFarDistances { get; private set; }
 
         /// <summary>Per-cascade depth bias for shadow acne prevention.</summary>
         public float[] CascadeBiases { get; private set; }
@@ -58,12 +58,7 @@ namespace LibRender2.Shadows
         /// <param name="nearClip">Camera near clip distance.</param>
         /// <param name="fovY">Vertical field of view in radians.</param>
         /// <param name="aspect">Aspect ratio (width / height).</param>
-        public void Update(Vector3 lightDirection,
-                           Matrix4D cameraView,
-                           Matrix4D cameraProjection,
-                           double nearClip,
-                           double fovY,
-                           double aspect)
+        public void Update(Vector3 lightDirection, Matrix4D cameraView, Matrix4D cameraProjection, double nearClip, double fovY, double aspect)
         {
             if (lightDirection.IsNullVector())
             {
@@ -139,8 +134,7 @@ namespace LibRender2.Shadows
                 double zNear = -2000.0;
                 double zFar = radius + DepthMargin;
 
-                Matrix4D lightProj;
-                Matrix4D.CreateOrthographic(orthoSize * 2.0, orthoSize * 2.0, zNear, zFar, out lightProj);
+                Matrix4D.CreateOrthographic(orthoSize * 2.0, orthoSize * 2.0, zNear, zFar, out Matrix4D lightProj);
 
                 LightSpaceMatrices[i] = lightView * lightProj;
                 CascadeFarDistances[i] = (float)splits[i + 1];

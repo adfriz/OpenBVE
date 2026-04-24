@@ -114,10 +114,10 @@ namespace LibRender2.Menu
 		public Key MenuBackKey;
 
 		/// <summary>Creates a new menu instance</summary>
-		protected AbstractMenu(BaseRenderer renderer, BaseOptions CurrentOptions)
+		protected AbstractMenu(BaseRenderer renderer, BaseOptions currentOptions)
 		{
 			Renderer = renderer;
-			CurrentOptions = CurrentOptions;
+			CurrentOptions = currentOptions;
 		}
 
 		/// <summary>Initializes the menu system upon first use</summary>

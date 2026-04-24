@@ -6,7 +6,6 @@ using OpenBveApi;
 using OpenBveApi.Graphics;
 using OpenBveApi.Interface;
 using OpenBveApi.Input;
-using OpenBveApi.Interface;
 using OpenBveApi.Math;
 using OpenBveApi.Objects;
 using OpenTK.Graphics;
@@ -190,7 +189,7 @@ namespace ObjectViewer
 				Program.Renderer.TextureManager.UnloadAllTextures(false);
 			}
 
-			//Ansiotropic filtering level
+			//Anisotropic filtering level
 			Interface.CurrentOptions.AnisotropicFilteringLevel = (int) AnsiotropicLevel.Value;
 			//Antialiasing level
 			Interface.CurrentOptions.AntiAliasingLevel = (int) AntialiasingLevel.Value;
@@ -286,7 +285,7 @@ namespace ObjectViewer
 			
 			Interface.CurrentOptions.Save(Path.CombineFile(Program.FileSystem.SettingsFolder, "1.5.0/options_ov.cfg"));
 			Program.RefreshObjects();
-			this.DialogResult = DialogResult.OK;
+			DialogResult = DialogResult.OK;
 			Close();
 		}
 	}
