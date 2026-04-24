@@ -130,10 +130,10 @@ namespace RouteViewer
             double azimuthRad = Interface.CurrentOptions.LightAzimuth * Math.PI / 180.0;
             double elevationRad = Interface.CurrentOptions.LightElevation * Math.PI / 180.0;
 
-            // Convert spherical to direction vector
-            float x = (float)(Math.Sin(azimuthRad) * Math.Cos(elevationRad));
+            // Convert spherical to direction vector (matching DirectionalLight docs)
+            float x = (float)(-Math.Cos(elevationRad) * Math.Sin(azimuthRad));
             float y = (float)(Math.Sin(elevationRad));
-            float z = (float)(Math.Cos(azimuthRad) * Math.Cos(elevationRad));
+            float z = (float)(-Math.Cos(elevationRad) * Math.Cos(azimuthRad));
 
             Program.Renderer.Lighting.OptionLightPosition = new Vector3(x, y, z);
         }
