@@ -4,6 +4,7 @@ using LibRender2.Viewports;
 using ObjectViewer.Graphics;
 using OpenBveApi;
 using OpenBveApi.Graphics;
+using OpenBveApi.Interface;
 using OpenBveApi.Input;
 using OpenBveApi.Interface;
 using OpenBveApi.Math;
@@ -20,6 +21,11 @@ namespace ObjectViewer
 			InterpolationMode.SelectedIndex = (int) Interface.CurrentOptions.Interpolation;
 			AnsiotropicLevel.Value = Interface.CurrentOptions.AnisotropicFilteringLevel;
 			AntialiasingLevel.Value = Interface.CurrentOptions.AntiAliasingLevel;
+			nearClip.Value = (decimal)Interface.CurrentOptions.NearClipBase;
+			if (Translations.CurrentLanguageCode != "en-US")
+			{
+				labelNearClip.Text = Translations.GetInterfaceString(OpenBveApi.Hosts.HostApplication.OpenBve, new[] { "options", "quality_distance_nearclip" });
+			}
 			TransparencyQuality.SelectedIndex = Interface.CurrentOptions.TransparencyMode == TransparencyMode.Performance ? 0 : 2;
 			width.Value = Program.Renderer.Screen.Width;
 			height.Value = Program.Renderer.Screen.Height;
@@ -240,6 +246,12 @@ namespace ObjectViewer
 			Interface.CurrentOptions.CameraMoveDown = (Key)comboBoxDown.SelectedItem;
 			Interface.CurrentOptions.CameraMoveForward = (Key)comboBoxForwards.SelectedItem;
 			Interface.CurrentOptions.CameraMoveBackward = (Key)comboBoxBackwards.SelectedItem;
+			Interface.CurrentOptions.NearClipBase = (double)nearClip.Value;
+			// ensure viewing distance is greater than the near clipping plane to avoid rendering issues
+			if (Interface.CurrentOptions.ViewingDistance <= Interface.CurrentOptions.NearClipBase)
+			{
+				Interface.CurrentOptions.ViewingDistance = (int)Math.Ceiling(Interface.CurrentOptions.NearClipBase) + 1;
+			}
 			Interface.CurrentOptions.AutoReloadObjects = checkBoxAutoReload.Checked;
 
 			// Saving shadow settings

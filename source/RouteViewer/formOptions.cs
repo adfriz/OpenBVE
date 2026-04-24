@@ -1,13 +1,12 @@
 using LibRender2.Viewports;
 using OpenBveApi;
 using OpenBveApi.Graphics;
+using OpenBveApi.Interface;
 using OpenBveApi.Objects;
 using OpenTK.Graphics;
 using System;
 using System.ComponentModel;
 using System.Windows.Forms;
-
-using OpenBveApi.Interface;
 using OpenBveApi.Math;
 
 namespace RouteViewer
@@ -87,6 +86,12 @@ namespace RouteViewer
             // Wire up shadow resolution change to enable/disable related controls
             comboBoxShadowResolution.SelectedIndexChanged += comboBoxShadowResolution_SelectedIndexChanged;
             UpdateShadowControlsEnabled();
+			numericUpDownViewingDistance.Value = (decimal)Interface.CurrentOptions.ViewingDistance;
+			numericUpDownNearClip.Value = (decimal)Interface.CurrentOptions.NearClipBase;
+			if (Translations.CurrentLanguageCode != "en-US")
+			{
+				labelNearClip.Text = Translations.GetInterfaceString(OpenBveApi.Hosts.HostApplication.OpenBve, new[] { "options", "quality_distance_nearclip" });
+			}
         }
 
         private void InitializeSunSliders()
@@ -160,6 +165,7 @@ namespace RouteViewer
 	    private readonly int previousAntialiasingLevel = Interface.CurrentOptions.AntiAliasingLevel;
 	    private readonly int previousAnisotropicLevel = Interface.CurrentOptions.AnisotropicFilteringLevel;
 	    private readonly int previousViewingDistance = Interface.CurrentOptions.ViewingDistance;
+	    private readonly double previousNearClipBase = Interface.CurrentOptions.NearClipBase;
 	    private bool GraphicsModeChanged = false;
 
         private void button1_Click(object sender, EventArgs e)
@@ -250,6 +256,13 @@ namespace RouteViewer
 				}
 			}
 			Interface.CurrentOptions.ViewingDistance = (int)numericUpDownViewingDistance.Value;
+			Interface.CurrentOptions.NearClipBase = (double)numericUpDownNearClip.Value;
+			// ensure viewing distance is greater than the near clipping plane to avoid rendering issues
+			if (Interface.CurrentOptions.ViewingDistance <= Interface.CurrentOptions.NearClipBase)
+
+			{
+				Interface.CurrentOptions.ViewingDistance = (int)Math.Ceiling(Interface.CurrentOptions.NearClipBase) + 1;
+			}
 			Interface.CurrentOptions.QuadTreeLeafSize = Math.Max(50, (int)Math.Ceiling(Interface.CurrentOptions.ViewingDistance / 10.0d) * 10); // quad tree size set to 10% of viewing distance to the nearest 10
 
             switch (comboBoxShadowResolution.SelectedIndex)
@@ -286,6 +299,7 @@ namespace RouteViewer
 
             // Sun direction is already updated in real-time via slider events
 
+
 			Interface.CurrentOptions.Save(Path.CombineFile(Program.FileSystem.SettingsFolder, "1.5.0/options_rv.cfg"));
 			for (int i = 0; i < Program.CurrentHost.Plugins.Length; i++)
 			{
@@ -298,7 +312,8 @@ namespace RouteViewer
 			//Check if interpolation mode or anisotropic filtering level has changed, and trigger a reload
 			if (previousInterpolationMode != Interface.CurrentOptions.Interpolation || previousAnisotropicLevel != Interface.CurrentOptions.AnisotropicFilteringLevel || GraphicsModeChanged || Interface.CurrentOptions.ViewingDistance != previousViewingDistance ||
 			    previousShadowResolution != Interface.CurrentOptions.ShadowResolution || previousShadowDistance != Interface.CurrentOptions.ShadowDrawDistance || previousShadowCascades != Interface.CurrentOptions.ShadowCascades ||
-			    previousShadowStrength != Interface.CurrentOptions.ShadowStrength || previousShadowBias != Interface.CurrentOptions.ShadowBias || previousShadowNormalBias != Interface.CurrentOptions.ShadowNormalBias)
+			    previousShadowStrength != Interface.CurrentOptions.ShadowStrength || previousShadowBias != Interface.CurrentOptions.ShadowBias || previousShadowNormalBias != Interface.CurrentOptions.ShadowNormalBias || 
+			    Interface.CurrentOptions.NearClipBase != previousNearClipBase)
 			{
 				this.DialogResult = DialogResult.OK;
 			}
@@ -306,7 +321,7 @@ namespace RouteViewer
 			{
 				this.DialogResult = DialogResult.Abort;
 			}
-
+			Close();
 
         }
 
