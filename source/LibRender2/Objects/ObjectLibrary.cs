@@ -83,8 +83,8 @@ namespace LibRender2.Objects
 				myAlphaFaces.Clear();
 				myOverlayOpaqueFaces.Clear();
 				myOverlayAlphaFaces.Clear();
-				renderer.StaticObjectStates.Clear();
-				renderer.DynamicObjectStates.Clear();
+				renderer.Scene.StaticObjectStates = new List<ObjectState>();
+				renderer.Scene.DynamicObjectStates = new List<ObjectState>();
 			}
 		}
 

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using DavyKager;
 using LibRender2.Overlays;
 using LibRender2.Screens;

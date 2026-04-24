@@ -441,7 +441,7 @@ namespace ObjectViewer {
 			formTrain.Instance?.EnableUI();
 
 		    Renderer.InitializeVisibility();
-		    Renderer.UpdateViewingDistances(600);
+		    Renderer.UpdateViewingDistances(Interface.CurrentOptions.ViewingDistance);
 		    Renderer.UpdateVisibility(true);
 		    ObjectManager.UpdateAnimatedWorldObjects(0.01, true);
 		    Program.TrainManager.UpdateTrainObjects(0.0, true);

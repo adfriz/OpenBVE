@@ -51,6 +51,8 @@ namespace ObjectViewer
             this.labelInterpolationMode = new System.Windows.Forms.Label();
             this.labelInterpolationSettings = new System.Windows.Forms.Label();
             this.InterpolationMode = new System.Windows.Forms.ComboBox();
+            this.labelViewingDistance = new System.Windows.Forms.Label();
+            this.numericUpDownViewingDistance = new System.Windows.Forms.NumericUpDown();
             this.tabPageKeys = new System.Windows.Forms.TabPage();
             this.labelControls = new System.Windows.Forms.Label();
             this.comboBoxBackwards = new System.Windows.Forms.ComboBox();
@@ -140,6 +142,8 @@ namespace ObjectViewer
             this.tabPageOptions.Controls.Add(this.labelInterpolationMode);
             this.tabPageOptions.Controls.Add(this.labelInterpolationSettings);
             this.tabPageOptions.Controls.Add(this.InterpolationMode);
+            this.tabPageOptions.Controls.Add(this.labelViewingDistance);
+            this.tabPageOptions.Controls.Add(this.numericUpDownViewingDistance);
             this.tabPageOptions.AutoScroll = true;
             this.tabPageOptions.Location = new System.Drawing.Point(4, 22);
             this.tabPageOptions.Name = "tabPageOptions";
@@ -374,6 +378,37 @@ namespace ObjectViewer
             this.labelInterpolationSettings.Size = new System.Drawing.Size(144, 15);
             this.labelInterpolationSettings.TabIndex = 27;
             this.labelInterpolationSettings.Text = "Interpolation Settings";
+            // 
+            // labelViewingDistance
+            // 
+            this.labelViewingDistance.AutoSize = true;
+            this.labelViewingDistance.Location = new System.Drawing.Point(6, 131);
+            this.labelViewingDistance.Name = "labelViewingDistance";
+            this.labelViewingDistance.Size = new System.Drawing.Size(92, 13);
+            this.labelViewingDistance.TabIndex = 50;
+            this.labelViewingDistance.Text = "Viewing Distance:";
+            // 
+            // numericUpDownViewingDistance
+            // 
+            this.numericUpDownViewingDistance.Location = new System.Drawing.Point(160, 131);
+            this.numericUpDownViewingDistance.Maximum = new decimal(new int[] {
+            100000,
+            0,
+            0,
+            0});
+            this.numericUpDownViewingDistance.Minimum = new decimal(new int[] {
+            10,
+            0,
+            0,
+            0});
+            this.numericUpDownViewingDistance.Name = "numericUpDownViewingDistance";
+            this.numericUpDownViewingDistance.Size = new System.Drawing.Size(120, 20);
+            this.numericUpDownViewingDistance.TabIndex = 51;
+            this.numericUpDownViewingDistance.Value = new decimal(new int[] {
+            600,
+            0,
+            0,
+            0});
             // 
             // InterpolationMode
             // 
@@ -811,6 +846,7 @@ namespace ObjectViewer
             ((System.ComponentModel.ISupportInitialize)(this.trackBarSunElevation)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownShadowBias)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownShadowNormalBias)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownViewingDistance)).EndInit();
             this.tabPageKeys.ResumeLayout(false);
             this.tabPageKeys.PerformLayout();
             this.ResumeLayout(false);
@@ -879,5 +915,7 @@ namespace ObjectViewer
 		private System.Windows.Forms.NumericUpDown numericUpDownShadowNormalBias;
 		private System.Windows.Forms.CheckBox checkBoxAutoReload;
 		private System.Windows.Forms.Label labelAutoReloadChanged;
+		private System.Windows.Forms.Label labelViewingDistance;
+		private System.Windows.Forms.NumericUpDown numericUpDownViewingDistance;
 	}
 }

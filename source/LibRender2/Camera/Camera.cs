@@ -61,7 +61,7 @@ namespace LibRender2.Cameras
 			get => alignmentDirection;
 			set
 			{
-				Renderer.UpdateVisibility(true);
+				Renderer.Scene.UpdateVisibility(true);
 				alignmentDirection = value;
 			}
 		}

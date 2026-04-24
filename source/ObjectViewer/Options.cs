@@ -95,6 +95,7 @@ namespace ObjectViewer
 				Builder.AppendLine("shadownormalbias = " + ShadowNormalBias.ToString("0.00", Culture));
 				Builder.AppendLine("lightazimuth = " + LightAzimuth.ToString(Culture));
 				Builder.AppendLine("lightelevation = " + LightElevation.ToString(Culture));
+				Builder.AppendLine("viewingDistance = " + ViewingDistance.ToString(Culture));
 				Builder.AppendLine();
 				Builder.AppendLine("[Parsers]");
 				Builder.AppendLine("xObject = " + CurrentXParser);
@@ -125,7 +126,7 @@ namespace ObjectViewer
 		{
 			Interface.CurrentOptions = new Options
 			{
-				ViewingDistance = 1000, // fixed
+				ViewingDistance = 1000,
 				CameraMoveLeft = Key.A,
 				CameraMoveRight = Key.D,
 				CameraMoveUp = Key.W,
@@ -167,6 +168,7 @@ namespace ObjectViewer
 							block.TryGetValue(OptionsKey.WindowHeight, ref Interface.CurrentOptions.WindowHeight, NumberRange.Positive);
 							block.GetValue(OptionsKey.IsUseNewRenderer, out Interface.CurrentOptions.IsUseNewRenderer);
 							block.GetValue(OptionsKey.AutoReloadObjects, out Interface.CurrentOptions.AutoReloadObjects);
+							block.TryGetValue(OptionsKey.ViewingDistance, ref Interface.CurrentOptions.ViewingDistance, NumberRange.Positive);
 							break;
 						case OptionsSection.Quality:
 							block.GetEnumValue(OptionsKey.Interpolation, out Interface.CurrentOptions.Interpolation);
@@ -181,6 +183,7 @@ namespace ObjectViewer
 							block.TryGetValue(OptionsKey.ShadowNormalBias, ref Interface.CurrentOptions.ShadowNormalBias);
 							block.TryGetValue(OptionsKey.LightAzimuth, ref Interface.CurrentOptions.LightAzimuth);
 							block.TryGetValue(OptionsKey.LightElevation, ref Interface.CurrentOptions.LightElevation);
+							block.TryGetValue(OptionsKey.ViewingDistance, ref Interface.CurrentOptions.ViewingDistance, NumberRange.Positive);
 							break;
 						case OptionsSection.Parsers:
 							block.GetEnumValue(OptionsKey.XObject, out Interface.CurrentOptions.CurrentXParser);
