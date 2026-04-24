@@ -570,7 +570,7 @@ namespace ObjectViewer
             this.labelSunAzimuth.Name = "labelSunAzimuth";
             this.labelSunAzimuth.Size = new System.Drawing.Size(47, 13);
             this.labelSunAzimuth.TabIndex = 37;
-            this.labelSunAzimuth.Text = "Azimuth:";
+            this.labelSunAzimuth.Text = "Azimuth (Phi):";
             // 
             // trackBarSunAzimuth
             // 
@@ -600,13 +600,13 @@ namespace ObjectViewer
             this.labelSunElevation.Name = "labelSunElevation";
             this.labelSunElevation.Size = new System.Drawing.Size(54, 13);
             this.labelSunElevation.TabIndex = 40;
-            this.labelSunElevation.Text = "Elevation:";
+            this.labelSunElevation.Text = "Elevation (Theta):";
             // 
             // trackBarSunElevation
             // 
             this.trackBarSunElevation.Location = new System.Drawing.Point(6, 292);
             this.trackBarSunElevation.Maximum = 90;
-            this.trackBarSunElevation.Minimum = 5;
+            this.trackBarSunElevation.Minimum = -90;
             this.trackBarSunElevation.Name = "trackBarSunElevation";
             this.trackBarSunElevation.Size = new System.Drawing.Size(235, 45);
             this.trackBarSunElevation.TabIndex = 41;
