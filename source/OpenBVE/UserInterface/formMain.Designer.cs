@@ -1242,7 +1242,7 @@ namespace OpenBve {
             this.tabcontrolRouteDetails.SelectedIndex = 0;
             this.tabcontrolRouteDetails.Size = new System.Drawing.Size(303, 253);
             this.tabcontrolRouteDetails.TabIndex = 19;
-            this.tabcontrolRouteDetails.SelectedIndexChanged += new System.EventHandler(this.tabcontrolRouteDetails_SelectedIndexChanged);
+            this.tabcontrolRouteDetails.SelectedIndexChanged += new System.EventHandler(this.tabControlRouteDetails_SelectedIndexChanged);
             // 
             // tabpageRouteDescription
             // 

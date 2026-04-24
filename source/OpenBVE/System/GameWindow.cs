@@ -946,23 +946,21 @@ namespace OpenBve
 				{
 					NotFound = filesNotFound + " file(s) not found";
 					MessageManager.AddMessage(NotFound, MessageDependency.None, GameMode.Expert, MessageColor.Magenta, 10, null);
-					
 				}
 				if (errors != 0 & warnings != 0)
 				{
 					Messages = errors + " error(s), " + warnings + " warning(s)";
-					MessageManager.AddMessage(Messages, MessageDependency.None, GameMode.Expert, MessageColor.Magenta, 10, null);
+					
 				}
 				else if (errors != 0)
 				{
 					Messages = errors + " error(s)";
-					MessageManager.AddMessage(Messages, MessageDependency.None, GameMode.Expert, MessageColor.Magenta, 10, null);
 				}
 				else
 				{
 					Messages = warnings + " warning(s)";
-					MessageManager.AddMessage(Messages, MessageDependency.None, GameMode.Expert, MessageColor.Magenta, 10, null);
 				}
+				MessageManager.AddMessage(Messages, MessageDependency.None, GameMode.Expert, MessageColor.Magenta, 10, null);
 				Program.CurrentRoute.Information.FilesNotFound = NotFound;
 				Program.CurrentRoute.Information.ErrorsAndWarnings = Messages;
 				//Print the plugin error encountered (If any) for 10s

@@ -283,7 +283,7 @@ namespace OpenBve
 								{
 									potentialFiles = Directory.GetFiles(SearchDirectory);
 									// n.b. sort order of returned files is not guaranteed, so case invariant sort
-									Array.Sort(potentialFiles, (x, y) => String.Compare(x, y, StringComparison.InvariantCultureIgnoreCase));
+									Array.Sort(potentialFiles, (x, y) => string.Compare(x, y, StringComparison.InvariantCultureIgnoreCase));
 									directoryList = Directory.GetDirectories(SearchDirectory);
 								}
 								catch
@@ -300,7 +300,7 @@ namespace OpenBve
 								{
 									potentialFiles = Directory.GetFiles(SearchDirectory);
 									// n.b. sort order of returned files is not guaranteed, so case invariant sort
-									Array.Sort(potentialFiles, (x, y) => String.Compare(x, y, StringComparison.InvariantCultureIgnoreCase));
+									Array.Sort(potentialFiles, (x, y) => string.Compare(x, y, StringComparison.InvariantCultureIgnoreCase));
 									directoryList = Directory.GetDirectories(SearchDirectory);
 								}
 								catch

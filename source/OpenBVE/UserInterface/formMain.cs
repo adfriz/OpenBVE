@@ -658,9 +658,9 @@ namespace OpenBve {
 			e.Graphics.DrawString((fallback ? fontFamily.Name : font.Name), font, (fallback ? Brushes.Red : Brushes.Black), e.Bounds.X, e.Bounds.Y);
 		}
 
-		public static void SetFont(Control.ControlCollection ctrls, string fontName)
+		public static void SetFont(Control.ControlCollection controls, string fontName)
 		{
-			foreach (Control ctrl in ctrls)
+			foreach (Control ctrl in controls)
 			{
 				// recursive
 				SetFont(ctrl.Controls, fontName);
@@ -2158,7 +2158,7 @@ namespace OpenBve {
 			Interface.CurrentOptions.CurrentCompatibilitySignalSet = compatibilitySignals[comboBoxCompatibilitySignals.GetItemText(comboBoxCompatibilitySignals.SelectedItem)]; //Cheat by using the name as the dictionary key!
 		}
 
-		private void tabcontrolRouteDetails_SelectedIndexChanged(object sender, EventArgs e)
+		private void tabControlRouteDetails_SelectedIndexChanged(object sender, EventArgs e)
 		{
 			if (Program.CurrentHost.MonoRuntime) {
 				// MONO issue on some systems means that the map may not draw initially, so force redraw
