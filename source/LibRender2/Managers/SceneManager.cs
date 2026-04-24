@@ -291,14 +291,14 @@ namespace LibRender2.Managers
 			updateVisibility = VisibilityUpdate.Force;
 		}
 
-		public int CreateStaticObject(StaticObject Prototype, Vector3 Position, Transformation WorldTransformation, Transformation LocalTransformation, ObjectDisposalMode AccurateObjectDisposal, double AccurateObjectDisposalZOffset, double StartingDistance, double EndingDistance, double BlockLength, double TrackPosition, bool DisableShadowCasting)
+		public int CreateStaticObject(StaticObject Prototype, Vector3 Position, Transformation WorldTransformation, Transformation LocalTransformation, ObjectDisposalMode AccurateObjectDisposal, ObjectCreationParameters Parameters, double BlockLength)
 		{
 			Matrix4D Translate = Matrix4D.CreateTranslation(Position.X, Position.Y, -Position.Z);
 			Matrix4D Rotate = (Matrix4D)new Transformation(LocalTransformation, WorldTransformation);
-			return CreateStaticObject(Position, Prototype, LocalTransformation, Rotate, Translate, AccurateObjectDisposal, AccurateObjectDisposalZOffset, StartingDistance, EndingDistance, BlockLength, TrackPosition, DisableShadowCasting);
+			return CreateStaticObject(Position, Prototype, LocalTransformation, Rotate, Translate, AccurateObjectDisposal, Parameters, BlockLength);
 		}
 
-		public int CreateStaticObject(Vector3 Position, StaticObject Prototype, Transformation LocalTransformation, Matrix4D Rotate, Matrix4D Translate, ObjectDisposalMode AccurateObjectDisposal, double AccurateObjectDisposalZOffset, double StartingDistance, double EndingDistance, double BlockLength, double TrackPosition, bool DisableShadowCasting = false)
+		public int CreateStaticObject(Vector3 Position, StaticObject Prototype, Transformation LocalTransformation, Matrix4D Rotate, Matrix4D Translate, ObjectDisposalMode AccurateObjectDisposal, ObjectCreationParameters Parameters, double BlockLength)
 		{
 			if (Prototype == null)
 			{
@@ -332,8 +332,8 @@ namespace LibRender2.Managers
 					}
 				}
 
-				startingDistance += (float)AccurateObjectDisposalZOffset;
-				endingDistance += (float)AccurateObjectDisposalZOffset;
+				startingDistance += (float)Parameters.AccurateObjectDisposalZOffset;
+				endingDistance += (float)Parameters.AccurateObjectDisposalZOffset;
 			}
 
 			const double minBlockLength = 20.0;
@@ -346,21 +346,21 @@ namespace LibRender2.Managers
 			switch (AccurateObjectDisposal)
 			{
 				case ObjectDisposalMode.Accurate:
-					startingDistance += (float)TrackPosition;
-					endingDistance += (float)TrackPosition;
-					double z = BlockLength * Math.Floor(TrackPosition / BlockLength);
-					StartingDistance = Math.Min(z - BlockLength, startingDistance);
-					EndingDistance = Math.Max(z + 2.0 * BlockLength, endingDistance);
-					startingDistance = (float)(BlockLength * Math.Floor(StartingDistance / BlockLength));
-					endingDistance = (float)(BlockLength * Math.Ceiling(EndingDistance / BlockLength));
+					startingDistance += (float)Parameters.TrackPosition;
+					endingDistance += (float)Parameters.TrackPosition;
+					double z = BlockLength * Math.Floor(Parameters.TrackPosition / BlockLength);
+					Parameters.StartingDistance = Math.Min(z - BlockLength, startingDistance);
+					Parameters.EndingDistance = Math.Max(z + 2.0 * BlockLength, endingDistance);
+					startingDistance = (float)(BlockLength * Math.Floor(Parameters.StartingDistance / BlockLength));
+					endingDistance = (float)(BlockLength * Math.Ceiling(Parameters.EndingDistance / BlockLength));
 					break;
 				case ObjectDisposalMode.Legacy:
-					startingDistance = (float)StartingDistance;
-					endingDistance = (float)EndingDistance;
+					startingDistance = (float)Parameters.StartingDistance;
+					endingDistance = (float)Parameters.EndingDistance;
 					break;
 				case ObjectDisposalMode.Mechanik:
-					startingDistance = (float)StartingDistance;
-					endingDistance = (float)EndingDistance + 1500;
+					startingDistance = (float)Parameters.StartingDistance;
+					endingDistance = (float)Parameters.EndingDistance + 1500;
 					if (startingDistance < 0)
 					{
 						startingDistance = 0;
@@ -375,7 +375,7 @@ namespace LibRender2.Managers
 				StartingDistance = startingDistance,
 				EndingDistance = endingDistance,
 				WorldPosition = Position,
-				DisableShadowCasting = DisableShadowCasting
+				DisableShadowCasting = Parameters.DisableShadowCasting
 			});
 
 			foreach (MeshFace face in Prototype.Mesh.Faces)

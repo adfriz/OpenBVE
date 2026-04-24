@@ -18,7 +18,6 @@ using OpenBveApi.Math;
 using OpenBveApi.Objects;
 using OpenBveApi.Routes;
 using OpenBveApi.Textures;
-using OpenBveApi.World;
 using OpenTK.Graphics.OpenGL;
 using System;
 using System.Collections.Generic;
@@ -85,7 +84,6 @@ namespace OpenBve.Graphics
 
 			Program.FileSystem.AppendToLogFile("Renderer initialised successfully.");
 		}
-
 		private void UpdateBackground(RenderContext context)
 		{
 			Program.CurrentRoute.UpdateBackground(context.TimeElapsed, Program.Renderer.CurrentInterface != InterfaceType.Normal);
@@ -162,14 +160,14 @@ namespace OpenBve.Graphics
 			}
 		}
 
-		internal int CreateStaticObject(UnifiedObject Prototype, Vector3 Position, Transformation WorldTransformation, Transformation LocalTransformation, ObjectDisposalMode AccurateObjectDisposal, double AccurateObjectDisposalZOffset, double StartingDistance, double EndingDistance, double BlockLength, double TrackPosition)
+		internal int CreateStaticObject(UnifiedObject Prototype, Vector3 Position, Transformation WorldTransformation, Transformation LocalTransformation, ObjectDisposalMode AccurateObjectDisposal, ObjectCreationParameters Parameters, double BlockLength)
 		{
 			if (!(Prototype is StaticObject obj))
 			{
 				Interface.AddMessage(MessageType.Error, false, "Attempted to use an animated object where only static objects are allowed.");
 				return -1;
 			}
-			return base.CreateStaticObject(obj, Position, WorldTransformation, LocalTransformation, AccurateObjectDisposal, AccurateObjectDisposalZOffset, StartingDistance, EndingDistance, BlockLength, TrackPosition, false);
+			return base.CreateStaticObject(obj, Position, WorldTransformation, LocalTransformation, AccurateObjectDisposal, Parameters, BlockLength);
 		}
 
 		protected override void UpdateViewport(int width, int height)
@@ -187,10 +185,12 @@ namespace OpenBve.Graphics
 				case ViewportMode.Scenery:
 					double cd = Program.CurrentRoute.CurrentBackground is BackgroundObject b ? Math.Max(Program.CurrentRoute.CurrentBackground.BackgroundImageDistance, b.ClipDistance) : Program.CurrentRoute.CurrentBackground.BackgroundImageDistance;
 					cd = Math.Max(cd, currentOptions.ViewingDistance);
-					CurrentProjectionMatrix = Matrix4D.CreatePerspectiveFieldOfView(Camera.VerticalViewingAngle, Screen.AspectRatio, currentOptions.NearClipScenery, cd);
+					double nearClipScenery = Math.Max(0.01, currentOptions.NearClipScenery);
+					CurrentProjectionMatrix = Matrix4D.CreatePerspectiveFieldOfView(Camera.VerticalViewingAngle, Screen.AspectRatio, nearClipScenery, cd);
 					break;
 				case ViewportMode.Cab:
-					CurrentProjectionMatrix = Matrix4D.CreatePerspectiveFieldOfView(Camera.VerticalViewingAngle, Screen.AspectRatio, currentOptions.NearClipCab, 50.0);
+					double nearClipCab = Math.Max(0.01, currentOptions.NearClipCab);
+					CurrentProjectionMatrix = Matrix4D.CreatePerspectiveFieldOfView(Camera.VerticalViewingAngle, Screen.AspectRatio, nearClipCab, 50.0);
 					break;
 			}
 
