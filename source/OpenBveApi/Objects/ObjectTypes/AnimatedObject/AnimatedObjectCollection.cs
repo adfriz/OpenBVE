@@ -56,6 +56,7 @@ namespace OpenBveApi.Objects
 				}
 			}
 
+			double p = Parameters.AccurateObjectDisposalZOffset;
 			if (anyfree)
 			{
 				for (int i = 0; i < Objects.Length; i++)
@@ -68,12 +69,12 @@ namespace OpenBveApi.Objects
 							Matrix4D mat = Matrix4D.Identity;
 							mat *= Objects[i].States[0].Translation;
 							mat *= transformationMatrix;
-							double zOffset = Objects[i].States[0].Translation.ExtractTranslation().Z * -1.0; //To calculate the Z-offset within the object, we want the untransformed co-ordinates, not the world co-ordinates
-
+							Parameters.AccurateObjectDisposalZOffset = Objects[i].States[0].Translation.ExtractTranslation().Z * -1.0; //To calculate the Z-offset within the object, we want the untransformed co-ordinates, not the world co-ordinates
 							currentHost.CreateStaticObject(Objects[i].States[0].Prototype, Position, LocalTransformation, mat, Matrix4D.CreateTranslation(Position.X, Position.Y, -Position.Z), Parameters);
 						}
 						else
 						{
+							Parameters.AccurateObjectDisposalZOffset = p;
 							Objects[i].Clone().CreateObject(Position, WorldTransformation, LocalTransformation, Parameters.SectionIndex, Parameters.TrackPosition);
 						}
 					}

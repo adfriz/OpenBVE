@@ -348,7 +348,7 @@ namespace ObjectViewer {
 			FunctionScripts.ExecuteFunctionScript(functionScript, (TrainBase)train, CarIndex, Position, TrackPosition, SectionIndex, IsPartOfTrain, TimeElapsed, CurrentState);
 		}
 
-		public override int CreateStaticObject(StaticObject Prototype, Vector3 Position, Transformation WorldTransformation, Transformation LocalTransformation, ObjectCreationParameters parameters)
+		public override int CreateStaticObject(StaticObject Prototype, Vector3 Position, ObjectCreationParameters parameters, Transformation WorldTransformation, Transformation LocalTransformation = null)
 		{
 			return Program.Renderer.CreateStaticObject(Prototype, Position, WorldTransformation, LocalTransformation, ObjectDisposalMode.Accurate, parameters, 25.0);
 		}

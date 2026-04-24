@@ -49,7 +49,7 @@ namespace CsvRwRouteParser
 					else
 					{
 						StaticObject Crack = (StaticObject) Structure.CrackL[Type].Transform(d0, d1);
-						Plugin.CurrentHost.CreateStaticObject(Crack, pos, RailTransformation, Transformation.NullTransformation, Parameters.WithoutShadow());
+						Plugin.CurrentHost.CreateStaticObject(Crack, pos, Parameters.WithoutShadow(), RailTransformation);
 					}
 				}
 				else if (d0 > 0.0)
@@ -61,7 +61,7 @@ namespace CsvRwRouteParser
 					else
 					{
 						StaticObject Crack = (StaticObject) Structure.CrackR[Type].Transform(d0, d1);
-						Plugin.CurrentHost.CreateStaticObject(Crack, pos, RailTransformation, Transformation.NullTransformation, Parameters.WithoutShadow());
+						Plugin.CurrentHost.CreateStaticObject(Crack, pos, Parameters.WithoutShadow(), RailTransformation);
 					}
 				}
 			}

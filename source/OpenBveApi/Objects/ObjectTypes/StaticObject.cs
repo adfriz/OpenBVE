@@ -585,7 +585,7 @@ namespace OpenBveApi.Objects
 		public override void CreateObject(Vector3 position, Transformation worldTransformation, Transformation localTransformation,
 			ObjectCreationParameters Parameters)
 		{
-			currentHost.CreateStaticObject(this, position, worldTransformation, localTransformation, Parameters);
+			currentHost.CreateStaticObject(this, position, Parameters, worldTransformation, localTransformation);
 		}
 
 		/// <inheritdoc />
