@@ -96,7 +96,7 @@ namespace OpenBveApi
 
 
 		/// <summary>The sun azimuth in degrees</summary>
-		public double LightAzimuth = 240.0;
+		public double LightAzimuth = -26.57;
 		/// <summary>The sun elevation in degrees</summary>
 		public double LightElevation = 60.0;
 		/// <summary>Whether debug logs should be generated</summary>

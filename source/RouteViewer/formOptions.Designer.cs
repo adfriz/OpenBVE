@@ -604,12 +604,13 @@ namespace RouteViewer
             // trackBarSunAzimuth
             // 
             this.trackBarSunAzimuth.Location = new System.Drawing.Point(6, 228);
-            this.trackBarSunAzimuth.Maximum = 360;
+            this.trackBarSunAzimuth.Maximum = 180;
+            this.trackBarSunAzimuth.Minimum = -180;
             this.trackBarSunAzimuth.Name = "trackBarSunAzimuth";
             this.trackBarSunAzimuth.Size = new System.Drawing.Size(235, 45);
             this.trackBarSunAzimuth.TabIndex = 38;
             this.trackBarSunAzimuth.TickFrequency = 30;
-            this.trackBarSunAzimuth.Value = 240;
+            this.trackBarSunAzimuth.Value = -26;
             this.trackBarSunAzimuth.Scroll += new System.EventHandler(this.trackBarSunAzimuth_Scroll);
             // 
             // labelSunAzimuthValue
@@ -619,7 +620,7 @@ namespace RouteViewer
             this.labelSunAzimuthValue.Name = "labelSunAzimuthValue";
             this.labelSunAzimuthValue.Size = new System.Drawing.Size(29, 13);
             this.labelSunAzimuthValue.TabIndex = 39;
-            this.labelSunAzimuthValue.Text = "240°";
+            this.labelSunAzimuthValue.Text = "-26°";
             // 
             // labelSunElevation
             // 
