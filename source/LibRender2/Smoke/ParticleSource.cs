@@ -242,9 +242,9 @@ namespace LibRender2.Smoke
 				return;
 			}
 
-			GL.Enable(EnableCap.CullFace);
-			GL.Enable(EnableCap.DepthTest);
-			GL.DepthMask(true);
+			Renderer.Device.SetCullFace(true);
+			Renderer.Device.SetDepthTest(true);
+			Renderer.Device.SetDepthMask(true);
 
 			if (ParticleTexture == null)
 			{

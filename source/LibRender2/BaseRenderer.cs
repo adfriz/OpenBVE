@@ -258,11 +258,11 @@ namespace LibRender2
 		public double FrameRate = 1.0;
 
 		/// <summary>Whether Blend is enabled in openGL</summary>
-		private bool blendEnabled;
+		public bool BlendEnabled => Device.BlendEnabled;
 
-		private BlendingFactor blendSrcFactor;
+		private BlendingFactor blendSrcFactor = BlendingFactor.SrcAlpha;
 
-		private BlendingFactor blendDestFactor;
+		private BlendingFactor blendDestFactor = BlendingFactor.OneMinusSrcAlpha;
 
 		/// <summary>Whether Alpha Testing is enabled in openGL</summary>
 		private bool alphaTestEnabled;
@@ -465,8 +465,7 @@ namespace LibRender2
 			}
 			GL.ClearColor(0.67f, 0.67f, 0.67f, 1.0f);
 			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-			GL.Enable(EnableCap.DepthTest);
-			GL.DepthFunc(DepthFunction.Lequal);
+			Device.SetDepthTest(true, DepthFunction.Lequal);
 			SetBlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 			if (currentOptions.ForceForwardsCompatibleContext == false)
 			{
@@ -474,20 +473,19 @@ namespace LibRender2
 				GL.Hint(HintTarget.FogHint, HintMode.Fastest);
 				GL.Hint(HintTarget.PerspectiveCorrectionHint, HintMode.Fastest);
 				GL.Hint(HintTarget.GenerateMipmapHint, HintMode.Nicest);
-				GL.Disable(EnableCap.Lighting);
-				GL.Disable(EnableCap.Fog);
+				Device.SetLighting(false);
+				Device.SetFog(false);
 				GL.Hint(HintTarget.LineSmoothHint, HintMode.Fastest);
 				GL.Hint(HintTarget.PointSmoothHint, HintMode.Fastest);
 				GL.Hint(HintTarget.PolygonSmoothHint, HintMode.Fastest);
 			}
 
-			GL.Enable(EnableCap.CullFace);
-			GL.CullFace(CullFaceMode.Front);
+			Device.SetCullFace(true, CullFaceMode.Front);
 			GL.Disable(EnableCap.Dither);
 			
 			if (!AvailableNewRenderer)
 			{
-				GL.Disable(EnableCap.Texture2D);
+				Device.SetTexture2D(false);
 				GL.Fog(FogParameter.FogMode, (int)FogMode.Linear);
 			}
 			
@@ -667,21 +665,19 @@ namespace LibRender2
 		/// </summary>
 		public virtual void ResetOpenGlState()
 		{
-			GL.Enable(EnableCap.CullFace);
-			GL.CullFace(CullFaceMode.Front);
+			Device.SetCullFace(true, CullFaceMode.Front);
 			if (!AvailableNewRenderer)
 			{
-				GL.Disable(EnableCap.Lighting);
-				GL.Disable(EnableCap.Fog);
-				GL.Disable(EnableCap.Texture2D);
+				Device.SetLighting(false);
+				Device.SetFog(false);
+				Device.SetTexture2D(false);
 			}
 			
 			SetBlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 			UnsetBlendFunc();
-			GL.Enable(EnableCap.DepthTest);
-			GL.DepthFunc(DepthFunction.Lequal);
+			Device.SetDepthTest(true, DepthFunction.Lequal);
 			GL.Disable(EnableCap.DepthClamp);
-			GL.DepthMask(true);
+			Device.SetDepthMask(true);
 			SetAlphaFunc(AlphaFunction.Greater, 0.9f);
 		}
 
@@ -885,35 +881,24 @@ namespace LibRender2
 
 		public void SetBlendFunc()
 		{
-			SetBlendFunc(blendSrcFactor, blendDestFactor);
+			Device.SetBlend(true, blendSrcFactor, blendDestFactor);
 		}
 
 		public void SetBlendFunc(BlendingFactor srcFactor, BlendingFactor destFactor)
 		{
-			blendEnabled = true;
 			blendSrcFactor = srcFactor;
 			blendDestFactor = destFactor;
-			GL.Enable(EnableCap.Blend);
-			GL.BlendFunc(srcFactor, destFactor);
+			Device.SetBlend(true, srcFactor, destFactor);
 		}
 
 		public void UnsetBlendFunc()
 		{
-			blendEnabled = false;
-			GL.Disable(EnableCap.Blend);
+			Device.SetBlend(false);
 		}
 
 		public void RestoreBlendFunc()
 		{
-			if (blendEnabled)
-			{
-				GL.Enable(EnableCap.Blend);
-				GL.BlendFunc(blendSrcFactor, blendDestFactor);
-			}
-			else
-			{
-				GL.Disable(EnableCap.Blend);
-			}
+			Device.SetBlend(Device.BlendEnabled, blendSrcFactor, blendDestFactor);
 		}
 
 		/// <summary>Specifies the OpenGL alpha function to perform</summary>
@@ -935,12 +920,7 @@ namespace LibRender2
 				CurrentShader.SetAlphaTest(true);
 				CurrentShader.SetAlphaFunction(comparison, value);
 			}
-			else
-			{
-				GL.Enable(EnableCap.AlphaTest);
-				GL.AlphaFunc(comparison, value);	
-			}
-			
+			Device.SetAlphaTest(true, comparison, value);
 		}
 
 		/// <summary>Disables OpenGL alpha testing</summary>
@@ -951,11 +931,7 @@ namespace LibRender2
 			{
 				CurrentShader.SetAlphaTest(false);
 			}
-			else
-			{
-				GL.Disable(EnableCap.AlphaTest);	
-			}
-			
+			Device.SetAlphaTest(false);
 		}
 
 		/// <summary>Restores the OpenGL alpha function to it's previous state</summary>
@@ -963,28 +939,11 @@ namespace LibRender2
 		{
 			if (alphaTestEnabled)
 			{
-				if (AvailableNewRenderer)
-				{
-					CurrentShader.SetAlphaTest(true);
-					CurrentShader.SetAlphaFunction(alphaFuncComparison, alphaFuncValue);
-				}
-				else
-				{
-					GL.Enable(EnableCap.AlphaTest);
-					GL.AlphaFunc(alphaFuncComparison, alphaFuncValue);
-				}
-				
+				SetAlphaFunc(alphaFuncComparison, alphaFuncValue);
 			}
 			else
 			{
-				if (AvailableNewRenderer)
-				{
-					CurrentShader.SetAlphaTest(false);
-				}
-				else
-				{
-					GL.Disable(EnableCap.AlphaTest);
-				}
+				UnsetAlphaFunc();
 			}
 		}
 
@@ -1048,13 +1007,13 @@ namespace LibRender2
 
 			if (!OptionBackFaceCulling || (face.Flags & FaceFlags.Face2Mask) != 0)
 			{
-				GL.Disable(EnableCap.CullFace);
+				Device.SetCullFace(false);
 			}
 			else if (OptionBackFaceCulling)
 			{
 				if ((face.Flags & FaceFlags.Face2Mask) == 0)
 				{
-					GL.Enable(EnableCap.CullFace);
+					Device.SetCullFace(true);
 				}
 			}
 
@@ -1273,13 +1232,13 @@ namespace LibRender2
 
 			if (!OptionBackFaceCulling || (face.Flags & FaceFlags.Face2Mask) != 0)
 			{
-				GL.Disable(EnableCap.CullFace);
+				Device.SetCullFace(false);
 			}
 			else if (OptionBackFaceCulling)
 			{
 				if ((face.Flags & FaceFlags.Face2Mask) == 0)
 				{
-					GL.Enable(EnableCap.CullFace);
+					Device.SetCullFace(true);
 				}
 			}
 
@@ -1323,7 +1282,7 @@ namespace LibRender2
 			{
 				if (OptionLighting)
 				{
-					GL.Enable(EnableCap.Lighting);
+					Device.SetLighting(true);
 				}
 			}
 
@@ -1332,7 +1291,7 @@ namespace LibRender2
 			// fog
 			if (Fog.Enabled)
 			{
-				GL.Enable(EnableCap.Fog);
+				Device.SetFog(true);
 			}
 
 			PrimitiveType drawMode;
@@ -1381,7 +1340,7 @@ namespace LibRender2
 					// ReSharper disable once PossibleInvalidOperationException
 					if (currentHost.LoadTexture(ref material.DaytimeTexture, (OpenGlTextureWrapMode)material.WrapMode))
 					{
-						GL.Enable(EnableCap.Texture2D);
+						Device.SetTexture2D(true);
 						if (LastBoundTexture != material.DaytimeTexture.OpenGlTextures[(int)material.WrapMode])
 						{
 							GL.BindTexture(TextureTarget.Texture2D, material.DaytimeTexture.OpenGlTextures[(int)material.WrapMode].Name);
@@ -1396,7 +1355,7 @@ namespace LibRender2
 				{
 					factor = 1.0f;
 					SetBlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.One);
-					GL.Disable(EnableCap.Fog);
+					Device.SetFog(false);
 				}
 				else if (material.NighttimeTexture == null)
 				{
@@ -1409,7 +1368,7 @@ namespace LibRender2
 
 				if ((material.Flags & MaterialFlags.DisableLighting) != 0)
 				{
-					GL.Disable(EnableCap.Lighting);
+					Device.SetLighting(false);
 				}
 
 				float alphaFactor = distanceFactor;
@@ -1449,7 +1408,7 @@ namespace LibRender2
 			if (blendFactor != 0 && material.NighttimeTexture != null && currentHost.LoadTexture(ref material.NighttimeTexture, (OpenGlTextureWrapMode)material.WrapMode))
 			{
 				// texture
-				GL.Enable(EnableCap.Texture2D);
+				Device.SetTexture2D(true);
 				if (LastBoundTexture != material.NighttimeTexture.OpenGlTextures[(int)material.WrapMode])
 				{
 					GL.BindTexture(TextureTarget.Texture2D, material.NighttimeTexture.OpenGlTextures[(int)material.WrapMode].Name);
@@ -1459,8 +1418,7 @@ namespace LibRender2
 				Device.SetBlend(true);
 
 				// alpha test
-				GL.Enable(EnableCap.AlphaTest);
-				GL.AlphaFunc(AlphaFunction.Greater, 0.0f);
+				Device.SetAlphaTest(true, AlphaFunction.Greater, 0.0f);
 
 				// blend mode
 				float alphaFactor = distanceFactor * blendFactor;
@@ -1494,7 +1452,7 @@ namespace LibRender2
 				RestoreAlphaFunc();
 			}
 
-			GL.Disable(EnableCap.Texture2D);
+			Device.SetTexture2D(false);
 
 			// normals
 			if (OptionNormals)

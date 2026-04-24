@@ -120,7 +120,7 @@ namespace LibRender2.Text
 			/*
 			 * Render the string.
 			 * */
-			GL.Enable(EnableCap.Texture2D);
+			renderer.Device.SetTexture2D(true);
 
 			GL.MatrixMode(MatrixMode.Projection);
 			GL.PushMatrix();
@@ -153,7 +153,7 @@ namespace LibRender2.Text
 					/*
 					 * In the first pass, mask off the background with pure black.
 					 * */
-					GL.BlendFunc(BlendingFactor.Zero, BlendingFactor.OneMinusSrcColor);
+					renderer.Device.SetBlend(true, BlendingFactor.Zero, BlendingFactor.OneMinusSrcColor);
 					GL.Begin(PrimitiveType.Quads);
 					GL.Color4(color.A, color.A, color.A, 1.0f);
 					GL.TexCoord2(data.TextureCoordinates.X, data.TextureCoordinates.Y);
@@ -169,7 +169,7 @@ namespace LibRender2.Text
 					/*
 					 * In the second pass, add the character onto the background.
 					 * */
-					GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.One);
+					renderer.Device.SetBlend(true, BlendingFactor.SrcAlpha, BlendingFactor.One);
 					GL.Begin(PrimitiveType.Quads);
 					GL.Color4(color.R, color.G, color.B, color.A);
 					GL.TexCoord2(data.TextureCoordinates.X, data.TextureCoordinates.Y);
@@ -187,7 +187,7 @@ namespace LibRender2.Text
 			}
 
 			renderer.RestoreBlendFunc();
-			GL.Disable(EnableCap.Texture2D);
+			renderer.Device.SetTexture2D(false);
 
 			GL.PopMatrix();
 
@@ -215,7 +215,7 @@ namespace LibRender2.Text
 					/*
 					 * In the first pass, mask off the background with pure black.
 					 */
-					GL.BlendFunc(BlendingFactor.Zero, BlendingFactor.OneMinusSrcColor);
+					renderer.Device.SetBlend(true, BlendingFactor.Zero, BlendingFactor.OneMinusSrcColor);
 					Shader.SetColor(new Color128(color.A, color.A, color.A, 1.0f));
 					Shader.SetPoint(new Vector2(x, y));
 					Shader.SetSize(data.PhysicalSize);
@@ -226,7 +226,7 @@ namespace LibRender2.Text
 					*/
 					renderer.dummyVao.Bind();
 					GL.DrawArrays(PrimitiveType.TriangleStrip, 0, 6);
-					GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.One);
+					renderer.Device.SetBlend(true, BlendingFactor.SrcAlpha, BlendingFactor.One);
 					Shader.SetColor(color);
 					GL.DrawArrays(PrimitiveType.TriangleStrip, 0, 6);
 				}

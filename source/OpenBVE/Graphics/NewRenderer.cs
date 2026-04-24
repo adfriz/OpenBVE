@@ -18,6 +18,7 @@ using OpenBveApi.Math;
 using OpenBveApi.Objects;
 using OpenBveApi.Routes;
 using OpenBveApi.Textures;
+using OpenBveApi.World;
 using OpenTK.Graphics.OpenGL;
 using System;
 using System.Collections.Generic;
@@ -292,8 +293,8 @@ namespace OpenBve.Graphics
 		{
 			renderer.ResetOpenGlState();
 			renderer.SetAlphaFunc(AlphaFunction.Greater, 0.0f);
-			GL.Disable(EnableCap.DepthTest);
-			GL.DepthMask(false);
+			renderer.Device.SetDepthTest(false);
+			renderer.Device.SetDepthMask(false);
 			renderer.OptionLighting = false;
 
 			if (Interface.CurrentOptions.MotionBlur != MotionBlurMode.None)

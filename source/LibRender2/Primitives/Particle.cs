@@ -1,4 +1,4 @@
-﻿//Simplified BSD License (BSD-2-Clause)
+//Simplified BSD License (BSD-2-Clause)
 //
 //Copyright (c) 2025, The OpenBVE Project
 //
@@ -109,11 +109,11 @@ namespace LibRender2.Primitives
 			{
 				renderer.UnsetBlendFunc();
 				renderer.SetAlphaFunc(AlphaFunction.Equal, 1.0f);
-				GL.DepthMask(true);
+				renderer.Device.SetDepthMask(true);
 				DrawRetained(particleIndex, worldPosition, worldDirection, worldUp, worldSide, size, texture, opacity);
 				renderer.SetBlendFunc();
 				renderer.SetAlphaFunc(AlphaFunction.Less, 1.0f);
-				GL.DepthMask(false);
+				renderer.Device.SetDepthMask(false);
 				DrawRetained(particleIndex, worldPosition, worldDirection, worldUp, worldSide, size, texture, opacity);
 			}
 		}
@@ -134,17 +134,17 @@ namespace LibRender2.Primitives
 			// texture
 			if (texture != null && renderer.currentHost.LoadTexture(ref texture, OpenGlTextureWrapMode.ClampClamp))
 			{
-				GL.Enable(EnableCap.Texture2D);
+				renderer.Device.SetTexture2D(true);
 				GL.BindTexture(TextureTarget.Texture2D, texture.OpenGlTextures[(int)OpenGlTextureWrapMode.ClampClamp].Name);
 			}
 			else
 			{
-				GL.Disable(EnableCap.Texture2D);
+				renderer.Device.SetTexture2D(false);
 			}
 
 			particlesVAO[particleIndex].Bind();
 			particlesVAO[particleIndex].Draw(PrimitiveType.Quads);
-			GL.Disable(EnableCap.Texture2D);
+			renderer.Device.SetTexture2D(false);
 
 		}
 

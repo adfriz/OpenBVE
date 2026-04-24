@@ -25,7 +25,7 @@ namespace LibRender2.Primitives
 				return;
 			}
 			
-			GL.DepthMask(true);
+			Renderer.Device.SetDepthMask(true);
 			Vector2 newSize;
 			switch (SizeMode)
 			{
