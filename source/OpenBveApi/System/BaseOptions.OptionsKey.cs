@@ -34,6 +34,9 @@ namespace OpenBveApi
 		ViewingDistance,
 		QuadLeafSize,
 		UIScaleFactor,
+		NearClipScenery,
+		NearClipCab,
+		NearClipBase,
 		AutoReloadObjects,
 		// Quality
 		Interpolation,

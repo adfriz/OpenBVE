@@ -358,8 +358,9 @@ namespace OpenBve {
 						}
 						break;
 					case Instructions.TrainAccelerationMotor:
+						Function.Stack[s] = 0.0;
 						if (Train != null) {
-							Function.Stack[s] = 0.0;
+							
 							for (int j = 0; j < Train.Cars.Length; j++) {
 								if (Train.Cars[j].TractionModel.ProvidesPower) {
 									// hack: MotorAcceleration does not distinguish between forward/backward
@@ -373,8 +374,6 @@ namespace OpenBve {
 									break;
 								}
 							}
-						} else {
-							Function.Stack[s] = 0.0;
 						}
 						s++; break;
 					case Instructions.TrainAccelerationMotorOfCar:

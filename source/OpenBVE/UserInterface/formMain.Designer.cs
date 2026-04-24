@@ -99,6 +99,96 @@ namespace OpenBve {
             this.labelStartTitleBackground = new System.Windows.Forms.Label();
             this.labelFillerTwo = new System.Windows.Forms.Label();
             this.panelOptions = new System.Windows.Forms.Panel();
+            this.panelOptionsLeft = new System.Windows.Forms.Panel();
+            this.groupboxDisplayMode = new System.Windows.Forms.GroupBox();
+            this.comboBoxFont = new System.Windows.Forms.ComboBox();
+            this.labelFontName = new System.Windows.Forms.Label();
+            this.labelHUDLarge = new System.Windows.Forms.Label();
+            this.labelHUDNormal = new System.Windows.Forms.Label();
+            this.labelHUDSmall = new System.Windows.Forms.Label();
+            this.trackBarHUDSize = new System.Windows.Forms.TrackBar();
+            this.labelHUDScale = new System.Windows.Forms.Label();
+            this.comboboxVSync = new System.Windows.Forms.ComboBox();
+            this.labelVSync = new System.Windows.Forms.Label();
+            this.radiobuttonFullscreen = new System.Windows.Forms.RadioButton();
+            this.radiobuttonWindow = new System.Windows.Forms.RadioButton();
+            this.groupboxWindow = new System.Windows.Forms.GroupBox();
+            this.updownWindowHeight = new System.Windows.Forms.NumericUpDown();
+            this.labelWindowHeight = new System.Windows.Forms.Label();
+            this.updownWindowWidth = new System.Windows.Forms.NumericUpDown();
+            this.labelWindowWidth = new System.Windows.Forms.Label();
+            this.groupboxFullscreen = new System.Windows.Forms.GroupBox();
+            this.comboboxFullscreenBits = new System.Windows.Forms.ComboBox();
+            this.labelFullscreenBits = new System.Windows.Forms.Label();
+            this.updownFullscreenHeight = new System.Windows.Forms.NumericUpDown();
+            this.labelFullscreenHeight = new System.Windows.Forms.Label();
+            this.updownFullscreenWidth = new System.Windows.Forms.NumericUpDown();
+            this.labelFullscreenWidth = new System.Windows.Forms.Label();
+            this.groupboxInterpolation = new System.Windows.Forms.GroupBox();
+            this.updownAntiAliasing = new System.Windows.Forms.NumericUpDown();
+            this.labelAntiAliasing = new System.Windows.Forms.Label();
+            this.labelTransparencyQuality = new System.Windows.Forms.Label();
+            this.labelTransparencyPerformance = new System.Windows.Forms.Label();
+            this.labelTransparency = new System.Windows.Forms.Label();
+            this.updownAnisotropic = new System.Windows.Forms.NumericUpDown();
+            this.labelAnisotropic = new System.Windows.Forms.Label();
+            this.comboboxInterpolation = new System.Windows.Forms.ComboBox();
+            this.labelInterpolation = new System.Windows.Forms.Label();
+            this.trackbarTransparency = new System.Windows.Forms.TrackBar();
+            this.panelOptionsRight = new System.Windows.Forms.Panel();
+            this.groupBoxOther = new System.Windows.Forms.GroupBox();
+            this.comboBoxTimeTableDisplayMode = new System.Windows.Forms.ComboBox();
+            this.labelTimeTableDisplayMode = new System.Windows.Forms.Label();
+            this.groupBoxRailDriver = new System.Windows.Forms.GroupBox();
+            this.labelRailDriverCalibration = new System.Windows.Forms.Label();
+            this.buttonRailDriverCalibration = new System.Windows.Forms.Button();
+            this.comboBoxRailDriverUnits = new System.Windows.Forms.ComboBox();
+            this.labelRailDriverSpeedUnits = new System.Windows.Forms.Label();
+            this.groupboxControls = new System.Windows.Forms.GroupBox();
+            this.checkBoxEBAxis = new System.Windows.Forms.CheckBox();
+            this.trackbarJoystickAxisThreshold = new System.Windows.Forms.TrackBar();
+            this.checkboxJoysticksUsed = new System.Windows.Forms.CheckBox();
+            this.labelJoystickAxisThreshold = new System.Windows.Forms.Label();
+            this.groupboxVerbosity = new System.Windows.Forms.GroupBox();
+            this.checkBoxAccessibility = new System.Windows.Forms.CheckBox();
+            this.checkboxErrorMessages = new System.Windows.Forms.CheckBox();
+            this.checkboxWarningMessages = new System.Windows.Forms.CheckBox();
+            this.groupboxSimulation = new System.Windows.Forms.GroupBox();
+            this.checkBoxLoadingSway = new System.Windows.Forms.CheckBox();
+            this.checkboxBlackBox = new System.Windows.Forms.CheckBox();
+            this.checkboxDerailments = new System.Windows.Forms.CheckBox();
+            this.checkboxCollisions = new System.Windows.Forms.CheckBox();
+            this.checkboxToppling = new System.Windows.Forms.CheckBox();
+            this.groupboxSound = new System.Windows.Forms.GroupBox();
+            this.updownSoundNumber = new System.Windows.Forms.NumericUpDown();
+            this.labelSoundNumber = new System.Windows.Forms.Label();
+            this.panelOptionsPage2 = new System.Windows.Forms.Panel();
+            this.groupboxDistance = new System.Windows.Forms.GroupBox();
+            this.updownNearClipBase = new System.Windows.Forms.NumericUpDown();
+            this.labelNearClipBase = new System.Windows.Forms.Label();
+            this.updownNearClipCab = new System.Windows.Forms.NumericUpDown();
+            this.labelNearClipCab = new System.Windows.Forms.Label();
+            this.updownNearClipScenery = new System.Windows.Forms.NumericUpDown();
+            this.labelNearClipScenery = new System.Windows.Forms.Label();
+            this.comboboxMotionBlur = new System.Windows.Forms.ComboBox();
+            this.labelMotionBlur = new System.Windows.Forms.Label();
+            this.labelDistanceUnit = new System.Windows.Forms.Label();
+            this.updownDistance = new System.Windows.Forms.NumericUpDown();
+            this.labelDistance = new System.Windows.Forms.Label();
+            this.groupboxShadows = new System.Windows.Forms.GroupBox();
+            this.labelShadowResolution = new System.Windows.Forms.Label();
+            this.comboboxShadowResolution = new System.Windows.Forms.ComboBox();
+            this.labelShadowDistance = new System.Windows.Forms.Label();
+            this.comboboxShadowDistance = new System.Windows.Forms.ComboBox();
+            this.labelShadowCascades = new System.Windows.Forms.Label();
+            this.comboboxShadowCascades = new System.Windows.Forms.ComboBox();
+            this.labelShadowStrength = new System.Windows.Forms.Label();
+            this.trackbarShadowStrength = new System.Windows.Forms.TrackBar();
+            this.labelShadowStrengthValue = new System.Windows.Forms.Label();
+            this.labelShadowBias = new System.Windows.Forms.Label();
+            this.updownShadowBias = new System.Windows.Forms.NumericUpDown();
+            this.labelShadowNormalBias = new System.Windows.Forms.Label();
+            this.updownShadowNormalBias = new System.Windows.Forms.NumericUpDown();
             this.buttonOptionsPrevious = new System.Windows.Forms.Button();
             this.buttonOptionsNext = new System.Windows.Forms.Button();
             this.panelOptionsPage3 = new System.Windows.Forms.Panel();
@@ -148,89 +238,6 @@ namespace OpenBve {
             this.buttonSetRouteDirectory = new System.Windows.Forms.Button();
             this.labelRouteInstallDirectory = new System.Windows.Forms.Label();
             this.textBoxRouteDirectory = new System.Windows.Forms.TextBox();
-            this.panelOptionsLeft = new System.Windows.Forms.Panel();
-            this.groupboxDisplayMode = new System.Windows.Forms.GroupBox();
-            this.comboBoxFont = new System.Windows.Forms.ComboBox();
-            this.labelFontName = new System.Windows.Forms.Label();
-            this.labelHUDLarge = new System.Windows.Forms.Label();
-            this.labelHUDNormal = new System.Windows.Forms.Label();
-            this.labelHUDSmall = new System.Windows.Forms.Label();
-            this.trackBarHUDSize = new System.Windows.Forms.TrackBar();
-            this.labelHUDScale = new System.Windows.Forms.Label();
-            this.comboboxVSync = new System.Windows.Forms.ComboBox();
-            this.labelVSync = new System.Windows.Forms.Label();
-            this.radiobuttonFullscreen = new System.Windows.Forms.RadioButton();
-            this.radiobuttonWindow = new System.Windows.Forms.RadioButton();
-            this.groupboxWindow = new System.Windows.Forms.GroupBox();
-            this.updownWindowHeight = new System.Windows.Forms.NumericUpDown();
-            this.labelWindowHeight = new System.Windows.Forms.Label();
-            this.updownWindowWidth = new System.Windows.Forms.NumericUpDown();
-            this.labelWindowWidth = new System.Windows.Forms.Label();
-            this.groupboxFullscreen = new System.Windows.Forms.GroupBox();
-            this.comboboxFullscreenBits = new System.Windows.Forms.ComboBox();
-            this.labelFullscreenBits = new System.Windows.Forms.Label();
-            this.updownFullscreenHeight = new System.Windows.Forms.NumericUpDown();
-            this.labelFullscreenHeight = new System.Windows.Forms.Label();
-            this.updownFullscreenWidth = new System.Windows.Forms.NumericUpDown();
-            this.labelFullscreenWidth = new System.Windows.Forms.Label();
-            this.groupboxInterpolation = new System.Windows.Forms.GroupBox();
-            this.updownAntiAliasing = new System.Windows.Forms.NumericUpDown();
-            this.labelAntiAliasing = new System.Windows.Forms.Label();
-            this.labelTransparencyQuality = new System.Windows.Forms.Label();
-            this.labelTransparencyPerformance = new System.Windows.Forms.Label();
-            this.labelTransparency = new System.Windows.Forms.Label();
-            this.updownAnisotropic = new System.Windows.Forms.NumericUpDown();
-            this.labelAnisotropic = new System.Windows.Forms.Label();
-            this.comboboxInterpolation = new System.Windows.Forms.ComboBox();
-            this.labelInterpolation = new System.Windows.Forms.Label();
-            this.trackbarTransparency = new System.Windows.Forms.TrackBar();
-            this.groupboxShadows = new System.Windows.Forms.GroupBox();
-            this.labelShadowResolution = new System.Windows.Forms.Label();
-            this.comboboxShadowResolution = new System.Windows.Forms.ComboBox();
-            this.labelShadowDistance = new System.Windows.Forms.Label();
-            this.comboboxShadowDistance = new System.Windows.Forms.ComboBox();
-            this.labelShadowCascades = new System.Windows.Forms.Label();
-            this.comboboxShadowCascades = new System.Windows.Forms.ComboBox();
-            this.labelShadowStrength = new System.Windows.Forms.Label();
-            this.trackbarShadowStrength = new System.Windows.Forms.TrackBar();
-            this.labelShadowStrengthValue = new System.Windows.Forms.Label();
-            this.labelShadowBias = new System.Windows.Forms.Label();
-            this.updownShadowBias = new System.Windows.Forms.NumericUpDown();
-            this.labelShadowNormalBias = new System.Windows.Forms.Label();
-            this.updownShadowNormalBias = new System.Windows.Forms.NumericUpDown();
-            this.panelOptionsRight = new System.Windows.Forms.Panel();
-            this.groupBoxOther = new System.Windows.Forms.GroupBox();
-            this.comboBoxTimeTableDisplayMode = new System.Windows.Forms.ComboBox();
-            this.labelTimeTableDisplayMode = new System.Windows.Forms.Label();
-            this.groupBoxRailDriver = new System.Windows.Forms.GroupBox();
-            this.labelRailDriverCalibration = new System.Windows.Forms.Label();
-            this.buttonRailDriverCalibration = new System.Windows.Forms.Button();
-            this.comboBoxRailDriverUnits = new System.Windows.Forms.ComboBox();
-            this.labelRailDriverSpeedUnits = new System.Windows.Forms.Label();
-            this.groupboxDistance = new System.Windows.Forms.GroupBox();
-            this.comboboxMotionBlur = new System.Windows.Forms.ComboBox();
-            this.labelMotionBlur = new System.Windows.Forms.Label();
-            this.labelDistanceUnit = new System.Windows.Forms.Label();
-            this.updownDistance = new System.Windows.Forms.NumericUpDown();
-            this.labelDistance = new System.Windows.Forms.Label();
-            this.groupboxControls = new System.Windows.Forms.GroupBox();
-            this.checkBoxEBAxis = new System.Windows.Forms.CheckBox();
-            this.trackbarJoystickAxisThreshold = new System.Windows.Forms.TrackBar();
-            this.checkboxJoysticksUsed = new System.Windows.Forms.CheckBox();
-            this.labelJoystickAxisThreshold = new System.Windows.Forms.Label();
-            this.groupboxVerbosity = new System.Windows.Forms.GroupBox();
-            this.checkBoxAccessibility = new System.Windows.Forms.CheckBox();
-            this.checkboxErrorMessages = new System.Windows.Forms.CheckBox();
-            this.checkboxWarningMessages = new System.Windows.Forms.CheckBox();
-            this.groupboxSimulation = new System.Windows.Forms.GroupBox();
-            this.checkBoxLoadingSway = new System.Windows.Forms.CheckBox();
-            this.checkboxBlackBox = new System.Windows.Forms.CheckBox();
-            this.checkboxDerailments = new System.Windows.Forms.CheckBox();
-            this.checkboxCollisions = new System.Windows.Forms.CheckBox();
-            this.checkboxToppling = new System.Windows.Forms.CheckBox();
-            this.groupboxSound = new System.Windows.Forms.GroupBox();
-            this.updownSoundNumber = new System.Windows.Forms.NumericUpDown();
-            this.labelSoundNumber = new System.Windows.Forms.Label();
             this.pictureboxLanguage = new System.Windows.Forms.PictureBox();
             this.comboboxLanguages = new System.Windows.Forms.ComboBox();
             this.labelOptionsTitleSeparator = new System.Windows.Forms.Label();
@@ -476,7 +483,6 @@ namespace OpenBve {
             this.labelNewGUID = new System.Windows.Forms.Label();
             this.openPackageFileDialog = new System.Windows.Forms.OpenFileDialog();
             this.savePackageDialog = new System.Windows.Forms.SaveFileDialog();
-            this.panelOptionsPage2 = new System.Windows.Forms.Panel();
             ((System.ComponentModel.ISupportInitialize)(this.pictureboxLogo)).BeginInit();
             this.panelStart.SuspendLayout();
             this.groupboxTrainSelection.SuspendLayout();
@@ -508,15 +514,6 @@ namespace OpenBve {
             this.tabpageRouteSettings.SuspendLayout();
             this.panelRouteEncoding.SuspendLayout();
             this.panelOptions.SuspendLayout();
-            this.panelOptionsPage3.SuspendLayout();
-            this.groupBoxInputDevice.SuspendLayout();
-            this.groupBoxObjectParser.SuspendLayout();
-            this.groupBoxKioskMode.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownKioskTimeout)).BeginInit();
-            this.groupBoxAdvancedOptions.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureboxCursor)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.updownTimeAccelerationFactor)).BeginInit();
-            this.groupBoxPackageOptions.SuspendLayout();
             this.panelOptionsLeft.SuspendLayout();
             this.groupboxDisplayMode.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.trackBarHUDSize)).BeginInit();
@@ -530,21 +527,34 @@ namespace OpenBve {
             ((System.ComponentModel.ISupportInitialize)(this.updownAntiAliasing)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.updownAnisotropic)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackbarTransparency)).BeginInit();
-            this.groupboxShadows.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.trackbarShadowStrength)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.updownShadowBias)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.updownShadowNormalBias)).BeginInit();
             this.panelOptionsRight.SuspendLayout();
             this.groupBoxOther.SuspendLayout();
             this.groupBoxRailDriver.SuspendLayout();
-            this.groupboxDistance.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.updownDistance)).BeginInit();
             this.groupboxControls.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.trackbarJoystickAxisThreshold)).BeginInit();
             this.groupboxVerbosity.SuspendLayout();
             this.groupboxSimulation.SuspendLayout();
             this.groupboxSound.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.updownSoundNumber)).BeginInit();
+            this.panelOptionsPage2.SuspendLayout();
+            this.groupboxDistance.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.updownNearClipBase)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.updownNearClipCab)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.updownNearClipScenery)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.updownDistance)).BeginInit();
+            this.groupboxShadows.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.trackbarShadowStrength)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.updownShadowBias)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.updownShadowNormalBias)).BeginInit();
+            this.panelOptionsPage3.SuspendLayout();
+            this.groupBoxInputDevice.SuspendLayout();
+            this.groupBoxObjectParser.SuspendLayout();
+            this.groupBoxKioskMode.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownKioskTimeout)).BeginInit();
+            this.groupBoxAdvancedOptions.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureboxCursor)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.updownTimeAccelerationFactor)).BeginInit();
+            this.groupBoxPackageOptions.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureboxLanguage)).BeginInit();
             this.panelPanels.SuspendLayout();
             this.panelReview.SuspendLayout();
@@ -588,7 +598,6 @@ namespace OpenBve {
             this.panelReplacePackage.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewReplacePackage)).BeginInit();
             this.panelNewPackage.SuspendLayout();
-            this.panelOptionsPage2.SuspendLayout();
             this.SuspendLayout();
             // 
             // labelFillerOne
@@ -1233,7 +1242,7 @@ namespace OpenBve {
             this.tabcontrolRouteDetails.SelectedIndex = 0;
             this.tabcontrolRouteDetails.Size = new System.Drawing.Size(303, 253);
             this.tabcontrolRouteDetails.TabIndex = 19;
-            this.tabcontrolRouteDetails.SelectedIndexChanged += new System.EventHandler(this.tabcontrolRouteDetails_SelectedIndexChanged);
+            this.tabcontrolRouteDetails.SelectedIndexChanged += new System.EventHandler(this.tabControlRouteDetails_SelectedIndexChanged);
             // 
             // tabpageRouteDescription
             // 
@@ -1566,6 +1575,1236 @@ namespace OpenBve {
             this.panelOptions.Name = "panelOptions";
             this.panelOptions.Size = new System.Drawing.Size(699, 661);
             this.panelOptions.TabIndex = 0;
+            // 
+            // panelOptionsLeft
+            // 
+            this.panelOptionsLeft.AutoScroll = true;
+            this.panelOptionsLeft.Controls.Add(this.groupboxDisplayMode);
+            this.panelOptionsLeft.Controls.Add(this.groupboxWindow);
+            this.panelOptionsLeft.Controls.Add(this.groupboxFullscreen);
+            this.panelOptionsLeft.Controls.Add(this.groupboxInterpolation);
+            this.panelOptionsLeft.Location = new System.Drawing.Point(8, 72);
+            this.panelOptionsLeft.Name = "panelOptionsLeft";
+            this.panelOptionsLeft.Size = new System.Drawing.Size(316, 576);
+            this.panelOptionsLeft.TabIndex = 16;
+            // 
+            // groupboxDisplayMode
+            // 
+            this.groupboxDisplayMode.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupboxDisplayMode.Controls.Add(this.comboBoxFont);
+            this.groupboxDisplayMode.Controls.Add(this.labelFontName);
+            this.groupboxDisplayMode.Controls.Add(this.labelHUDLarge);
+            this.groupboxDisplayMode.Controls.Add(this.labelHUDNormal);
+            this.groupboxDisplayMode.Controls.Add(this.labelHUDSmall);
+            this.groupboxDisplayMode.Controls.Add(this.trackBarHUDSize);
+            this.groupboxDisplayMode.Controls.Add(this.labelHUDScale);
+            this.groupboxDisplayMode.Controls.Add(this.comboboxVSync);
+            this.groupboxDisplayMode.Controls.Add(this.labelVSync);
+            this.groupboxDisplayMode.Controls.Add(this.radiobuttonFullscreen);
+            this.groupboxDisplayMode.Controls.Add(this.radiobuttonWindow);
+            this.groupboxDisplayMode.ForeColor = System.Drawing.Color.Black;
+            this.groupboxDisplayMode.Location = new System.Drawing.Point(0, 0);
+            this.groupboxDisplayMode.Name = "groupboxDisplayMode";
+            this.groupboxDisplayMode.Size = new System.Drawing.Size(316, 189);
+            this.groupboxDisplayMode.TabIndex = 4;
+            this.groupboxDisplayMode.TabStop = false;
+            this.groupboxDisplayMode.Text = "Display mode";
+            // 
+            // comboBoxFont
+            // 
+            this.comboBoxFont.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.comboBoxFont.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboBoxFont.FormattingEnabled = true;
+            this.comboBoxFont.Location = new System.Drawing.Point(45, 155);
+            this.comboBoxFont.Name = "comboBoxFont";
+            this.comboBoxFont.Size = new System.Drawing.Size(264, 21);
+            this.comboBoxFont.TabIndex = 14;
+            this.comboBoxFont.SelectionChangeCommitted += new System.EventHandler(this.comboBoxFont_SelectedIndexChanged);
+            // 
+            // labelFontName
+            // 
+            this.labelFontName.Location = new System.Drawing.Point(8, 148);
+            this.labelFontName.Name = "labelFontName";
+            this.labelFontName.Size = new System.Drawing.Size(50, 36);
+            this.labelFontName.TabIndex = 13;
+            this.labelFontName.Text = "Font:";
+            this.labelFontName.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // labelHUDLarge
+            // 
+            this.labelHUDLarge.Location = new System.Drawing.Point(258, 125);
+            this.labelHUDLarge.Name = "labelHUDLarge";
+            this.labelHUDLarge.Size = new System.Drawing.Size(72, 48);
+            this.labelHUDLarge.TabIndex = 12;
+            this.labelHUDLarge.Text = "Large";
+            this.labelHUDLarge.TextAlign = System.Drawing.ContentAlignment.TopCenter;
+            // 
+            // labelHUDNormal
+            // 
+            this.labelHUDNormal.Location = new System.Drawing.Point(162, 125);
+            this.labelHUDNormal.Name = "labelHUDNormal";
+            this.labelHUDNormal.Size = new System.Drawing.Size(70, 48);
+            this.labelHUDNormal.TabIndex = 11;
+            this.labelHUDNormal.Text = "Normal";
+            this.labelHUDNormal.TextAlign = System.Drawing.ContentAlignment.TopCenter;
+            // 
+            // labelHUDSmall
+            // 
+            this.labelHUDSmall.Location = new System.Drawing.Point(66, 125);
+            this.labelHUDSmall.Name = "labelHUDSmall";
+            this.labelHUDSmall.Size = new System.Drawing.Size(70, 48);
+            this.labelHUDSmall.TabIndex = 10;
+            this.labelHUDSmall.Text = "Small";
+            this.labelHUDSmall.TextAlign = System.Drawing.ContentAlignment.TopCenter;
+            // 
+            // trackBarHUDSize
+            // 
+            this.trackBarHUDSize.LargeChange = 1;
+            this.trackBarHUDSize.Location = new System.Drawing.Point(88, 100);
+            this.trackBarHUDSize.Maximum = 2;
+            this.trackBarHUDSize.Name = "trackBarHUDSize";
+            this.trackBarHUDSize.Size = new System.Drawing.Size(220, 45);
+            this.trackBarHUDSize.TabIndex = 9;
+            this.trackBarHUDSize.Value = 1;
+            // 
+            // labelHUDScale
+            // 
+            this.labelHUDScale.AutoSize = true;
+            this.labelHUDScale.Location = new System.Drawing.Point(8, 106);
+            this.labelHUDScale.Name = "labelHUDScale";
+            this.labelHUDScale.Size = new System.Drawing.Size(54, 13);
+            this.labelHUDScale.TabIndex = 8;
+            this.labelHUDScale.Text = "HUD Size";
+            // 
+            // comboboxVSync
+            // 
+            this.comboboxVSync.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.comboboxVSync.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboboxVSync.FormattingEnabled = true;
+            this.comboboxVSync.Location = new System.Drawing.Point(156, 72);
+            this.comboboxVSync.Name = "comboboxVSync";
+            this.comboboxVSync.Size = new System.Drawing.Size(152, 21);
+            this.comboboxVSync.TabIndex = 7;
+            // 
+            // labelVSync
+            // 
+            this.labelVSync.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.labelVSync.AutoEllipsis = true;
+            this.labelVSync.Location = new System.Drawing.Point(8, 72);
+            this.labelVSync.Name = "labelVSync";
+            this.labelVSync.Size = new System.Drawing.Size(148, 18);
+            this.labelVSync.TabIndex = 2;
+            this.labelVSync.Text = "Vertical syncronization:";
+            this.labelVSync.TextAlign = System.Drawing.ContentAlignment.TopRight;
+            // 
+            // radiobuttonFullscreen
+            // 
+            this.radiobuttonFullscreen.AutoSize = true;
+            this.radiobuttonFullscreen.Location = new System.Drawing.Point(8, 48);
+            this.radiobuttonFullscreen.Name = "radiobuttonFullscreen";
+            this.radiobuttonFullscreen.Size = new System.Drawing.Size(102, 17);
+            this.radiobuttonFullscreen.TabIndex = 1;
+            this.radiobuttonFullscreen.TabStop = true;
+            this.radiobuttonFullscreen.Text = "Fullscreen mode";
+            this.radiobuttonFullscreen.UseVisualStyleBackColor = true;
+            // 
+            // radiobuttonWindow
+            // 
+            this.radiobuttonWindow.AutoSize = true;
+            this.radiobuttonWindow.Checked = true;
+            this.radiobuttonWindow.Location = new System.Drawing.Point(8, 24);
+            this.radiobuttonWindow.Name = "radiobuttonWindow";
+            this.radiobuttonWindow.Size = new System.Drawing.Size(93, 17);
+            this.radiobuttonWindow.TabIndex = 0;
+            this.radiobuttonWindow.TabStop = true;
+            this.radiobuttonWindow.Text = "Window mode";
+            this.radiobuttonWindow.UseVisualStyleBackColor = true;
+            // 
+            // groupboxWindow
+            // 
+            this.groupboxWindow.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupboxWindow.Controls.Add(this.updownWindowHeight);
+            this.groupboxWindow.Controls.Add(this.labelWindowHeight);
+            this.groupboxWindow.Controls.Add(this.updownWindowWidth);
+            this.groupboxWindow.Controls.Add(this.labelWindowWidth);
+            this.groupboxWindow.ForeColor = System.Drawing.Color.Black;
+            this.groupboxWindow.Location = new System.Drawing.Point(0, 192);
+            this.groupboxWindow.Name = "groupboxWindow";
+            this.groupboxWindow.Size = new System.Drawing.Size(316, 80);
+            this.groupboxWindow.TabIndex = 5;
+            this.groupboxWindow.TabStop = false;
+            this.groupboxWindow.Text = "Window mode";
+            // 
+            // updownWindowHeight
+            // 
+            this.updownWindowHeight.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.updownWindowHeight.Location = new System.Drawing.Point(156, 48);
+            this.updownWindowHeight.Maximum = new decimal(new int[] {
+            1048575,
+            0,
+            0,
+            0});
+            this.updownWindowHeight.Minimum = new decimal(new int[] {
+            16,
+            0,
+            0,
+            0});
+            this.updownWindowHeight.Name = "updownWindowHeight";
+            this.updownWindowHeight.Size = new System.Drawing.Size(152, 20);
+            this.updownWindowHeight.TabIndex = 3;
+            this.updownWindowHeight.Value = new decimal(new int[] {
+            600,
+            0,
+            0,
+            0});
+            // 
+            // labelWindowHeight
+            // 
+            this.labelWindowHeight.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.labelWindowHeight.AutoEllipsis = true;
+            this.labelWindowHeight.Location = new System.Drawing.Point(8, 50);
+            this.labelWindowHeight.Name = "labelWindowHeight";
+            this.labelWindowHeight.Size = new System.Drawing.Size(148, 18);
+            this.labelWindowHeight.TabIndex = 2;
+            this.labelWindowHeight.Text = "Height:";
+            this.labelWindowHeight.TextAlign = System.Drawing.ContentAlignment.TopRight;
+            // 
+            // updownWindowWidth
+            // 
+            this.updownWindowWidth.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.updownWindowWidth.Location = new System.Drawing.Point(156, 24);
+            this.updownWindowWidth.Maximum = new decimal(new int[] {
+            1048575,
+            0,
+            0,
+            0});
+            this.updownWindowWidth.Minimum = new decimal(new int[] {
+            16,
+            0,
+            0,
+            0});
+            this.updownWindowWidth.Name = "updownWindowWidth";
+            this.updownWindowWidth.Size = new System.Drawing.Size(152, 20);
+            this.updownWindowWidth.TabIndex = 1;
+            this.updownWindowWidth.Value = new decimal(new int[] {
+            960,
+            0,
+            0,
+            0});
+            // 
+            // labelWindowWidth
+            // 
+            this.labelWindowWidth.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.labelWindowWidth.AutoEllipsis = true;
+            this.labelWindowWidth.Location = new System.Drawing.Point(8, 26);
+            this.labelWindowWidth.Name = "labelWindowWidth";
+            this.labelWindowWidth.Size = new System.Drawing.Size(148, 18);
+            this.labelWindowWidth.TabIndex = 0;
+            this.labelWindowWidth.Text = "Width:";
+            this.labelWindowWidth.TextAlign = System.Drawing.ContentAlignment.TopRight;
+            // 
+            // groupboxFullscreen
+            // 
+            this.groupboxFullscreen.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupboxFullscreen.Controls.Add(this.comboboxFullscreenBits);
+            this.groupboxFullscreen.Controls.Add(this.labelFullscreenBits);
+            this.groupboxFullscreen.Controls.Add(this.updownFullscreenHeight);
+            this.groupboxFullscreen.Controls.Add(this.labelFullscreenHeight);
+            this.groupboxFullscreen.Controls.Add(this.updownFullscreenWidth);
+            this.groupboxFullscreen.Controls.Add(this.labelFullscreenWidth);
+            this.groupboxFullscreen.ForeColor = System.Drawing.Color.Black;
+            this.groupboxFullscreen.Location = new System.Drawing.Point(0, 275);
+            this.groupboxFullscreen.Name = "groupboxFullscreen";
+            this.groupboxFullscreen.Size = new System.Drawing.Size(316, 104);
+            this.groupboxFullscreen.TabIndex = 6;
+            this.groupboxFullscreen.TabStop = false;
+            this.groupboxFullscreen.Text = "Fullscreen mode";
+            // 
+            // comboboxFullscreenBits
+            // 
+            this.comboboxFullscreenBits.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.comboboxFullscreenBits.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboboxFullscreenBits.FormattingEnabled = true;
+            this.comboboxFullscreenBits.Location = new System.Drawing.Point(156, 72);
+            this.comboboxFullscreenBits.Name = "comboboxFullscreenBits";
+            this.comboboxFullscreenBits.Size = new System.Drawing.Size(152, 21);
+            this.comboboxFullscreenBits.TabIndex = 5;
+            // 
+            // labelFullscreenBits
+            // 
+            this.labelFullscreenBits.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.labelFullscreenBits.AutoEllipsis = true;
+            this.labelFullscreenBits.Location = new System.Drawing.Point(8, 74);
+            this.labelFullscreenBits.Name = "labelFullscreenBits";
+            this.labelFullscreenBits.Size = new System.Drawing.Size(148, 18);
+            this.labelFullscreenBits.TabIndex = 4;
+            this.labelFullscreenBits.Text = "Bits per pixel:";
+            this.labelFullscreenBits.TextAlign = System.Drawing.ContentAlignment.TopRight;
+            // 
+            // updownFullscreenHeight
+            // 
+            this.updownFullscreenHeight.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.updownFullscreenHeight.Location = new System.Drawing.Point(156, 48);
+            this.updownFullscreenHeight.Maximum = new decimal(new int[] {
+            1048575,
+            0,
+            0,
+            0});
+            this.updownFullscreenHeight.Minimum = new decimal(new int[] {
+            16,
+            0,
+            0,
+            0});
+            this.updownFullscreenHeight.Name = "updownFullscreenHeight";
+            this.updownFullscreenHeight.Size = new System.Drawing.Size(152, 20);
+            this.updownFullscreenHeight.TabIndex = 3;
+            this.updownFullscreenHeight.Value = new decimal(new int[] {
+            768,
+            0,
+            0,
+            0});
+            // 
+            // labelFullscreenHeight
+            // 
+            this.labelFullscreenHeight.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.labelFullscreenHeight.AutoEllipsis = true;
+            this.labelFullscreenHeight.Location = new System.Drawing.Point(8, 50);
+            this.labelFullscreenHeight.Name = "labelFullscreenHeight";
+            this.labelFullscreenHeight.Size = new System.Drawing.Size(148, 18);
+            this.labelFullscreenHeight.TabIndex = 2;
+            this.labelFullscreenHeight.Text = "Height:";
+            this.labelFullscreenHeight.TextAlign = System.Drawing.ContentAlignment.TopRight;
+            // 
+            // updownFullscreenWidth
+            // 
+            this.updownFullscreenWidth.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.updownFullscreenWidth.Location = new System.Drawing.Point(156, 24);
+            this.updownFullscreenWidth.Maximum = new decimal(new int[] {
+            1048575,
+            0,
+            0,
+            0});
+            this.updownFullscreenWidth.Minimum = new decimal(new int[] {
+            16,
+            0,
+            0,
+            0});
+            this.updownFullscreenWidth.Name = "updownFullscreenWidth";
+            this.updownFullscreenWidth.Size = new System.Drawing.Size(152, 20);
+            this.updownFullscreenWidth.TabIndex = 1;
+            this.updownFullscreenWidth.Value = new decimal(new int[] {
+            1024,
+            0,
+            0,
+            0});
+            // 
+            // labelFullscreenWidth
+            // 
+            this.labelFullscreenWidth.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.labelFullscreenWidth.AutoEllipsis = true;
+            this.labelFullscreenWidth.Location = new System.Drawing.Point(8, 26);
+            this.labelFullscreenWidth.Name = "labelFullscreenWidth";
+            this.labelFullscreenWidth.Size = new System.Drawing.Size(148, 18);
+            this.labelFullscreenWidth.TabIndex = 0;
+            this.labelFullscreenWidth.Text = "Width:";
+            this.labelFullscreenWidth.TextAlign = System.Drawing.ContentAlignment.TopRight;
+            // 
+            // groupboxInterpolation
+            // 
+            this.groupboxInterpolation.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupboxInterpolation.Controls.Add(this.updownAntiAliasing);
+            this.groupboxInterpolation.Controls.Add(this.labelAntiAliasing);
+            this.groupboxInterpolation.Controls.Add(this.labelTransparencyQuality);
+            this.groupboxInterpolation.Controls.Add(this.labelTransparencyPerformance);
+            this.groupboxInterpolation.Controls.Add(this.labelTransparency);
+            this.groupboxInterpolation.Controls.Add(this.updownAnisotropic);
+            this.groupboxInterpolation.Controls.Add(this.labelAnisotropic);
+            this.groupboxInterpolation.Controls.Add(this.comboboxInterpolation);
+            this.groupboxInterpolation.Controls.Add(this.labelInterpolation);
+            this.groupboxInterpolation.Controls.Add(this.trackbarTransparency);
+            this.groupboxInterpolation.ForeColor = System.Drawing.Color.Black;
+            this.groupboxInterpolation.Location = new System.Drawing.Point(0, 381);
+            this.groupboxInterpolation.Name = "groupboxInterpolation";
+            this.groupboxInterpolation.Size = new System.Drawing.Size(316, 160);
+            this.groupboxInterpolation.TabIndex = 7;
+            this.groupboxInterpolation.TabStop = false;
+            this.groupboxInterpolation.Text = "Interpolation";
+            // 
+            // updownAntiAliasing
+            // 
+            this.updownAntiAliasing.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.updownAntiAliasing.Location = new System.Drawing.Point(156, 64);
+            this.updownAntiAliasing.Maximum = new decimal(new int[] {
+            16,
+            0,
+            0,
+            0});
+            this.updownAntiAliasing.Name = "updownAntiAliasing";
+            this.updownAntiAliasing.Size = new System.Drawing.Size(152, 20);
+            this.updownAntiAliasing.TabIndex = 5;
+            // 
+            // labelAntiAliasing
+            // 
+            this.labelAntiAliasing.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.labelAntiAliasing.AutoEllipsis = true;
+            this.labelAntiAliasing.Location = new System.Drawing.Point(8, 66);
+            this.labelAntiAliasing.Name = "labelAntiAliasing";
+            this.labelAntiAliasing.Size = new System.Drawing.Size(148, 18);
+            this.labelAntiAliasing.TabIndex = 4;
+            this.labelAntiAliasing.Text = "Level of anti-aliasing:";
+            this.labelAntiAliasing.TextAlign = System.Drawing.ContentAlignment.TopRight;
+            // 
+            // labelTransparencyQuality
+            // 
+            this.labelTransparencyQuality.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.labelTransparencyQuality.AutoEllipsis = true;
+            this.labelTransparencyQuality.Location = new System.Drawing.Point(230, 136);
+            this.labelTransparencyQuality.Name = "labelTransparencyQuality";
+            this.labelTransparencyQuality.Size = new System.Drawing.Size(76, 16);
+            this.labelTransparencyQuality.TabIndex = 9;
+            this.labelTransparencyQuality.Text = "Smooth";
+            this.labelTransparencyQuality.TextAlign = System.Drawing.ContentAlignment.TopRight;
+            // 
+            // labelTransparencyPerformance
+            // 
+            this.labelTransparencyPerformance.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.labelTransparencyPerformance.AutoEllipsis = true;
+            this.labelTransparencyPerformance.Location = new System.Drawing.Point(130, 136);
+            this.labelTransparencyPerformance.Name = "labelTransparencyPerformance";
+            this.labelTransparencyPerformance.Size = new System.Drawing.Size(76, 16);
+            this.labelTransparencyPerformance.TabIndex = 8;
+            this.labelTransparencyPerformance.Text = "Sharp";
+            this.labelTransparencyPerformance.TextAlign = System.Drawing.ContentAlignment.TopCenter;
+            // 
+            // labelTransparency
+            // 
+            this.labelTransparency.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.labelTransparency.AutoEllipsis = true;
+            this.labelTransparency.Location = new System.Drawing.Point(8, 100);
+            this.labelTransparency.Name = "labelTransparency";
+            this.labelTransparency.Size = new System.Drawing.Size(148, 18);
+            this.labelTransparency.TabIndex = 6;
+            this.labelTransparency.Text = "Transparency:";
+            this.labelTransparency.TextAlign = System.Drawing.ContentAlignment.TopRight;
+            // 
+            // updownAnisotropic
+            // 
+            this.updownAnisotropic.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.updownAnisotropic.Enabled = false;
+            this.updownAnisotropic.Location = new System.Drawing.Point(156, 40);
+            this.updownAnisotropic.Maximum = new decimal(new int[] {
+            16,
+            0,
+            0,
+            0});
+            this.updownAnisotropic.Name = "updownAnisotropic";
+            this.updownAnisotropic.Size = new System.Drawing.Size(152, 20);
+            this.updownAnisotropic.TabIndex = 3;
+            // 
+            // labelAnisotropic
+            // 
+            this.labelAnisotropic.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.labelAnisotropic.AutoEllipsis = true;
+            this.labelAnisotropic.Enabled = false;
+            this.labelAnisotropic.Location = new System.Drawing.Point(8, 42);
+            this.labelAnisotropic.Name = "labelAnisotropic";
+            this.labelAnisotropic.Size = new System.Drawing.Size(148, 18);
+            this.labelAnisotropic.TabIndex = 2;
+            this.labelAnisotropic.Text = "Level of anisotropic filtering:";
+            this.labelAnisotropic.TextAlign = System.Drawing.ContentAlignment.TopRight;
+            // 
+            // comboboxInterpolation
+            // 
+            this.comboboxInterpolation.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.comboboxInterpolation.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboboxInterpolation.FormattingEnabled = true;
+            this.comboboxInterpolation.Location = new System.Drawing.Point(156, 16);
+            this.comboboxInterpolation.Name = "comboboxInterpolation";
+            this.comboboxInterpolation.Size = new System.Drawing.Size(152, 21);
+            this.comboboxInterpolation.TabIndex = 1;
+            this.comboboxInterpolation.SelectedIndexChanged += new System.EventHandler(this.comboboxInterpolation_SelectedIndexChanged);
+            // 
+            // labelInterpolation
+            // 
+            this.labelInterpolation.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.labelInterpolation.AutoEllipsis = true;
+            this.labelInterpolation.Location = new System.Drawing.Point(8, 18);
+            this.labelInterpolation.Name = "labelInterpolation";
+            this.labelInterpolation.Size = new System.Drawing.Size(148, 18);
+            this.labelInterpolation.TabIndex = 0;
+            this.labelInterpolation.Text = "Mode:";
+            this.labelInterpolation.TextAlign = System.Drawing.ContentAlignment.TopRight;
+            // 
+            // trackbarTransparency
+            // 
+            this.trackbarTransparency.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.trackbarTransparency.Location = new System.Drawing.Point(156, 88);
+            this.trackbarTransparency.Maximum = 2;
+            this.trackbarTransparency.Name = "trackbarTransparency";
+            this.trackbarTransparency.Size = new System.Drawing.Size(152, 45);
+            this.trackbarTransparency.TabIndex = 7;
+            this.trackbarTransparency.TickStyle = System.Windows.Forms.TickStyle.Both;
+            // 
+            // panelOptionsRight
+            // 
+            this.panelOptionsRight.AutoScroll = true;
+            this.panelOptionsRight.Controls.Add(this.groupBoxOther);
+            this.panelOptionsRight.Controls.Add(this.groupBoxRailDriver);
+            this.panelOptionsRight.Controls.Add(this.groupboxControls);
+            this.panelOptionsRight.Controls.Add(this.groupboxVerbosity);
+            this.panelOptionsRight.Controls.Add(this.groupboxSimulation);
+            this.panelOptionsRight.Controls.Add(this.groupboxSound);
+            this.panelOptionsRight.Location = new System.Drawing.Point(360, 72);
+            this.panelOptionsRight.Name = "panelOptionsRight";
+            this.panelOptionsRight.Size = new System.Drawing.Size(316, 620);
+            this.panelOptionsRight.TabIndex = 17;
+            // 
+            // groupBoxOther
+            // 
+            this.groupBoxOther.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBoxOther.Controls.Add(this.comboBoxTimeTableDisplayMode);
+            this.groupBoxOther.Controls.Add(this.labelTimeTableDisplayMode);
+            this.groupBoxOther.ForeColor = System.Drawing.Color.Black;
+            this.groupBoxOther.Location = new System.Drawing.Point(0, 347);
+            this.groupBoxOther.Name = "groupBoxOther";
+            this.groupBoxOther.Size = new System.Drawing.Size(316, 48);
+            this.groupBoxOther.TabIndex = 19;
+            this.groupBoxOther.TabStop = false;
+            this.groupBoxOther.Text = "Other";
+            // 
+            // comboBoxTimeTableDisplayMode
+            // 
+            this.comboBoxTimeTableDisplayMode.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.comboBoxTimeTableDisplayMode.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboBoxTimeTableDisplayMode.FormattingEnabled = true;
+            this.comboBoxTimeTableDisplayMode.Location = new System.Drawing.Point(156, 16);
+            this.comboBoxTimeTableDisplayMode.Name = "comboBoxTimeTableDisplayMode";
+            this.comboBoxTimeTableDisplayMode.Size = new System.Drawing.Size(152, 21);
+            this.comboBoxTimeTableDisplayMode.TabIndex = 1;
+            this.comboBoxTimeTableDisplayMode.SelectedIndexChanged += new System.EventHandler(this.comboBoxTimeTableDisplayMode_SelectedIndexChanged);
+            // 
+            // labelTimeTableDisplayMode
+            // 
+            this.labelTimeTableDisplayMode.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.labelTimeTableDisplayMode.AutoEllipsis = true;
+            this.labelTimeTableDisplayMode.Location = new System.Drawing.Point(3, 17);
+            this.labelTimeTableDisplayMode.Name = "labelTimeTableDisplayMode";
+            this.labelTimeTableDisplayMode.Size = new System.Drawing.Size(153, 18);
+            this.labelTimeTableDisplayMode.TabIndex = 0;
+            this.labelTimeTableDisplayMode.Text = "Timetable Display Mode:";
+            this.labelTimeTableDisplayMode.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            // 
+            // groupBoxRailDriver
+            // 
+            this.groupBoxRailDriver.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBoxRailDriver.Controls.Add(this.labelRailDriverCalibration);
+            this.groupBoxRailDriver.Controls.Add(this.buttonRailDriverCalibration);
+            this.groupBoxRailDriver.Controls.Add(this.comboBoxRailDriverUnits);
+            this.groupBoxRailDriver.Controls.Add(this.labelRailDriverSpeedUnits);
+            this.groupBoxRailDriver.ForeColor = System.Drawing.Color.Black;
+            this.groupBoxRailDriver.Location = new System.Drawing.Point(0, 128);
+            this.groupBoxRailDriver.Name = "groupBoxRailDriver";
+            this.groupBoxRailDriver.Size = new System.Drawing.Size(316, 75);
+            this.groupBoxRailDriver.TabIndex = 21;
+            this.groupBoxRailDriver.TabStop = false;
+            this.groupBoxRailDriver.Text = "RailDriver";
+            // 
+            // labelRailDriverCalibration
+            // 
+            this.labelRailDriverCalibration.AutoSize = true;
+            this.labelRailDriverCalibration.Location = new System.Drawing.Point(7, 46);
+            this.labelRailDriverCalibration.Name = "labelRailDriverCalibration";
+            this.labelRailDriverCalibration.Size = new System.Drawing.Size(78, 13);
+            this.labelRailDriverCalibration.TabIndex = 5;
+            this.labelRailDriverCalibration.Text = "Set Calibration:";
+            // 
+            // buttonRailDriverCalibration
+            // 
+            this.buttonRailDriverCalibration.BackColor = System.Drawing.SystemColors.ButtonFace;
+            this.buttonRailDriverCalibration.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.buttonRailDriverCalibration.Location = new System.Drawing.Point(230, 42);
+            this.buttonRailDriverCalibration.Name = "buttonRailDriverCalibration";
+            this.buttonRailDriverCalibration.Size = new System.Drawing.Size(75, 26);
+            this.buttonRailDriverCalibration.TabIndex = 4;
+            this.buttonRailDriverCalibration.Text = "Launch...";
+            this.buttonRailDriverCalibration.UseVisualStyleBackColor = true;
+            this.buttonRailDriverCalibration.Click += new System.EventHandler(this.buttonRailDriverCalibration_Click);
+            // 
+            // comboBoxRailDriverUnits
+            // 
+            this.comboBoxRailDriverUnits.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboBoxRailDriverUnits.FormattingEnabled = true;
+            this.comboBoxRailDriverUnits.Items.AddRange(new object[] {
+            "Miles per Hour (MPH)",
+            "Kilometers per Hour (KPH)"});
+            this.comboBoxRailDriverUnits.Location = new System.Drawing.Point(140, 16);
+            this.comboBoxRailDriverUnits.Name = "comboBoxRailDriverUnits";
+            this.comboBoxRailDriverUnits.Size = new System.Drawing.Size(165, 21);
+            this.comboBoxRailDriverUnits.TabIndex = 3;
+            this.comboBoxRailDriverUnits.SelectedIndexChanged += new System.EventHandler(this.comboBoxRailDriverUnits_SelectedIndexChanged);
+            // 
+            // labelRailDriverSpeedUnits
+            // 
+            this.labelRailDriverSpeedUnits.Location = new System.Drawing.Point(7, 14);
+            this.labelRailDriverSpeedUnits.Name = "labelRailDriverSpeedUnits";
+            this.labelRailDriverSpeedUnits.Size = new System.Drawing.Size(130, 30);
+            this.labelRailDriverSpeedUnits.TabIndex = 2;
+            this.labelRailDriverSpeedUnits.Text = "LED Display speed units:";
+            this.labelRailDriverSpeedUnits.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // groupboxControls
+            // 
+            this.groupboxControls.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupboxControls.Controls.Add(this.checkBoxEBAxis);
+            this.groupboxControls.Controls.Add(this.trackbarJoystickAxisThreshold);
+            this.groupboxControls.Controls.Add(this.checkboxJoysticksUsed);
+            this.groupboxControls.Controls.Add(this.labelJoystickAxisThreshold);
+            this.groupboxControls.ForeColor = System.Drawing.Color.Black;
+            this.groupboxControls.Location = new System.Drawing.Point(0, 48);
+            this.groupboxControls.Name = "groupboxControls";
+            this.groupboxControls.Size = new System.Drawing.Size(316, 80);
+            this.groupboxControls.TabIndex = 10;
+            this.groupboxControls.TabStop = false;
+            this.groupboxControls.Text = "Controls";
+            // 
+            // checkBoxEBAxis
+            // 
+            this.checkBoxEBAxis.Checked = true;
+            this.checkBoxEBAxis.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.checkBoxEBAxis.Location = new System.Drawing.Point(8, 41);
+            this.checkBoxEBAxis.Name = "checkBoxEBAxis";
+            this.checkBoxEBAxis.Size = new System.Drawing.Size(190, 36);
+            this.checkBoxEBAxis.TabIndex = 18;
+            this.checkBoxEBAxis.Text = "Allow EB on brake axis";
+            this.checkBoxEBAxis.UseVisualStyleBackColor = true;
+            // 
+            // trackbarJoystickAxisThreshold
+            // 
+            this.trackbarJoystickAxisThreshold.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.trackbarJoystickAxisThreshold.LargeChange = 10;
+            this.trackbarJoystickAxisThreshold.Location = new System.Drawing.Point(200, 32);
+            this.trackbarJoystickAxisThreshold.Maximum = 100;
+            this.trackbarJoystickAxisThreshold.Name = "trackbarJoystickAxisThreshold";
+            this.trackbarJoystickAxisThreshold.Size = new System.Drawing.Size(96, 45);
+            this.trackbarJoystickAxisThreshold.TabIndex = 2;
+            this.trackbarJoystickAxisThreshold.TickFrequency = 10;
+            this.trackbarJoystickAxisThreshold.TickStyle = System.Windows.Forms.TickStyle.Both;
+            // 
+            // checkboxJoysticksUsed
+            // 
+            this.checkboxJoysticksUsed.AutoSize = true;
+            this.checkboxJoysticksUsed.Location = new System.Drawing.Point(8, 24);
+            this.checkboxJoysticksUsed.Name = "checkboxJoysticksUsed";
+            this.checkboxJoysticksUsed.Size = new System.Drawing.Size(110, 17);
+            this.checkboxJoysticksUsed.TabIndex = 0;
+            this.checkboxJoysticksUsed.Text = "Joysticks enabled";
+            this.checkboxJoysticksUsed.UseVisualStyleBackColor = true;
+            this.checkboxJoysticksUsed.CheckedChanged += new System.EventHandler(this.checkboxJoysticksUsed_CheckedChanged);
+            // 
+            // labelJoystickAxisThreshold
+            // 
+            this.labelJoystickAxisThreshold.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.labelJoystickAxisThreshold.AutoEllipsis = true;
+            this.labelJoystickAxisThreshold.Location = new System.Drawing.Point(110, 10);
+            this.labelJoystickAxisThreshold.Name = "labelJoystickAxisThreshold";
+            this.labelJoystickAxisThreshold.Size = new System.Drawing.Size(180, 18);
+            this.labelJoystickAxisThreshold.TabIndex = 1;
+            this.labelJoystickAxisThreshold.Text = "Joystick threshold:";
+            this.labelJoystickAxisThreshold.TextAlign = System.Drawing.ContentAlignment.TopRight;
+            // 
+            // groupboxVerbosity
+            // 
+            this.groupboxVerbosity.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupboxVerbosity.Controls.Add(this.checkBoxAccessibility);
+            this.groupboxVerbosity.Controls.Add(this.checkboxErrorMessages);
+            this.groupboxVerbosity.Controls.Add(this.checkboxWarningMessages);
+            this.groupboxVerbosity.ForeColor = System.Drawing.Color.Black;
+            this.groupboxVerbosity.Location = new System.Drawing.Point(0, 283);
+            this.groupboxVerbosity.Name = "groupboxVerbosity";
+            this.groupboxVerbosity.Size = new System.Drawing.Size(316, 64);
+            this.groupboxVerbosity.TabIndex = 12;
+            this.groupboxVerbosity.TabStop = false;
+            this.groupboxVerbosity.Text = "Verbosity";
+            // 
+            // checkBoxAccessibility
+            // 
+            this.checkBoxAccessibility.AutoSize = true;
+            this.checkBoxAccessibility.Location = new System.Drawing.Point(176, 21);
+            this.checkBoxAccessibility.Name = "checkBoxAccessibility";
+            this.checkBoxAccessibility.Size = new System.Drawing.Size(106, 17);
+            this.checkBoxAccessibility.TabIndex = 2;
+            this.checkBoxAccessibility.Text = "Accessibility Aids";
+            this.checkBoxAccessibility.UseVisualStyleBackColor = true;
+            // 
+            // checkboxErrorMessages
+            // 
+            this.checkboxErrorMessages.AutoSize = true;
+            this.checkboxErrorMessages.Location = new System.Drawing.Point(8, 38);
+            this.checkboxErrorMessages.Name = "checkboxErrorMessages";
+            this.checkboxErrorMessages.Size = new System.Drawing.Size(127, 17);
+            this.checkboxErrorMessages.TabIndex = 1;
+            this.checkboxErrorMessages.Text = "Show error messages";
+            this.checkboxErrorMessages.UseVisualStyleBackColor = true;
+            // 
+            // checkboxWarningMessages
+            // 
+            this.checkboxWarningMessages.AutoSize = true;
+            this.checkboxWarningMessages.Location = new System.Drawing.Point(8, 21);
+            this.checkboxWarningMessages.Name = "checkboxWarningMessages";
+            this.checkboxWarningMessages.Size = new System.Drawing.Size(143, 17);
+            this.checkboxWarningMessages.TabIndex = 0;
+            this.checkboxWarningMessages.Text = "Show warning messages";
+            this.checkboxWarningMessages.UseVisualStyleBackColor = true;
+            // 
+            // groupboxSimulation
+            // 
+            this.groupboxSimulation.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupboxSimulation.Controls.Add(this.checkBoxLoadingSway);
+            this.groupboxSimulation.Controls.Add(this.checkboxBlackBox);
+            this.groupboxSimulation.Controls.Add(this.checkboxDerailments);
+            this.groupboxSimulation.Controls.Add(this.checkboxCollisions);
+            this.groupboxSimulation.Controls.Add(this.checkboxToppling);
+            this.groupboxSimulation.ForeColor = System.Drawing.Color.Black;
+            this.groupboxSimulation.Location = new System.Drawing.Point(0, 203);
+            this.groupboxSimulation.Name = "groupboxSimulation";
+            this.groupboxSimulation.Size = new System.Drawing.Size(316, 80);
+            this.groupboxSimulation.TabIndex = 11;
+            this.groupboxSimulation.TabStop = false;
+            this.groupboxSimulation.Text = "Detail of simulation";
+            // 
+            // checkBoxLoadingSway
+            // 
+            this.checkBoxLoadingSway.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.checkBoxLoadingSway.AutoSize = true;
+            this.checkBoxLoadingSway.Location = new System.Drawing.Point(176, 21);
+            this.checkBoxLoadingSway.Name = "checkBoxLoadingSway";
+            this.checkBoxLoadingSway.Size = new System.Drawing.Size(123, 17);
+            this.checkBoxLoadingSway.TabIndex = 4;
+            this.checkBoxLoadingSway.Text = "Enable loading sway";
+            this.checkBoxLoadingSway.UseVisualStyleBackColor = true;
+            // 
+            // checkboxBlackBox
+            // 
+            this.checkboxBlackBox.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.checkboxBlackBox.AutoSize = true;
+            this.checkboxBlackBox.Location = new System.Drawing.Point(176, 38);
+            this.checkboxBlackBox.Name = "checkboxBlackBox";
+            this.checkboxBlackBox.Size = new System.Drawing.Size(108, 17);
+            this.checkboxBlackBox.TabIndex = 3;
+            this.checkboxBlackBox.Text = "Enable black box";
+            this.checkboxBlackBox.UseVisualStyleBackColor = true;
+            // 
+            // checkboxDerailments
+            // 
+            this.checkboxDerailments.AutoSize = true;
+            this.checkboxDerailments.Location = new System.Drawing.Point(8, 55);
+            this.checkboxDerailments.Name = "checkboxDerailments";
+            this.checkboxDerailments.Size = new System.Drawing.Size(81, 17);
+            this.checkboxDerailments.TabIndex = 2;
+            this.checkboxDerailments.Text = "Derailments";
+            this.checkboxDerailments.UseVisualStyleBackColor = true;
+            // 
+            // checkboxCollisions
+            // 
+            this.checkboxCollisions.AutoSize = true;
+            this.checkboxCollisions.Location = new System.Drawing.Point(8, 38);
+            this.checkboxCollisions.Name = "checkboxCollisions";
+            this.checkboxCollisions.Size = new System.Drawing.Size(69, 17);
+            this.checkboxCollisions.TabIndex = 1;
+            this.checkboxCollisions.Text = "Collisions";
+            this.checkboxCollisions.UseVisualStyleBackColor = true;
+            // 
+            // checkboxToppling
+            // 
+            this.checkboxToppling.AutoSize = true;
+            this.checkboxToppling.Location = new System.Drawing.Point(8, 21);
+            this.checkboxToppling.Name = "checkboxToppling";
+            this.checkboxToppling.Size = new System.Drawing.Size(67, 17);
+            this.checkboxToppling.TabIndex = 0;
+            this.checkboxToppling.Text = "Toppling";
+            this.checkboxToppling.UseVisualStyleBackColor = true;
+            // 
+            // groupboxSound
+            // 
+            this.groupboxSound.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupboxSound.Controls.Add(this.updownSoundNumber);
+            this.groupboxSound.Controls.Add(this.labelSoundNumber);
+            this.groupboxSound.ForeColor = System.Drawing.Color.Black;
+            this.groupboxSound.Location = new System.Drawing.Point(0, 0);
+            this.groupboxSound.Name = "groupboxSound";
+            this.groupboxSound.Size = new System.Drawing.Size(316, 48);
+            this.groupboxSound.TabIndex = 9;
+            this.groupboxSound.TabStop = false;
+            this.groupboxSound.Text = "Sound";
+            // 
+            // updownSoundNumber
+            // 
+            this.updownSoundNumber.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.updownSoundNumber.Location = new System.Drawing.Point(140, 16);
+            this.updownSoundNumber.Maximum = new decimal(new int[] {
+            128,
+            0,
+            0,
+            0});
+            this.updownSoundNumber.Minimum = new decimal(new int[] {
+            8,
+            0,
+            0,
+            0});
+            this.updownSoundNumber.Name = "updownSoundNumber";
+            this.updownSoundNumber.Size = new System.Drawing.Size(152, 20);
+            this.updownSoundNumber.TabIndex = 3;
+            this.updownSoundNumber.Value = new decimal(new int[] {
+            16,
+            0,
+            0,
+            0});
+            // 
+            // labelSoundNumber
+            // 
+            this.labelSoundNumber.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.labelSoundNumber.Location = new System.Drawing.Point(5, 18);
+            this.labelSoundNumber.Name = "labelSoundNumber";
+            this.labelSoundNumber.Size = new System.Drawing.Size(136, 18);
+            this.labelSoundNumber.TabIndex = 2;
+            this.labelSoundNumber.Text = "Number of allowed sounds:";
+            this.labelSoundNumber.TextAlign = System.Drawing.ContentAlignment.TopRight;
+            // 
+            // panelOptionsPage2
+            // 
+            this.panelOptionsPage2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(243)))), ((int)(((byte)(255)))), ((int)(((byte)(243)))));
+            this.panelOptionsPage2.Controls.Add(this.groupboxDistance);
+            this.panelOptionsPage2.Controls.Add(this.groupboxShadows);
+            this.panelOptionsPage2.Location = new System.Drawing.Point(0, 72);
+            this.panelOptionsPage2.Name = "panelOptionsPage2";
+            this.panelOptionsPage2.Size = new System.Drawing.Size(683, 583);
+            this.panelOptionsPage2.TabIndex = 21;
+            // 
+            // groupboxDistance
+            // 
+            this.groupboxDistance.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupboxDistance.Controls.Add(this.updownNearClipBase);
+            this.groupboxDistance.Controls.Add(this.labelNearClipBase);
+            this.groupboxDistance.Controls.Add(this.updownNearClipCab);
+            this.groupboxDistance.Controls.Add(this.labelNearClipCab);
+            this.groupboxDistance.Controls.Add(this.updownNearClipScenery);
+            this.groupboxDistance.Controls.Add(this.labelNearClipScenery);
+            this.groupboxDistance.Controls.Add(this.comboboxMotionBlur);
+            this.groupboxDistance.Controls.Add(this.labelMotionBlur);
+            this.groupboxDistance.Controls.Add(this.labelDistanceUnit);
+            this.groupboxDistance.Controls.Add(this.updownDistance);
+            this.groupboxDistance.Controls.Add(this.labelDistance);
+            this.groupboxDistance.ForeColor = System.Drawing.Color.Black;
+            this.groupboxDistance.Location = new System.Drawing.Point(0, 0);
+            this.groupboxDistance.Name = "groupboxDistance";
+            this.groupboxDistance.Size = new System.Drawing.Size(321, 153);
+            this.groupboxDistance.TabIndex = 8;
+            this.groupboxDistance.TabStop = false;
+            this.groupboxDistance.Text = "Distance effects";
+            // 
+            // updownNearClipBase
+            // 
+            this.updownNearClipBase.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.updownNearClipBase.DecimalPlaces = 3;
+            this.updownNearClipBase.Increment = new decimal(new int[] {
+            1,
+            0,
+            0,
+            131072});
+            this.updownNearClipBase.Location = new System.Drawing.Point(144, 123);
+            this.updownNearClipBase.Maximum = new decimal(new int[] {
+            10,
+            0,
+            0,
+            0});
+            this.updownNearClipBase.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            131072});
+            this.updownNearClipBase.Name = "updownNearClipBase";
+            this.updownNearClipBase.Size = new System.Drawing.Size(152, 20);
+            this.updownNearClipBase.TabIndex = 10;
+            this.updownNearClipBase.Value = new decimal(new int[] {
+            2,
+            0,
+            0,
+            65536});
+            // 
+            // labelNearClipBase
+            // 
+            this.labelNearClipBase.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.labelNearClipBase.AutoEllipsis = true;
+            this.labelNearClipBase.Location = new System.Drawing.Point(5, 125);
+            this.labelNearClipBase.Name = "labelNearClipBase";
+            this.labelNearClipBase.Size = new System.Drawing.Size(136, 18);
+            this.labelNearClipBase.TabIndex = 9;
+            this.labelNearClipBase.Text = "Near clip (Base):";
+            this.labelNearClipBase.TextAlign = System.Drawing.ContentAlignment.TopRight;
+            // 
+            // updownNearClipCab
+            // 
+            this.updownNearClipCab.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.updownNearClipCab.DecimalPlaces = 3;
+            this.updownNearClipCab.Increment = new decimal(new int[] {
+            5,
+            0,
+            0,
+            196608});
+            this.updownNearClipCab.Location = new System.Drawing.Point(144, 98);
+            this.updownNearClipCab.Maximum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.updownNearClipCab.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            131072});
+            this.updownNearClipCab.Name = "updownNearClipCab";
+            this.updownNearClipCab.Size = new System.Drawing.Size(152, 20);
+            this.updownNearClipCab.TabIndex = 8;
+            this.updownNearClipCab.Value = new decimal(new int[] {
+            25,
+            0,
+            0,
+            196608});
+            // 
+            // labelNearClipCab
+            // 
+            this.labelNearClipCab.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.labelNearClipCab.AutoEllipsis = true;
+            this.labelNearClipCab.Location = new System.Drawing.Point(5, 100);
+            this.labelNearClipCab.Name = "labelNearClipCab";
+            this.labelNearClipCab.Size = new System.Drawing.Size(136, 18);
+            this.labelNearClipCab.TabIndex = 7;
+            this.labelNearClipCab.Text = "Near clip (Cab):";
+            this.labelNearClipCab.TextAlign = System.Drawing.ContentAlignment.TopRight;
+            // 
+            // updownNearClipScenery
+            // 
+            this.updownNearClipScenery.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.updownNearClipScenery.DecimalPlaces = 3;
+            this.updownNearClipScenery.Increment = new decimal(new int[] {
+            1,
+            0,
+            0,
+            131072});
+            this.updownNearClipScenery.Location = new System.Drawing.Point(144, 73);
+            this.updownNearClipScenery.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            131072});
+            this.updownNearClipScenery.Name = "updownNearClipScenery";
+            this.updownNearClipScenery.Size = new System.Drawing.Size(152, 20);
+            this.updownNearClipScenery.TabIndex = 6;
+            this.updownNearClipScenery.Value = new decimal(new int[] {
+            5,
+            0,
+            0,
+            65536});
+            // 
+            // labelNearClipScenery
+            // 
+            this.labelNearClipScenery.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.labelNearClipScenery.AutoEllipsis = true;
+            this.labelNearClipScenery.Location = new System.Drawing.Point(5, 75);
+            this.labelNearClipScenery.Name = "labelNearClipScenery";
+            this.labelNearClipScenery.Size = new System.Drawing.Size(136, 18);
+            this.labelNearClipScenery.TabIndex = 5;
+            this.labelNearClipScenery.Text = "Near clip (Scenery):";
+            this.labelNearClipScenery.TextAlign = System.Drawing.ContentAlignment.TopRight;
+            // 
+            // comboboxMotionBlur
+            // 
+            this.comboboxMotionBlur.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.comboboxMotionBlur.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboboxMotionBlur.FormattingEnabled = true;
+            this.comboboxMotionBlur.Location = new System.Drawing.Point(149, 48);
+            this.comboboxMotionBlur.Name = "comboboxMotionBlur";
+            this.comboboxMotionBlur.Size = new System.Drawing.Size(152, 21);
+            this.comboboxMotionBlur.TabIndex = 4;
+            // 
+            // labelMotionBlur
+            // 
+            this.labelMotionBlur.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.labelMotionBlur.AutoEllipsis = true;
+            this.labelMotionBlur.Location = new System.Drawing.Point(5, 51);
+            this.labelMotionBlur.Name = "labelMotionBlur";
+            this.labelMotionBlur.Size = new System.Drawing.Size(145, 18);
+            this.labelMotionBlur.TabIndex = 3;
+            this.labelMotionBlur.Text = "Motion blur:";
+            this.labelMotionBlur.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            // 
+            // labelDistanceUnit
+            // 
+            this.labelDistanceUnit.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.labelDistanceUnit.AutoEllipsis = true;
+            this.labelDistanceUnit.Location = new System.Drawing.Point(277, 24);
+            this.labelDistanceUnit.Name = "labelDistanceUnit";
+            this.labelDistanceUnit.Size = new System.Drawing.Size(24, 18);
+            this.labelDistanceUnit.TabIndex = 2;
+            this.labelDistanceUnit.Text = "m";
+            // 
+            // updownDistance
+            // 
+            this.updownDistance.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.updownDistance.Location = new System.Drawing.Point(149, 24);
+            this.updownDistance.Maximum = new decimal(new int[] {
+            100000,
+            0,
+            0,
+            0});
+            this.updownDistance.Minimum = new decimal(new int[] {
+            100,
+            0,
+            0,
+            0});
+            this.updownDistance.Name = "updownDistance";
+            this.updownDistance.Size = new System.Drawing.Size(128, 20);
+            this.updownDistance.TabIndex = 1;
+            this.updownDistance.Value = new decimal(new int[] {
+            600,
+            0,
+            0,
+            0});
+            // 
+            // labelDistance
+            // 
+            this.labelDistance.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.labelDistance.AutoEllipsis = true;
+            this.labelDistance.Location = new System.Drawing.Point(9, 26);
+            this.labelDistance.Name = "labelDistance";
+            this.labelDistance.Size = new System.Drawing.Size(141, 18);
+            this.labelDistance.TabIndex = 0;
+            this.labelDistance.Text = "Viewing distance:";
+            this.labelDistance.TextAlign = System.Drawing.ContentAlignment.TopRight;
+            // 
+            // groupboxShadows
+            // 
+            this.groupboxShadows.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupboxShadows.Controls.Add(this.labelShadowResolution);
+            this.groupboxShadows.Controls.Add(this.comboboxShadowResolution);
+            this.groupboxShadows.Controls.Add(this.labelShadowDistance);
+            this.groupboxShadows.Controls.Add(this.comboboxShadowDistance);
+            this.groupboxShadows.Controls.Add(this.labelShadowCascades);
+            this.groupboxShadows.Controls.Add(this.comboboxShadowCascades);
+            this.groupboxShadows.Controls.Add(this.labelShadowStrength);
+            this.groupboxShadows.Controls.Add(this.trackbarShadowStrength);
+            this.groupboxShadows.Controls.Add(this.labelShadowStrengthValue);
+            this.groupboxShadows.Controls.Add(this.labelShadowBias);
+            this.groupboxShadows.Controls.Add(this.updownShadowBias);
+            this.groupboxShadows.Controls.Add(this.labelShadowNormalBias);
+            this.groupboxShadows.Controls.Add(this.updownShadowNormalBias);
+            this.groupboxShadows.ForeColor = System.Drawing.Color.Black;
+            this.groupboxShadows.Location = new System.Drawing.Point(0, 155);
+            this.groupboxShadows.Name = "groupboxShadows";
+            this.groupboxShadows.Size = new System.Drawing.Size(321, 210);
+            this.groupboxShadows.TabIndex = 30;
+            this.groupboxShadows.TabStop = false;
+            this.groupboxShadows.Text = "Shadows";
+            // 
+            // labelShadowResolution
+            // 
+            this.labelShadowResolution.AutoSize = true;
+            this.labelShadowResolution.Location = new System.Drawing.Point(8, 22);
+            this.labelShadowResolution.Name = "labelShadowResolution";
+            this.labelShadowResolution.Size = new System.Drawing.Size(102, 13);
+            this.labelShadowResolution.TabIndex = 0;
+            this.labelShadowResolution.Text = "Shadow Resolution:";
+            // 
+            // comboboxShadowResolution
+            // 
+            this.comboboxShadowResolution.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboboxShadowResolution.FormattingEnabled = true;
+            this.comboboxShadowResolution.Items.AddRange(new object[] {
+            "Off",
+            "Low (512×512)",
+            "Medium (1024×1024)",
+            "High (2048×2048)",
+            "Ultra (4096×4096)"});
+            this.comboboxShadowResolution.Location = new System.Drawing.Point(120, 19);
+            this.comboboxShadowResolution.Name = "comboboxShadowResolution";
+            this.comboboxShadowResolution.Size = new System.Drawing.Size(168, 21);
+            this.comboboxShadowResolution.TabIndex = 1;
+            this.comboboxShadowResolution.SelectedIndexChanged += new System.EventHandler(this.comboboxShadowResolution_SelectedIndexChanged);
+            // 
+            // labelShadowDistance
+            // 
+            this.labelShadowDistance.AutoSize = true;
+            this.labelShadowDistance.Location = new System.Drawing.Point(8, 50);
+            this.labelShadowDistance.Name = "labelShadowDistance";
+            this.labelShadowDistance.Size = new System.Drawing.Size(94, 13);
+            this.labelShadowDistance.TabIndex = 2;
+            this.labelShadowDistance.Text = "Shadow Distance:";
+            // 
+            // comboboxShadowDistance
+            // 
+            this.comboboxShadowDistance.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboboxShadowDistance.FormattingEnabled = true;
+            this.comboboxShadowDistance.Items.AddRange(new object[] {
+            "Near (150m)",
+            "Medium (300m)",
+            "Far (500m)",
+            "Very Far (800m)",
+            "Follow Viewing Distance"});
+            this.comboboxShadowDistance.Location = new System.Drawing.Point(120, 47);
+            this.comboboxShadowDistance.Name = "comboboxShadowDistance";
+            this.comboboxShadowDistance.Size = new System.Drawing.Size(168, 21);
+            this.comboboxShadowDistance.TabIndex = 3;
+            // 
+            // labelShadowCascades
+            // 
+            this.labelShadowCascades.AutoSize = true;
+            this.labelShadowCascades.Location = new System.Drawing.Point(8, 78);
+            this.labelShadowCascades.Name = "labelShadowCascades";
+            this.labelShadowCascades.Size = new System.Drawing.Size(99, 13);
+            this.labelShadowCascades.TabIndex = 4;
+            this.labelShadowCascades.Text = "Shadow Cascades:";
+            // 
+            // comboboxShadowCascades
+            // 
+            this.comboboxShadowCascades.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboboxShadowCascades.FormattingEnabled = true;
+            this.comboboxShadowCascades.Items.AddRange(new object[] {
+            "2 Cascades (Fastest)",
+            "3 Cascades (Balanced)",
+            "4 Cascades (Best Quality)"});
+            this.comboboxShadowCascades.Location = new System.Drawing.Point(120, 75);
+            this.comboboxShadowCascades.Name = "comboboxShadowCascades";
+            this.comboboxShadowCascades.Size = new System.Drawing.Size(168, 21);
+            this.comboboxShadowCascades.TabIndex = 5;
+            // 
+            // labelShadowStrength
+            // 
+            this.labelShadowStrength.AutoSize = true;
+            this.labelShadowStrength.Location = new System.Drawing.Point(8, 106);
+            this.labelShadowStrength.Name = "labelShadowStrength";
+            this.labelShadowStrength.Size = new System.Drawing.Size(92, 13);
+            this.labelShadowStrength.TabIndex = 6;
+            this.labelShadowStrength.Text = "Shadow Strength:";
+            // 
+            // trackbarShadowStrength
+            // 
+            this.trackbarShadowStrength.Location = new System.Drawing.Point(120, 103);
+            this.trackbarShadowStrength.Maximum = 100;
+            this.trackbarShadowStrength.Name = "trackbarShadowStrength";
+            this.trackbarShadowStrength.Size = new System.Drawing.Size(130, 45);
+            this.trackbarShadowStrength.TabIndex = 7;
+            this.trackbarShadowStrength.TickFrequency = 10;
+            this.trackbarShadowStrength.Value = 70;
+            this.trackbarShadowStrength.Scroll += new System.EventHandler(this.trackbarShadowStrength_Scroll);
+            // 
+            // labelShadowStrengthValue
+            // 
+            this.labelShadowStrengthValue.AutoSize = true;
+            this.labelShadowStrengthValue.Location = new System.Drawing.Point(255, 106);
+            this.labelShadowStrengthValue.Name = "labelShadowStrengthValue";
+            this.labelShadowStrengthValue.Size = new System.Drawing.Size(27, 13);
+            this.labelShadowStrengthValue.TabIndex = 8;
+            this.labelShadowStrengthValue.Text = "70%";
+            // 
+            // labelShadowBias
+            // 
+            this.labelShadowBias.AutoSize = true;
+            this.labelShadowBias.Location = new System.Drawing.Point(8, 154);
+            this.labelShadowBias.Name = "labelShadowBias";
+            this.labelShadowBias.Size = new System.Drawing.Size(72, 13);
+            this.labelShadowBias.TabIndex = 8;
+            this.labelShadowBias.Text = "Shadow Bias:";
+            // 
+            // updownShadowBias
+            // 
+            this.updownShadowBias.DecimalPlaces = 6;
+            this.updownShadowBias.Increment = new decimal(new int[] {
+            1,
+            0,
+            0,
+            393216});
+            this.updownShadowBias.Location = new System.Drawing.Point(120, 151);
+            this.updownShadowBias.Maximum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.updownShadowBias.Name = "updownShadowBias";
+            this.updownShadowBias.Size = new System.Drawing.Size(120, 20);
+            this.updownShadowBias.TabIndex = 9;
+            this.updownShadowBias.Value = new decimal(new int[] {
+            50,
+            0,
+            0,
+            393216});
+            this.updownShadowBias.ValueChanged += new System.EventHandler(this.updownShadowBias_ValueChanged);
+            // 
+            // labelShadowNormalBias
+            // 
+            this.labelShadowNormalBias.AutoSize = true;
+            this.labelShadowNormalBias.Location = new System.Drawing.Point(8, 178);
+            this.labelShadowNormalBias.Name = "labelShadowNormalBias";
+            this.labelShadowNormalBias.Size = new System.Drawing.Size(66, 13);
+            this.labelShadowNormalBias.TabIndex = 10;
+            this.labelShadowNormalBias.Text = "Normal Bias:";
+            // 
+            // updownShadowNormalBias
+            // 
+            this.updownShadowNormalBias.DecimalPlaces = 2;
+            this.updownShadowNormalBias.Increment = new decimal(new int[] {
+            1,
+            0,
+            0,
+            65536});
+            this.updownShadowNormalBias.Location = new System.Drawing.Point(120, 175);
+            this.updownShadowNormalBias.Maximum = new decimal(new int[] {
+            10,
+            0,
+            0,
+            0});
+            this.updownShadowNormalBias.Name = "updownShadowNormalBias";
+            this.updownShadowNormalBias.Size = new System.Drawing.Size(120, 20);
+            this.updownShadowNormalBias.TabIndex = 11;
+            this.updownShadowNormalBias.Value = new decimal(new int[] {
+            2,
+            0,
+            0,
+            0});
+            this.updownShadowNormalBias.ValueChanged += new System.EventHandler(this.updownShadowNormalBias_ValueChanged);
             // 
             // buttonOptionsPrevious
             // 
@@ -2130,1102 +3369,6 @@ namespace OpenBve {
             this.textBoxRouteDirectory.ReadOnly = true;
             this.textBoxRouteDirectory.Size = new System.Drawing.Size(387, 20);
             this.textBoxRouteDirectory.TabIndex = 0;
-            // 
-            // panelOptionsLeft
-            // 
-            this.panelOptionsLeft.AutoScroll = true;
-            this.panelOptionsLeft.Controls.Add(this.groupboxDisplayMode);
-            this.panelOptionsLeft.Controls.Add(this.groupboxWindow);
-            this.panelOptionsLeft.Controls.Add(this.groupboxFullscreen);
-            this.panelOptionsLeft.Controls.Add(this.groupboxInterpolation);
-            this.panelOptionsLeft.Location = new System.Drawing.Point(8, 72);
-            this.panelOptionsLeft.Name = "panelOptionsLeft";
-            this.panelOptionsLeft.Size = new System.Drawing.Size(316, 576);
-            this.panelOptionsLeft.TabIndex = 16;
-            // 
-            // groupboxDisplayMode
-            // 
-            this.groupboxDisplayMode.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.groupboxDisplayMode.Controls.Add(this.comboBoxFont);
-            this.groupboxDisplayMode.Controls.Add(this.labelFontName);
-            this.groupboxDisplayMode.Controls.Add(this.labelHUDLarge);
-            this.groupboxDisplayMode.Controls.Add(this.labelHUDNormal);
-            this.groupboxDisplayMode.Controls.Add(this.labelHUDSmall);
-            this.groupboxDisplayMode.Controls.Add(this.trackBarHUDSize);
-            this.groupboxDisplayMode.Controls.Add(this.labelHUDScale);
-            this.groupboxDisplayMode.Controls.Add(this.comboboxVSync);
-            this.groupboxDisplayMode.Controls.Add(this.labelVSync);
-            this.groupboxDisplayMode.Controls.Add(this.radiobuttonFullscreen);
-            this.groupboxDisplayMode.Controls.Add(this.radiobuttonWindow);
-            this.groupboxDisplayMode.ForeColor = System.Drawing.Color.Black;
-            this.groupboxDisplayMode.Location = new System.Drawing.Point(0, 0);
-            this.groupboxDisplayMode.Name = "groupboxDisplayMode";
-            this.groupboxDisplayMode.Size = new System.Drawing.Size(316, 189);
-            this.groupboxDisplayMode.TabIndex = 4;
-            this.groupboxDisplayMode.TabStop = false;
-            this.groupboxDisplayMode.Text = "Display mode";
-            // 
-            // comboBoxFont
-            // 
-            this.comboBoxFont.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.comboBoxFont.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.comboBoxFont.FormattingEnabled = true;
-            this.comboBoxFont.Location = new System.Drawing.Point(45, 155);
-            this.comboBoxFont.Name = "comboBoxFont";
-            this.comboBoxFont.Size = new System.Drawing.Size(264, 21);
-            this.comboBoxFont.TabIndex = 14;
-            this.comboBoxFont.SelectionChangeCommitted += new System.EventHandler(this.comboBoxFont_SelectedIndexChanged);
-            // 
-            // labelFontName
-            // 
-            this.labelFontName.Location = new System.Drawing.Point(8, 148);
-            this.labelFontName.Name = "labelFontName";
-            this.labelFontName.Size = new System.Drawing.Size(50, 36);
-            this.labelFontName.TabIndex = 13;
-            this.labelFontName.Text = "Font:";
-            this.labelFontName.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
-            // labelHUDLarge
-            // 
-            this.labelHUDLarge.Location = new System.Drawing.Point(258, 125);
-            this.labelHUDLarge.Name = "labelHUDLarge";
-            this.labelHUDLarge.Size = new System.Drawing.Size(72, 48);
-            this.labelHUDLarge.TabIndex = 12;
-            this.labelHUDLarge.Text = "Large";
-            this.labelHUDLarge.TextAlign = System.Drawing.ContentAlignment.TopCenter;
-            // 
-            // labelHUDNormal
-            // 
-            this.labelHUDNormal.Location = new System.Drawing.Point(162, 125);
-            this.labelHUDNormal.Name = "labelHUDNormal";
-            this.labelHUDNormal.Size = new System.Drawing.Size(70, 48);
-            this.labelHUDNormal.TabIndex = 11;
-            this.labelHUDNormal.Text = "Normal";
-            this.labelHUDNormal.TextAlign = System.Drawing.ContentAlignment.TopCenter;
-            // 
-            // labelHUDSmall
-            // 
-            this.labelHUDSmall.Location = new System.Drawing.Point(66, 125);
-            this.labelHUDSmall.Name = "labelHUDSmall";
-            this.labelHUDSmall.Size = new System.Drawing.Size(70, 48);
-            this.labelHUDSmall.TabIndex = 10;
-            this.labelHUDSmall.Text = "Small";
-            this.labelHUDSmall.TextAlign = System.Drawing.ContentAlignment.TopCenter;
-            // 
-            // trackBarHUDSize
-            // 
-            this.trackBarHUDSize.LargeChange = 1;
-            this.trackBarHUDSize.Location = new System.Drawing.Point(88, 100);
-            this.trackBarHUDSize.Maximum = 2;
-            this.trackBarHUDSize.Name = "trackBarHUDSize";
-            this.trackBarHUDSize.Size = new System.Drawing.Size(220, 45);
-            this.trackBarHUDSize.TabIndex = 9;
-            this.trackBarHUDSize.Value = 1;
-            // 
-            // labelHUDScale
-            // 
-            this.labelHUDScale.AutoSize = true;
-            this.labelHUDScale.Location = new System.Drawing.Point(8, 106);
-            this.labelHUDScale.Name = "labelHUDScale";
-            this.labelHUDScale.Size = new System.Drawing.Size(54, 13);
-            this.labelHUDScale.TabIndex = 8;
-            this.labelHUDScale.Text = "HUD Size";
-            // 
-            // comboboxVSync
-            // 
-            this.comboboxVSync.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.comboboxVSync.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.comboboxVSync.FormattingEnabled = true;
-            this.comboboxVSync.Location = new System.Drawing.Point(156, 72);
-            this.comboboxVSync.Name = "comboboxVSync";
-            this.comboboxVSync.Size = new System.Drawing.Size(152, 21);
-            this.comboboxVSync.TabIndex = 7;
-            // 
-            // labelVSync
-            // 
-            this.labelVSync.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.labelVSync.AutoEllipsis = true;
-            this.labelVSync.Location = new System.Drawing.Point(8, 72);
-            this.labelVSync.Name = "labelVSync";
-            this.labelVSync.Size = new System.Drawing.Size(148, 18);
-            this.labelVSync.TabIndex = 2;
-            this.labelVSync.Text = "Vertical syncronization:";
-            this.labelVSync.TextAlign = System.Drawing.ContentAlignment.TopRight;
-            // 
-            // radiobuttonFullscreen
-            // 
-            this.radiobuttonFullscreen.AutoSize = true;
-            this.radiobuttonFullscreen.Location = new System.Drawing.Point(8, 48);
-            this.radiobuttonFullscreen.Name = "radiobuttonFullscreen";
-            this.radiobuttonFullscreen.Size = new System.Drawing.Size(102, 17);
-            this.radiobuttonFullscreen.TabIndex = 1;
-            this.radiobuttonFullscreen.TabStop = true;
-            this.radiobuttonFullscreen.Text = "Fullscreen mode";
-            this.radiobuttonFullscreen.UseVisualStyleBackColor = true;
-            // 
-            // radiobuttonWindow
-            // 
-            this.radiobuttonWindow.AutoSize = true;
-            this.radiobuttonWindow.Checked = true;
-            this.radiobuttonWindow.Location = new System.Drawing.Point(8, 24);
-            this.radiobuttonWindow.Name = "radiobuttonWindow";
-            this.radiobuttonWindow.Size = new System.Drawing.Size(93, 17);
-            this.radiobuttonWindow.TabIndex = 0;
-            this.radiobuttonWindow.TabStop = true;
-            this.radiobuttonWindow.Text = "Window mode";
-            this.radiobuttonWindow.UseVisualStyleBackColor = true;
-            // 
-            // groupboxWindow
-            // 
-            this.groupboxWindow.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.groupboxWindow.Controls.Add(this.updownWindowHeight);
-            this.groupboxWindow.Controls.Add(this.labelWindowHeight);
-            this.groupboxWindow.Controls.Add(this.updownWindowWidth);
-            this.groupboxWindow.Controls.Add(this.labelWindowWidth);
-            this.groupboxWindow.ForeColor = System.Drawing.Color.Black;
-            this.groupboxWindow.Location = new System.Drawing.Point(0, 192);
-            this.groupboxWindow.Name = "groupboxWindow";
-            this.groupboxWindow.Size = new System.Drawing.Size(316, 80);
-            this.groupboxWindow.TabIndex = 5;
-            this.groupboxWindow.TabStop = false;
-            this.groupboxWindow.Text = "Window mode";
-            // 
-            // updownWindowHeight
-            // 
-            this.updownWindowHeight.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.updownWindowHeight.Location = new System.Drawing.Point(156, 48);
-            this.updownWindowHeight.Maximum = new decimal(new int[] {
-            1048575,
-            0,
-            0,
-            0});
-            this.updownWindowHeight.Minimum = new decimal(new int[] {
-            16,
-            0,
-            0,
-            0});
-            this.updownWindowHeight.Name = "updownWindowHeight";
-            this.updownWindowHeight.Size = new System.Drawing.Size(152, 20);
-            this.updownWindowHeight.TabIndex = 3;
-            this.updownWindowHeight.Value = new decimal(new int[] {
-            600,
-            0,
-            0,
-            0});
-            // 
-            // labelWindowHeight
-            // 
-            this.labelWindowHeight.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.labelWindowHeight.AutoEllipsis = true;
-            this.labelWindowHeight.Location = new System.Drawing.Point(8, 50);
-            this.labelWindowHeight.Name = "labelWindowHeight";
-            this.labelWindowHeight.Size = new System.Drawing.Size(148, 18);
-            this.labelWindowHeight.TabIndex = 2;
-            this.labelWindowHeight.Text = "Height:";
-            this.labelWindowHeight.TextAlign = System.Drawing.ContentAlignment.TopRight;
-            // 
-            // updownWindowWidth
-            // 
-            this.updownWindowWidth.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.updownWindowWidth.Location = new System.Drawing.Point(156, 24);
-            this.updownWindowWidth.Maximum = new decimal(new int[] {
-            1048575,
-            0,
-            0,
-            0});
-            this.updownWindowWidth.Minimum = new decimal(new int[] {
-            16,
-            0,
-            0,
-            0});
-            this.updownWindowWidth.Name = "updownWindowWidth";
-            this.updownWindowWidth.Size = new System.Drawing.Size(152, 20);
-            this.updownWindowWidth.TabIndex = 1;
-            this.updownWindowWidth.Value = new decimal(new int[] {
-            960,
-            0,
-            0,
-            0});
-            // 
-            // labelWindowWidth
-            // 
-            this.labelWindowWidth.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.labelWindowWidth.AutoEllipsis = true;
-            this.labelWindowWidth.Location = new System.Drawing.Point(8, 26);
-            this.labelWindowWidth.Name = "labelWindowWidth";
-            this.labelWindowWidth.Size = new System.Drawing.Size(148, 18);
-            this.labelWindowWidth.TabIndex = 0;
-            this.labelWindowWidth.Text = "Width:";
-            this.labelWindowWidth.TextAlign = System.Drawing.ContentAlignment.TopRight;
-            // 
-            // groupboxFullscreen
-            // 
-            this.groupboxFullscreen.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.groupboxFullscreen.Controls.Add(this.comboboxFullscreenBits);
-            this.groupboxFullscreen.Controls.Add(this.labelFullscreenBits);
-            this.groupboxFullscreen.Controls.Add(this.updownFullscreenHeight);
-            this.groupboxFullscreen.Controls.Add(this.labelFullscreenHeight);
-            this.groupboxFullscreen.Controls.Add(this.updownFullscreenWidth);
-            this.groupboxFullscreen.Controls.Add(this.labelFullscreenWidth);
-            this.groupboxFullscreen.ForeColor = System.Drawing.Color.Black;
-            this.groupboxFullscreen.Location = new System.Drawing.Point(0, 275);
-            this.groupboxFullscreen.Name = "groupboxFullscreen";
-            this.groupboxFullscreen.Size = new System.Drawing.Size(316, 104);
-            this.groupboxFullscreen.TabIndex = 6;
-            this.groupboxFullscreen.TabStop = false;
-            this.groupboxFullscreen.Text = "Fullscreen mode";
-            // 
-            // comboboxFullscreenBits
-            // 
-            this.comboboxFullscreenBits.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.comboboxFullscreenBits.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.comboboxFullscreenBits.FormattingEnabled = true;
-            this.comboboxFullscreenBits.Location = new System.Drawing.Point(156, 72);
-            this.comboboxFullscreenBits.Name = "comboboxFullscreenBits";
-            this.comboboxFullscreenBits.Size = new System.Drawing.Size(152, 21);
-            this.comboboxFullscreenBits.TabIndex = 5;
-            // 
-            // labelFullscreenBits
-            // 
-            this.labelFullscreenBits.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.labelFullscreenBits.AutoEllipsis = true;
-            this.labelFullscreenBits.Location = new System.Drawing.Point(8, 74);
-            this.labelFullscreenBits.Name = "labelFullscreenBits";
-            this.labelFullscreenBits.Size = new System.Drawing.Size(148, 18);
-            this.labelFullscreenBits.TabIndex = 4;
-            this.labelFullscreenBits.Text = "Bits per pixel:";
-            this.labelFullscreenBits.TextAlign = System.Drawing.ContentAlignment.TopRight;
-            // 
-            // updownFullscreenHeight
-            // 
-            this.updownFullscreenHeight.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.updownFullscreenHeight.Location = new System.Drawing.Point(156, 48);
-            this.updownFullscreenHeight.Maximum = new decimal(new int[] {
-            1048575,
-            0,
-            0,
-            0});
-            this.updownFullscreenHeight.Minimum = new decimal(new int[] {
-            16,
-            0,
-            0,
-            0});
-            this.updownFullscreenHeight.Name = "updownFullscreenHeight";
-            this.updownFullscreenHeight.Size = new System.Drawing.Size(152, 20);
-            this.updownFullscreenHeight.TabIndex = 3;
-            this.updownFullscreenHeight.Value = new decimal(new int[] {
-            768,
-            0,
-            0,
-            0});
-            // 
-            // labelFullscreenHeight
-            // 
-            this.labelFullscreenHeight.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.labelFullscreenHeight.AutoEllipsis = true;
-            this.labelFullscreenHeight.Location = new System.Drawing.Point(8, 50);
-            this.labelFullscreenHeight.Name = "labelFullscreenHeight";
-            this.labelFullscreenHeight.Size = new System.Drawing.Size(148, 18);
-            this.labelFullscreenHeight.TabIndex = 2;
-            this.labelFullscreenHeight.Text = "Height:";
-            this.labelFullscreenHeight.TextAlign = System.Drawing.ContentAlignment.TopRight;
-            // 
-            // updownFullscreenWidth
-            // 
-            this.updownFullscreenWidth.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.updownFullscreenWidth.Location = new System.Drawing.Point(156, 24);
-            this.updownFullscreenWidth.Maximum = new decimal(new int[] {
-            1048575,
-            0,
-            0,
-            0});
-            this.updownFullscreenWidth.Minimum = new decimal(new int[] {
-            16,
-            0,
-            0,
-            0});
-            this.updownFullscreenWidth.Name = "updownFullscreenWidth";
-            this.updownFullscreenWidth.Size = new System.Drawing.Size(152, 20);
-            this.updownFullscreenWidth.TabIndex = 1;
-            this.updownFullscreenWidth.Value = new decimal(new int[] {
-            1024,
-            0,
-            0,
-            0});
-            // 
-            // labelFullscreenWidth
-            // 
-            this.labelFullscreenWidth.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.labelFullscreenWidth.AutoEllipsis = true;
-            this.labelFullscreenWidth.Location = new System.Drawing.Point(8, 26);
-            this.labelFullscreenWidth.Name = "labelFullscreenWidth";
-            this.labelFullscreenWidth.Size = new System.Drawing.Size(148, 18);
-            this.labelFullscreenWidth.TabIndex = 0;
-            this.labelFullscreenWidth.Text = "Width:";
-            this.labelFullscreenWidth.TextAlign = System.Drawing.ContentAlignment.TopRight;
-            // 
-            // groupboxInterpolation
-            // 
-            this.groupboxInterpolation.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.groupboxInterpolation.Controls.Add(this.updownAntiAliasing);
-            this.groupboxInterpolation.Controls.Add(this.labelAntiAliasing);
-            this.groupboxInterpolation.Controls.Add(this.labelTransparencyQuality);
-            this.groupboxInterpolation.Controls.Add(this.labelTransparencyPerformance);
-            this.groupboxInterpolation.Controls.Add(this.labelTransparency);
-            this.groupboxInterpolation.Controls.Add(this.updownAnisotropic);
-            this.groupboxInterpolation.Controls.Add(this.labelAnisotropic);
-            this.groupboxInterpolation.Controls.Add(this.comboboxInterpolation);
-            this.groupboxInterpolation.Controls.Add(this.labelInterpolation);
-            this.groupboxInterpolation.Controls.Add(this.trackbarTransparency);
-            this.groupboxInterpolation.ForeColor = System.Drawing.Color.Black;
-            this.groupboxInterpolation.Location = new System.Drawing.Point(0, 381);
-            this.groupboxInterpolation.Name = "groupboxInterpolation";
-            this.groupboxInterpolation.Size = new System.Drawing.Size(316, 160);
-            this.groupboxInterpolation.TabIndex = 7;
-            this.groupboxInterpolation.TabStop = false;
-            this.groupboxInterpolation.Text = "Interpolation";
-            // 
-            // updownAntiAliasing
-            // 
-            this.updownAntiAliasing.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.updownAntiAliasing.Location = new System.Drawing.Point(156, 64);
-            this.updownAntiAliasing.Maximum = new decimal(new int[] {
-            16,
-            0,
-            0,
-            0});
-            this.updownAntiAliasing.Name = "updownAntiAliasing";
-            this.updownAntiAliasing.Size = new System.Drawing.Size(152, 20);
-            this.updownAntiAliasing.TabIndex = 5;
-            // 
-            // labelAntiAliasing
-            // 
-            this.labelAntiAliasing.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.labelAntiAliasing.AutoEllipsis = true;
-            this.labelAntiAliasing.Location = new System.Drawing.Point(8, 66);
-            this.labelAntiAliasing.Name = "labelAntiAliasing";
-            this.labelAntiAliasing.Size = new System.Drawing.Size(148, 18);
-            this.labelAntiAliasing.TabIndex = 4;
-            this.labelAntiAliasing.Text = "Level of anti-aliasing:";
-            this.labelAntiAliasing.TextAlign = System.Drawing.ContentAlignment.TopRight;
-            // 
-            // labelTransparencyQuality
-            // 
-            this.labelTransparencyQuality.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.labelTransparencyQuality.AutoEllipsis = true;
-            this.labelTransparencyQuality.Location = new System.Drawing.Point(230, 136);
-            this.labelTransparencyQuality.Name = "labelTransparencyQuality";
-            this.labelTransparencyQuality.Size = new System.Drawing.Size(76, 16);
-            this.labelTransparencyQuality.TabIndex = 9;
-            this.labelTransparencyQuality.Text = "Smooth";
-            this.labelTransparencyQuality.TextAlign = System.Drawing.ContentAlignment.TopRight;
-            // 
-            // labelTransparencyPerformance
-            // 
-            this.labelTransparencyPerformance.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.labelTransparencyPerformance.AutoEllipsis = true;
-            this.labelTransparencyPerformance.Location = new System.Drawing.Point(130, 136);
-            this.labelTransparencyPerformance.Name = "labelTransparencyPerformance";
-            this.labelTransparencyPerformance.Size = new System.Drawing.Size(76, 16);
-            this.labelTransparencyPerformance.TabIndex = 8;
-            this.labelTransparencyPerformance.Text = "Sharp";
-            this.labelTransparencyPerformance.TextAlign = System.Drawing.ContentAlignment.TopCenter;
-            // 
-            // labelTransparency
-            // 
-            this.labelTransparency.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.labelTransparency.AutoEllipsis = true;
-            this.labelTransparency.Location = new System.Drawing.Point(8, 100);
-            this.labelTransparency.Name = "labelTransparency";
-            this.labelTransparency.Size = new System.Drawing.Size(148, 18);
-            this.labelTransparency.TabIndex = 6;
-            this.labelTransparency.Text = "Transparency:";
-            this.labelTransparency.TextAlign = System.Drawing.ContentAlignment.TopRight;
-            // 
-            // updownAnisotropic
-            // 
-            this.updownAnisotropic.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.updownAnisotropic.Enabled = false;
-            this.updownAnisotropic.Location = new System.Drawing.Point(156, 40);
-            this.updownAnisotropic.Maximum = new decimal(new int[] {
-            16,
-            0,
-            0,
-            0});
-            this.updownAnisotropic.Name = "updownAnisotropic";
-            this.updownAnisotropic.Size = new System.Drawing.Size(152, 20);
-            this.updownAnisotropic.TabIndex = 3;
-            // 
-            // labelAnisotropic
-            // 
-            this.labelAnisotropic.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.labelAnisotropic.AutoEllipsis = true;
-            this.labelAnisotropic.Enabled = false;
-            this.labelAnisotropic.Location = new System.Drawing.Point(8, 42);
-            this.labelAnisotropic.Name = "labelAnisotropic";
-            this.labelAnisotropic.Size = new System.Drawing.Size(148, 18);
-            this.labelAnisotropic.TabIndex = 2;
-            this.labelAnisotropic.Text = "Level of anisotropic filtering:";
-            this.labelAnisotropic.TextAlign = System.Drawing.ContentAlignment.TopRight;
-            // 
-            // comboboxInterpolation
-            // 
-            this.comboboxInterpolation.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.comboboxInterpolation.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.comboboxInterpolation.FormattingEnabled = true;
-            this.comboboxInterpolation.Location = new System.Drawing.Point(156, 16);
-            this.comboboxInterpolation.Name = "comboboxInterpolation";
-            this.comboboxInterpolation.Size = new System.Drawing.Size(152, 21);
-            this.comboboxInterpolation.TabIndex = 1;
-            this.comboboxInterpolation.SelectedIndexChanged += new System.EventHandler(this.comboboxInterpolation_SelectedIndexChanged);
-            // 
-            // labelInterpolation
-            // 
-            this.labelInterpolation.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.labelInterpolation.AutoEllipsis = true;
-            this.labelInterpolation.Location = new System.Drawing.Point(8, 18);
-            this.labelInterpolation.Name = "labelInterpolation";
-            this.labelInterpolation.Size = new System.Drawing.Size(148, 18);
-            this.labelInterpolation.TabIndex = 0;
-            this.labelInterpolation.Text = "Mode:";
-            this.labelInterpolation.TextAlign = System.Drawing.ContentAlignment.TopRight;
-            // 
-            // trackbarTransparency
-            // 
-            this.trackbarTransparency.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.trackbarTransparency.Location = new System.Drawing.Point(156, 88);
-            this.trackbarTransparency.Maximum = 2;
-            this.trackbarTransparency.Name = "trackbarTransparency";
-            this.trackbarTransparency.Size = new System.Drawing.Size(152, 45);
-            this.trackbarTransparency.TabIndex = 7;
-            this.trackbarTransparency.TickStyle = System.Windows.Forms.TickStyle.Both;
-            // 
-            // groupboxShadows
-            // 
-            this.groupboxShadows.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.groupboxShadows.Controls.Add(this.labelShadowResolution);
-            this.groupboxShadows.Controls.Add(this.comboboxShadowResolution);
-            this.groupboxShadows.Controls.Add(this.labelShadowDistance);
-            this.groupboxShadows.Controls.Add(this.comboboxShadowDistance);
-            this.groupboxShadows.Controls.Add(this.labelShadowCascades);
-            this.groupboxShadows.Controls.Add(this.comboboxShadowCascades);
-            this.groupboxShadows.Controls.Add(this.labelShadowStrength);
-            this.groupboxShadows.Controls.Add(this.trackbarShadowStrength);
-            this.groupboxShadows.Controls.Add(this.labelShadowStrengthValue);
-            this.groupboxShadows.Controls.Add(this.labelShadowBias);
-            this.groupboxShadows.Controls.Add(this.updownShadowBias);
-            this.groupboxShadows.Controls.Add(this.labelShadowNormalBias);
-            this.groupboxShadows.Controls.Add(this.updownShadowNormalBias);
-            this.groupboxShadows.ForeColor = System.Drawing.Color.Black;
-            this.groupboxShadows.Location = new System.Drawing.Point(0, 80);
-            this.groupboxShadows.Name = "groupboxShadows";
-            this.groupboxShadows.Size = new System.Drawing.Size(321, 210);
-            this.groupboxShadows.TabIndex = 30;
-            this.groupboxShadows.TabStop = false;
-            this.groupboxShadows.Text = "Shadows";
-            // 
-            // labelShadowResolution
-            // 
-            this.labelShadowResolution.AutoSize = true;
-            this.labelShadowResolution.Location = new System.Drawing.Point(8, 22);
-            this.labelShadowResolution.Name = "labelShadowResolution";
-            this.labelShadowResolution.Size = new System.Drawing.Size(102, 13);
-            this.labelShadowResolution.TabIndex = 0;
-            this.labelShadowResolution.Text = "Shadow Resolution:";
-            // 
-            // comboboxShadowResolution
-            // 
-            this.comboboxShadowResolution.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.comboboxShadowResolution.FormattingEnabled = true;
-            this.comboboxShadowResolution.Items.AddRange(new object[] {
-            "Off",
-            "Low (512×512)",
-            "Medium (1024×1024)",
-            "High (2048×2048)",
-            "Ultra (4096×4096)"});
-            this.comboboxShadowResolution.Location = new System.Drawing.Point(120, 19);
-            this.comboboxShadowResolution.Name = "comboboxShadowResolution";
-            this.comboboxShadowResolution.Size = new System.Drawing.Size(168, 21);
-            this.comboboxShadowResolution.TabIndex = 1;
-            this.comboboxShadowResolution.SelectedIndexChanged += new System.EventHandler(this.comboboxShadowResolution_SelectedIndexChanged);
-            // 
-            // labelShadowDistance
-            // 
-            this.labelShadowDistance.AutoSize = true;
-            this.labelShadowDistance.Location = new System.Drawing.Point(8, 50);
-            this.labelShadowDistance.Name = "labelShadowDistance";
-            this.labelShadowDistance.Size = new System.Drawing.Size(94, 13);
-            this.labelShadowDistance.TabIndex = 2;
-            this.labelShadowDistance.Text = "Shadow Distance:";
-            // 
-            // comboboxShadowDistance
-            // 
-            this.comboboxShadowDistance.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.comboboxShadowDistance.FormattingEnabled = true;
-            this.comboboxShadowDistance.Items.AddRange(new object[] {
-            "Near (150m)",
-            "Medium (300m)",
-            "Far (500m)",
-            "Very Far (800m)",
-            "Follow Viewing Distance"});
-            this.comboboxShadowDistance.Location = new System.Drawing.Point(120, 47);
-            this.comboboxShadowDistance.Name = "comboboxShadowDistance";
-            this.comboboxShadowDistance.Size = new System.Drawing.Size(168, 21);
-            this.comboboxShadowDistance.TabIndex = 3;
-            // 
-            // labelShadowCascades
-            // 
-            this.labelShadowCascades.AutoSize = true;
-            this.labelShadowCascades.Location = new System.Drawing.Point(8, 78);
-            this.labelShadowCascades.Name = "labelShadowCascades";
-            this.labelShadowCascades.Size = new System.Drawing.Size(99, 13);
-            this.labelShadowCascades.TabIndex = 4;
-            this.labelShadowCascades.Text = "Shadow Cascades:";
-            // 
-            // comboboxShadowCascades
-            // 
-            this.comboboxShadowCascades.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.comboboxShadowCascades.FormattingEnabled = true;
-            this.comboboxShadowCascades.Items.AddRange(new object[] {
-            "2 Cascades (Fastest)",
-            "3 Cascades (Balanced)",
-            "4 Cascades (Best Quality)"});
-            this.comboboxShadowCascades.Location = new System.Drawing.Point(120, 75);
-            this.comboboxShadowCascades.Name = "comboboxShadowCascades";
-            this.comboboxShadowCascades.Size = new System.Drawing.Size(168, 21);
-            this.comboboxShadowCascades.TabIndex = 5;
-            // 
-            // labelShadowStrength
-            // 
-            this.labelShadowStrength.AutoSize = true;
-            this.labelShadowStrength.Location = new System.Drawing.Point(8, 106);
-            this.labelShadowStrength.Name = "labelShadowStrength";
-            this.labelShadowStrength.Size = new System.Drawing.Size(92, 13);
-            this.labelShadowStrength.TabIndex = 6;
-            this.labelShadowStrength.Text = "Shadow Strength:";
-            // 
-            // trackbarShadowStrength
-            // 
-            this.trackbarShadowStrength.Location = new System.Drawing.Point(120, 103);
-            this.trackbarShadowStrength.Maximum = 100;
-            this.trackbarShadowStrength.Name = "trackbarShadowStrength";
-            this.trackbarShadowStrength.Size = new System.Drawing.Size(130, 45);
-            this.trackbarShadowStrength.TabIndex = 7;
-            this.trackbarShadowStrength.TickFrequency = 10;
-            this.trackbarShadowStrength.Value = 70;
-            this.trackbarShadowStrength.Scroll += new System.EventHandler(this.trackbarShadowStrength_Scroll);
-            // 
-            // labelShadowStrengthValue
-            // 
-            this.labelShadowStrengthValue.AutoSize = true;
-            this.labelShadowStrengthValue.Location = new System.Drawing.Point(255, 106);
-            this.labelShadowStrengthValue.Name = "labelShadowStrengthValue";
-            this.labelShadowStrengthValue.Size = new System.Drawing.Size(27, 13);
-            this.labelShadowStrengthValue.TabIndex = 8;
-            this.labelShadowStrengthValue.Text = "70%";
-            // 
-            // labelShadowBias
-            // 
-            this.labelShadowBias.AutoSize = true;
-            this.labelShadowBias.Location = new System.Drawing.Point(8, 154);
-            this.labelShadowBias.Name = "labelShadowBias";
-            this.labelShadowBias.Size = new System.Drawing.Size(72, 13);
-            this.labelShadowBias.TabIndex = 8;
-            this.labelShadowBias.Text = "Shadow Bias:";
-            // 
-            // updownShadowBias
-            // 
-            this.updownShadowBias.DecimalPlaces = 6;
-            this.updownShadowBias.Increment = new decimal(new int[] {
-            1,
-            0,
-            0,
-            393216});
-            this.updownShadowBias.Location = new System.Drawing.Point(120, 151);
-            this.updownShadowBias.Maximum = new decimal(new int[] {
-            1,
-            0,
-            0,
-            0});
-            this.updownShadowBias.Name = "updownShadowBias";
-            this.updownShadowBias.Size = new System.Drawing.Size(120, 20);
-            this.updownShadowBias.TabIndex = 9;
-            this.updownShadowBias.Value = new decimal(new int[] {
-            50,
-            0,
-            0,
-            393216});
-            this.updownShadowBias.ValueChanged += new System.EventHandler(this.updownShadowBias_ValueChanged);
-            // 
-            // labelShadowNormalBias
-            // 
-            this.labelShadowNormalBias.AutoSize = true;
-            this.labelShadowNormalBias.Location = new System.Drawing.Point(8, 178);
-            this.labelShadowNormalBias.Name = "labelShadowNormalBias";
-            this.labelShadowNormalBias.Size = new System.Drawing.Size(66, 13);
-            this.labelShadowNormalBias.TabIndex = 10;
-            this.labelShadowNormalBias.Text = "Normal Bias:";
-            // 
-            // updownShadowNormalBias
-            // 
-            this.updownShadowNormalBias.DecimalPlaces = 2;
-            this.updownShadowNormalBias.Increment = new decimal(new int[] {
-            1,
-            0,
-            0,
-            65536});
-            this.updownShadowNormalBias.Location = new System.Drawing.Point(120, 175);
-            this.updownShadowNormalBias.Maximum = new decimal(new int[] {
-            10,
-            0,
-            0,
-            0});
-            this.updownShadowNormalBias.Name = "updownShadowNormalBias";
-            this.updownShadowNormalBias.Size = new System.Drawing.Size(120, 20);
-            this.updownShadowNormalBias.TabIndex = 11;
-            this.updownShadowNormalBias.Value = new decimal(new int[] {
-            2,
-            0,
-            0,
-            0});
-            this.updownShadowNormalBias.ValueChanged += new System.EventHandler(this.updownShadowNormalBias_ValueChanged);
-            // 
-            // panelOptionsRight
-            // 
-            this.panelOptionsRight.AutoScroll = true;
-            this.panelOptionsRight.Controls.Add(this.groupBoxOther);
-            this.panelOptionsRight.Controls.Add(this.groupBoxRailDriver);
-            this.panelOptionsRight.Controls.Add(this.groupboxControls);
-            this.panelOptionsRight.Controls.Add(this.groupboxVerbosity);
-            this.panelOptionsRight.Controls.Add(this.groupboxSimulation);
-            this.panelOptionsRight.Controls.Add(this.groupboxSound);
-            this.panelOptionsRight.Location = new System.Drawing.Point(360, 72);
-            this.panelOptionsRight.Name = "panelOptionsRight";
-            this.panelOptionsRight.Size = new System.Drawing.Size(316, 579);
-            this.panelOptionsRight.TabIndex = 17;
-            // 
-            // groupBoxOther
-            // 
-            this.groupBoxOther.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.groupBoxOther.Controls.Add(this.comboBoxTimeTableDisplayMode);
-            this.groupBoxOther.Controls.Add(this.labelTimeTableDisplayMode);
-            this.groupBoxOther.ForeColor = System.Drawing.Color.Black;
-            this.groupBoxOther.Location = new System.Drawing.Point(0, 347);
-            this.groupBoxOther.Name = "groupBoxOther";
-            this.groupBoxOther.Size = new System.Drawing.Size(316, 48);
-            this.groupBoxOther.TabIndex = 19;
-            this.groupBoxOther.TabStop = false;
-            this.groupBoxOther.Text = "Other";
-            // 
-            // comboBoxTimeTableDisplayMode
-            // 
-            this.comboBoxTimeTableDisplayMode.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.comboBoxTimeTableDisplayMode.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.comboBoxTimeTableDisplayMode.FormattingEnabled = true;
-            this.comboBoxTimeTableDisplayMode.Location = new System.Drawing.Point(156, 16);
-            this.comboBoxTimeTableDisplayMode.Name = "comboBoxTimeTableDisplayMode";
-            this.comboBoxTimeTableDisplayMode.Size = new System.Drawing.Size(152, 21);
-            this.comboBoxTimeTableDisplayMode.TabIndex = 1;
-            this.comboBoxTimeTableDisplayMode.SelectedIndexChanged += new System.EventHandler(this.comboBoxTimeTableDisplayMode_SelectedIndexChanged);
-            // 
-            // labelTimeTableDisplayMode
-            // 
-            this.labelTimeTableDisplayMode.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.labelTimeTableDisplayMode.AutoEllipsis = true;
-            this.labelTimeTableDisplayMode.Location = new System.Drawing.Point(3, 17);
-            this.labelTimeTableDisplayMode.Name = "labelTimeTableDisplayMode";
-            this.labelTimeTableDisplayMode.Size = new System.Drawing.Size(153, 18);
-            this.labelTimeTableDisplayMode.TabIndex = 0;
-            this.labelTimeTableDisplayMode.Text = "Timetable Display Mode:";
-            this.labelTimeTableDisplayMode.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
-            // 
-            // groupBoxRailDriver
-            // 
-            this.groupBoxRailDriver.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.groupBoxRailDriver.Controls.Add(this.labelRailDriverCalibration);
-            this.groupBoxRailDriver.Controls.Add(this.buttonRailDriverCalibration);
-            this.groupBoxRailDriver.Controls.Add(this.comboBoxRailDriverUnits);
-            this.groupBoxRailDriver.Controls.Add(this.labelRailDriverSpeedUnits);
-            this.groupBoxRailDriver.ForeColor = System.Drawing.Color.Black;
-            this.groupBoxRailDriver.Location = new System.Drawing.Point(0, 128);
-            this.groupBoxRailDriver.Name = "groupBoxRailDriver";
-            this.groupBoxRailDriver.Size = new System.Drawing.Size(316, 75);
-            this.groupBoxRailDriver.TabIndex = 21;
-            this.groupBoxRailDriver.TabStop = false;
-            this.groupBoxRailDriver.Text = "RailDriver";
-            // 
-            // labelRailDriverCalibration
-            // 
-            this.labelRailDriverCalibration.AutoSize = true;
-            this.labelRailDriverCalibration.Location = new System.Drawing.Point(7, 46);
-            this.labelRailDriverCalibration.Name = "labelRailDriverCalibration";
-            this.labelRailDriverCalibration.Size = new System.Drawing.Size(78, 13);
-            this.labelRailDriverCalibration.TabIndex = 5;
-            this.labelRailDriverCalibration.Text = "Set Calibration:";
-            // 
-            // buttonRailDriverCalibration
-            // 
-            this.buttonRailDriverCalibration.BackColor = System.Drawing.SystemColors.ButtonFace;
-            this.buttonRailDriverCalibration.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.buttonRailDriverCalibration.Location = new System.Drawing.Point(230, 42);
-            this.buttonRailDriverCalibration.Name = "buttonRailDriverCalibration";
-            this.buttonRailDriverCalibration.Size = new System.Drawing.Size(75, 26);
-            this.buttonRailDriverCalibration.TabIndex = 4;
-            this.buttonRailDriverCalibration.Text = "Launch...";
-            this.buttonRailDriverCalibration.UseVisualStyleBackColor = true;
-            this.buttonRailDriverCalibration.Click += new System.EventHandler(this.buttonRailDriverCalibration_Click);
-            // 
-            // comboBoxRailDriverUnits
-            // 
-            this.comboBoxRailDriverUnits.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.comboBoxRailDriverUnits.FormattingEnabled = true;
-            this.comboBoxRailDriverUnits.Items.AddRange(new object[] {
-            "Miles per Hour (MPH)",
-            "Kilometers per Hour (KPH)"});
-            this.comboBoxRailDriverUnits.Location = new System.Drawing.Point(140, 16);
-            this.comboBoxRailDriverUnits.Name = "comboBoxRailDriverUnits";
-            this.comboBoxRailDriverUnits.Size = new System.Drawing.Size(165, 21);
-            this.comboBoxRailDriverUnits.TabIndex = 3;
-            this.comboBoxRailDriverUnits.SelectedIndexChanged += new System.EventHandler(this.comboBoxRailDriverUnits_SelectedIndexChanged);
-            // 
-            // labelRailDriverSpeedUnits
-            // 
-            this.labelRailDriverSpeedUnits.Location = new System.Drawing.Point(7, 14);
-            this.labelRailDriverSpeedUnits.Name = "labelRailDriverSpeedUnits";
-            this.labelRailDriverSpeedUnits.Size = new System.Drawing.Size(130, 30);
-            this.labelRailDriverSpeedUnits.TabIndex = 2;
-            this.labelRailDriverSpeedUnits.Text = "LED Display speed units:";
-            this.labelRailDriverSpeedUnits.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
-            // groupboxDistance
-            // 
-            this.groupboxDistance.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.groupboxDistance.Controls.Add(this.comboboxMotionBlur);
-            this.groupboxDistance.Controls.Add(this.labelMotionBlur);
-            this.groupboxDistance.Controls.Add(this.labelDistanceUnit);
-            this.groupboxDistance.Controls.Add(this.updownDistance);
-            this.groupboxDistance.Controls.Add(this.labelDistance);
-            this.groupboxDistance.ForeColor = System.Drawing.Color.Black;
-            this.groupboxDistance.Location = new System.Drawing.Point(0, 0);
-            this.groupboxDistance.Name = "groupboxDistance";
-            this.groupboxDistance.Size = new System.Drawing.Size(321, 80);
-            this.groupboxDistance.TabIndex = 8;
-            this.groupboxDistance.TabStop = false;
-            this.groupboxDistance.Text = "Distance effects";
-            // 
-            // comboboxMotionBlur
-            // 
-            this.comboboxMotionBlur.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.comboboxMotionBlur.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.comboboxMotionBlur.FormattingEnabled = true;
-            this.comboboxMotionBlur.Location = new System.Drawing.Point(149, 48);
-            this.comboboxMotionBlur.Name = "comboboxMotionBlur";
-            this.comboboxMotionBlur.Size = new System.Drawing.Size(152, 21);
-            this.comboboxMotionBlur.TabIndex = 4;
-            // 
-            // labelMotionBlur
-            // 
-            this.labelMotionBlur.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.labelMotionBlur.AutoEllipsis = true;
-            this.labelMotionBlur.Location = new System.Drawing.Point(5, 51);
-            this.labelMotionBlur.Name = "labelMotionBlur";
-            this.labelMotionBlur.Size = new System.Drawing.Size(145, 18);
-            this.labelMotionBlur.TabIndex = 3;
-            this.labelMotionBlur.Text = "Motion blur:";
-            this.labelMotionBlur.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
-            // 
-            // labelDistanceUnit
-            // 
-            this.labelDistanceUnit.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.labelDistanceUnit.AutoEllipsis = true;
-            this.labelDistanceUnit.Location = new System.Drawing.Point(277, 24);
-            this.labelDistanceUnit.Name = "labelDistanceUnit";
-            this.labelDistanceUnit.Size = new System.Drawing.Size(24, 18);
-            this.labelDistanceUnit.TabIndex = 2;
-            this.labelDistanceUnit.Text = "m";
-            // 
-            // updownDistance
-            // 
-            this.updownDistance.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.updownDistance.Location = new System.Drawing.Point(149, 24);
-            this.updownDistance.Maximum = new decimal(new int[] {
-            100000,
-            0,
-            0,
-            0});
-            this.updownDistance.Minimum = new decimal(new int[] {
-            100,
-            0,
-            0,
-            0});
-            this.updownDistance.Name = "updownDistance";
-            this.updownDistance.Size = new System.Drawing.Size(128, 20);
-            this.updownDistance.TabIndex = 1;
-            this.updownDistance.Value = new decimal(new int[] {
-            600,
-            0,
-            0,
-            0});
-            // 
-            // labelDistance
-            // 
-            this.labelDistance.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.labelDistance.AutoEllipsis = true;
-            this.labelDistance.Location = new System.Drawing.Point(9, 26);
-            this.labelDistance.Name = "labelDistance";
-            this.labelDistance.Size = new System.Drawing.Size(141, 18);
-            this.labelDistance.TabIndex = 0;
-            this.labelDistance.Text = "Viewing distance:";
-            this.labelDistance.TextAlign = System.Drawing.ContentAlignment.TopRight;
-            // 
-            // groupboxControls
-            // 
-            this.groupboxControls.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.groupboxControls.Controls.Add(this.checkBoxEBAxis);
-            this.groupboxControls.Controls.Add(this.trackbarJoystickAxisThreshold);
-            this.groupboxControls.Controls.Add(this.checkboxJoysticksUsed);
-            this.groupboxControls.Controls.Add(this.labelJoystickAxisThreshold);
-            this.groupboxControls.ForeColor = System.Drawing.Color.Black;
-            this.groupboxControls.Location = new System.Drawing.Point(0, 48);
-            this.groupboxControls.Name = "groupboxControls";
-            this.groupboxControls.Size = new System.Drawing.Size(316, 80);
-            this.groupboxControls.TabIndex = 10;
-            this.groupboxControls.TabStop = false;
-            this.groupboxControls.Text = "Controls";
-            // 
-            // checkBoxEBAxis
-            // 
-            this.checkBoxEBAxis.Checked = true;
-            this.checkBoxEBAxis.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.checkBoxEBAxis.Location = new System.Drawing.Point(8, 41);
-            this.checkBoxEBAxis.Name = "checkBoxEBAxis";
-            this.checkBoxEBAxis.Size = new System.Drawing.Size(190, 36);
-            this.checkBoxEBAxis.TabIndex = 18;
-            this.checkBoxEBAxis.Text = "Allow EB on brake axis";
-            this.checkBoxEBAxis.UseVisualStyleBackColor = true;
-            // 
-            // trackbarJoystickAxisThreshold
-            // 
-            this.trackbarJoystickAxisThreshold.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.trackbarJoystickAxisThreshold.LargeChange = 10;
-            this.trackbarJoystickAxisThreshold.Location = new System.Drawing.Point(200, 32);
-            this.trackbarJoystickAxisThreshold.Maximum = 100;
-            this.trackbarJoystickAxisThreshold.Name = "trackbarJoystickAxisThreshold";
-            this.trackbarJoystickAxisThreshold.Size = new System.Drawing.Size(96, 45);
-            this.trackbarJoystickAxisThreshold.TabIndex = 2;
-            this.trackbarJoystickAxisThreshold.TickFrequency = 10;
-            this.trackbarJoystickAxisThreshold.TickStyle = System.Windows.Forms.TickStyle.Both;
-            // 
-            // checkboxJoysticksUsed
-            // 
-            this.checkboxJoysticksUsed.AutoSize = true;
-            this.checkboxJoysticksUsed.Location = new System.Drawing.Point(8, 24);
-            this.checkboxJoysticksUsed.Name = "checkboxJoysticksUsed";
-            this.checkboxJoysticksUsed.Size = new System.Drawing.Size(110, 17);
-            this.checkboxJoysticksUsed.TabIndex = 0;
-            this.checkboxJoysticksUsed.Text = "Joysticks enabled";
-            this.checkboxJoysticksUsed.UseVisualStyleBackColor = true;
-            this.checkboxJoysticksUsed.CheckedChanged += new System.EventHandler(this.checkboxJoysticksUsed_CheckedChanged);
-            // 
-            // labelJoystickAxisThreshold
-            // 
-            this.labelJoystickAxisThreshold.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.labelJoystickAxisThreshold.AutoEllipsis = true;
-            this.labelJoystickAxisThreshold.Location = new System.Drawing.Point(110, 10);
-            this.labelJoystickAxisThreshold.Name = "labelJoystickAxisThreshold";
-            this.labelJoystickAxisThreshold.Size = new System.Drawing.Size(180, 18);
-            this.labelJoystickAxisThreshold.TabIndex = 1;
-            this.labelJoystickAxisThreshold.Text = "Joystick threshold:";
-            this.labelJoystickAxisThreshold.TextAlign = System.Drawing.ContentAlignment.TopRight;
-            // 
-            // groupboxVerbosity
-            // 
-            this.groupboxVerbosity.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.groupboxVerbosity.Controls.Add(this.checkBoxAccessibility);
-            this.groupboxVerbosity.Controls.Add(this.checkboxErrorMessages);
-            this.groupboxVerbosity.Controls.Add(this.checkboxWarningMessages);
-            this.groupboxVerbosity.ForeColor = System.Drawing.Color.Black;
-            this.groupboxVerbosity.Location = new System.Drawing.Point(0, 283);
-            this.groupboxVerbosity.Name = "groupboxVerbosity";
-            this.groupboxVerbosity.Size = new System.Drawing.Size(316, 64);
-            this.groupboxVerbosity.TabIndex = 12;
-            this.groupboxVerbosity.TabStop = false;
-            this.groupboxVerbosity.Text = "Verbosity";
-            // 
-            // checkBoxAccessibility
-            // 
-            this.checkBoxAccessibility.AutoSize = true;
-            this.checkBoxAccessibility.Location = new System.Drawing.Point(176, 21);
-            this.checkBoxAccessibility.Name = "checkBoxAccessibility";
-            this.checkBoxAccessibility.Size = new System.Drawing.Size(106, 17);
-            this.checkBoxAccessibility.TabIndex = 2;
-            this.checkBoxAccessibility.Text = "Accessibility Aids";
-            this.checkBoxAccessibility.UseVisualStyleBackColor = true;
-            // 
-            // checkboxErrorMessages
-            // 
-            this.checkboxErrorMessages.AutoSize = true;
-            this.checkboxErrorMessages.Location = new System.Drawing.Point(8, 38);
-            this.checkboxErrorMessages.Name = "checkboxErrorMessages";
-            this.checkboxErrorMessages.Size = new System.Drawing.Size(127, 17);
-            this.checkboxErrorMessages.TabIndex = 1;
-            this.checkboxErrorMessages.Text = "Show error messages";
-            this.checkboxErrorMessages.UseVisualStyleBackColor = true;
-            // 
-            // checkboxWarningMessages
-            // 
-            this.checkboxWarningMessages.AutoSize = true;
-            this.checkboxWarningMessages.Location = new System.Drawing.Point(8, 21);
-            this.checkboxWarningMessages.Name = "checkboxWarningMessages";
-            this.checkboxWarningMessages.Size = new System.Drawing.Size(143, 17);
-            this.checkboxWarningMessages.TabIndex = 0;
-            this.checkboxWarningMessages.Text = "Show warning messages";
-            this.checkboxWarningMessages.UseVisualStyleBackColor = true;
-            // 
-            // groupboxSimulation
-            // 
-            this.groupboxSimulation.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.groupboxSimulation.Controls.Add(this.checkBoxLoadingSway);
-            this.groupboxSimulation.Controls.Add(this.checkboxBlackBox);
-            this.groupboxSimulation.Controls.Add(this.checkboxDerailments);
-            this.groupboxSimulation.Controls.Add(this.checkboxCollisions);
-            this.groupboxSimulation.Controls.Add(this.checkboxToppling);
-            this.groupboxSimulation.ForeColor = System.Drawing.Color.Black;
-            this.groupboxSimulation.Location = new System.Drawing.Point(0, 203);
-            this.groupboxSimulation.Name = "groupboxSimulation";
-            this.groupboxSimulation.Size = new System.Drawing.Size(316, 80);
-            this.groupboxSimulation.TabIndex = 11;
-            this.groupboxSimulation.TabStop = false;
-            this.groupboxSimulation.Text = "Detail of simulation";
-            // 
-            // checkBoxLoadingSway
-            // 
-            this.checkBoxLoadingSway.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.checkBoxLoadingSway.AutoSize = true;
-            this.checkBoxLoadingSway.Location = new System.Drawing.Point(176, 21);
-            this.checkBoxLoadingSway.Name = "checkBoxLoadingSway";
-            this.checkBoxLoadingSway.Size = new System.Drawing.Size(123, 17);
-            this.checkBoxLoadingSway.TabIndex = 4;
-            this.checkBoxLoadingSway.Text = "Enable loading sway";
-            this.checkBoxLoadingSway.UseVisualStyleBackColor = true;
-            // 
-            // checkboxBlackBox
-            // 
-            this.checkboxBlackBox.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.checkboxBlackBox.AutoSize = true;
-            this.checkboxBlackBox.Location = new System.Drawing.Point(176, 38);
-            this.checkboxBlackBox.Name = "checkboxBlackBox";
-            this.checkboxBlackBox.Size = new System.Drawing.Size(108, 17);
-            this.checkboxBlackBox.TabIndex = 3;
-            this.checkboxBlackBox.Text = "Enable black box";
-            this.checkboxBlackBox.UseVisualStyleBackColor = true;
-            // 
-            // checkboxDerailments
-            // 
-            this.checkboxDerailments.AutoSize = true;
-            this.checkboxDerailments.Location = new System.Drawing.Point(8, 55);
-            this.checkboxDerailments.Name = "checkboxDerailments";
-            this.checkboxDerailments.Size = new System.Drawing.Size(81, 17);
-            this.checkboxDerailments.TabIndex = 2;
-            this.checkboxDerailments.Text = "Derailments";
-            this.checkboxDerailments.UseVisualStyleBackColor = true;
-            // 
-            // checkboxCollisions
-            // 
-            this.checkboxCollisions.AutoSize = true;
-            this.checkboxCollisions.Location = new System.Drawing.Point(8, 38);
-            this.checkboxCollisions.Name = "checkboxCollisions";
-            this.checkboxCollisions.Size = new System.Drawing.Size(69, 17);
-            this.checkboxCollisions.TabIndex = 1;
-            this.checkboxCollisions.Text = "Collisions";
-            this.checkboxCollisions.UseVisualStyleBackColor = true;
-            // 
-            // checkboxToppling
-            // 
-            this.checkboxToppling.AutoSize = true;
-            this.checkboxToppling.Location = new System.Drawing.Point(8, 21);
-            this.checkboxToppling.Name = "checkboxToppling";
-            this.checkboxToppling.Size = new System.Drawing.Size(67, 17);
-            this.checkboxToppling.TabIndex = 0;
-            this.checkboxToppling.Text = "Toppling";
-            this.checkboxToppling.UseVisualStyleBackColor = true;
-            // 
-            // groupboxSound
-            // 
-            this.groupboxSound.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.groupboxSound.Controls.Add(this.updownSoundNumber);
-            this.groupboxSound.Controls.Add(this.labelSoundNumber);
-            this.groupboxSound.ForeColor = System.Drawing.Color.Black;
-            this.groupboxSound.Location = new System.Drawing.Point(0, 0);
-            this.groupboxSound.Name = "groupboxSound";
-            this.groupboxSound.Size = new System.Drawing.Size(316, 48);
-            this.groupboxSound.TabIndex = 9;
-            this.groupboxSound.TabStop = false;
-            this.groupboxSound.Text = "Sound";
-            // 
-            // updownSoundNumber
-            // 
-            this.updownSoundNumber.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.updownSoundNumber.Location = new System.Drawing.Point(140, 16);
-            this.updownSoundNumber.Maximum = new decimal(new int[] {
-            128,
-            0,
-            0,
-            0});
-            this.updownSoundNumber.Minimum = new decimal(new int[] {
-            8,
-            0,
-            0,
-            0});
-            this.updownSoundNumber.Name = "updownSoundNumber";
-            this.updownSoundNumber.Size = new System.Drawing.Size(152, 20);
-            this.updownSoundNumber.TabIndex = 3;
-            this.updownSoundNumber.Value = new decimal(new int[] {
-            16,
-            0,
-            0,
-            0});
-            // 
-            // labelSoundNumber
-            // 
-            this.labelSoundNumber.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.labelSoundNumber.Location = new System.Drawing.Point(5, 18);
-            this.labelSoundNumber.Name = "labelSoundNumber";
-            this.labelSoundNumber.Size = new System.Drawing.Size(136, 18);
-            this.labelSoundNumber.TabIndex = 2;
-            this.labelSoundNumber.Text = "Number of allowed sounds:";
-            this.labelSoundNumber.TextAlign = System.Drawing.ContentAlignment.TopRight;
             // 
             // pictureboxLanguage
             // 
@@ -6150,16 +6293,6 @@ namespace OpenBve {
             this.labelNewGUID.TabIndex = 24;
             this.labelNewGUID.Text = "The new package has been assigned the following GUID:";
             // 
-            // panelOptionsPage2
-            // 
-            this.panelOptionsPage2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(243)))), ((int)(((byte)(255)))), ((int)(((byte)(243)))));
-            this.panelOptionsPage2.Controls.Add(this.groupboxDistance);
-            this.panelOptionsPage2.Controls.Add(this.groupboxShadows);
-            this.panelOptionsPage2.Location = new System.Drawing.Point(0, 72);
-            this.panelOptionsPage2.Name = "panelOptionsPage2";
-            this.panelOptionsPage2.Size = new System.Drawing.Size(683, 583);
-            this.panelOptionsPage2.TabIndex = 21;
-            // 
             // formMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
@@ -6222,18 +6355,6 @@ namespace OpenBve {
             this.panelRouteEncoding.ResumeLayout(false);
             this.panelOptions.ResumeLayout(false);
             this.panelOptions.PerformLayout();
-            this.panelOptionsPage3.ResumeLayout(false);
-            this.groupBoxInputDevice.ResumeLayout(false);
-            this.groupBoxObjectParser.ResumeLayout(false);
-            this.groupBoxKioskMode.ResumeLayout(false);
-            this.groupBoxKioskMode.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownKioskTimeout)).EndInit();
-            this.groupBoxAdvancedOptions.ResumeLayout(false);
-            this.groupBoxAdvancedOptions.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureboxCursor)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.updownTimeAccelerationFactor)).EndInit();
-            this.groupBoxPackageOptions.ResumeLayout(false);
-            this.groupBoxPackageOptions.PerformLayout();
             this.panelOptionsLeft.ResumeLayout(false);
             this.groupboxDisplayMode.ResumeLayout(false);
             this.groupboxDisplayMode.PerformLayout();
@@ -6249,17 +6370,10 @@ namespace OpenBve {
             ((System.ComponentModel.ISupportInitialize)(this.updownAntiAliasing)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.updownAnisotropic)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackbarTransparency)).EndInit();
-            this.groupboxShadows.ResumeLayout(false);
-            this.groupboxShadows.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.trackbarShadowStrength)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.updownShadowBias)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.updownShadowNormalBias)).EndInit();
             this.panelOptionsRight.ResumeLayout(false);
             this.groupBoxOther.ResumeLayout(false);
             this.groupBoxRailDriver.ResumeLayout(false);
             this.groupBoxRailDriver.PerformLayout();
-            this.groupboxDistance.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.updownDistance)).EndInit();
             this.groupboxControls.ResumeLayout(false);
             this.groupboxControls.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.trackbarJoystickAxisThreshold)).EndInit();
@@ -6269,6 +6383,29 @@ namespace OpenBve {
             this.groupboxSimulation.PerformLayout();
             this.groupboxSound.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.updownSoundNumber)).EndInit();
+            this.panelOptionsPage2.ResumeLayout(false);
+            this.groupboxDistance.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.updownNearClipBase)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.updownNearClipCab)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.updownNearClipScenery)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.updownDistance)).EndInit();
+            this.groupboxShadows.ResumeLayout(false);
+            this.groupboxShadows.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.trackbarShadowStrength)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.updownShadowBias)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.updownShadowNormalBias)).EndInit();
+            this.panelOptionsPage3.ResumeLayout(false);
+            this.groupBoxInputDevice.ResumeLayout(false);
+            this.groupBoxObjectParser.ResumeLayout(false);
+            this.groupBoxKioskMode.ResumeLayout(false);
+            this.groupBoxKioskMode.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownKioskTimeout)).EndInit();
+            this.groupBoxAdvancedOptions.ResumeLayout(false);
+            this.groupBoxAdvancedOptions.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureboxCursor)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.updownTimeAccelerationFactor)).EndInit();
+            this.groupBoxPackageOptions.ResumeLayout(false);
+            this.groupBoxPackageOptions.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureboxLanguage)).EndInit();
             this.panelPanels.ResumeLayout(false);
             this.panelPanels.PerformLayout();
@@ -6334,7 +6471,6 @@ namespace OpenBve {
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewReplacePackage)).EndInit();
             this.panelNewPackage.ResumeLayout(false);
             this.panelNewPackage.PerformLayout();
-            this.panelOptionsPage2.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -6399,6 +6535,12 @@ namespace OpenBve {
         private System.Windows.Forms.GroupBox groupboxDistance;
         private System.Windows.Forms.NumericUpDown updownDistance;
         private System.Windows.Forms.Label labelDistance;
+        private System.Windows.Forms.Label labelNearClipScenery;
+        private System.Windows.Forms.NumericUpDown updownNearClipScenery;
+        private System.Windows.Forms.Label labelNearClipCab;
+        private System.Windows.Forms.NumericUpDown updownNearClipCab;
+        private System.Windows.Forms.Label labelNearClipBase;
+        private System.Windows.Forms.NumericUpDown updownNearClipBase;
         private System.Windows.Forms.GroupBox groupboxInterpolation;
         private System.Windows.Forms.ComboBox comboboxInterpolation;
         private System.Windows.Forms.Label labelInterpolation;

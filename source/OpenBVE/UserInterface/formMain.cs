@@ -447,6 +447,9 @@ namespace OpenBve {
 			}
 			updownAntiAliasing.Value = Interface.CurrentOptions.AntiAliasingLevel;
 			updownDistance.Value = Interface.CurrentOptions.ViewingDistance;
+			updownNearClipScenery.Value = (decimal)Interface.CurrentOptions.NearClipScenery;
+			updownNearClipCab.Value = (decimal)Interface.CurrentOptions.NearClipCab;
+			updownNearClipBase.Value = (decimal)Interface.CurrentOptions.NearClipBase;
 			comboboxMotionBlur.Items.Clear();
 			comboboxMotionBlur.Items.AddRange(new object[] { "", "", "", "" });
 			comboboxMotionBlur.SelectedIndex = (int)Interface.CurrentOptions.MotionBlur;
@@ -655,9 +658,9 @@ namespace OpenBve {
 			e.Graphics.DrawString((fallback ? fontFamily.Name : font.Name), font, (fallback ? Brushes.Red : Brushes.Black), e.Bounds.X, e.Bounds.Y);
 		}
 
-		public static void SetFont(Control.ControlCollection ctrls, string fontName)
+		public static void SetFont(Control.ControlCollection controls, string fontName)
 		{
-			foreach (Control ctrl in ctrls)
+			foreach (Control ctrl in controls)
 			{
 				// recursive
 				SetFont(ctrl.Controls, fontName);
@@ -727,6 +730,9 @@ namespace OpenBve {
 			//Viewing distance and motion blur
 			labelDistance.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_distance_viewingdistance"});
 			labelDistanceUnit.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_distance_viewingdistance_meters"});
+			labelNearClipScenery.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_distance_nearclip_scenery"});
+			labelNearClipCab.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_distance_nearclip_cab"});
+			labelNearClipBase.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_distance_nearclip_base"});
 			labelMotionBlur.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_distance_motionblur"});
 			comboboxMotionBlur.Items[0] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_distance_motionblur_none"});
 			comboboxMotionBlur.Items[1] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_distance_motionblur_low"});
@@ -1162,12 +1168,24 @@ namespace OpenBve {
 			Interface.CurrentOptions.AnisotropicFilteringLevel = (int)Math.Round(updownAnisotropic.Value);
 			Interface.CurrentOptions.AntiAliasingLevel = (int)Math.Round(updownAntiAliasing.Value);
 			Interface.CurrentOptions.TransparencyMode = (TransparencyMode)trackbarTransparency.Value;
+			Interface.CurrentOptions.NearClipScenery = (double)updownNearClipScenery.Value;
+			Interface.CurrentOptions.NearClipCab = (double)updownNearClipCab.Value;
+			Interface.CurrentOptions.NearClipBase = (double)updownNearClipBase.Value;
 			int newViewingDistance = (int)Math.Round(updownDistance.Value);
+			// ensure viewing distance is greater than the near clipping plane to avoid rendering issues
+			double maxNearClip = Math.Max(Interface.CurrentOptions.NearClipScenery, Math.Max(Interface.CurrentOptions.NearClipCab, Interface.CurrentOptions.NearClipBase));
+
+
+			if (newViewingDistance <= maxNearClip)
+			{
+				newViewingDistance = (int)Math.Ceiling(maxNearClip) + 1;
+			}
 			if (newViewingDistance != Interface.CurrentOptions.ViewingDistance)
 			{
 				Interface.CurrentOptions.ViewingDistance = newViewingDistance;
 				Interface.CurrentOptions.QuadTreeLeafSize = Math.Max(50, (int)Math.Ceiling(Interface.CurrentOptions.ViewingDistance / 10.0d) * 10); // quad tree size set to 10% of viewing distance to the nearest 10
 			}
+
 			
 			
 			Interface.CurrentOptions.MotionBlur = (MotionBlurMode)comboboxMotionBlur.SelectedIndex;
@@ -2140,7 +2158,7 @@ namespace OpenBve {
 			Interface.CurrentOptions.CurrentCompatibilitySignalSet = compatibilitySignals[comboBoxCompatibilitySignals.GetItemText(comboBoxCompatibilitySignals.SelectedItem)]; //Cheat by using the name as the dictionary key!
 		}
 
-		private void tabcontrolRouteDetails_SelectedIndexChanged(object sender, EventArgs e)
+		private void tabControlRouteDetails_SelectedIndexChanged(object sender, EventArgs e)
 		{
 			if (Program.CurrentHost.MonoRuntime) {
 				// MONO issue on some systems means that the map may not draw initially, so force redraw

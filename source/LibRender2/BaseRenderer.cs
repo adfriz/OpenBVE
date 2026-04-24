@@ -380,10 +380,6 @@ namespace LibRender2
 			Fonts = new Fonts(currentHost, this, currentOptions.Font);
 		}
 
-		~BaseRenderer()
-		{
-			DeInitialize();
-		}
 
 		/// <summary>Call this once to initialise the renderer</summary>
 		/// <remarks>A call to DeInitialize should be made when closing the program to release resources</remarks>
@@ -557,13 +553,9 @@ namespace LibRender2
 					CSMShadowMaps.Resize(cascadeCount, resolution);
 				}
 
-				if (CSMCaster == null)
+				if (CSMCaster == null || cascadeCount != CSMCaster.CascadeCount)
 				{
-					CSMCaster = new CascadedShadowCaster(cascadeCount);
-				}
-				else
-				{
-					// Update cascade count if changed
+					// Create, or update if cascade count changed
 					CSMCaster = new CascadedShadowCaster(cascadeCount);
 				}
 
@@ -849,7 +841,8 @@ namespace LibRender2
 
 			Screen.AspectRatio = Screen.Width / (double)Screen.Height;
 			Camera.HorizontalViewingAngle = 2.0 * Math.Atan(Math.Tan(0.5 * Camera.VerticalViewingAngle) * Screen.AspectRatio);
-			CurrentProjectionMatrix = Matrix4D.CreatePerspectiveFieldOfView(Camera.VerticalViewingAngle, Screen.AspectRatio, 0.2, currentOptions.ViewingDistance);
+			double nearClip = Math.Max(0.01, currentOptions.NearClipBase);
+			CurrentProjectionMatrix = Matrix4D.CreatePerspectiveFieldOfView(Camera.VerticalViewingAngle, Screen.AspectRatio, nearClip, currentOptions.ViewingDistance);
 		}
 
 		public void ResetShader(Shader shader)
@@ -1096,16 +1089,7 @@ namespace LibRender2
 				{
 					shader.SetMaterialAmbient(material.Color);
 					shader.SetMaterialDiffuse(material.Color);
-					if ((material.Flags & MaterialFlags.Specular) != 0)
-					{
-						shader.SetMaterialSpecular(material.SpecularColor);
-					}
-					else
-					{
-						shader.SetMaterialSpecular(material.Color);
-					}
-						
-					//TODO: Ambient and specular colors are not set by any current parsers
+					shader.SetMaterialSpecular((material.Flags & MaterialFlags.Specular) != 0 ? material.SpecularColor : material.Color);
 				}
 				if ((material.Flags & MaterialFlags.Emissive) != 0)
 				{

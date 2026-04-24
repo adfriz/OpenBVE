@@ -143,6 +143,7 @@ namespace RouteViewer
 				e.Cancel = true;
 				Loading.Cancel = true;
 			}
+			Program.Renderer.DeInitialize();
 			if (Program.CurrentHost.MonoRuntime)
 			{
 				// Mono often fails to close the main window properly

@@ -146,7 +146,7 @@ namespace LibRender2.Cameras
 					r[j].Y = ey / (ez * Math.Tan(0.5 * VerticalViewingAngle));
 				}
 
-				return r[0].X <= -1.0025 & r[1].X >= 1.0025 & r[0].Y <= -1.0025 & r[1].Y >= 1.0025;
+				return r[0].X <= -1.0025 && r[1].X >= 1.0025 && r[0].Y <= -1.0025 && r[1].Y >= 1.0025;
 			}
 			if (CurrentRestriction == CameraRestrictionMode.Restricted3D)
 			{
@@ -219,7 +219,7 @@ namespace LibRender2.Cameras
 		/// <summary>Performs progressive adjustments taking into account the specified camera restriction</summary>
 		public bool PerformProgressiveAdjustmentForCameraRestriction(ref double Source, double Target, bool Zoom, CameraRestriction Restriction)
 		{
-			if ((CurrentMode != CameraViewMode.Interior & CurrentMode != CameraViewMode.InteriorLookAhead) | (CurrentRestriction != CameraRestrictionMode.On && CurrentRestriction != CameraRestrictionMode.Restricted3D))
+			if ((CurrentMode != CameraViewMode.Interior && CurrentMode != CameraViewMode.InteriorLookAhead) || (CurrentRestriction != CameraRestrictionMode.On && CurrentRestriction != CameraRestrictionMode.Restricted3D))
 			{
 				Source = Target;
 				return true;
@@ -272,41 +272,50 @@ namespace LibRender2.Cameras
 		}
 
 		/// <summary>Adjusts the camera alignment based upon the specified parameters</summary>
-		public void AdjustAlignment(ref double Source, double Direction, ref double Speed, double TimeElapsed, bool Zoom = false, CameraRestriction? Restriction = null) {
-			if (Direction != 0.0 | Speed != 0.0) {
-				if (TimeElapsed > 0.0) {
-					if (Direction == 0.0) {
-						double d = (0.025 + 5.0 * Math.Abs(Speed)) * TimeElapsed;
-						if (Speed >= -d & Speed <= d) {
-							Speed = 0.0;
-						} else {
-							Speed -= Math.Sign(Speed) * d;
-						}
-					} else {
-						double t = Math.Abs(Direction);
-						double d = ((1.15 - 1.0 / (1.0 + 0.025 * Math.Abs(Speed)))) * TimeElapsed;
-						Speed += Direction * d;
-						if (Speed < -t) {
-							Speed = -t;
-						} else if (Speed > t) {
-							Speed = t;
-						}
-					}
-
-					if (Restriction != null)
-					{
-						double x = Source + Speed * TimeElapsed;
-						if (!PerformProgressiveAdjustmentForCameraRestriction(ref Source, x, Zoom, (CameraRestriction)Restriction))
-						{
-							Speed = 0.0;
-						}
-					}
-					else
-					{
-						Source += Speed * TimeElapsed;
-					}
+		public void AdjustAlignment(ref double Source, double Direction, ref double Speed, double TimeElapsed, bool Zoom = false, CameraRestriction? Restriction = null)
+		{
+			if (Direction == 0.0 && Speed == 0.0 || TimeElapsed == 0.0) return;
+			if (Direction == 0.0)
+			{
+				double d = (0.025 + 5.0 * Math.Abs(Speed)) * TimeElapsed;
+				if (Speed >= -d && Speed <= d)
+				{
+					Speed = 0.0;
+				}
+				else
+				{
+					Speed -= Math.Sign(Speed) * d;
 				}
 			}
+			else
+			{
+				double t = Math.Abs(Direction);
+				double d = ((1.15 - 1.0 / (1.0 + 0.025 * Math.Abs(Speed)))) * TimeElapsed;
+				Speed += Direction * d;
+				if (Speed < -t)
+				{
+					Speed = -t;
+				}
+				else if (Speed > t)
+				{
+					Speed = t;
+				}
+			}
+
+			if (Restriction != null)
+			{
+				double x = Source + Speed * TimeElapsed;
+				if (!PerformProgressiveAdjustmentForCameraRestriction(ref Source, x, Zoom,
+					    (CameraRestriction)Restriction))
+				{
+					Speed = 0.0;
+				}
+			}
+			else
+			{
+				Source += Speed * TimeElapsed;
+			}
+
 		}
 
 		/// <summary>Applies the current zoom settings after a change</summary>
@@ -471,9 +480,9 @@ namespace LibRender2.Cameras
 			switch (movementDirection)
 			{
 				case Translations.Command.CameraMoveForward:
-					if (CurrentMode == CameraViewMode.Interior | CurrentMode == CameraViewMode.InteriorLookAhead | CurrentMode == CameraViewMode.Exterior)
+					if (CurrentMode == CameraViewMode.Interior || CurrentMode == CameraViewMode.InteriorLookAhead || CurrentMode == CameraViewMode.Exterior)
 					{
-						s = CurrentMode == CameraViewMode.Interior | CurrentMode == CameraViewMode.InteriorLookAhead ? InteriorTopSpeed : ExteriorTopSpeed;
+						s = CurrentMode == CameraViewMode.Interior || CurrentMode == CameraViewMode.InteriorLookAhead ? InteriorTopSpeed : ExteriorTopSpeed;
 						AlignmentDirection.Position.Z = s * motion;
 					}
 					else

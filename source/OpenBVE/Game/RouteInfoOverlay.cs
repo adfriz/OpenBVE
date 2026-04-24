@@ -1,5 +1,4 @@
-﻿using LibRender2;
-using OpenBveApi.Colors;
+﻿using OpenBveApi.Colors;
 using OpenTK.Graphics.OpenGL;
 using OpenBveApi.Textures;
 using OpenBveApi.Interface;

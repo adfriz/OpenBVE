@@ -71,8 +71,7 @@ namespace OpenBve
 				LogDateTime = DateTime.Now;
 				CurrentScore = new Score();
 				ScoreMessages.Clear();
-				ScoreLogs = new ScoreLog[64];
-				ScoreLogCount = 0;
+				ScoreLogs = new List<ScoreLog>();
 				BlackBoxEntries = new List<BlackBoxEntry>();
 				BlackBoxNextUpdate = 0.0;
 			}
