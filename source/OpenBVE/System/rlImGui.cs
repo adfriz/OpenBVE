@@ -95,12 +95,26 @@ namespace OpenBve
                         Raylib.BeginScissorMode((int)pcmd.ClipRect.X, (int)pcmd.ClipRect.Y, (int)(pcmd.ClipRect.Z - pcmd.ClipRect.X), (int)(pcmd.ClipRect.W - pcmd.ClipRect.Y));
                         
                         // Map ImGui vertices to rlgl
+                        rlgl.rlSetTexture(pcmd.TextureId.ToInt32());
                         rlgl.rlBegin(rlgl.RL_TRIANGLES);
-                        for (int i = 0; i < pcmd.ElemCount; i++)
+                        
+                        unsafe
                         {
-                            // Simplified draw call for proof of concept
+                            ushort* indices = (ushort*)cmdList.IdxBuffer.Data;
+                            ImDrawVert* vertices = (ImDrawVert*)cmdList.VtxBuffer.Data;
+
+                            for (int i = 0; i < pcmd.ElemCount; i++)
+                            {
+                                ushort idx = indices[pcmd.IdxOffset + i];
+                                ImDrawVert v = vertices[idx];
+
+                                rlgl.rlColor4ub(v.col & 0xFF, (v.col >> 8) & 0xFF, (v.col >> 16) & 0xFF, (v.col >> 24) & 0xFF);
+                                rlgl.rlTexCoord2f(v.uv.X, v.uv.Y);
+                                rlgl.rlVertex2f(v.pos.X, v.pos.Y);
+                            }
                         }
                         rlgl.rlEnd();
+                        rlgl.rlSetTexture(0);
                     }
                 }
             }
