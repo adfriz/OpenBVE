@@ -3,13 +3,18 @@ using System.IO;
 using System.Reflection;
 using System.Text;
 using LibRender2.Fogs;
+using OpenTK.Graphics.OpenGL;
 using Raylib_cs;
+using AlphaFunction = OpenTK.Graphics.OpenGL.AlphaFunction;
+
+
 
 namespace LibRender2.Shaders
 {
 	public class AbstractShader : IDisposable
 	{
-		internal readonly Shader Handle;
+		internal readonly Raylib_cs.Shader Handle;
+
 		internal readonly BaseRenderer Renderer;
 		internal bool IsActive;
 
@@ -60,7 +65,8 @@ namespace LibRender2.Shaders
 			
 			Raylib.BeginShaderMode(Handle);
 			IsActive = true;
-			Renderer.lastVAO = -1;
+			Renderer.lastVAO = uint.MaxValue;
+
 			Renderer.CurrentShader = this;
 		}
 
@@ -69,7 +75,8 @@ namespace LibRender2.Shaders
 			if (!IsActive) return;
 			IsActive = false;
 			Raylib.EndShaderMode();
-			Renderer.lastVAO = -1;
+			Renderer.lastVAO = uint.MaxValue;
+
 		}
 
 		public virtual void SetAlphaFunction(AlphaFunction alphaFunction, float alphaComparison) { }

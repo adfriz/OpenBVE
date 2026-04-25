@@ -21,11 +21,11 @@ namespace OpenBveApi.Objects
 		/// <remarks>Only valid if <see cref="MaterialFlags.Specular"/> is set</remarks>
 		public Color24 SpecularColor;
 		/// <summary>The daytime texture</summary>
-		public Texture DaytimeTexture;
+		public OpenBveApi.Textures.Texture DaytimeTexture;
 		/// <summary>The night-time texture</summary>
-		public Texture NighttimeTexture;
+		public OpenBveApi.Textures.Texture NighttimeTexture;
 		/// <summary>The lightmap texture</summary>
-		public Texture LightMapTexture;
+		public OpenBveApi.Textures.Texture LightMapTexture;
 		/// <summary>The blend mode for this material</summary>
 		public MeshMaterialBlendMode BlendMode;
 		/// <summary>A bit mask specifying the glow properties. Use GetGlowAttenuationData to create valid data for this field.</summary>

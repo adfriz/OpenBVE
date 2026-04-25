@@ -22,8 +22,8 @@
 //(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 //SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-using System;
-using System.Collections.Generic;
+using System.IO;
+using Path = System.IO.Path;
 using System.Drawing.Text;
 using OpenBveApi.Colors;
 using OpenBveApi.Interface;
@@ -141,7 +141,7 @@ namespace Plugin
 							
 							if (material.Texture != null)
 							{
-								builder.Materials[m].DaytimeTexture = Path.CombineFile(currentFolder, material.Texture);
+								builder.Materials[m].DaytimeTexture = OpenBveApi.Path.CombineFile(currentFolder, material.Texture);
 								if (!System.IO.File.Exists(builder.Materials[m].DaytimeTexture))
 								{
 									Plugin.currentHost.AddMessage(MessageType.Error, true, "Texture " + builder.Materials[m].DaytimeTexture + " was not found in file " + fileName);

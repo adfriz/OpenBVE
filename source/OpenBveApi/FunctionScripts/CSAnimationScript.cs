@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using CSScriptLibrary;
+using CSScriptLib;
 using OpenBveApi.Hosts;
 using OpenBveApi.Interface;
 using OpenBveApi.Math;
@@ -64,8 +64,7 @@ namespace OpenBveApi.FunctionScripting {
 		public CSAnimationScript(HostInterface host, string path, Dictionary<string, string> args) {
 			currentHost = host;
 			try {
-				CSScript.GlobalSettings.TargetFramework = "v4.0";
-				Assembly assembly = CSScript.LoadCode(File.ReadAllText(path));
+				Assembly assembly = (Assembly)CSScript.Evaluator.LoadCode(File.ReadAllText(path));
 				Type scriptType = assembly.GetTypes().FirstOrDefault(t => t.Name == "OpenBVEScript");
 				if (scriptType == null)
 					throw new EntryPointNotFoundException("Script file does not contain the type 'OpenBVEScript'");

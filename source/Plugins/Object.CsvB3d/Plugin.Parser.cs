@@ -1,3 +1,4 @@
+using Path = OpenBveApi.Path;
 using System;
 using System.Collections.Generic;
 using System.Linq;

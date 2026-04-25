@@ -381,7 +381,7 @@ namespace OpenBveApi.FileSystem {
 										if (!(Type.GetType("Mono.Runtime") != null))
 										{
 											//Mono doesn't reliably support AccessControl
-											Directory.GetAccessControl(folder);
+											new DirectoryInfo(folder).GetAccessControl();
 										}
 
 										string settingsFile = Path.CombineFile(folder, "1.5.0\\options.cfg");

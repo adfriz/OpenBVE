@@ -1,4 +1,4 @@
-﻿//Simplified BSD License (BSD-2-Clause)
+//Simplified BSD License (BSD-2-Clause)
 //
 //Copyright (c) 2020, Christopher Lees, The OpenBVE Project
 //
@@ -133,8 +133,7 @@ namespace Plugin
                 codec.AssertOk("InitializeInflate", codec.InitializeInflate(false));
 	            if (dictionary != null)
 	            {
-					
-		            codec.AssertOk("SetDictionary", codec.SetDictionaryUnconditionally(dictionary));
+		            // codec.AssertOk("SetDictionary", codec.SetDictionaryUnconditionally(dictionary));
 	            }
                 codec.OutputBuffer = buffer;
 

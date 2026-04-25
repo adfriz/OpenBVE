@@ -184,7 +184,7 @@ namespace OpenBveApi.Hosts {
 		/// <param name="parameters">The parameters that specify how to process the texture.</param>
 		/// <param name="texture">Receives the texture.</param>
 		/// <returns>Whether loading the texture was successful.</returns>
-		public virtual bool LoadTexture(string path, TextureParameters parameters, out Texture texture)
+		public virtual bool LoadTexture(string path, TextureParameters parameters, out OpenBveApi.Textures.Texture texture)
 		{
 			texture = null;
 			return false;
@@ -194,7 +194,7 @@ namespace OpenBveApi.Hosts {
 		/// <param name="texture">Receives the texture.</param>
 		/// <param name="wrapMode">The openGL wrap mode</param>
 		/// <returns>Whether loading the texture was successful.</returns>
-		public virtual bool LoadTexture(ref Texture texture, OpenGlTextureWrapMode wrapMode)
+		public virtual bool LoadTexture(ref OpenBveApi.Textures.Texture texture, OpenGlTextureWrapMode wrapMode)
 		{
 			return false;
 		}
@@ -206,7 +206,7 @@ namespace OpenBveApi.Hosts {
 		/// <param name="loadTexture">Whether the texture should also be pre-loaded</param>
 		/// <param name="timeout">The timeout for loading the texture</param>
 		/// <returns>Whether loading the texture was successful.</returns>
-		public virtual bool RegisterTexture(string path, TextureParameters parameters, out Texture handle, bool loadTexture = false, int timeout = 1000)
+		public virtual bool RegisterTexture(string path, TextureParameters parameters, out OpenBveApi.Textures.Texture handle, bool loadTexture = false, int timeout = 1000)
 		{
 			handle = null;
 			return false;
@@ -217,7 +217,7 @@ namespace OpenBveApi.Hosts {
 		/// <param name="parameters">The parameters that specify how to process the texture.</param>
 		/// <param name="handle">Receives the handle to the texture.</param>
 		/// <returns>Whether loading the texture was successful.</returns>
-		public virtual bool RegisterTexture(Texture texture, TextureParameters parameters, out Texture handle)
+		public virtual bool RegisterTexture(OpenBveApi.Textures.Texture texture, TextureParameters parameters, out OpenBveApi.Textures.Texture handle)
 		{
 			handle = null;
 			return false;
@@ -228,7 +228,7 @@ namespace OpenBveApi.Hosts {
 		/// <param name="parameters">The parameters that specify how to process the texture.</param>
 		/// <param name="handle">Receives the handle to the texture.</param>
 		/// <returns>Whether loading the texture was successful.</returns>
-		public virtual bool RegisterTexture(Bitmap texture, TextureParameters parameters, out Texture handle)
+		public virtual bool RegisterTexture(Bitmap texture, TextureParameters parameters, out OpenBveApi.Textures.Texture handle)
 		{
 			handle = null;
 			return false;
@@ -568,7 +568,7 @@ namespace OpenBveApi.Hosts {
 		/// <summary>Updates the custom timetable texture displayed when triggered by an event</summary>
 		/// <param name="Daytime">The daytime texture</param>
 		/// <param name="Nighttime">The nighttime texture</param>
-		public virtual void UpdateCustomTimetable(Texture Daytime, Texture Nighttime)
+		public virtual void UpdateCustomTimetable(OpenBveApi.Textures.Texture Daytime, OpenBveApi.Textures.Texture Nighttime)
 		{
 
 		}
@@ -615,14 +615,14 @@ namespace OpenBveApi.Hosts {
 		/// <summary>Adds a marker texture to the host application's display</summary>
 		/// <param name="MarkerTexture">The texture to add</param>
 		/// <param name="Size">The size to draw</param>
-		public virtual void AddMarker(Texture MarkerTexture, Vector2 Size)
+		public virtual void AddMarker(OpenBveApi.Textures.Texture MarkerTexture, Vector2 Size)
 		{
 
 		}
 
 		/// <summary>Removes a marker texture if present in the host application's display</summary>
 		/// <param name="MarkerTexture">The texture to remove</param>
-		public virtual void RemoveMarker(Texture MarkerTexture)
+		public virtual void RemoveMarker(OpenBveApi.Textures.Texture MarkerTexture)
 		{
 
 		}

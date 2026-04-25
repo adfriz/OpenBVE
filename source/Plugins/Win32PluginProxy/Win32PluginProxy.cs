@@ -1,4 +1,4 @@
-﻿//Simplified BSD License (BSD-2-Clause)
+//Simplified BSD License (BSD-2-Clause)
 //
 //Copyright (c) 2020, Christopher Lees, The OpenBVE Project
 //
@@ -28,7 +28,9 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.ServiceModel;
 using System.Threading;
-using OpenBveApi.Hosts;
+using CoreWCF;
+using ServiceHost = CoreWCF.ServiceHost;
+using NetNamedPipeBinding = CoreWCF.NetNamedPipeBinding;
 using OpenBveApi.Runtime;
 using OpenBveApi.Interop;
 
@@ -520,7 +522,7 @@ namespace WCFServer
 		static void Main()
 		{
 			DeleteMenu(GetSystemMenu(GetConsoleWindow(), false),SC_CLOSE, MF_BYCOMMAND);
-			using (ServiceHost host = new ServiceHost(typeof(AtsPluginProxyService), new Uri(@"net.pipe://localhost")))
+			/* using (ServiceHost host = new ServiceHost(typeof(AtsPluginProxyService), new Uri(@"net.pipe://localhost")))
 			{
 				try
 				{
@@ -531,14 +533,15 @@ namespace WCFServer
 				{
 					//Most likely another running copy, but this isn't going to work, so kill
 					Environment.Exit(0);
-				}
+				} */
 				
-				HostInterface.Win32PluginHostReady.Set();
+				// HostInterface.Win32PluginHostReady.Set();
 				
 				Console.WriteLine(@"ATS Plugin Proxy Service is available.");
-				HostInterface.Win32PluginHostStopped.WaitOne();
-				host.Close();
-			}
+				Console.ReadLine();
+				// HostInterface.Win32PluginHostStopped.WaitOne();
+				// host.Close();
+			// }
 		}
 
 		private const int MF_BYCOMMAND = 0x00000000;

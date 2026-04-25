@@ -50,7 +50,12 @@ namespace SoundManager
 					State = SoundSourceState.Playing;
 				}
 			}
-			
+
+			if (State == SoundSourceState.Paused)
+			{
+				return;
+			}
+
 			if (State == SoundSourceState.Playing)
 			{
 				Raylib.SetSoundPitch(RaylibSound, (float)Pitch);
@@ -74,7 +79,7 @@ namespace SoundManager
 
 		public void Stop()
 		{
-			if (State == SoundSourceState.Playing)
+			if (State == SoundSourceState.Playing || State == SoundSourceState.Paused)
 			{
 				Raylib.StopSound(RaylibSound);
 				Raylib.UnloadSound(RaylibSound);
@@ -82,6 +87,26 @@ namespace SoundManager
 			State = SoundSourceState.Stopped;
 		}
 
+		public void Pause()
+		{
+			if (State == SoundSourceState.Playing)
+			{
+				Raylib.PauseSound(RaylibSound);
+				State = SoundSourceState.Paused;
+			}
+		}
+
+		public void Resume()
+		{
+			if (State == SoundSourceState.Paused)
+			{
+				Raylib.ResumeSound(RaylibSound);
+				State = SoundSourceState.Playing;
+			}
+		}
+
 		public bool IsPlaying() => State == SoundSourceState.Playing || State == SoundSourceState.PlayPending;
+
+		public bool IsPaused() => State == SoundSourceState.Paused || State == SoundSourceState.PausePending;
 	}
 }

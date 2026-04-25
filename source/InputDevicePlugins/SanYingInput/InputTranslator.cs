@@ -21,6 +21,7 @@
 
 using System.Collections.Generic;
 using OpenTK.Input;
+using ButtonState = OpenTK.Input.ButtonState;
 
 namespace SanYingInput
 {

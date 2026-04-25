@@ -1,16 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
+    <UseWindowsForms>true</UseWindowsForms>
   </PropertyGroup>
+
 
   <ItemGroup>
     <ProjectReference Include="../../OpenBveApi/OpenBveApi.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="LibUsbDotNet" Version="2.2.29" />
   </ItemGroup>
+
 </Project>

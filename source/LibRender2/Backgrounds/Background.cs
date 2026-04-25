@@ -168,11 +168,12 @@ namespace LibRender2.Backgrounds
 				// render polygon
 				VertexArrayObject VAO = (VertexArrayObject)data.VAO;
 				VAO.Bind();
-				renderer.lastVAO = VAO.handle;
+				renderer.lastVAO = VAO.vboId;
 				for (int i = 0; i + 11 < 32 * 12; i += 12)
 				{
-					VAO.Draw(PrimitiveType.Triangles, i, 12);
+					VAO.Draw((int)PrimitiveType.Triangles, i, 12);
 				}
+
 				renderer.RestoreBlendFunc();
 			}
 		}

@@ -285,11 +285,8 @@ namespace LibRender2.Primitives
 				try
 				{
 					defaultVAO = new VertexArrayObject();
-					defaultVAO.Bind();
-					defaultVAO.SetVBO(new VertexBufferObject(vertexData, BufferUsageHint.StaticDraw));
-					defaultVAO.SetIBO(new IndexBufferObjectUS(Enumerable.Range(0, vertexData.Length).Select(x => (ushort)x).ToArray(), BufferUsageHint.StaticDraw));
-					defaultVAO.SetAttributes(renderer.DefaultShader.VertexLayout);
-					defaultVAO.UnBind();
+					defaultVAO.SetVBO(vertexData, false);
+					defaultVAO.SetIBO(Enumerable.Range(0, vertexData.Length).Select(x => (ushort)x).ToArray(), false);
 				}
 				catch
 				{
@@ -368,10 +365,10 @@ namespace LibRender2.Primitives
 			}
 
 			// render polygon
-			VAO.Bind();
-			VAO.Draw(PrimitiveType.Triangles);
+			VAO.Draw((int)PrimitiveType.Triangles, 0, 36);
 			GL.Disable(EnableCap.Texture2D);
 		}
+
 
 		/// <summary>Draws a 3D cube in immediate mode</summary>
 		/// <param name="Position">The position in world-space</param>

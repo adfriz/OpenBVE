@@ -1,4 +1,4 @@
-﻿//Simplified BSD License (BSD-2-Clause)
+//Simplified BSD License (BSD-2-Clause)
 //
 //Copyright (c) 2025, The OpenBVE Project
 //
@@ -25,6 +25,8 @@
 using System;
 using System.Collections.Generic;
 using OpenBveApi;
+using Path = OpenBveApi.Path;
+
 using OpenBveApi.Colors;
 using OpenBveApi.FunctionScripting;
 using OpenBveApi.Math;

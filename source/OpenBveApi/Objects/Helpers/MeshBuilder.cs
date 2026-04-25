@@ -86,7 +86,7 @@ namespace OpenBveApi.Objects
 					Object.Mesh.Materials[mm + i].Color = Materials[i].Color;
 					Object.Mesh.Materials[mm + i].TransparentColor = Materials[i].TransparentColor;
 					Object.Mesh.Materials[mm + i].SpecularColor = Materials[i].SpecularColor;
-					Texture transparency = null;
+					OpenBveApi.Textures.Texture transparency = null;
 					if (Materials[i].TransparencyTexture != null)
 					{
 						currentHost.LoadTexture(Materials[i].TransparencyTexture, new TextureParameters(null, null), out transparency);
@@ -104,7 +104,7 @@ namespace OpenBveApi.Objects
 					}
 					if (Materials[i].DaytimeTexture != null || Materials[i].Text != null)
 					{
-						Texture tday;
+						OpenBveApi.Textures.Texture tday;
 						if (Materials[i].Text != null)
 						{
 							Bitmap bitmap = null;
@@ -131,7 +131,7 @@ namespace OpenBveApi.Objects
 					Object.Mesh.Materials[mm + i].EmissiveColor = Materials[i].EmissiveColor;
 					if (Materials[i].NighttimeTexture != null)
 					{
-						currentHost.RegisterTexture(Materials[i].NighttimeTexture, parameters, out Texture tnight);
+						currentHost.RegisterTexture(Materials[i].NighttimeTexture, parameters, out OpenBveApi.Textures.Texture tnight);
 						Object.Mesh.Materials[mm + i].NighttimeTexture = tnight;
 					}
 					else
@@ -141,7 +141,7 @@ namespace OpenBveApi.Objects
 
 					if (Materials[i].LightMap != null)
 					{
-						currentHost.RegisterTexture(Materials[i].LightMap, new TextureParameters(null, Color24.White), out Texture lightMap);
+						currentHost.RegisterTexture(Materials[i].LightMap, new TextureParameters(null, Color24.White), out OpenBveApi.Textures.Texture lightMap);
 						Object.Mesh.Materials[mm + i].LightMapTexture = lightMap;
 					}
 

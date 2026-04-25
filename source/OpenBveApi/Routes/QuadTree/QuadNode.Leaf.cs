@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using OpenBveApi.Math;
 using OpenBveApi.Objects;
 using OpenBveApi.Textures;
@@ -259,7 +259,7 @@ namespace OpenBveApi.Routes
 			{
 				for (int j = 0; j < Objects[i].Prototype.Mesh.Faces.Length; j++)
 				{
-					Texture texture = Objects[i].Prototype.Mesh.Materials[i].DaytimeTexture;
+					OpenBveApi.Textures.Texture texture = Objects[i].Prototype.Mesh.Materials[i].DaytimeTexture;
 					if (texture != null)
 					{
 						//Textures.LoadTexture(apiHandle.TextureIndex, true);

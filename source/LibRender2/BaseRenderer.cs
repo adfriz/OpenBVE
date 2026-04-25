@@ -32,16 +32,36 @@ using OpenBveApi.Objects;
 using OpenBveApi.Routes;
 using OpenBveApi.Textures;
 using OpenBveApi.World;
+using OpenTK;
+using OpenTK.Graphics;
+using OpenTK.Graphics.OpenGL;
 using Raylib_cs;
+using static Raylib_cs.Rlgl;
+
+using AlphaFunction = OpenTK.Graphics.OpenGL.AlphaFunction;
+
 using Path = OpenBveApi.Path;
 using PixelFormat = OpenBveApi.Textures.PixelFormat;
 using Vector2 = OpenBveApi.Math.Vector2;
 using Vector3 = OpenBveApi.Math.Vector3;
+using Matrix4D = OpenBveApi.Math.Matrix4D;
+using Shader = LibRender2.Shaders.Shader;
+using Mesh = OpenBveApi.Objects.Mesh;
+using Rectangle = LibRender2.Primitives.Rectangle;
+using MatrixMode = OpenTK.Graphics.OpenGL.MatrixMode;
+using WindowState = OpenTK.WindowState;
+using Texture = OpenBveApi.Textures.Texture;
+
+
+
 
 namespace LibRender2
 {
 	public abstract class BaseRenderer
 	{
+		/// <summary>Holds a reference to the game window</summary>
+		public OpenTK.GameWindow GameWindow;
+
 		// constants
 		protected const float inv255 = 1.0f / 255.0f;
 
@@ -106,7 +126,8 @@ namespace LibRender2
 					return _scaleFactor;
 				}
 				// guard against the fact that some systems return a scale factor of zero
-				_scaleFactor = new Vector2(Math.Max(DisplayDevice.Default.ScaleFactor.X, 1), Math.Max(DisplayDevice.Default.ScaleFactor.Y, 1));
+				_scaleFactor = new Vector2(1.0, 1.0);
+
 				return _scaleFactor;
 			}
 		}
@@ -206,7 +227,18 @@ namespace LibRender2
 			VisibleObjects = new VisibleObjectLibrary(this);
 			ObjectsSortedByStart = new int[] { };
 			ObjectsSortedByEnd = new int[] { };
+			currentHost.AnimatedObjectCollectionCache.Clear();
+			List<ValueTuple<string, bool, DateTime>> keys = currentHost.StaticObjectCache.Keys.ToList();
+			for (int i = 0; i < keys.Count; i++)
+			{
+				if (!File.Exists(keys[i].Item1) || File.GetLastWriteTime(keys[i].Item1) != keys[i].Item3)
+				{
+					currentHost.StaticObjectCache.Remove(keys[i]);
+				}
+			}
+			TextureManager.UnloadAllTextures(true);
 		}
+
 
 		/// <summary>The total number of OpenGL triangle strips in the current frame</summary>
 		public int InfoTotalTriangleStrip;
@@ -245,7 +277,8 @@ namespace LibRender2
 		private Color32 lastColor;
 
 		/// <summary>Holds the handle of the last VAO bound by openGL</summary>
-		public int lastVAO;
+		public uint lastVAO;
+
 
 		public bool ForceLegacyOpenGL
 		{
@@ -274,15 +307,15 @@ namespace LibRender2
 				{
 					if (Screen.Width > 1024)
 					{
-						currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("In-game"), "logo_1024.png"), TextureParameters.NoChange, out _programLogo, true);
+						currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("In-game"), "logo_1024.png"), OpenBveApi.Textures.TextureParameters.NoChange, out _programLogo, true);
 					}
 					else if (Screen.Width > 512)
 					{
-						currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("In-game"), "logo_512.png"), TextureParameters.NoChange, out _programLogo, true);
+						currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("In-game"), "logo_512.png"), OpenBveApi.Textures.TextureParameters.NoChange, out _programLogo, true);
 					}
 					else
 					{
-						currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("In-game"), "logo_256.png"), TextureParameters.NoChange, out _programLogo, true);
+						currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("In-game"), "logo_256.png"), OpenBveApi.Textures.TextureParameters.NoChange, out _programLogo, true);
 					}
 				}
 				catch
@@ -429,8 +462,9 @@ namespace LibRender2
 				GL.BindTexture(TextureTarget.Texture2D, nullDepthMap);
 				GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent16, 1, 1, 0, OpenTK.Graphics.OpenGL.PixelFormat.DepthComponent, PixelType.Float, IntPtr.Zero);
 				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureCompareMode, (int)TextureCompareMode.CompareRefToTexture);
-				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
-				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
+				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)OpenGlTextureWrapMode.ClampClamp);
+				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)OpenGlTextureWrapMode.ClampClamp);
+
 				GL.BindTexture(TextureTarget.Texture2D, 0);
 			}
 			GL.ClearColor(0.67f, 0.67f, 0.67f, 1.0f);
@@ -473,12 +507,12 @@ namespace LibRender2
 				}
 			}
 			// icons for use in GL menus
-			currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("Menu"), "keyboard.png"), TextureParameters.NoChange, out KeyboardTexture);
-			currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("Menu"), "gamepad.png"), TextureParameters.NoChange, out GamepadTexture);
-			currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("Menu"), "xbox.png"), TextureParameters.NoChange, out XInputTexture);
-			currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("Menu"), "zuki.png"), TextureParameters.NoChange, out MasconTexture);
-			currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("Menu"), "joystick.png"), TextureParameters.NoChange, out JoystickTexture);
-			currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("Menu"), "raildriver.png"), TextureParameters.NoChange, out RailDriverTexture);
+			currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("Menu"), "keyboard.png"), OpenBveApi.Textures.TextureParameters.NoChange, out KeyboardTexture);
+			currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("Menu"), "gamepad.png"), OpenBveApi.Textures.TextureParameters.NoChange, out GamepadTexture);
+			currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("Menu"), "xbox.png"), OpenBveApi.Textures.TextureParameters.NoChange, out XInputTexture);
+			currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("Menu"), "zuki.png"), OpenBveApi.Textures.TextureParameters.NoChange, out MasconTexture);
+			currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("Menu"), "joystick.png"), OpenBveApi.Textures.TextureParameters.NoChange, out JoystickTexture);
+			currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("Menu"), "raildriver.png"), OpenBveApi.Textures.TextureParameters.NoChange, out RailDriverTexture);
 
 			if (AvailableNewRenderer)
 			{
@@ -515,7 +549,7 @@ namespace LibRender2
 				if (CSMShadowMaps == null)
 				{
 					// First-time creation
-					CSMShadowMaps = new CascadedShadowMap(cascadeCount, resolution);
+					CSMShadowMaps = new CascadedShadowMap(resolution, cascadeCount);
 				}
 				else
 				{
@@ -580,7 +614,9 @@ namespace LibRender2
 		{
 			if (nullDepthMap != 0)
 			{
-				rlgl.rlUnloadTexture(nullDepthMap);
+				Rlgl.UnloadTexture((uint)nullDepthMap);
+
+
 				nullDepthMap = 0;
 			}
 			GameWindow?.Dispose();
@@ -650,7 +686,8 @@ namespace LibRender2
 
 				lock (VisibleObjects.LockObject)
 				{
-					int lastVAOHandle = -1;
+					uint lastVAOHandle = uint.MaxValue;
+
 
 					// Add a helper to render a collection of faces into the shadow pass also avoiding duplicate loops for opaque and alpha collections.
 					Action<ICollection<FaceState>> renderFaces = faces =>
@@ -693,13 +730,14 @@ namespace LibRender2
 #pragma warning restore CS0618
 
 							VertexArrayObject vao = (VertexArrayObject)face.Object.Prototype.Mesh.VAO;
-							if (vao.handle != lastVAOHandle)
+							if (vao.vboId != lastVAOHandle)
 							{
 								vao.Bind();
-								lastVAOHandle = vao.handle;
+								lastVAOHandle = vao.vboId;
 							}
 							PrimitiveType drawMode = GetPrimitiveType(face.Face.Flags);
-							vao.Draw(drawMode, face.Face.IboStartIndex, face.Face.Vertices.Length);
+							vao.Draw((int)drawMode, face.Face.IboStartIndex, face.Face.Vertices.Length);
+
 						}
 					};
 
@@ -748,7 +786,8 @@ namespace LibRender2
 			DefaultShader.SetShadowStrength((float)currentOptions.ShadowStrength);
 			DefaultShader.SetCurrentViewMatrix(CurrentViewMatrix);
 
-			CSMShadowMaps.BindAllCascadesForReading(TextureUnit.Texture4);
+			CSMShadowMaps.BindAllCascadesForReading((int)TextureUnit.Texture4);
+
 
 			int cascadeCount = CSMCaster.CascadeCount;
 			for (int i = 0; i < cascadeCount; i++)
@@ -869,20 +908,7 @@ namespace LibRender2
 			}
 		}
 
-		public void Reset()
-		{
-			currentHost.AnimatedObjectCollectionCache.Clear();
-			List<ValueTuple<string, bool, DateTime>> keys = currentHost.StaticObjectCache.Keys.ToList();
-			for (int i = 0; i < keys.Count; i++)
-			{
-				if (!File.Exists(keys[i].Item1) || File.GetLastWriteTime(keys[i].Item1) != keys[i].Item3)
-				{
-					currentHost.StaticObjectCache.Remove(keys[i]);
-				}
-			}
-			TextureManager.UnloadAllTextures(true);
-			VisibleObjects.Clear();
-		}
+
 
 		public int CreateStaticObject(StaticObject Prototype, Vector3 Position, Transformation WorldTransformation, Transformation LocalTransformation, ObjectDisposalMode AccurateObjectDisposal, double AccurateObjectDisposalZOffset, double StartingDistance, double EndingDistance, double BlockLength, double TrackPosition, bool DisableShadowCasting)
 		{
@@ -1570,10 +1596,12 @@ namespace LibRender2
 			MeshMaterial material = state.Prototype.Mesh.Materials[face.Material];
 			VertexArrayObject VAO = (VertexArrayObject)state.Prototype.Mesh.VAO;
 
-			if (lastVAO != VAO.handle)
+			if (lastVAO != VAO.vboId)
 			{
 				VAO.Bind();
-				lastVAO = VAO.handle;
+				lastVAO = VAO.vboId;
+
+
 			}
 
 			if (!OptionBackFaceCulling || (face.Flags & FaceFlags.Face2Mask) != 0)
@@ -1723,7 +1751,8 @@ namespace LibRender2
 				shader.SetOpacity(inv255 * material.Color.A * alphaFactor);
 
 				// render polygon
-				VAO.Draw(drawMode, face.IboStartIndex, face.Vertices.Length);
+				VAO.Draw((int)drawMode, face.IboStartIndex, face.Vertices.Length);
+
 			}
 
 			// nighttime polygon
@@ -1749,7 +1778,8 @@ namespace LibRender2
 				shader.SetOpacity(inv255 * material.Color.A * alphaFactor);
 
 				// render polygon
-				VAO.Draw(drawMode, face.IboStartIndex, face.Vertices.Length);
+				VAO.Draw((int)drawMode, face.IboStartIndex, face.Vertices.Length);
+
 				RestoreBlendFunc();
 				RestoreAlphaFunc();
 			}
@@ -1763,8 +1793,11 @@ namespace LibRender2
 				shader.SetOpacity(1.0f);
 				VertexArrayObject normalsVao = (VertexArrayObject)state.Prototype.Mesh.NormalsVAO;
 				normalsVao.Bind();
-				lastVAO = normalsVao.handle;
-				normalsVao.Draw(PrimitiveType.Lines, face.NormalsIboStartIndex, face.Vertices.Length * 2);
+				lastVAO = normalsVao.vboId;
+
+
+				normalsVao.Draw((int)PrimitiveType.Lines, face.NormalsIboStartIndex, face.Vertices.Length * 2);
+
 			}
 
 			// finalize

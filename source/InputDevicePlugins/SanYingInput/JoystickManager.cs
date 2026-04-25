@@ -1,5 +1,6 @@
 using System;
 using OpenTK.Input;
+using ButtonState = OpenTK.Input.ButtonState;
 
 namespace SanYingInput {
 	/// <summary>Provides functions for dealing with joysticks.</summary>

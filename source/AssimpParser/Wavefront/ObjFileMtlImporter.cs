@@ -78,10 +78,11 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
+using System.IO;
+using Path = System.IO.Path;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Runtime.Remoting.Channels;
 using OpenBveApi;
 using OpenBveApi.Colors;
 

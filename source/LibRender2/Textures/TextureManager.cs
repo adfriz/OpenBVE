@@ -10,6 +10,8 @@ using OpenBveApi.Textures;
 using Raylib_cs;
 using InterpolationMode = OpenBveApi.Graphics.InterpolationMode;
 using PixelFormat = OpenBveApi.Textures.PixelFormat;
+using Image = Raylib_cs.Image;
+
 
 namespace LibRender2.Textures
 {
@@ -119,10 +121,10 @@ namespace LibRender2.Textures
 		{
 			switch (format)
 			{
-				case PixelFormat.RGB: return Raylib_cs.PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8;
-				case PixelFormat.RGBAlpha: return Raylib_cs.PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8;
-				case PixelFormat.Grayscale: return Raylib_cs.PixelFormat.PIXELFORMAT_UNCOMPRESSED_GRAYSCALE;
-				default: return Raylib_cs.PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8;
+				case PixelFormat.RGB: return Raylib_cs.PixelFormat.UncompressedR8G8B8;
+				case PixelFormat.RGBAlpha: return Raylib_cs.PixelFormat.UncompressedR8G8B8A8;
+				case PixelFormat.Grayscale: return Raylib_cs.PixelFormat.UncompressedGrayscale;
+				default: return Raylib_cs.PixelFormat.UncompressedR8G8B8A8;
 			}
 		}
 
@@ -130,18 +132,19 @@ namespace LibRender2.Textures
 		{
 			switch (mode)
 			{
-				case InterpolationMode.NearestNeighbor: return TextureFilter.TEXTURE_FILTER_POINT;
-				case InterpolationMode.Bilinear: return TextureFilter.TEXTURE_FILTER_BILINEAR;
-				case InterpolationMode.TrilinearMipmapped: return TextureFilter.TEXTURE_FILTER_TRILINEAR;
-				case InterpolationMode.AnisotropicFiltering: return TextureFilter.TEXTURE_FILTER_ANISOTROPIC_16X;
-				default: return TextureFilter.TEXTURE_FILTER_BILINEAR;
+				case InterpolationMode.NearestNeighbor: return TextureFilter.Point;
+				case InterpolationMode.Bilinear: return TextureFilter.Bilinear;
+				case InterpolationMode.TrilinearMipmapped: return TextureFilter.Trilinear;
+				case InterpolationMode.AnisotropicFiltering: return TextureFilter.Anisotropic16X;
+				default: return TextureFilter.Bilinear;
 			}
 		}
 
 		private TextureWrap WrapModeToRaylib(OpenGlTextureWrapMode wrap)
 		{
-			if ((wrap & OpenGlTextureWrapMode.RepeatClamp) != 0) return TextureWrap.TEXTURE_WRAP_REPEAT;
-			return TextureWrap.TEXTURE_WRAP_CLAMP;
+			if ((wrap & OpenGlTextureWrapMode.RepeatClamp) != 0) return TextureWrap.Repeat;
+			return TextureWrap.Clamp;
+
 		}
 
 		public static void UnloadTexture(ref Texture handle)
@@ -165,5 +168,21 @@ namespace LibRender2.Textures
 			}
 			return RegisteredTexturesCount;
 		}
+		public void UnloadAllTextures(bool unused = false)
+
+		{
+			for (int i = 0; i < RegisteredTexturesCount; i++)
+			{
+				UnloadTexture(ref RegisteredTextures[i]);
+			}
+			foreach (var kvp in animatedTextures)
+			{
+				Texture tex = kvp.Value;
+				UnloadTexture(ref tex);
+			}
+			animatedTextures.Clear();
+			textureCache.Clear();
+		}
 	}
 }
+

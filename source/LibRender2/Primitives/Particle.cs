@@ -1,4 +1,4 @@
-﻿//Simplified BSD License (BSD-2-Clause)
+//Simplified BSD License (BSD-2-Clause)
 //
 //Copyright (c) 2025, The OpenBVE Project
 //
@@ -79,23 +79,15 @@ namespace LibRender2.Primitives
 							};
 
 							particlesVAO[i * 4 + j] = new VertexArrayObject();
-							particlesVAO[i * 4 + j].Bind();
-							particlesVAO[i * 4 + j].SetVBO(new VertexBufferObject(vertexData, BufferUsageHint.StaticDraw));
-							particlesVAO[i * 4 + j].SetIBO(new IndexBufferObjectUS(Enumerable.Range(0, vertexData.Length).Select(x => (ushort)x).ToArray(), BufferUsageHint.StaticDraw));
-							particlesVAO[i * 4 + j].SetAttributes(renderer.DefaultShader.VertexLayout);
-							particlesVAO[i * 4 + j].UnBind();
+							particlesVAO[i * 4 + j].SetVBO(vertexData, false);
+							particlesVAO[i * 4 + j].SetIBO(Enumerable.Range(0, vertexData.Length).Select(x => (ushort)x).ToArray(), false);
 						}
-
-
-
 					}
-
 				}
 				catch
 				{
 					renderer.ForceLegacyOpenGL = true;
 				}
-
 			}
 		}
 
@@ -142,11 +134,10 @@ namespace LibRender2.Primitives
 				GL.Disable(EnableCap.Texture2D);
 			}
 
-			particlesVAO[particleIndex].Bind();
-			particlesVAO[particleIndex].Draw(PrimitiveType.Quads);
+			particlesVAO[particleIndex].Draw((int)PrimitiveType.Quads, 0, 4);
 			GL.Disable(EnableCap.Texture2D);
-
 		}
+
 
 		private void DrawImmediate(Vector3 worldPosition, Vector3 worldDirection, Vector3 worldUp, Vector3 worldSide, Vector2 size, Texture texture, float opacity)
 		{

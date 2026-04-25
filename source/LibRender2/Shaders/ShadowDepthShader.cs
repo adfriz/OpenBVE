@@ -42,20 +42,20 @@ namespace LibRender2.Shaders
 		{
 			// Explicitly bind the uniform block for matrices to binding point 0
 			// This matches BindBufferBase(..., 0, ...) in the rendering pass.
-			int matrixBlockIndex = GL.GetUniformBlockIndex(Handle, "matrices");
+			int matrixBlockIndex = GL.GetUniformBlockIndex((int)Handle.Id, "matrices");
 			if (matrixBlockIndex != -1)
 			{
-				GL.UniformBlockBinding(Handle, matrixBlockIndex, 0);
+				GL.UniformBlockBinding((int)Handle.Id, matrixBlockIndex, 0);
 			}
 
 			// Cache uniform locations
-			uLightSpaceMatrix = GL.GetUniformLocation(Handle, "uLightSpaceMatrix");
-			uModelMatrix = GL.GetUniformLocation(Handle, "uModelMatrix");
-			uTexture = GL.GetUniformLocation(Handle, "uTexture");
-			uHasTexture = GL.GetUniformLocation(Handle, "uHasTexture");
-			uAlphaCutoff = GL.GetUniformLocation(Handle, "uAlphaCutoff");
-			uMaterialAlpha = GL.GetUniformLocation(Handle, "uMaterialAlpha"); // Cache the material alpha location
-			uMaterialFlags = GL.GetUniformLocation(Handle, "uMaterialFlags");
+			uLightSpaceMatrix = GL.GetUniformLocation((int)Handle.Id, "uLightSpaceMatrix");
+			uModelMatrix = GL.GetUniformLocation((int)Handle.Id, "uModelMatrix");
+			uTexture = GL.GetUniformLocation((int)Handle.Id, "uTexture");
+			uHasTexture = GL.GetUniformLocation((int)Handle.Id, "uHasTexture");
+			uAlphaCutoff = GL.GetUniformLocation((int)Handle.Id, "uAlphaCutoff");
+			uMaterialAlpha = GL.GetUniformLocation((int)Handle.Id, "uMaterialAlpha"); // Cache the material alpha location
+			uMaterialFlags = GL.GetUniformLocation((int)Handle.Id, "uMaterialFlags");
 		}
 
 		public void SetLightSpaceMatrix(OpenBveApi.Math.Matrix4D m)

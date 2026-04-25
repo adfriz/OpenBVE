@@ -8,8 +8,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-  </ItemGroup>
-
-  <ItemGroup>
+    <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
+    <PackageReference Include="System.ServiceModel.Primitives" Version="6.2.0" />
+    <PackageReference Include="System.ServiceModel.Http" Version="6.2.0" />
+    <PackageReference Include="System.ServiceModel.NetTcp" Version="6.2.0" />
+    <PackageReference Include="OpenTK" Version="3.3.3" />
+    <PackageReference Include="SharpCompress" Version="0.34.1" />
+    <PackageReference Include="Raylib-cs" Version="6.0.0" />
+    <PackageReference Include="Ude.NetStandard" Version="1.2.0" />
+    <PackageReference Include="cs-script" Version="4.8.17" />
   </ItemGroup>
 </Project>

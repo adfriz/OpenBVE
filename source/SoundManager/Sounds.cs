@@ -8,6 +8,7 @@ using System.Threading;
 using OpenBveApi.Hosts;
 using OpenBveApi.Interface;
 using OpenBveApi.Sounds;
+using Sound = OpenBveApi.Sounds.Sound;
 using Raylib_cs;
 
 namespace SoundManager

@@ -1,4 +1,4 @@
-﻿//Simplified BSD License (BSD-2-Clause)
+//Simplified BSD License (BSD-2-Clause)
 //
 //Copyright (c) 2020, Christopher Lees, The OpenBVE Project
 //
@@ -37,7 +37,7 @@ namespace Plugin
 		/// <returns>The raw sound data.</returns>
 		private static Sound LoadFromFile(string fileName)
 		{
-			using (Mp3FileReader reader = new Mp3FileReader(fileName, wf => new Mp3FrameDecompressor(wf)))
+			using (Mp3FileReader reader = new Mp3FileReader(fileName))
 			{
 				byte[] dataBytes = new byte[reader.Length];
 

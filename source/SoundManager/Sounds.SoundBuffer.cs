@@ -1,6 +1,7 @@
 using OpenBveApi.FunctionScripting;
 using OpenBveApi.Hosts;
 using OpenBveApi.Sounds;
+using Sound = OpenBveApi.Sounds.Sound;
 using Raylib_cs;
 
 namespace SoundManager
@@ -65,17 +66,18 @@ namespace SoundManager
 
 				if (Origin.GetSound(out Sound sound))
 				{
+					byte[] monoData = sound.GetMonoMix();
 					unsafe
 					{
 						RaylibWave = new Wave
 						{
-							FrameCount = (uint)(sound.Bytes.Length / (sound.BitsPerSample / 8) / (sound.IsStereo ? 2 : 1)),
-							SampleRate = (int)sound.SampleRate,
-							SampleSize = (int)sound.BitsPerSample,
-							Channels = 1, // GetMonoMix returns mono
-							Data = Raylib.MemAlloc((uint)sound.Bytes.Length)
+							frameCount = (uint)(monoData.Length / (sound.BitsPerSample / 8)),
+							sampleRate = (uint)sound.SampleRate,
+							sampleSize = (uint)sound.BitsPerSample,
+							channels = 1, // GetMonoMix returns mono
+							data = Raylib.MemAlloc(monoData.Length)
 						};
-						System.Runtime.InteropServices.Marshal.Copy(sound.Bytes, 0, (IntPtr)RaylibWave.Data, sound.Bytes.Length);
+						System.Runtime.InteropServices.Marshal.Copy(monoData, 0, (IntPtr)RaylibWave.data, monoData.Length);
 					}
 					duration = sound.Duration;
 					Loaded = SoundBufferState.Loaded;

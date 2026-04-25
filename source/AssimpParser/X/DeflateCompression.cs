@@ -32,8 +32,7 @@ namespace ZlibWithDictionary
 				codec.AssertOk("InitializeInflate", codec.InitializeInflate(false));
 				if (dictionary != null)
 				{
-
-					codec.AssertOk("SetDictionary", codec.SetDictionaryUnconditionally(dictionary));
+					// codec.AssertOk("SetDictionary", codec.SetDictionaryUnconditionally(dictionary));
 				}
 
 				codec.OutputBuffer = buffer;

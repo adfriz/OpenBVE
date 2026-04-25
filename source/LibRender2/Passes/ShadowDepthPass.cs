@@ -29,20 +29,20 @@ namespace LibRender2.Passes
 			renderer.CSMCaster.Resolution = renderer.CSMShadowMaps.Resolution;
 			renderer.CSMCaster.Update(lightDir, renderer.CurrentViewMatrix, renderer.CurrentProjectionMatrix, 0.1, renderer.Camera.VerticalViewingAngle, renderer.Screen.AspectRatio);
 
-			rlgl.rlDisableBackfaceCulling();
-			rlgl.rlEnableDepthTest();
+			Rlgl.DisableBackfaceCulling();
+			Rlgl.EnableDepthTest();
 
 			for (int cascade = 0; cascade < renderer.CSMCaster.CascadeCount; cascade++)
 			{
 				renderer.CSMShadowMaps.BindCascadeForWriting(cascade);
-				rlgl.rlClearScreenBuffers(); // Clear depth
+				Rlgl.ClearScreenBuffers(); // Clear depth
 
 				// Render objects into shadow map
 				// TODO: Implementation of shadow caster rendering
 			}
 
 			renderer.CSMShadowMaps.Unbind();
-			rlgl.rlEnableBackfaceCulling();
+			Rlgl.EnableBackfaceCulling();
 		}
 	}
 }

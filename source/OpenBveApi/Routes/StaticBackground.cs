@@ -1,4 +1,4 @@
-﻿using OpenBveApi.Textures;
+using OpenBveApi.Textures;
 
 namespace OpenBveApi.Routes
 {
@@ -6,7 +6,7 @@ namespace OpenBveApi.Routes
 	public sealed class StaticBackground : BackgroundHandle
 	{
 		/// <summary>The background texture</summary>
-		public Texture Texture;
+		public OpenBveApi.Textures.Texture Texture;
 		/// <summary>The number of times the texture is repeated around the viewing frustum</summary>
 		public double Repetition;
 		/// <summary>Whether the texture's aspect ratio should be maintained</summary>
@@ -25,7 +25,7 @@ namespace OpenBveApi.Routes
 		/// <param name="Repetition">The number of times the texture should be repeated around the viewing frustum</param>
 		/// <param name="KeepAspectRatio">Whether the aspect ratio of the texture should be preserved</param>
 		/// <param name="Distance">The viewing distance</param>
-		public StaticBackground(Texture Texture, double Repetition, bool KeepAspectRatio, double Distance = 0) : this(Texture, Repetition, KeepAspectRatio, 0.8, BackgroundTransitionMode.FadeIn)
+		public StaticBackground(OpenBveApi.Textures.Texture Texture, double Repetition, bool KeepAspectRatio, double Distance = 0) : this(Texture, Repetition, KeepAspectRatio, 0.8, BackgroundTransitionMode.FadeIn)
 		{
 			if (Distance > 0)
 			{
@@ -39,7 +39,7 @@ namespace OpenBveApi.Routes
 		/// <param name="KeepAspectRatio">Whether the aspect ratio of the texture should be preserved</param>
 		/// <param name="transitionTime">The time taken in seconds for the fade-in transition to occur</param>
 		/// <param name="Mode">The transition mode</param>
-		public StaticBackground(Texture Texture, double Repetition, bool KeepAspectRatio, double transitionTime, BackgroundTransitionMode Mode) : this(Texture, Repetition, KeepAspectRatio, transitionTime, Mode, -1.0)
+		public StaticBackground(OpenBveApi.Textures.Texture Texture, double Repetition, bool KeepAspectRatio, double transitionTime, BackgroundTransitionMode Mode) : this(Texture, Repetition, KeepAspectRatio, transitionTime, Mode, -1.0)
 		{
 		}
 
@@ -50,7 +50,7 @@ namespace OpenBveApi.Routes
 		/// <param name="transitionTime">The time taken in seconds for the fade-in transition to occur</param>
 		/// <param name="Mode">The transition mode</param>
 		/// <param name="Time">The time at which this background is to be displayed, expressed as the number of seconds since midnight</param>
-		public StaticBackground(Texture Texture, double Repetition, bool KeepAspectRatio, double transitionTime, BackgroundTransitionMode Mode, double Time)
+		public StaticBackground(OpenBveApi.Textures.Texture Texture, double Repetition, bool KeepAspectRatio, double transitionTime, BackgroundTransitionMode Mode, double Time)
 		{
 			this.Texture = Texture;
 			this.Repetition = Repetition;

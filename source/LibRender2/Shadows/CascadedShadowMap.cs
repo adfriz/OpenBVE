@@ -1,5 +1,7 @@
 using System;
 using Raylib_cs;
+using static Raylib_cs.Rlgl;
+
 
 namespace LibRender2.Shadows
 {
@@ -39,50 +41,56 @@ namespace LibRender2.Shadows
 
 		private void CreateCascade(int index)
 		{
-			FBOs[index] = rlgl.rlLoadFramebuffer(Resolution, Resolution);
-			rlgl.rlEnableFramebuffer(FBOs[index]);
+			FBOs[index] = Rlgl.LoadFramebuffer(Resolution, Resolution);
+			Rlgl.EnableFramebuffer(FBOs[index]);
 
 			// Create depth texture
-			DepthTextures[index] = rlgl.rlLoadTextureDepth(Resolution, Resolution, false);
-			rlgl.rlFramebufferAttach(FBOs[index], DepthTextures[index], rlFramebufferAttachType.RL_ATTACHMENT_DEPTH, rlFramebufferAttachTextureType.RL_ATTACHMENT_TEXTURE2D, 0);
+			DepthTextures[index] = Rlgl.LoadTextureDepth(Resolution, Resolution, false);
+			Rlgl.FramebufferAttach(FBOs[index], DepthTextures[index], (FramebufferAttachType)100, (FramebufferAttachTextureType)0, 0);
 
-			if (!rlgl.rlFramebufferComplete(FBOs[index]))
+
+
+
+
+
+			if (!Rlgl.FramebufferComplete(FBOs[index]))
 			{
 				Console.Error.WriteLine($"[CSM] Cascade {index} FBO incomplete");
 			}
 
-			rlgl.rlDisableFramebuffer();
+			Rlgl.DisableFramebuffer();
 		}
 
 		public void BindCascadeForWriting(int cascadeIndex)
 		{
-			rlgl.rlEnableFramebuffer(FBOs[cascadeIndex]);
-			rlgl.rlViewport(0, 0, Resolution, Resolution);
+			Rlgl.EnableFramebuffer(FBOs[cascadeIndex]);
+			Rlgl.Viewport(0, 0, Resolution, Resolution);
 		}
 
 		public void Unbind()
 		{
-			rlgl.rlDisableFramebuffer();
-			rlgl.rlViewport(0, 0, Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
+			Rlgl.DisableFramebuffer();
+			Rlgl.Viewport(0, 0, Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
 		}
 
 		public void BindAllCascadesForReading(int baseUnit)
 		{
 			for (int i = 0; i < CascadeCount; i++)
 			{
-				rlgl.rlActiveTextureSlot(baseUnit + i);
-				rlgl.rlEnableTexture(DepthTextures[i]);
+				Rlgl.ActiveTextureSlot(baseUnit + i);
+				Rlgl.EnableTexture(DepthTextures[i]);
 			}
-			rlgl.rlActiveTextureSlot(0);
+			Rlgl.ActiveTextureSlot(0);
 		}
 
 		public void Dispose()
 		{
 			for (int i = 0; i < CascadeCount; i++)
 			{
-				if (FBOs[i] != 0) rlgl.rlUnloadFramebuffer(FBOs[i]);
-				if (DepthTextures[i] != 0) rlgl.rlUnloadTexture(DepthTextures[i]);
+				if (FBOs[i] != 0) Rlgl.UnloadFramebuffer(FBOs[i]);
+				if (DepthTextures[i] != 0) Rlgl.UnloadTexture(DepthTextures[i]);
 			}
 		}
+
 	}
 }

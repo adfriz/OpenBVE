@@ -27,6 +27,7 @@ using System.Collections.Generic;
 using OpenBveApi.Hosts;
 using OpenBveApi.Interface;
 using OpenTK.Input;
+using ButtonState = OpenTK.Input.ButtonState;
 
 namespace DenshaDeGoInput
 {

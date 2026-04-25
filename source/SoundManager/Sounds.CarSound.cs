@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using OpenBveApi;
+using Path = OpenBveApi.Path;
 using OpenBveApi.Hosts;
 using OpenBveApi.Interface;
 using OpenBveApi.Math;

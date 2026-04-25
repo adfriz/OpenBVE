@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using NAudio.Wave;
@@ -66,7 +66,7 @@ namespace Plugin
 		/// <returns>The raw sound data.</returns>
 		private static Sound Mp3LoadFromStream(Stream stream)
 		{
-			using (Mp3FileReader reader = new Mp3FileReader(stream, wf => new Mp3FrameDecompressor(wf)))
+			using (Mp3FileReader reader = new Mp3FileReader(stream))
 			{
 				byte[] dataBytes = new byte[reader.Length];
 
