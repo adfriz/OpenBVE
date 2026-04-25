@@ -106,13 +106,30 @@ namespace OpenBve
 			}
 			Screen.Initialize();
 			currentResult = result;
-			Program.Renderer.GameWindow.Closing += OpenTKQuit;
-			Program.Renderer.GameWindow.Run();
+			
+			// Main Raylib Loop
+			while (!WindowManager.ShouldClose && Quit == QuitMode.ContinueGame)
+			{
+				// Input Polling
+				ProcessInput();
+
+				// Update
+				// TODO: Update physics and logic
+
+				// Render
+				Raylib.BeginDrawing();
+				Raylib.ClearBackground(Color.BLACK);
+				
+				// TODO: Call Renderer.Render()
+				GUIManager.Draw();
+
+				Raylib.EndDrawing();
+			}
 		}
 
-		private static void OpenTKQuit(object sender, CancelEventArgs e)
+		private static void ProcessInput()
 		{
-			Quit = QuitMode.QuitProgram;
+			// TODO: Map Raylib input to OpenBVE events
 		}
 
 		/********************
