@@ -540,8 +540,7 @@ namespace LibRender2
 			{
 				fileSystem.AppendToLogFile($"[CSM] Init failed: {ex.Message}");
 				ShadowsEnabled = false;
-				// Purge lingering OpenGL error state if any, to avoid crashing later in ResetShader
-				GL.GetError();
+				// Purge lingering error state if any
 			}
 		}
 
@@ -572,7 +571,7 @@ namespace LibRender2
 		{
 			if (nullDepthMap != 0)
 			{
-				GL.DeleteTexture(nullDepthMap);
+				rlgl.rlUnloadTexture(nullDepthMap);
 				nullDepthMap = 0;
 			}
 			GameWindow?.Dispose();
@@ -584,7 +583,7 @@ namespace LibRender2
 		/// <remarks>We need to purge the current shader state and update lighting to avoid glitches</remarks>
 		public void SwitchOpenGLVersion()
 		{
-			GL.UseProgram(0);
+			Raylib.EndShaderMode();
 			currentOptions.IsUseNewRenderer = !currentOptions.IsUseNewRenderer;
 			ResetOpenGlState();
 			Lighting.Initialize();
@@ -592,8 +591,6 @@ namespace LibRender2
 			{
 				ReloadShadowSettings();
 			}
-			// Drain errors to ensure the shader reset in the next frame doesn't pick up legacy errors
-			while (GL.GetError() != ErrorCode.NoError) { }
 		}
 
 		/// <summary>
