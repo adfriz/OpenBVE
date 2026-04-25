@@ -16,7 +16,6 @@ using OpenBveApi.Math;
 using OpenBveApi.Objects;
 using OpenBveApi.Routes;
 using OpenBveApi.Textures;
-using OpenBveApi.World;
 using OpenTK.Graphics.OpenGL;
 using System;
 using System.Collections.Generic;
@@ -74,16 +73,6 @@ namespace OpenBve.Graphics
 			Program.FileSystem.AppendToLogFile("Renderer initialised successfully.");
 		}
 		
-		internal int CreateStaticObject(UnifiedObject Prototype, Vector3 Position, Transformation WorldTransformation, Transformation LocalTransformation, ObjectDisposalMode AccurateObjectDisposal, double AccurateObjectDisposalZOffset, double StartingDistance, double EndingDistance, double BlockLength, double TrackPosition)
-		{
-			if (!(Prototype is StaticObject obj))
-			{
-				Interface.AddMessage(MessageType.Error, false, "Attempted to use an animated object where only static objects are allowed.");
-				return -1;
-			}
-			return base.CreateStaticObject(obj, Position, WorldTransformation, LocalTransformation, AccurateObjectDisposal, AccurateObjectDisposalZOffset, StartingDistance, EndingDistance, BlockLength, TrackPosition, false);
-		}
-
 		protected override void UpdateViewport(int width, int height)
 		{
 			_programLogo = null;
