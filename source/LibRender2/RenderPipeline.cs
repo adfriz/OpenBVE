@@ -17,13 +17,13 @@ namespace LibRender2
 			passes.Add(pass);
 		}
 
-		public void Execute()
+		public void Execute(double timeElapsed, double realTimeElapsed)
 		{
 			foreach (var pass in passes)
 			{
 				if (pass.Enabled)
 				{
-					pass.Render(renderer);
+					pass.Render(renderer, timeElapsed, realTimeElapsed);
 				}
 			}
 		}

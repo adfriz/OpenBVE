@@ -6,6 +6,6 @@ namespace LibRender2
 	{
 		string Name { get; }
 		bool Enabled { get; set; }
-		void Render(BaseRenderer renderer);
+		void Render(BaseRenderer renderer, double timeElapsed, double realTimeElapsed);
 	}
 }

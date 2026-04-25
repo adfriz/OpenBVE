@@ -32,9 +32,7 @@ using OpenBveApi.Objects;
 using OpenBveApi.Routes;
 using OpenBveApi.Textures;
 using OpenBveApi.World;
-using OpenTK;
-using OpenTK.Graphics;
-using OpenTK.Graphics.OpenGL;
+using Raylib_cs;
 using Path = OpenBveApi.Path;
 using PixelFormat = OpenBveApi.Textures.PixelFormat;
 using Vector2 = OpenBveApi.Math.Vector2;
@@ -74,6 +72,8 @@ namespace LibRender2
 		public VertexArrayObject dummyVao;
 
 		public Screen Screen;
+
+		public RenderPipeline Pipeline;
 
 		/// <summary>The track follower for the main camera</summary>
 		public TrackFollower CameraTrackFollower;
@@ -297,10 +297,6 @@ namespace LibRender2
 		public Texture MasconTexture;
 		/// <summary>A raildriver icon</summary>
 		public Texture RailDriverTexture;
-		/// <summary>The game window</summary>
-		public GameWindow GameWindow;
-		/// <summary>The graphics mode in use</summary>
-		public GraphicsMode GraphicsMode;
 		public bool LoadLogo()
 		{
 			return currentHost.LoadTexture(ref _programLogo, OpenGlTextureWrapMode.ClampClamp);
@@ -342,6 +338,7 @@ namespace LibRender2
 			VisibilityThread = new Thread(RunVisibiliityThread);
 			VisibilityThread.Start();
 			RenderThreadJobs = new ConcurrentQueue<ThreadStart>();
+			Pipeline = new RenderPipeline(this);
 		}
 
 
