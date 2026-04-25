@@ -102,37 +102,45 @@ namespace SoundManager
 			}
 		}
 
+		private readonly object buffersLock = new object();
+
 		public SoundBuffer RegisterBuffer(string path, double radius)
 		{
 			if (!File.Exists(path)) return null;
-			foreach (var buffer in Buffers)
+			lock (buffersLock)
 			{
-				if (buffer.Origin is PathOrigin po && po.Path == path) return buffer;
-			}
+				foreach (var buffer in Buffers)
+				{
+					if (buffer.Origin is PathOrigin po && po.Path == path) return buffer;
+				}
 
-			try
-			{
-				SoundBuffer registeredBuffer = new SoundBuffer(CurrentHost, path, radius);
-				Buffers.Add(registeredBuffer);
-				return registeredBuffer;
-			}
-			catch
-			{
-				return null;
+				try
+				{
+					SoundBuffer registeredBuffer = new SoundBuffer(CurrentHost, path, radius);
+					Buffers.Add(registeredBuffer);
+					return registeredBuffer;
+				}
+				catch
+				{
+					return null;
+				}
 			}
 		}
 
 		public SoundBuffer RegisterBuffer(Sound data, double radius)
 		{
-			try
+			lock (buffersLock)
 			{
-				SoundBuffer registeredBuffer = new SoundBuffer(data, radius);
-				Buffers.Add(registeredBuffer);
-				return registeredBuffer;
-			}
-			catch
-			{
-				return null;
+				try
+				{
+					SoundBuffer registeredBuffer = new SoundBuffer(data, radius);
+					Buffers.Add(registeredBuffer);
+					return registeredBuffer;
+				}
+				catch
+				{
+					return null;
+				}
 			}
 		}
 
@@ -143,8 +151,11 @@ namespace SoundManager
 
 		internal void UnloadAllBuffers()
 		{
-			foreach (var buffer in Buffers) buffer.Unload();
-			Buffers.Clear();
+			lock (buffersLock)
+			{
+				foreach (var buffer in Buffers) buffer.Unload();
+				Buffers.Clear();
+			}
 		}
 
 		public SoundSource PlaySound(SoundHandle buffer, double pitch, double volume, OpenBveApi.Math.Vector3 position, object parent, bool looped)

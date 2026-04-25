@@ -55,20 +55,20 @@ namespace SoundManager
 			Ignore = false;
 		}
 
+		private readonly object loadLock = new object();
+
 		public void Load()
 		{
-			if (Loaded == SoundBufferState.Loaded || Ignore) return;
-
-			if (Origin.GetSound(out Sound sound))
+			lock (loadLock)
 			{
-				unsafe {
-					fixed (byte* ptr = sound.GetMonoMix()) {
-						// Raylib Wave expects data pointer
-						// We need to be careful about ownership here
-						// For now, let's use Raylib.LoadWave to avoid complexity if possible
-						// but since we have the raw bytes from OpenBveApi:
-						
-						RaylibWave = new Wave {
+				if (Loaded == SoundBufferState.Loaded || Ignore) return;
+
+				if (Origin.GetSound(out Sound sound))
+				{
+					unsafe
+					{
+						RaylibWave = new Wave
+						{
 							FrameCount = (uint)(sound.Bytes.Length / (sound.BitsPerSample / 8) / (sound.IsStereo ? 2 : 1)),
 							SampleRate = (int)sound.SampleRate,
 							SampleSize = (int)sound.BitsPerSample,
@@ -77,21 +77,24 @@ namespace SoundManager
 						};
 						System.Runtime.InteropServices.Marshal.Copy(sound.Bytes, 0, (IntPtr)RaylibWave.Data, sound.Bytes.Length);
 					}
+					duration = sound.Duration;
+					Loaded = SoundBufferState.Loaded;
+					return;
 				}
-				duration = sound.Duration;
-				Loaded = SoundBufferState.Loaded;
-				return;
+				Ignore = true;
 			}
-			Ignore = true;
 		}
 
 		public void Unload()
 		{
-			if (Loaded == SoundBufferState.Loaded)
+			lock (loadLock)
 			{
-				Raylib.UnloadWave(RaylibWave);
-				Loaded = SoundBufferState.NotLoaded;
-				Ignore = false;
+				if (Loaded == SoundBufferState.Loaded)
+				{
+					Raylib.UnloadWave(RaylibWave);
+					Loaded = SoundBufferState.NotLoaded;
+					Ignore = false;
+				}
 			}
 		}
 	}
