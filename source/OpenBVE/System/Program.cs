@@ -75,6 +75,7 @@ namespace OpenBve {
 			}
 
 			if (result.Start) {
+				GUIManager.IsInLauncher = false;
 				if (Initialize()) {
 					MainLoop.StartLoopEx(result);
 				}
@@ -85,6 +86,14 @@ namespace OpenBve {
 					Raylib.ClearBackground(Color.DARKGRAY);
 					GUIManager.Draw();
 					Raylib.EndDrawing();
+
+					if (MainLoop.currentResult.Start) {
+						GUIManager.IsInLauncher = false;
+						if (Initialize()) {
+							MainLoop.StartLoopEx(MainLoop.currentResult);
+						}
+						break;
+					}
 				}
 			}
 

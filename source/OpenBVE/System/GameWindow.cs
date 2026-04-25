@@ -6,7 +6,6 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Windows.Forms;
 using LibRender2;
 using LibRender2.Cameras;
 using LibRender2.Menu;
@@ -374,33 +373,8 @@ namespace OpenBve
 			Game.Menu.OnResize();
 		}
 
-		[DllImport("user32.dll")]
-		private static extern int FindWindow(string className, string windowText);
-		[DllImport("user32.dll")]
-		public static extern int FindWindowEx(int parentHandle, int childAfter, string className, int windowTitle);
-
-		[DllImport("user32.dll")]
-		private static extern int ShowWindow(int hwnd, int command);
-		[DllImport("user32.dll")]
-		private static extern int GetDesktopWindow();
 		protected override void OnLoad(EventArgs e)
 		{
-			if (Program.CurrentHost.Platform == HostPlatform.MicrosoftWindows && WindowState != WindowState.Fullscreen)
-			{
-				int w = DisplayDevice.Default.Width;
-				int h = DisplayDevice.Default.Height;
-				if (w == Interface.CurrentOptions.WindowWidth && h == Interface.CurrentOptions.WindowHeight)
-				{
-					// If we are not in full-screen, but height and width are equal to resolution, hide taskbar
-					// e.g. Borderless windowed fulllscreen
-					int hwnd = FindWindow("Shell_TrayWnd","");
-					ShowWindow(hwnd,0);
-					int hstart = FindWindowEx(GetDesktopWindow(), 0, "button", 0);
-					ShowWindow(hstart,0);
-					WindowBorder = WindowBorder.Hidden;
-					Bounds = new Rectangle(0, 0, w, h);
-				}
-			}
 			Program.FileSystem.AppendToLogFile("Game window initialised successfully.");
 			//Initialise the loader thread queues
 			Program.Renderer.Initialize();
@@ -503,14 +477,6 @@ namespace OpenBve
 				Environment.Exit(0);
 			}
 
-			if (Program.CurrentHost.Platform == HostPlatform.MicrosoftWindows)
-			{
-				//Restore taskbar visibility if hidden
-				int hwnd = FindWindow("Shell_TrayWnd","");
-				ShowWindow(hwnd,1);
-				int hstart = FindWindowEx(GetDesktopWindow(), 0, "button", 0);
-				ShowWindow(hstart,1);
-			}
 			base.OnClosing(e);
 		}
 
@@ -576,10 +542,9 @@ namespace OpenBve
 			for (int i = 0; i < Interface.LogMessages.Count; i++)
 			{
 				if (Interface.LogMessages[i].Type == MessageType.Critical)
-				{
 					string currentError = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "errors", "critical_loading" });
 					currentError = currentError.Replace("[error]", Interface.LogMessages[i].Text);
-					MessageBox.Show(currentError, Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "program", "title" }), MessageBoxButtons.OK, MessageBoxIcon.Hand);
+					Console.WriteLine(@"CRITICAL ERROR: " + currentError);
 					Close();
 				}
 			}

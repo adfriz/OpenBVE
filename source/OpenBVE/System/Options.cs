@@ -2,7 +2,6 @@ using System;
 using System.Globalization;
 using System.IO;
 using System.Text;
-using System.Windows.Forms;
 using Formats.OpenBve;
 using LibRender2.MotionBlurs;
 using LibRender2.Overlays;
@@ -248,8 +247,8 @@ namespace OpenBve
 						}
 						break;
 					default:
-						// This is what's set by default for WinForms
-						Font = "Microsoft Sans Serif";
+						// Default font for ImGui or other cross-platform backends
+						Font = "Sans-Serif";
 						break;
 				}
 			}
@@ -405,7 +404,7 @@ namespace OpenBve
 				}
 				catch
 				{
-					Program.ShowMessageBox(@"Failed to write to the Options folder.", Application.ProductName);
+					Console.WriteLine(@"Failed to write to the Options folder.");
 				}
 			}
 		}

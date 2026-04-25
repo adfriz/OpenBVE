@@ -1,4 +1,4 @@
-﻿//Simplified BSD License (BSD-2-Clause)
+//Simplified BSD License (BSD-2-Clause)
 //
 //Copyright (c) 2026, Marc Riera, The OpenBVE Project
 //
@@ -25,7 +25,6 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Windows.Forms;
 using OpenBveApi.FileSystem;
 using OpenBveApi.Hosts;
 using OpenBveApi.Interface;
@@ -79,9 +78,9 @@ namespace KatoInput
 
 		/// <summary>A function call when the Config button is pressed.</summary>
 		/// <param name="owner">The owner of the window</param>
-		public void Config(IWin32Window owner)
+		public void Config(object owner)
 		{
-			config.ShowDialog(owner);
+			// config.ShowDialog(owner);
 		}
 
 		/// <summary>A function called when the plugin is loaded.</summary>

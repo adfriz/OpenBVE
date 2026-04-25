@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Text;
-using System.Windows.Forms;
 using Microsoft.Win32;
 using OpenBveApi.Hosts;
 
@@ -344,9 +343,9 @@ namespace OpenBveApi.FileSystem {
 									if (!Directory.Exists(system.DataFolder))
 									{
 										//If we are still unable to find the default data folder, this is a critical error, as it contains all sorts of essential stuff.....
-										MessageBox.Show(@"Unable to find the OpenBVE Data folder." + Environment.NewLine +
-										                @"OpenBVE will now exit as the Data folder is required for normal operation." + Environment.NewLine + Environment.NewLine +
-										                @"Please consider reinstalling OpenBVE.", @"Critical Error", MessageBoxButtons.OK, MessageBoxIcon.Hand);
+										Console.WriteLine(@"CRITICAL ERROR: Unable to find the OpenBVE Data folder.");
+										Console.WriteLine(@"OpenBVE will now exit as the Data folder is required for normal operation.");
+										Console.WriteLine(@"Please consider reinstalling OpenBVE.");
 										Environment.Exit(0);
 									}
 								}

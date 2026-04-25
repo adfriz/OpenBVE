@@ -877,7 +877,7 @@ namespace OpenBve
 				case MenuType.GameStart:
 				case MenuType.Packages:
 					LogoPictureBox.Draw();
-					string currentVersion =  @"v" + System.Windows.Forms.Application.ProductVersion + Program.VersionSuffix;
+					string currentVersion =  @"v" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString() + Program.VersionSuffix;
 					if (IntPtr.Size != 4)
 					{
 						currentVersion += @" 64-bit";

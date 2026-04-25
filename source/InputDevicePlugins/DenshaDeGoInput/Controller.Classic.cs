@@ -1,4 +1,4 @@
-﻿//Simplified BSD License (BSD-2-Clause)
+//Simplified BSD License (BSD-2-Clause)
 //
 //Copyright (c) 2020-2021, Marc Riera, The OpenBVE Project
 //
@@ -24,7 +24,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Windows.Forms;
 using OpenBveApi.Hosts;
 using OpenBveApi.Interface;
 using OpenTK.Input;
@@ -372,7 +371,7 @@ namespace DenshaDeGoInput
 			// Button calibration
 			for (int i = 0; i < 5; i++)
 			{
-				MessageBox.Show(Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"denshadego","calibrate_button"}).Replace("[button]", input[i]));
+				Console.WriteLine(Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"denshadego","calibrate_button"}).Replace("[button]", input[i]));
 				PreviousButtonState = buttonState;
 				buttonState = GetButtonsState();
 				int index = GetDifferentPressedIndex(PreviousButtonState, buttonState, ignored);
@@ -398,12 +397,12 @@ namespace DenshaDeGoInput
 			}
 
 			// The brake handle needs to be moved to EMG to initialise properly
-			MessageBox.Show(Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"denshadego","calibrate_brake"}).Replace("[notch]", input[5]));
+			Console.WriteLine(Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"denshadego","calibrate_brake"}).Replace("[notch]", input[5]));
 
 			// Brake handle calibration
 			for (int i = 6; i < 10; i++)
 			{
-				MessageBox.Show(Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"denshadego","calibrate_brake"}).Replace("[notch]", input[i]));
+				Console.WriteLine(Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"denshadego","calibrate_brake"}).Replace("[notch]", input[i]));
 				PreviousButtonState = buttonState;
 				buttonState = GetButtonsState();
 				int index = GetDifferentPressedIndex(PreviousButtonState, buttonState, ignored);
@@ -426,8 +425,8 @@ namespace DenshaDeGoInput
 			}
 
 			// The power handle needs to be moved to P5 and N to initialise properly
-			MessageBox.Show(Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"denshadego","calibrate_power"}).Replace("[notch]", input[10]));
-			MessageBox.Show(Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"denshadego","calibrate_power"}).Replace("[notch]", input[11]));
+			Console.WriteLine(Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"denshadego","calibrate_power"}).Replace("[notch]", input[10]));
+			Console.WriteLine(Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"denshadego","calibrate_power"}).Replace("[notch]", input[11]));
 
 			// Clear previous data before calibrating the power handle
 			ignored.Clear();

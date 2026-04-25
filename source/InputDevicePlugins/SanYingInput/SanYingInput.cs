@@ -20,7 +20,6 @@
 //CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 using System;
-using System.Windows.Forms;
 using OpenBveApi.FileSystem;
 using OpenBveApi.Interface;
 using OpenBveApi.Runtime;
@@ -133,11 +132,11 @@ namespace SanYingInput
 		/// A funciton call when the Config button pressed
 		/// </summary>
 		/// <param name="owner">The owner of the window</param>
-		public void Config(IWin32Window owner)
+		public void Config(object owner)
 		{
 			m_first = false;
 			m_pauseTick = true;
-			m_configForm.ShowDialog(owner);
+			// m_configForm.ShowDialog(owner);
 			m_pauseTick = false;
 		}
 

@@ -27,7 +27,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
 using System.Threading;
-using System.Windows.Forms;
 using OpenBveApi.FileSystem;
 using OpenBveApi.Hosts;
 using OpenBveApi.Interface;
@@ -169,9 +168,9 @@ namespace DenshaDeGoInput
 		/// A function call when the Config button is pressed.
 		/// </summary>
 		/// <param name="owner">The owner of the window</param>
-		public void Config(IWin32Window owner)
+		public void Config(object owner)
 		{
-			configForm.ShowDialog(owner);
+			// configForm.ShowDialog(owner);
 		}
 
 		/// <summary>

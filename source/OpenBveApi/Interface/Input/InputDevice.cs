@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Windows.Forms;
 using OpenBveApi.Hosts;
 using OpenBveApi.Runtime;
 
@@ -80,7 +79,7 @@ namespace OpenBveApi.Interface
 		/// A function called when the Config button is pressed
 		/// </summary>
 		/// <param name="owner">The owner of the window</param>
-		void Config(IWin32Window owner);
+		void Config(object owner);
 
 		/// <summary>
 		/// The function what the notify to the plugin that the train maximum notches
@@ -303,7 +302,7 @@ namespace OpenBveApi.Interface
 		/// </summary>
 		/// <param name="owner">The owner of the window</param>
 		/// <param name="index">The index number which can use the plugins</param>
-		public static void CallPluginConfig(IWin32Window owner, int index)
+		public static void CallPluginConfig(object owner, int index)
 		{
 			if (index < 0 || index >= AvailablePlugins.Count) {
 				return;

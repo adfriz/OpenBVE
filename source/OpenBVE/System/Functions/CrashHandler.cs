@@ -1,9 +1,8 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Threading;
-using System.Windows.Forms;
 using OpenBveApi.Hosts;
 // ReSharper disable LocalizableElement
 // Note: Crashes may occur before languages have been loaded, so this file cannot be localised
@@ -29,16 +28,16 @@ namespace OpenBve
                 if (ex is ArgumentOutOfRangeException && ex.Message == "Specified argument was out of the range of valid values.\r\nParameter name: button")
                 {
                     //If a joystick with an excessive number of axis or buttons is connected, at the least show a nice error message, rather than simply disappearing
-                    Program.ShowMessageBox("An unsupported joystick is connected: \n \n Too many buttons. \n \n Please unplug all USB joysticks & gamepads and try again.", Application.ProductName);
+                    Console.WriteLine(@"An unsupported joystick is connected: Too many buttons. Please unplug all USB joysticks & gamepads and try again.");
                     Environment.Exit(0);
                 }
                 if (ex is ArgumentOutOfRangeException && ex.Message == "Specified argument was out of the range of valid values.\r\nParameter name: axis")
                 {
                     //If a joystick with an excessive number of axis or buttons is connected, at the least show a nice error message, rather than simply disappearing
-                    MessageBox.Show("An unsupported joystick is connected: \n \n Too many axis. \n \n Please unplug all USB joysticks & gamepads and try again.");
+                    Console.WriteLine(@"An unsupported joystick is connected: Too many axis. Please unplug all USB joysticks & gamepads and try again.");
                     Environment.Exit(0);
                 }
-                Program.ShowMessageBox("Unhandled exception:\n\n" + ex.Message, Application.ProductName);
+                Console.WriteLine(@"Unhandled exception: " + ex.Message);
                 LogCrash(ex + Environment.StackTrace);
 
             }
@@ -69,15 +68,15 @@ namespace OpenBve
 	        }
             try
             {
-                MessageBox.Show("An unhandled Windows Forms Exception occured. \r\n\r\n OpenBVE will now exit. Please consider reporting this with the \"Report Problem\" button on the bottom left of the main menu.", "OpenBVE Crashed", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                Console.WriteLine(@"An unhandled UI Exception occured. OpenBVE will now exit.");
                 LogCrash(t.Exception + Environment.NewLine + Environment.StackTrace);
             }
             catch (Exception exc)
             {
                 try
                 {
-                    MessageBox.Show("Fatal Error: A fatal exception occured inside the UIThreadException handler");
-                        LogCrash(exc + Environment.StackTrace);
+                    Console.WriteLine(@"Fatal Error: A fatal exception occured inside the UIThreadException handler");
+                    LogCrash(exc + Environment.StackTrace);
                 }
                 finally
                 {
@@ -95,7 +94,7 @@ namespace OpenBve
             {
                 //Basic information
                 outputFile.WriteLine(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
-                outputFile.WriteLine("OpenBVE " + Application.ProductVersion + " Crash Log");
+                outputFile.WriteLine("OpenBVE " + FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).ProductVersion + " Crash Log");
                 var Platform = "Unknown";
                 if (OpenTK.Configuration.RunningOnWindows)
                 {
@@ -186,7 +185,7 @@ namespace OpenBve
             {
                 //Basic information
                 outputFile.WriteLine(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
-                outputFile.WriteLine("OpenBVE " + Application.ProductVersion + " Crash Log");
+                outputFile.WriteLine("OpenBVE " + FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).ProductVersion + " Crash Log");
                 var Platform = "Unknown";
                 if (OpenTK.Configuration.RunningOnWindows)
                 {

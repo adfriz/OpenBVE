@@ -199,6 +199,15 @@ namespace LibRender2
 		/// <summary>The total number of OpenGL triangles in the current frame</summary>
 		public int InfoTotalTriangles;
 
+		public void Reset()
+		{
+			StaticObjectStates = new List<ObjectState>();
+			DynamicObjectStates = new List<ObjectState>();
+			VisibleObjects = new VisibleObjectLibrary(this);
+			ObjectsSortedByStart = new int[] { };
+			ObjectsSortedByEnd = new int[] { };
+		}
+
 		/// <summary>The total number of OpenGL triangle strips in the current frame</summary>
 		public int InfoTotalTriangleStrip;
 

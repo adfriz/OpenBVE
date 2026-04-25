@@ -24,7 +24,6 @@
 
 using System;
 using System.Globalization;
-using System.Windows.Forms;
 using OpenBveApi.FileSystem;
 using OpenBveApi.Interface;
 using OpenBveApi.Runtime;
@@ -94,11 +93,11 @@ namespace DefaultDisplayPlugin
 		/// A funciton call when the Config button pressed
 		/// </summary>
 		/// <param name="owner">The owner of the window</param>
-		public void Config(IWin32Window owner)
+		public void Config(object owner)
 		{
-			using (var form = new Config()) {
+			/*using (var form = new Config()) {
 				form.ShowDialog(owner);
-			}
+			}*/
 		}
 
 		/// <summary>
@@ -335,7 +334,7 @@ namespace DefaultDisplayPlugin
 				string configFile = OpenBveApi.Path.CombineFile(FileSystem.SettingsFolder, "1.5.0/options_ddp.cfg");
 				System.IO.File.WriteAllText(configFile, Builder.ToString(), new System.Text.UTF8Encoding(true));
 			} catch {
-				MessageBox.Show("An error occured whilst saving the options to disk." + System.Environment.NewLine +
+				Console.WriteLine("An error occured whilst saving the options to disk." + System.Environment.NewLine +
 								"Please check you have write permission.");
 			}
 		}

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Windows.Forms;
 using System.Threading;
 using LibRender2.Trains;
 using OpenBveApi.Graphics;
@@ -124,7 +123,7 @@ namespace OpenBve {
 				{
 					// Unlikely to work, but attempt to make the best of it
 					Program.FileSystem.AppendToLogFile("The route file appears to be stored on a root path- Returning the " + Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"program","title"}) + " startup path.");
-					return Application.StartupPath;
+					return AppDomain.CurrentDomain.BaseDirectory;
 				}
 				string candidate = null;
 				while (true)
@@ -163,7 +162,7 @@ namespace OpenBve {
 				// ignored
 			}
 			Program.FileSystem.AppendToLogFile("No Railway folder found- Returning the " + Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"program","title"}) + " startup path.");
-			return Application.StartupPath;
+			return AppDomain.CurrentDomain.BaseDirectory;
 		}
 
 		/// <summary>Gets the default train folder for a given route file</summary>
@@ -301,10 +300,10 @@ namespace OpenBve {
 					switch (ex.Message)
 					{
 						case "libopenal.so.1":
-							Program.ShowMessageBox("openAL was not found on this system. \n Please install libopenal1 via your distribtion's package management system.", Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"program","title"}));
+							Console.WriteLine(@"openAL was not found on this system. \n Please install libopenal1 via your distribtion's package management system.");
 							break;
 						default:
-							Program.ShowMessageBox("The required system library " + ex.Message + " was not found on this system.", Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "program", "title" }));
+							Console.WriteLine(@"The required system library " + ex.Message + " was not found on this system.");
 							break;
 					}
 				}
@@ -353,7 +352,7 @@ namespace OpenBve {
 					}
 					var currentError = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"errors","critical_file"});
 					currentError = currentError.Replace("[file]", System.IO.Path.GetFileName(CurrentRouteFile));
-					Program.ShowMessageBox(currentError, Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"program","title"}));
+					Console.WriteLine(currentError);
 					Interface.AddMessage(MessageType.Critical, false, "The route and train loader encountered the following critical error: " + Program.CurrentHost.Plugins[i].Route.LastException.Message);
 					CrashHandler.LoadingCrash(Program.CurrentHost.Plugins[i].Route.LastException.Message, false);
 					Program.RestartArguments = " ";

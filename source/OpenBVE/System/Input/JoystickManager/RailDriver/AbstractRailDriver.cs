@@ -1,7 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Windows.Forms;
 using System.Xml;
 using OpenBveApi.Hosts;
 using OpenBveApi.Math;
@@ -120,7 +119,7 @@ namespace OpenBve.Input
 					Calibration[i] = new AxisCalibration();
 				}
 
-				MessageBox.Show(Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"raildriver","config_error"}), Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Hand);
+				Console.WriteLine(Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"raildriver","config_error"}));
 				//Clear the calibration file
 				File.Delete(calibrationFile);
 			}

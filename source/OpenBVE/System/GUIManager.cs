@@ -1,11 +1,14 @@
 using Raylib_cs;
 using ImGuiNET;
 using System.Numerics;
+using OpenBve.Tools;
 
 namespace OpenBve
 {
 	internal static class GUIManager
 	{
+		public static bool IsInLauncher = true;
+
 		public static void Initialize()
 		{
 			rlImGui.Setup(true);
@@ -15,7 +18,11 @@ namespace OpenBve
 		{
 			rlImGui.Begin();
 			
-			if (ImGui.BeginMainMenuBar())
+			if (IsInLauncher)
+			{
+				Launcher.Draw();
+			}
+			else if (ImGui.BeginMainMenuBar())
 			{
 				if (ImGui.BeginMenu("File"))
 				{
@@ -25,8 +32,25 @@ namespace OpenBve
 					}
 					ImGui.EndMenu();
 				}
+
+				if (ImGui.BeginMenu("Tools"))
+				{
+					if (ImGui.MenuItem("Object Viewer", "", ObjectViewer.IsOpen))
+					{
+						ObjectViewer.Show();
+					}
+					if (ImGui.MenuItem("Train Editor", "", TrainEditor.IsOpen))
+					{
+						TrainEditor.Show();
+					}
+					ImGui.EndMenu();
+				}
 				ImGui.EndMainMenuBar();
 			}
+
+			// Update Tools
+			ObjectViewer.Update();
+			TrainEditor.Update();
 
 			rlImGui.End();
 		}
