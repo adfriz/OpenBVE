@@ -18,6 +18,7 @@ using OpenBveApi.Math;
 using OpenBveApi.Objects;
 using OpenBveApi.Routes;
 using OpenBveApi.Textures;
+using OpenBveApi.World;
 using OpenTK.Graphics.OpenGL;
 using System;
 using System.Collections.Generic;

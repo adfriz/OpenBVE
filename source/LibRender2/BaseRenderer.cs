@@ -252,17 +252,48 @@ namespace LibRender2
 		public int InfoTotalQuads;
 
 		/// <summary>The total number of OpenGL polygons in the current frame</summary>
+		private struct BlendState
+		{
+			public bool Enabled;
+			public BlendingFactor SrcFactor;
+			public BlendingFactor DestFactor;
+		}
+
+		private readonly Stack<BlendState> blendStack = new Stack<BlendState>();
+
+		public void PushBlendFunc()
+		{
+			blendStack.Push(new BlendState
+			{
+				Enabled = blendEnabled,
+				SrcFactor = blendSrcFactor,
+				DestFactor = blendDestFactor
+			});
+		}
+
+		public void PopBlendFunc()
+		{
+			if (blendStack.Count > 0)
+			{
+				BlendState state = blendStack.Pop();
+				blendEnabled = state.Enabled;
+				blendSrcFactor = state.SrcFactor;
+				blendDestFactor = state.DestFactor;
+				RestoreBlendFunc();
+			}
+		}
+
 		public int InfoTotalPolygon;
 
 		/// <summary>The game's current framerate</summary>
 		public double FrameRate = 1.0;
 
 		/// <summary>Whether Blend is enabled in openGL</summary>
-		private bool blendEnabled;
+		internal bool blendEnabled;
 
-		private BlendingFactor blendSrcFactor;
+		internal BlendingFactor blendSrcFactor = BlendingFactor.SrcAlpha;
 
-		private BlendingFactor blendDestFactor;
+		internal BlendingFactor blendDestFactor = BlendingFactor.OneMinusSrcAlpha;
 
 		/// <summary>Whether Alpha Testing is enabled in openGL</summary>
 		private bool alphaTestEnabled;
@@ -885,14 +916,12 @@ namespace LibRender2
 
 		public void SetBlendFunc()
 		{
+			blendEnabled = true;
 			SetBlendFunc(blendSrcFactor, blendDestFactor);
 		}
 
 		public void SetBlendFunc(BlendingFactor srcFactor, BlendingFactor destFactor)
 		{
-			blendEnabled = true;
-			blendSrcFactor = srcFactor;
-			blendDestFactor = destFactor;
 			GL.Enable(EnableCap.Blend);
 			GL.BlendFunc(srcFactor, destFactor);
 		}
