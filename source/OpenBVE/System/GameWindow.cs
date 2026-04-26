@@ -493,7 +493,6 @@ namespace OpenBve
 			}
 			Program.Renderer.TextureManager.UnloadAllTextures(false);
 			Program.Renderer.Scene.VisibilityThreadShouldRun = false;
-			Program.Renderer.DeInitialize();
 			for (int i = 0; i < InputDevicePlugin.AvailablePluginInfos.Count; i++)
 			{
 				InputDevicePlugin.CallPluginUnload(i);

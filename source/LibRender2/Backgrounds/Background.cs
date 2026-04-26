@@ -124,11 +124,11 @@ namespace LibRender2.Backgrounds
 				renderer.LastBoundTexture = t.OpenGlTextures[(int)OpenGlTextureWrapMode.RepeatClamp];
 				if (alpha == 1.0f)
 				{
-					renderer.Device.SetBlend(false);
+					GL.Disable(EnableCap.Blend);
 				}
 				else
 				{
-					renderer.Device.SetBlend(true);
+					GL.Enable(EnableCap.Blend);
 				}
 
 				if (data.VAO == null)
@@ -201,15 +201,15 @@ namespace LibRender2.Backgrounds
 				GL.MatrixMode(MatrixMode.Modelview);
 				GL.PushMatrix();
 				GL.LoadMatrix(ref lookat);
-				renderer.Device.SetLighting(false);
-				renderer.Device.SetTexture2D(true);
+				GL.Disable(EnableCap.Lighting);
+				GL.Enable(EnableCap.Texture2D);
 				if (alpha == 1.0f)
 				{
-					renderer.Device.SetBlend(false);
+					GL.Disable(EnableCap.Blend);
 				}
 				else
 				{
-					renderer.Device.SetBlend(true);
+					GL.Enable(EnableCap.Blend);
 					renderer.SetAlphaFunc(AlphaFunction.Greater, 0.0f);
 				}
 				GL.BindTexture(TextureTarget.Texture2D, t.OpenGlTextures[(int)OpenGlTextureWrapMode.RepeatClamp].Name);
@@ -217,13 +217,13 @@ namespace LibRender2.Backgrounds
 				GL.Color4(1.0f, 1.0f, 1.0f, alpha);
 				if (renderer.Fog.Enabled)
 				{
-					renderer.Device.SetFog(true);
+					GL.Enable(EnableCap.Fog);
 				}
 				if (data.DisplayList > 0)
 				{
 					GL.CallList(data.DisplayList);
-					renderer.Device.SetTexture2D(false);
-					renderer.Device.SetBlend(true);
+					GL.Disable(EnableCap.Texture2D);
+					GL.Enable(EnableCap.Blend);
 					GL.PopMatrix();
 					GL.MatrixMode(MatrixMode.Projection);
 					GL.PopMatrix();
@@ -300,8 +300,8 @@ namespace LibRender2.Backgrounds
 				}
 				GL.EndList();
 				GL.CallList(data.DisplayList);
-				renderer.Device.SetTexture2D(false);
-				renderer.Device.SetBlend(true);
+				GL.Disable(EnableCap.Texture2D);
+				GL.Enable(EnableCap.Blend);
 				GL.PopMatrix();
 				GL.MatrixMode(MatrixMode.Projection);
 				GL.PopMatrix();
@@ -312,7 +312,7 @@ namespace LibRender2.Backgrounds
 		/// <param name="data">The background object</param>
 		private void RenderBackgroundObject(BackgroundObject data)
 		{
-			renderer.Device.SetBlend(true);
+			GL.Enable(EnableCap.Blend);
 			// alpha test
 			renderer.SetAlphaFunc(AlphaFunction.Greater, 0.0f);
 			if (renderer.AvailableNewRenderer)

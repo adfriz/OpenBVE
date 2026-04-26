@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using OpenTK.Graphics.OpenGL;
 
 namespace LibRender2.MotionBlurs
@@ -55,7 +55,7 @@ namespace LibRender2.MotionBlurs
 				return;
 			}
 			renderer.LastBoundTexture = null;
-			renderer.Device.SetTexture2D(true);
+			GL.Enable(EnableCap.Texture2D);
 
 			// render
 			if (PixelBufferOpenGlTextureIndex >= 0)
@@ -120,7 +120,7 @@ namespace LibRender2.MotionBlurs
 				GL.BindTexture(TextureTarget.Texture2D, PixelBufferOpenGlTextureIndex);
 				GL.CopyTexImage2D(TextureTarget.Texture2D, 0, InternalFormat.Rgb8, 0, 0, renderer.Screen.Width, renderer.Screen.Height, 0);
 			}
-			renderer.Device.SetTexture2D(false);
+			GL.Disable(EnableCap.Texture2D);
 		}
 	}
 }

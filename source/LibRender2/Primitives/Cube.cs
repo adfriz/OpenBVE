@@ -359,18 +359,18 @@ namespace LibRender2.Primitives
 			// texture
 			if (TextureIndex != null && renderer.currentHost.LoadTexture(ref TextureIndex, OpenGlTextureWrapMode.ClampClamp))
 			{
-				renderer.Device.SetTexture2D(true);
+				GL.Enable(EnableCap.Texture2D);
 				GL.BindTexture(TextureTarget.Texture2D, TextureIndex.OpenGlTextures[(int)OpenGlTextureWrapMode.ClampClamp].Name);
 			}
 			else
 			{
-				renderer.Device.SetTexture2D(false);
+				GL.Disable(EnableCap.Texture2D);
 			}
 
 			// render polygon
 			VAO.Bind();
 			VAO.Draw(PrimitiveType.Triangles);
-			renderer.Device.SetTexture2D(false);
+			GL.Disable(EnableCap.Texture2D);
 		}
 
 		/// <summary>Draws a 3D cube in immediate mode</summary>
@@ -422,7 +422,7 @@ namespace LibRender2.Primitives
 			Faces[5] = new[] { 6, 2, 1, 5 };
 			if (TextureIndex == null || !renderer.currentHost.LoadTexture(ref TextureIndex, OpenGlTextureWrapMode.ClampClamp))
 			{
-				renderer.Device.SetTexture2D(false);
+				GL.Disable(EnableCap.Texture2D);
 				for (int i = 0; i < 6; i++)
 				{
 					GL.Begin(PrimitiveType.Quads);
@@ -438,7 +438,7 @@ namespace LibRender2.Primitives
 				GL.PopMatrix();
 				return;
 			}
-			renderer.Device.SetTexture2D(true);
+			GL.Enable(EnableCap.Texture2D);
 			GL.BindTexture(TextureTarget.Texture2D, TextureIndex.OpenGlTextures[(int)OpenGlTextureWrapMode.ClampClamp].Name);
 			Vector2[][] t = new Vector2[6][];
 			t[0] = new[] { new Vector2(1.0, 0.0), new Vector2(1.0, 1.0), new Vector2(0.0, 1.0), new Vector2(0.0, 0.0) };

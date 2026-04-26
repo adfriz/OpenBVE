@@ -64,11 +64,11 @@ namespace LibRender2.Primitives
 		{
 			renderer.UnsetBlendFunc();
 			renderer.SetAlphaFunc(AlphaFunction.Equal, 1.0f);
-			renderer.Device.SetDepthMask(true);
+			GL.DepthMask(true);
 			Draw(texture, point, size, color, textureCoordinates, wrapMode);
 			renderer.SetBlendFunc();
 			renderer.SetAlphaFunc(AlphaFunction.Less, 1.0f);
-			renderer.Device.SetDepthMask(false);
+			GL.DepthMask(false);
 			Draw(texture, point, size, color, textureCoordinates, wrapMode);
 			renderer.SetAlphaFunc(AlphaFunction.Equal, 1.0f);
 		}
@@ -176,7 +176,7 @@ namespace LibRender2.Primitives
 			}
 			if (texture == null || !renderer.currentHost.LoadTexture(ref texture, (OpenGlTextureWrapMode)wrapMode))
 			{
-				renderer.Device.SetTexture2D(false);
+				GL.Disable(EnableCap.Texture2D);
 
 				if (color.HasValue)
 				{
@@ -192,7 +192,7 @@ namespace LibRender2.Primitives
 			}
 			else
 			{
-				renderer.Device.SetTexture2D(true);
+				GL.Enable(EnableCap.Texture2D);
 				GL.BindTexture(TextureTarget.Texture2D, texture.OpenGlTextures[(int)wrapMode].Name);
 
 				if (color.HasValue)
@@ -225,7 +225,7 @@ namespace LibRender2.Primitives
 					GL.Vertex2(point.X, point.Y + size.Y);
 				}
 				GL.End();
-				renderer.Device.SetTexture2D(false);
+				GL.Disable(EnableCap.Texture2D);
 			}
 
 			GL.PopMatrix();
