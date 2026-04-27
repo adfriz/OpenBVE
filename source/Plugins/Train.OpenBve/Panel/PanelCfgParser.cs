@@ -111,7 +111,7 @@ namespace Train.OpenBve
 					case PanelSections.PressureGauge:
 						Angle = 45;
 						Block.GetValue(PanelKey.Type, out Type);
-						int[] NeedleType = { 0, 0 };
+						PanelSubject[] NeedleType = { PanelSubject.Unknown, PanelSubject.Unknown };
 						Color32[] NeedleColor = { Color32.Black, Color32.Black };
 						double UnitFactor = 1000;
 						
@@ -124,13 +124,13 @@ namespace Train.OpenBve
 
 						if (Block.GetEnumValue(PanelKey.LowerHand, out PanelSubject lowerSubject, out Color32 lowerColor))
 						{
-							NeedleType[0] = (int)lowerSubject;
+							NeedleType[0] = lowerSubject;
 							NeedleColor[0] = lowerColor;
 						}
 
 						if (Block.GetEnumValue(PanelKey.UpperHand, out PanelSubject upperSubject, out Color32 upperColor))
 						{
-							NeedleType[1] = (int)upperSubject;
+							NeedleType[1] = upperSubject;
 							NeedleColor[1] = upperColor;
 						}
 
@@ -199,19 +199,19 @@ namespace Train.OpenBve
 									string Variable = "0";
 									switch (NeedleType[k])
 									{
-										case 1:
+										case PanelSubject.BC:
 											Variable = "brakecylinder";
 											break;
-										case 2:
+										case PanelSubject.SAP:
 											Variable = "straightairpipe";
 											break;
-										case 3:
+										case PanelSubject.BP:
 											Variable = "brakepipe";
 											break;
-										case 4:
+										case PanelSubject.ER:
 											Variable = "equalizingreservoir";
 											break;
-										case 5:
+										case PanelSubject.MR:
 											Variable = "mainreservoir";
 											break;
 									}
@@ -273,19 +273,19 @@ namespace Train.OpenBve
 								string Variable;
 								switch (NeedleType[1])
 								{
-									case 1:
+									case PanelSubject.BC:
 										Variable = "brakecylinder";
 										break;
-									case 2:
+									case PanelSubject.SAP:
 										Variable = "straightairpipe";
 										break;
-									case 3:
+									case PanelSubject.BP:
 										Variable = "brakepipe";
 										break;
-									case 4:
+									case PanelSubject.ER:
 										Variable = "equalizingreservoir";
 										break;
-									case 5:
+									case PanelSubject.MR:
 										Variable = "mainreservoir";
 										break;
 									default:
