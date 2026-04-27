@@ -37,33 +37,65 @@ namespace LibRender2.Passes
 			}
 
 			renderer.ResetOpenGlState();
+			GL.DepthFunc(DepthFunction.Lequal);
 
 			if (renderer.OptionWireFrame)
 			{
 				GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
 			}
 
-			List<FaceState> opaqueFaces, alphaFaces;
+			List<FaceState> alphaFaces;
 			lock (renderer.Scene.VisibleObjects.LockObject)
 			{
-				opaqueFaces = renderer.Scene.VisibleObjects.OpaqueFaces.ToList();
+				// 2. Render Opaque Faces with Batching
+				int opaqueCount = renderer.Scene.VisibleObjects.OpaqueFaces.Count;
+				for (int i = 0; i < opaqueCount; i++)
+				{
+					FaceState firstFace = renderer.Scene.VisibleObjects.OpaqueFaces[i];
+					int batchCount = firstFace.Face.Vertices.Length;
+					int j = i + 1;
+
+					// Try to batch contiguous faces from the same object and material
+					while (j < opaqueCount)
+					{
+						FaceState nextFace = renderer.Scene.VisibleObjects.OpaqueFaces[j];
+						if (nextFace.Object == firstFace.Object && nextFace.Face.Material == firstFace.Face.Material)
+						{
+							// Check if they are contiguous in the index buffer
+							if (nextFace.Face.IboStartIndex == firstFace.Face.IboStartIndex + batchCount)
+							{
+								batchCount += nextFace.Face.Vertices.Length;
+								j++;
+								continue;
+							}
+						}
+						break;
+					}
+
+					if (j > i + 1)
+					{
+						// Draw the batch
+						renderer.RenderFace(renderer.DefaultShader, firstFace.Object, firstFace.Face, vertexCount: batchCount);
+						i = j - 1;
+					}
+					else
+					{
+						firstFace.Draw();
+					}
+				}
 				alphaFaces = renderer.Scene.VisibleObjects.GetSortedPolygons();
 			}
 
-			// 2. Render Opaque Faces
-			foreach (FaceState face in opaqueFaces)
-			{
-				face.Draw();
-			}
 
 			// 3. Render Alpha Faces
 			renderer.ResetOpenGlState();
+			GL.DepthFunc(DepthFunction.Lequal);
 
 			if (renderer.currentOptions.TransparencyMode == TransparencyMode.Performance)
 			{
 				renderer.SetBlendFunc();
 				renderer.SetAlphaFunc(AlphaFunction.Greater, 0.0f);
-				renderer.Device.SetDepthMask(false);
+				renderer.SetDepthMask(false);
 
 				foreach (FaceState face in alphaFaces)
 				{
@@ -75,7 +107,7 @@ namespace LibRender2.Passes
 				// Quality Transparency Mode
 				renderer.UnsetBlendFunc();
 				renderer.SetAlphaFunc(AlphaFunction.Equal, 1.0f);
-				renderer.Device.SetDepthMask(true);
+				renderer.SetDepthMask(true);
 
 				foreach (FaceState face in alphaFaces)
 				{
@@ -91,7 +123,7 @@ namespace LibRender2.Passes
 
 				renderer.SetBlendFunc();
 				renderer.SetAlphaFunc(AlphaFunction.Less, 1.0f);
-				renderer.Device.SetDepthMask(false);
+				renderer.SetDepthMask(false);
 				bool additive = false;
 
 				foreach (FaceState face in alphaFaces)
@@ -118,7 +150,7 @@ namespace LibRender2.Passes
 			}
 			
 			// Restore default depth mask
-			renderer.Device.SetDepthMask(true);
+			renderer.SetDepthMask(true);
 
 			if (renderer.OptionWireFrame)
 			{

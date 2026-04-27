@@ -165,7 +165,7 @@ namespace LibRender2
 			for (int i = 0; i < CSMCaster.CascadeCount; i++)
 			{
 				// Shadows use texture units 4, 5, 6, 7
-				GL.ActiveTexture(TextureUnit.Texture4 + i);
+				SetActiveTexture(TextureUnit.Texture4 + i);
 				GL.BindTexture(TextureTarget.Texture2D, CSMShadowMaps.DepthTextures[i]);
 				shader.SetCascadeShadowMapUnit(i, 4 + i);
 				shader.SetCascadeLightSpaceMatrix(i, CSMCaster.LightSpaceMatrices[i]);
@@ -173,7 +173,7 @@ namespace LibRender2
 			}
 
 			shader.SetShadowStrength(Lighting.ShadowStrength);
-			GL.ActiveTexture(TextureUnit.Texture0);
+			SetActiveTexture(TextureUnit.Texture0);
 		}
 
 		public ConcurrentQueue<ThreadStart> RenderThreadJobs => Scene.RenderThreadJobs;
@@ -297,6 +297,16 @@ namespace LibRender2
 
 		/// <summary>Whether Alpha Testing is enabled in openGL</summary>
 		private bool alphaTestEnabled;
+		private bool cullFaceEnabled;
+		private CullFaceMode cullFaceMode;
+		private bool depthTestEnabled;
+		private DepthFunction depthTestFunction;
+		private bool depthMaskEnabled = true;
+
+		private AlphaFunction alphaTestFunction;
+		private float alphaTestComparison;
+
+		private TextureUnit lastActiveTextureUnit = TextureUnit.Texture0;
 
 		/// <summary>The current AlphaFunc comparison</summary>
 		private AlphaFunction alphaFuncComparison;
@@ -306,6 +316,7 @@ namespace LibRender2
 
 		/// <summary>Stores the most recently bound texture</summary>
 		public OpenGlTexture LastBoundTexture;
+		private OpenGlTexture lastBoundNightTexture;
 
 		private Color32 lastColor;
 
@@ -429,6 +440,7 @@ namespace LibRender2
 					DefaultShader.SetMaterialAmbient(Color32.White);
 					DefaultShader.SetMaterialDiffuse(Color32.White);
 					DefaultShader.SetMaterialSpecular(Color32.White);
+					DefaultShader.SetNightTexture(1);
 					lastColor = Color32.White;
 					DefaultShader.Deactivate();
 					dummyVao = new VertexArrayObject();
@@ -675,7 +687,7 @@ namespace LibRender2
 		}
 
 
-		private PrimitiveType GetPrimitiveType(FaceFlags flags)
+		internal PrimitiveType GetPrimitiveType(FaceFlags flags)
 		{
 			switch (flags & FaceFlags.FaceTypeMask)
 			{
@@ -700,6 +712,9 @@ namespace LibRender2
 		{
 			GL.Enable(EnableCap.CullFace);
 			GL.CullFace(CullFaceMode.Front);
+			cullFaceEnabled = true;
+			cullFaceMode = CullFaceMode.Front;
+
 			if (!AvailableNewRenderer)
 			{
 				GL.Disable(EnableCap.Lighting);
@@ -709,10 +724,18 @@ namespace LibRender2
 			
 			SetBlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 			UnsetBlendFunc();
+			
 			GL.Enable(EnableCap.DepthTest);
 			GL.DepthFunc(DepthFunction.Lequal);
+			depthTestEnabled = true;
+			depthTestFunction = DepthFunction.Lequal;
+
 			GL.Disable(EnableCap.DepthClamp);
+			
 			GL.DepthMask(true);
+			depthMaskEnabled = true;
+
+			SetActiveTexture(TextureUnit.Texture0);
 			SetAlphaFunc(AlphaFunction.Greater, 0.9f);
 		}
 
@@ -945,6 +968,86 @@ namespace LibRender2
 			}
 		}
 
+		public void SetColorMask(bool red, bool green, bool blue, bool alpha)
+		{
+			GL.ColorMask(red, green, blue, alpha);
+		}
+
+		public void SetDepthMask(bool enabled)
+		{
+			if (depthMaskEnabled != enabled)
+			{
+				GL.DepthMask(enabled);
+				depthMaskEnabled = enabled;
+			}
+		}
+
+		public void SetCullFace(bool enabled, CullFaceMode mode = CullFaceMode.Front)
+		{
+			if (enabled)
+			{
+				if (!cullFaceEnabled)
+				{
+					GL.Enable(EnableCap.CullFace);
+					cullFaceEnabled = true;
+				}
+
+				if (cullFaceMode != mode)
+				{
+					GL.CullFace(mode);
+					cullFaceMode = mode;
+				}
+			}
+			else
+			{
+				if (cullFaceEnabled)
+				{
+					GL.Disable(EnableCap.CullFace);
+					cullFaceEnabled = false;
+				}
+			}
+		}
+
+		public void SetDepthTest(bool enabled, DepthFunction function = DepthFunction.Lequal)
+		{
+			if (enabled)
+			{
+				if (!depthTestEnabled)
+				{
+					GL.Enable(EnableCap.DepthTest);
+					depthTestEnabled = true;
+				}
+
+				if (depthTestFunction != function)
+				{
+					GL.DepthFunc(function);
+					depthTestFunction = function;
+				}
+			}
+			else
+			{
+				if (depthTestEnabled)
+				{
+					GL.Disable(EnableCap.DepthTest);
+					depthTestEnabled = false;
+				}
+			}
+		}
+
+		public void SetActiveTexture(TextureUnit unit)
+		{
+			if (lastActiveTextureUnit != unit)
+			{
+				GL.ActiveTexture(unit);
+				lastActiveTextureUnit = unit;
+			}
+		}
+
+		public void SetViewport(int x, int y, int width, int height)
+		{
+			GL.Viewport(x, y, width, height);
+		}
+
 		/// <summary>Specifies the OpenGL alpha function to perform</summary>
 		public void SetAlphaFunc()
 		{
@@ -1052,8 +1155,12 @@ namespace LibRender2
 		/// <param name="face">The Face within the ObjectState</param>
 		/// <param name="debugTouchMode">Whether debug touch mode</param>
 		/// <param name="screenSpace">Used when a forced matrix, for items which are in screen space not camera space</param>
-		public void RenderFace(Shader shader, ObjectState state, MeshFace face, bool debugTouchMode = false, bool screenSpace = false)
+		public void RenderFace(Shader shader, ObjectState state, MeshFace face, bool debugTouchMode = false, bool screenSpace = false, int vertexCount = -1)
 		{
+			if (vertexCount == -1)
+			{
+				vertexCount = face.Vertices.Length;
+			}
 			if ((state != lastObjectState || state.Prototype.Dynamic) && !screenSpace)
 			{
 				lastModelMatrix = state.ModelMatrix * Camera.TranslationMatrix;
@@ -1077,13 +1184,13 @@ namespace LibRender2
 
 			if (!OptionBackFaceCulling || (face.Flags & FaceFlags.Face2Mask) != 0)
 			{
-				GL.Disable(EnableCap.CullFace);
+				SetCullFace(false);
 			}
 			else if (OptionBackFaceCulling)
 			{
 				if ((face.Flags & FaceFlags.Face2Mask) == 0)
 				{
-					GL.Enable(EnableCap.CullFace);
+					SetCullFace(true);
 				}
 			}
 
@@ -1212,6 +1319,24 @@ namespace LibRender2
 				}
 				shader.SetBrightness(factor);
 
+				if (blendFactor != 0 && material.NighttimeTexture != null && material.NighttimeTexture != material.DaytimeTexture && currentHost.LoadTexture(ref material.NighttimeTexture, (OpenGlTextureWrapMode)material.WrapMode))
+				{
+					OpenGlTexture nightTexture = material.NighttimeTexture.OpenGlTextures[(int)material.WrapMode];
+					if (lastBoundNightTexture != nightTexture)
+					{
+						SetActiveTexture(TextureUnit.Texture1);
+						GL.BindTexture(TextureTarget.Texture2D, nightTexture.Name);
+						lastBoundNightTexture = nightTexture;
+						SetActiveTexture(TextureUnit.Texture0);
+					}
+					shader.SetIsNightTexture(true);
+					shader.SetNightBlendFactor(blendFactor);
+				}
+				else
+				{
+					shader.SetIsNightTexture(false);
+				}
+
 				float alphaFactor = distanceFactor;
 				if (material.NighttimeTexture != null && (material.Flags & MaterialFlags.CrossFadeTexture) != 0)
 				{
@@ -1221,35 +1346,12 @@ namespace LibRender2
 				shader.SetOpacity(inv255 * material.Color.A * alphaFactor);
 
 				// render polygon
-				VAO.Draw(drawMode, face.IboStartIndex, face.Vertices.Length);
-			}
-
-			// nighttime polygon
-			if (blendFactor != 0 && material.NighttimeTexture != null && material.NighttimeTexture != material.DaytimeTexture && currentHost.LoadTexture(ref material.NighttimeTexture, (OpenGlTextureWrapMode)material.WrapMode))
-			{
-				// texture
-				if (LastBoundTexture != material.NighttimeTexture.OpenGlTextures[(int)material.WrapMode])
+				VAO.Draw(drawMode, face.IboStartIndex, vertexCount);
+				if (material.BlendMode == MeshMaterialBlendMode.Additive)
 				{
-					GL.BindTexture(TextureTarget.Texture2D, material.NighttimeTexture.OpenGlTextures[(int)material.WrapMode].Name);
-					LastBoundTexture = material.NighttimeTexture.OpenGlTextures[(int)material.WrapMode];
+					RestoreBlendFunc();
+					shader.SetFog(true);
 				}
-
-
-				Device.SetBlend(true);
-
-				// alpha test
-				shader.SetAlphaTest(true);
-				shader.SetAlphaFunction(AlphaFunction.Greater, 0.0f);
-				
-				// blend mode
-				float alphaFactor = distanceFactor * blendFactor;
-
-				shader.SetOpacity(inv255 * material.Color.A * alphaFactor);
-
-				// render polygon
-				VAO.Draw(drawMode, face.IboStartIndex, face.Vertices.Length);
-				RestoreBlendFunc();
-				RestoreAlphaFunc();
 			}
 
 
@@ -1262,7 +1364,7 @@ namespace LibRender2
 				VertexArrayObject normalsVao = (VertexArrayObject)state.Prototype.Mesh.NormalsVAO;
 				normalsVao.Bind();
 				lastVAO = normalsVao.handle;
-				normalsVao.Draw(PrimitiveType.Lines, face.NormalsIboStartIndex, face.Vertices.Length * 2);
+				normalsVao.Draw(PrimitiveType.Lines, face.NormalsIboStartIndex, vertexCount * 2);
 			}
 
 			// finalize

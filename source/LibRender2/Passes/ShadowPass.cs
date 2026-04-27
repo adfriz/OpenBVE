@@ -52,9 +52,9 @@ namespace LibRender2.Passes
 			renderer.CurrentShader?.Deactivate();
 			renderer.ShadowDepthShaderProgram.Activate();
 			
-			renderer.Device.SetDepthTest(true, DepthFunction.Less);
-			renderer.Device.SetCullFace(false);
-			renderer.Device.SetDepthMask(true);
+			renderer.SetDepthTest(true, DepthFunction.Less);
+			renderer.SetCullFace(false);
+			renderer.SetDepthMask(true);
 			
 			renderer.ShadowDepthShaderProgram.SetTexture(0); // always use texture unit 0
 
@@ -67,6 +67,10 @@ namespace LibRender2.Passes
 				lock (renderer.Scene.VisibilityUpdateLock)
 				{
 					int lastVAOHandle = -1;
+					double cascadeNear = cascade == 0 ? 0 : renderer.CSMCaster.CascadeFarDistances[cascade - 1];
+					double cascadeFar = renderer.CSMCaster.CascadeFarDistances[cascade];
+					// Use a margin to catch shadows from objects just outside the frustum or casting into next cascade
+					double margin = 50.0; 
 
 					Action<ICollection<FaceState>> renderFaces = faces =>
 					{
@@ -75,14 +79,28 @@ namespace LibRender2.Passes
 							if (face.Object.Prototype.Mesh.VAO == null) continue;
 							if (face.Object.DisableShadowCasting) continue;
 
+							// Cascade Culling: check if object is within depth range of this cascade
+							Vector3 relativePos = face.Object.WorldPosition - context.Camera.AbsolutePosition;
+							double depth = Vector3.Dot(relativePos, context.Camera.AbsoluteDirection);
+							double radius = face.Object.Prototype.Mesh.BoundingSphereRadius;
+							
+							if (depth < cascadeNear - margin - radius || depth > cascadeFar + margin + radius)
+							{
+								continue;
+							}
+
 							Matrix4D modelMatrix = face.Object.ModelMatrix * context.Camera.TranslationMatrix;
 							renderer.ShadowDepthShaderProgram.SetModelMatrix(modelMatrix);
 
-							// Bind texture for alpha scissoring if the face has one
+							// Bind texture for alpha scissoring if the face has one and it actually needs alpha testing
 							var material = face.Object.Prototype.Mesh.Materials[face.Face.Material];
-							if (material.DaytimeTexture != null && renderer.currentHost.LoadTexture(ref material.DaytimeTexture, (OpenGlTextureWrapMode)(material.WrapMode ?? OpenGlTextureWrapMode.ClampClamp)))
+							bool needsTexture = material.DaytimeTexture != null && 
+							                    ((material.Flags & MaterialFlags.TransparentColor) != 0 || 
+							                     material.Color.A < 255);
+
+							if (needsTexture && renderer.currentHost.LoadTexture(ref material.DaytimeTexture, (OpenGlTextureWrapMode)(material.WrapMode ?? OpenGlTextureWrapMode.ClampClamp)))
 							{
-								GL.ActiveTexture(TextureUnit.Texture0);
+								renderer.SetActiveTexture(TextureUnit.Texture0);
 								GL.BindTexture(TextureTarget.Texture2D,
 									material.DaytimeTexture.OpenGlTextures[(int)(material.WrapMode ?? OpenGlTextureWrapMode.ClampClamp)].Name);
 								renderer.ShadowDepthShaderProgram.SetHasTexture(true);
@@ -125,10 +143,8 @@ namespace LibRender2.Passes
 				renderer.CSMShadowMaps.Unbind();
 			}
 
-			// 4. Restore state
-			renderer.Device.SetDepthTest(true, DepthFunction.Lequal);
-			renderer.Device.SetCullFace(true, CullFaceMode.Front);
-			GL.Viewport(0, 0, renderer.Screen.Width, renderer.Screen.Height);
+			// 4. Restore viewport
+			renderer.SetViewport(0, 0, renderer.Screen.Width, renderer.Screen.Height);
 
 			renderer.LastBoundTexture = null;
 		}
