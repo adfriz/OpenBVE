@@ -180,6 +180,7 @@ namespace OpenBveApi.Textures {
 					newFrames[i] = ApplyTransparentColor(texture.Bytes, texture.PixelFormat, texture.Width, texture.Height, color.Value, ref usedTransparentColor);
 					texture.CurrentFrame++;
 				}
+				texture.CurrentFrame = 0;
 
 				if (usedTransparentColor)
 				{
