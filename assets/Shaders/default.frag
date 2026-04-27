@@ -49,6 +49,9 @@ uniform bool  uShadowEnabled;
 uniform int   uCascadeCount;  // 2, 3, or 4
 uniform vec2  uAlphaTest;
 uniform sampler2D uTexture;
+uniform sampler2D uNightTexture;
+uniform bool uIsNightTexture;
+uniform float uNightBlendFactor;
 
 struct Light
 {
@@ -249,6 +252,22 @@ void main(void)
 		// Material is not emissive, apply shadow to the light factor
 		finalColor.rgb *= (oLightResult.rgb * shadow);
 		finalColor.a *= oLightResult.a;
+
+		if (uIsNightTexture)
+		{
+			vec4 nightColor;
+			if ((uMaterialFlags & 16) == 0)
+			{
+				nightColor = vec4(oColor.rgb, 1.0) * texture(uNightTexture, oUv);
+			}
+			else
+			{
+				nightColor = vec4(oColor.rgb, 1.0) * vec4(texture(uNightTexture, oUv).xyz, 1.0);
+			}
+			// Nighttime textures in OpenBVE are usually blended based on DNB (DaytimeNighttimeBlend)
+			finalColor.rgb = mix(finalColor.rgb, nightColor.rgb, uNightBlendFactor);
+			finalColor.a = mix(finalColor.a, nightColor.a, uNightBlendFactor);
+		}
 	}
 	else
 	{

@@ -89,7 +89,7 @@ namespace LibRender2.Passes
 				{
 					renderer.SetBlendFunc();
 					renderer.SetAlphaFunc(AlphaFunction.Greater, 0.0f);
-					renderer.Device.SetDepthMask(false);
+					renderer.SetDepthMask(false);
 
 					foreach (FaceState face in overlayAlphaFaces)
 					{
@@ -100,7 +100,7 @@ namespace LibRender2.Passes
 				{
 					renderer.UnsetBlendFunc();
 					renderer.SetAlphaFunc(AlphaFunction.Equal, 1.0f);
-					renderer.Device.SetDepthMask(true);
+					renderer.SetDepthMask(true);
 
 					foreach (FaceState face in overlayAlphaFaces)
 					{
@@ -116,7 +116,7 @@ namespace LibRender2.Passes
 
 					renderer.SetBlendFunc();
 					renderer.SetAlphaFunc(AlphaFunction.Less, 1.0f);
-					renderer.Device.SetDepthMask(false);
+					renderer.SetDepthMask(false);
 					bool additive = false;
 
 					foreach (FaceState face in overlayAlphaFaces)
@@ -158,8 +158,8 @@ namespace LibRender2.Passes
 
 				renderer.SetBlendFunc();
 				renderer.UnsetAlphaFunc();
-				renderer.Device.SetDepthTest(false);
-				renderer.Device.SetDepthMask(false);
+				renderer.SetDepthTest(false);
+				renderer.SetDepthMask(false);
 
 				foreach (FaceState face in overlayAlphaFaces)
 				{
@@ -170,13 +170,10 @@ namespace LibRender2.Passes
 			// 2. Render UI and other overlays
 			renderer.OptionLighting = false;
 			renderer.ResetOpenGlState();
-			renderer.UnsetAlphaFunc();
 			renderer.SetBlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
-			renderer.Device.SetDepthTest(false);
+			renderer.SetDepthTest(false);
 
 			renderUiAction?.Invoke(context);
-
-			renderer.OptionLighting = true;
 		}
 	}
 }

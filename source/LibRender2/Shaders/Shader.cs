@@ -68,6 +68,19 @@ namespace LibRender2.Shaders
 		private readonly int uNormalBias3Location;
 		private readonly int uCascadeCountLocation;
 
+		// Caches
+		private bool? lastIsLight;
+		private Vector3? lastLightPosition;
+		private Color24? lastLightAmbient;
+		private Color24? lastLightDiffuse;
+		private Color24? lastLightSpecular;
+		private float? lastOpacity;
+		private int? lastMaterialFlags;
+		private Vector2? lastAlphaTest;
+		private bool? lastIsNightTexture;
+		private float? lastNightBlendFactor;
+		private Matrix4[] matrixCache;
+
 
 		/// <summary>
 		/// Constructor
@@ -160,6 +173,9 @@ namespace LibRender2.Shaders
 				FogIsLinear = (short)GL.GetUniformLocation(Handle, "uFogIsLinear"),
 				FogDensity = (short)GL.GetUniformLocation(Handle, "uFogDensity"),
 				Texture = (short)GL.GetUniformLocation(Handle, "uTexture"),
+				NightTexture = (short)GL.GetUniformLocation(Handle, "uNightTexture"),
+				IsNightTexture = (short)GL.GetUniformLocation(Handle, "uIsNightTexture"),
+				NightBlendFactor = (short)GL.GetUniformLocation(Handle, "uNightBlendFactor"),
 				Brightness = (short)GL.GetUniformLocation(Handle, "uBrightness"),
 				Opacity = (short)GL.GetUniformLocation(Handle, "uOpacity"),
 				ObjectIndex = (short)GL.GetUniformLocation(Handle, "uObjectIndex"),
@@ -209,11 +225,15 @@ namespace LibRender2.Shaders
 		public void SetCurrentAnimationMatricies(ObjectState objectState)
 		{
 			Renderer.lastObjectState = null; // clear the cached object state, as otherwise it might be stale
-			Matrix4[] matriciesToShader = new Matrix4[objectState.Matricies.Length];
-
-			for (int i = 0; i < objectState.Matricies.Length; i++)
+			int count = objectState.Matricies.Length;
+			if (matrixCache == null || matrixCache.Length < count)
 			{
-				matriciesToShader[i] = ConvertToMatrix4(objectState.Matricies[i]);
+				matrixCache = new Matrix4[count];
+			}
+
+			for (int i = 0; i < count; i++)
+			{
+				matrixCache[i] = ConvertToMatrix4(objectState.Matricies[i]);
 			}
 
 			unsafe
@@ -224,7 +244,7 @@ namespace LibRender2.Shaders
 				}
 
 				GL.BindBuffer(BufferTarget.UniformBuffer, objectState.MatrixBufferIndex);
-				GL.BufferData(BufferTarget.UniformBuffer, sizeof(Matrix4) * matriciesToShader.Length, matriciesToShader, BufferUsageHint.StaticDraw);
+				GL.BufferData(BufferTarget.UniformBuffer, sizeof(Matrix4) * count, matrixCache, BufferUsageHint.StaticDraw);
 			}
 
 		}
@@ -275,12 +295,20 @@ namespace LibRender2.Shaders
 
 		public void SetIsLight(bool IsLight)
 		{
-			GL.ProgramUniform1(Handle, UniformLayout.IsLight, IsLight ? 1 : 0);
+			if (lastIsLight != IsLight)
+			{
+				GL.ProgramUniform1(Handle, UniformLayout.IsLight, IsLight ? 1 : 0);
+				lastIsLight = IsLight;
+			}
 		}
 
 		public void SetLightPosition(Vector3 LightPosition)
 		{
-			GL.ProgramUniform3(Handle, UniformLayout.LightPosition, (float)LightPosition.X, (float)LightPosition.Y, (float)LightPosition.Z);
+			if (lastLightPosition != LightPosition)
+			{
+				GL.ProgramUniform3(Handle, UniformLayout.LightPosition, (float)LightPosition.X, (float)LightPosition.Y, (float)LightPosition.Z);
+				lastLightPosition = LightPosition;
+			}
 		}
 
 		public void SetLightAmbient(Color24 LightAmbient)
@@ -331,7 +359,11 @@ namespace LibRender2.Shaders
 
 		public void SetMaterialFlags(MaterialFlags Flags)
 		{
-			GL.ProgramUniform1(Handle, UniformLayout.MaterialFlags, (int)Flags);
+			if (lastMaterialFlags != (int)Flags)
+			{
+				GL.ProgramUniform1(Handle, UniformLayout.MaterialFlags, (int)Flags);
+				lastMaterialFlags = (int)Flags;
+			}
 		}
 
 		public override void SetFog(bool enabled)
@@ -369,6 +401,29 @@ namespace LibRender2.Shaders
 
 		private float lastBrightness;
 
+		public void SetNightTexture(int textureUnit)
+		{
+			GL.ProgramUniform1(Handle, UniformLayout.NightTexture, textureUnit);
+		}
+
+		public void SetIsNightTexture(bool enabled)
+		{
+			if (lastIsNightTexture != enabled)
+			{
+				GL.ProgramUniform1(Handle, UniformLayout.IsNightTexture, enabled ? 1 : 0);
+				lastIsNightTexture = enabled;
+			}
+		}
+
+		public void SetNightBlendFactor(float factor)
+		{
+			if (lastNightBlendFactor != factor)
+			{
+				GL.ProgramUniform1(Handle, UniformLayout.NightBlendFactor, factor);
+				lastNightBlendFactor = factor;
+			}
+		}
+
 		public void SetBrightness(float brightness)
 		{
 			if(brightness == lastBrightness)
@@ -381,7 +436,11 @@ namespace LibRender2.Shaders
 
 		public void SetOpacity(float opacity)
 		{
-			GL.ProgramUniform1(Handle, UniformLayout.Opacity, opacity);
+			if (lastOpacity != opacity)
+			{
+				GL.ProgramUniform1(Handle, UniformLayout.Opacity, opacity);
+				lastOpacity = opacity;
+			}
 		}
 
 		public void SetObjectIndex(int objectIndex)
@@ -416,8 +475,11 @@ namespace LibRender2.Shaders
 
 		public override void SetAlphaFunction(AlphaFunction alphaFunction, float alphaComparison)
 		{
-			GL.ProgramUniform2(Handle, UniformLayout.AlphaFunction, (int)alphaFunction, alphaComparison);
-			
+			if (lastAlphaTest == null || lastAlphaTest.Value.X != (int)alphaFunction || lastAlphaTest.Value.Y != alphaComparison)
+			{
+				GL.ProgramUniform2(Handle, UniformLayout.AlphaFunction, (int)alphaFunction, alphaComparison);
+				lastAlphaTest = new Vector2((int)alphaFunction, alphaComparison);
+			}
 		}
 
 		public override void SetAlphaTest(bool enabled)

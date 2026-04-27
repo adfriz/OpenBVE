@@ -229,19 +229,10 @@ namespace RouteViewer
 
 			}
 
-			// render overlays
 			if (AvailableNewRenderer)
 			{
 				DefaultShader.Deactivate();
 			}
-			ResetOpenGlState();
-			OptionLighting = false;
-			Fog.Enabled = false;
-			UnsetAlphaFunc();
-			GL.Disable(EnableCap.DepthTest);
-			SetBlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha); //FIXME: Remove when text switches between two renderer types
-			RenderOverlays(timeElapsed);
-			OptionLighting = true;
 		}
 
 		private double lastTrackPosition;

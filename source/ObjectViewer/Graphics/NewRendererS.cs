@@ -161,14 +161,10 @@ namespace ObjectViewer.Graphics
 			RenderContext context = new RenderContext(this, timeElapsed);
 			ExecutePipeline(context);
 
-			// render overlays
-			ResetOpenGlState();
-			OptionLighting = false;
-			UnsetAlphaFunc();
-			GL.Disable(EnableCap.DepthTest);
-			SetBlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha); //FIXME: Remove when text switches between two renderer types
-			RenderOverlays(timeElapsed);
-			OptionLighting = true;
+			if (AvailableNewRenderer)
+			{
+				CurrentShader.Deactivate();
+			}
 		}
 
 		private void RenderOverlays(double timeElapsed)

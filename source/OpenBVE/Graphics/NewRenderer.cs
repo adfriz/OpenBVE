@@ -305,6 +305,8 @@ namespace OpenBve.Graphics
 				}
 				renderer.MotionBlur.RenderFullscreen(Interface.CurrentOptions.MotionBlur, renderer.FrameRate, Math.Abs(renderer.Camera.CurrentSpeed));
 			}
+
+			renderer.OptionLighting = true;
 		}
 	}
 
@@ -319,6 +321,7 @@ namespace OpenBve.Graphics
 		{
 			renderer.OptionLighting = false;
 			renderer.Touch.RenderScene();
+			renderer.OptionLighting = true;
 		}
 	}
 }

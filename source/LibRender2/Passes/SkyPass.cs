@@ -25,14 +25,15 @@ namespace LibRender2.Passes
 		{
 			BaseRenderer renderer = context.Renderer;
 
-			// Background must be rendered with depth testing disabled and no shadow mapping
-			renderer.Device.SetDepthTest(false);
+			// Background must be rendered with depth testing and writing disabled, no shadow mapping
+			renderer.SetDepthTest(false);
+			renderer.SetDepthMask(false);
 			renderer.DefaultShader.SetShadowEnabled(false);
 
 			updateBackgroundAction?.Invoke(context);
 
-			renderer.DefaultShader.SetShadowEnabled(renderer.ShadowsEnabled);
-			renderer.Device.SetDepthTest(true);
+			renderer.SetDepthMask(true);
+
 		}
 	}
 }
