@@ -329,17 +329,19 @@ namespace Plugin
 
 						if (materialIndex == -1)
 						{
-							materialIndex = meshBuilder.Materials.Length;
-							Array.Resize(ref meshBuilder.Materials, meshBuilder.Materials.Length + 1);
-							if (tempMaterials.ContainsKey(currentMaterial))
+							if (currentMaterial != string.Empty)
 							{
-								meshBuilder.Materials[materialIndex] = tempMaterials[currentMaterial];
+								materialIndex = meshBuilder.Materials.Length;
+								Array.Resize(ref meshBuilder.Materials, meshBuilder.Materials.Length + 1);
+								if (tempMaterials.ContainsKey(currentMaterial))
+								{
+									meshBuilder.Materials[materialIndex] = tempMaterials[currentMaterial];
+								}
+								else
+								{
+									meshBuilder.Materials[materialIndex] = new Material();
+								}
 							}
-							else
-							{
-								meshBuilder.Materials[materialIndex] = new Material();
-							}
-							
 						}
 						if (modelExporter >= ModelExporter.UnknownLeftHanded)
 						{
@@ -374,14 +376,19 @@ namespace Plugin
 						}
 						break;
 					case WavefrontObjCommands.UseMtl:
+						string lastMaterial = currentMaterial;
 						currentMaterial = arguments[1].ToLowerInvariant();
 						if (!tempMaterials.ContainsKey(currentMaterial))
 						{
 							currentMaterial = string.Empty;
 							Plugin.currentHost.AddMessage(MessageType.Error, true, "Material " + arguments[1] + " was not found.");
 						}
-						meshBuilder.Apply(ref parsedObject); 
-						meshBuilder = new MeshBuilder(Plugin.currentHost); 
+
+						if (lastMaterial != currentMaterial)
+						{
+							meshBuilder.Apply(ref parsedObject);
+							meshBuilder = new MeshBuilder(Plugin.currentHost);
+						}
 						break;
 					default:
 						Plugin.currentHost.AddMessage(MessageType.Warning, false, "Unrecognised command " + arguments[0]);
@@ -486,7 +493,26 @@ namespace Plugin
 						}
 						else
 						{
-							Plugin.currentHost.AddMessage(MessageType.Error, true, "Material texture file " + arguments[arguments.Count -1] + " was not found.");
+							if (arguments.Count > 2)
+							{
+								// HACK: re-join the split array (minus command) in case of spaces in folder names
+								arguments.RemoveAt(0);
+								string arg = string.Join(" ", arguments.ToArray());
+								tday = OpenBveApi.Path.CombineFile(Path.GetDirectoryName(fileName), arg);
+								if (File.Exists(tday))
+								{
+									materials[currentKey].DaytimeTexture = tday;
+								}
+								else
+								{
+									Plugin.currentHost.AddMessage(MessageType.Error, true, "Material texture file " + arg + " was not found.");
+								}
+							}
+							else
+							{
+								Plugin.currentHost.AddMessage(MessageType.Error, true, "Material texture file " + arguments[arguments.Count - 1] + " was not found.");
+							}
+								
 						}
 						break;
 					
