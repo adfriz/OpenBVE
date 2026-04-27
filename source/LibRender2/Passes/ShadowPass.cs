@@ -28,7 +28,7 @@ namespace LibRender2.Passes
 			Vector3 lightDir = new Vector3(
 				-renderer.Lighting.OptionLightPosition.X,
 				-renderer.Lighting.OptionLightPosition.Y,
-				renderer.Lighting.OptionLightPosition.Z
+				-renderer.Lighting.OptionLightPosition.Z
 			);
 
 			if (lightDir.IsNullVector())
@@ -67,78 +67,24 @@ namespace LibRender2.Passes
 				lock (renderer.Scene.VisibilityUpdateLock)
 				{
 					int lastVAOHandle = -1;
-					double cascadeNear = cascade == 0 ? 0 : renderer.CSMCaster.CascadeFarDistances[cascade - 1];
-					double cascadeFar = renderer.CSMCaster.CascadeFarDistances[cascade];
-					// Use a margin to catch shadows from objects just outside the frustum or casting into next cascade
-					double margin = 50.0; 
-
-					Action<ICollection<FaceState>> renderFaces = faces =>
+					foreach (var face in renderer.Scene.VisibleObjects.OpaqueFaces)
 					{
-						foreach (var face in faces)
+						renderer.RenderFace(renderer.ShadowDepthShaderProgram, face.Object, face.Face);
+					}
+
+					foreach (var face in renderer.Scene.VisibleObjects.AlphaFaces)
+					{
+						renderer.RenderFace(renderer.ShadowDepthShaderProgram, face.Object, face.Face);
+					}
+
+					// Dynamic objects (trains) are rendered regardless of camera visibility to ensure they always cast shadows
+					foreach (var state in renderer.Scene.DynamicObjectStates)
+					{
+						foreach (var face in state.Prototype.Mesh.Faces)
 						{
-							if (face.Object.Prototype.Mesh.VAO == null) continue;
-							if (face.Object.DisableShadowCasting) continue;
-
-							// Cascade Culling: check if object is within depth range of this cascade
-							Vector3 relativePos = face.Object.WorldPosition - context.Camera.AbsolutePosition;
-							double depth = Vector3.Dot(relativePos, context.Camera.AbsoluteDirection);
-							double radius = face.Object.Prototype.Mesh.BoundingSphereRadius;
-							
-							if (depth < cascadeNear - margin - radius || depth > cascadeFar + margin + radius)
-							{
-								continue;
-							}
-
-							Matrix4D modelMatrix = face.Object.ModelMatrix * context.Camera.TranslationMatrix;
-							renderer.ShadowDepthShaderProgram.SetModelMatrix(modelMatrix);
-
-							// Bind texture for alpha scissoring if the face has one and it actually needs alpha testing
-							var material = face.Object.Prototype.Mesh.Materials[face.Face.Material];
-							bool needsTexture = material.DaytimeTexture != null && 
-							                    ((material.Flags & MaterialFlags.TransparentColor) != 0 || 
-							                     material.Color.A < 255);
-
-							if (needsTexture && renderer.currentHost.LoadTexture(ref material.DaytimeTexture, (OpenGlTextureWrapMode)(material.WrapMode ?? OpenGlTextureWrapMode.ClampClamp)))
-							{
-								renderer.SetActiveTexture(TextureUnit.Texture0);
-								GL.BindTexture(TextureTarget.Texture2D,
-									material.DaytimeTexture.OpenGlTextures[(int)(material.WrapMode ?? OpenGlTextureWrapMode.ClampClamp)].Name);
-								renderer.ShadowDepthShaderProgram.SetHasTexture(true);
-							}
-							else
-							{
-								renderer.ShadowDepthShaderProgram.SetHasTexture(false);
-							}
-
-							renderer.ShadowDepthShaderProgram.SetAlphaCutoff(0.5f);
-							renderer.ShadowDepthShaderProgram.SetMaterialAlpha(material.Color.A / 255.0f);
-							renderer.ShadowDepthShaderProgram.SetMaterialFlags(material.Flags);
-
-#pragma warning disable CS0618
-							ObjectState state = face.Object;
-							if (state.Matricies != null && state.Matricies.Length > 0)
-							{
-								renderer.ShadowDepthShaderProgram.SetCurrentAnimationMatricies(state);
-								GL.BindBufferBase(BufferTarget.UniformBuffer, 0, state.MatrixBufferIndex);
-							}
-#pragma warning restore CS0618
-
-							VertexArrayObject vao = (VertexArrayObject)face.Object.Prototype.Mesh.VAO;
-							if (vao.handle != lastVAOHandle)
-							{
-								vao.Bind();
-								lastVAOHandle = vao.handle;
-							}
-							
-							// We need GetPrimitiveType, but it's protected in BaseRenderer. 
-							// For now, I'll copy the logic or we should move it to a helper.
-							PrimitiveType drawMode = GetPrimitiveType(face.Face.Flags);
-							vao.Draw(drawMode, face.Face.IboStartIndex, face.Face.Vertices.Length);
+							renderer.RenderFace(renderer.ShadowDepthShaderProgram, state, face);
 						}
-					};
-
-					renderFaces(renderer.Scene.VisibleObjects.OpaqueFaces);
-					renderFaces(renderer.Scene.VisibleObjects.AlphaFaces);
+					}
 				}
 				renderer.CSMShadowMaps.Unbind();
 			}

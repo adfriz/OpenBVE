@@ -45,7 +45,13 @@ namespace LibRender2.Passes
 				renderer.DefaultShader.SetCurrentProjectionMatrix(renderer.CurrentProjectionMatrix);
 			}
 
-			context.ViewMatrix = Matrix4D.LookAt(Vector3.Zero, new Vector3(context.Camera.AbsoluteDirection.X, context.Camera.AbsoluteDirection.Y, -context.Camera.AbsoluteDirection.Z), new Vector3(context.Camera.AbsoluteUp.X, context.Camera.AbsoluteUp.Y, -context.Camera.AbsoluteUp.Z));
+			renderer.CurrentViewMatrix = Matrix4D.LookAt(Vector3.Zero, new Vector3(context.Camera.AbsoluteDirection.X, context.Camera.AbsoluteDirection.Y, -context.Camera.AbsoluteDirection.Z), new Vector3(context.Camera.AbsoluteUp.X, context.Camera.AbsoluteUp.Y, -context.Camera.AbsoluteUp.Z));
+			context.ViewMatrix = renderer.CurrentViewMatrix;
+
+			if (renderer.AvailableNewRenderer)
+			{
+				renderer.DefaultShader.SetCurrentViewMatrix(renderer.CurrentViewMatrix);
+			}
 
 			List<FaceState> overlayOpaqueFaces, overlayAlphaFaces;
 			lock (renderer.Scene.VisibleObjects.LockObject)
@@ -158,6 +164,14 @@ namespace LibRender2.Passes
 
 				renderer.SetBlendFunc();
 				renderer.UnsetAlphaFunc();
+				renderer.SetDepthTest(true);
+				renderer.SetDepthMask(true);
+
+				foreach (FaceState face in overlayOpaqueFaces)
+				{
+					face.Draw();
+				}
+
 				renderer.SetDepthTest(false);
 				renderer.SetDepthMask(false);
 
@@ -171,7 +185,14 @@ namespace LibRender2.Passes
 			renderer.OptionLighting = false;
 			renderer.ResetOpenGlState();
 			renderer.SetBlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+			renderer.SetAlphaFunc(AlphaFunction.Greater, 0.0f);
 			renderer.SetDepthTest(false);
+
+			if (renderer.AvailableNewRenderer)
+			{
+				renderer.CurrentViewMatrix = Matrix4D.Identity;
+				renderer.DefaultShader.SetCurrentViewMatrix(renderer.CurrentViewMatrix);
+			}
 
 			renderUiAction?.Invoke(context);
 		}

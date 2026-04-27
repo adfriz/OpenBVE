@@ -15,10 +15,20 @@ namespace LibRender2.Objects
 {
 	public class FaceComparer : IComparer<FaceState>
 	{
-		public int Compare(FaceState x, FaceState y)
+		/// <summary>Compares two faces for sorting, primarily by distance from camera.</summary>
+		public int Compare(FaceState a, FaceState b)
 		{
-			if (x == null || y == null) return 0;
-			return x.SortDistance.CompareTo(y.SortDistance);
+			if (ReferenceEquals(a, b)) return 0;
+			if (a == null) return -1;
+			if (b == null) return 1;
+
+			// Sort by distance from camera (Back-to-Front for alpha blending)
+			int result = b.SortDistance.CompareTo(a.SortDistance);
+
+			// Tie-breakers to ensure stable sort order and prevent flickering
+			if (result == 0) result = a.InternalIndex.CompareTo(b.InternalIndex);
+
+			return result;
 		}
 	}
 
@@ -41,6 +51,7 @@ namespace LibRender2.Objects
 
 		public readonly object LockObject = new object();
 		private bool needsSort;
+		private int faceCount;
 
 		internal VisibleObjectLibrary(BaseRenderer Renderer)
 		{
@@ -143,7 +154,7 @@ namespace LibRender2.Objects
 
 				bool alpha = false;
 
-				if (Type == ObjectType.Overlay && renderer.Camera.CurrentRestriction != CameraRestrictionMode.NotAvailable)
+				if (Type == ObjectType.Overlay && (renderer.Camera.CurrentRestriction == CameraRestrictionMode.On || renderer.Camera.CurrentRestriction == CameraRestrictionMode.Off))
 				{
 					alpha = true;
 				}
@@ -244,7 +255,7 @@ namespace LibRender2.Objects
 				{
 					if (!alpha)
 					{
-						list.Add(new FaceState(State, face, renderer));
+						list.Add(new FaceState(State, face, renderer, faceCount++));
 						needsSort = true;
 					}
 					else
@@ -252,7 +263,7 @@ namespace LibRender2.Objects
 						/*
 						 * Alpha faces should be inserted at the end of the list- We're going to sort it anyway so it makes no odds
 						 */
-						list.Add(new FaceState(State, face, renderer));
+						list.Add(new FaceState(State, face, renderer, faceCount++));
 					}
 				}
 			}
@@ -269,7 +280,7 @@ namespace LibRender2.Objects
 			{
 				if (overlay)
 				{
-					SortPolygons(myOverlayAlphaFaces);
+					SortPolygons(myOverlayAlphaFaces, true);
 					return new List<FaceState>(myOverlayAlphaFaces);
 				}
 
@@ -295,16 +306,18 @@ namespace LibRender2.Objects
 			}
 		}
 
-		private void SortPolygons(List<FaceState> faces)
+		private void SortPolygons(List<FaceState> faces, bool overlay = false)
 		{
 			// calculate distance from camera forward vector
-			Vector3 cameraForward = renderer.Camera.AbsoluteDirection;
-			Vector3 cameraPos = renderer.Camera.AbsolutePosition;
+			Vector3 forward = overlay
+				? new Vector3(renderer.Camera.AbsoluteDirection.X, renderer.Camera.AbsoluteDirection.Y, -renderer.Camera.AbsoluteDirection.Z)
+				: renderer.Camera.AbsoluteDirection;
 
-			for (int i = 0; i < faces.Count; i++)
+			Vector3 cameraPos = overlay ? Vector3.Zero : renderer.Camera.AbsolutePosition;
+
+			foreach (var face in faces)
 			{
-				Vector3 relativePos = faces[i].Object.WorldPosition - cameraPos;
-				faces[i].SortDistance = Vector3.Dot(relativePos, cameraForward);
+				face.SortDistance = Vector3.Dot(face.Object.WorldPosition - cameraPos, forward);
 			}
 			// sort
 			faces.Sort(faceComparer);

@@ -32,7 +32,10 @@ namespace LibRender2.Passes
 				}
 				renderer.Fog.Set();
 				renderer.DefaultShader.SetTexture(0);
-				renderer.DefaultShader.SetCurrentProjectionMatrix(context.ProjectionMatrix);
+				renderer.CurrentProjectionMatrix = context.ProjectionMatrix;
+				renderer.CurrentViewMatrix = context.ViewMatrix;
+				renderer.DefaultShader.SetCurrentProjectionMatrix(renderer.CurrentProjectionMatrix);
+				renderer.DefaultShader.SetCurrentViewMatrix(renderer.CurrentViewMatrix);
 				renderer.BindCSMToDefaultShader();
 			}
 

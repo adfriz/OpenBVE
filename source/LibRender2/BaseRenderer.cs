@@ -170,6 +170,8 @@ namespace LibRender2
 				shader.SetCascadeShadowMapUnit(i, 4 + i);
 				shader.SetCascadeLightSpaceMatrix(i, CSMCaster.LightSpaceMatrices[i]);
 				shader.SetCascadeFarDistance(i, (float)CSMCaster.CascadeFarDistances[i]);
+				shader.SetCascadeBias(i, CSMCaster.CascadeBiases[i] + (float)currentOptions.ShadowBias);
+				shader.SetNormalBias(i, (float)currentOptions.ShadowNormalBias);
 			}
 
 			shader.SetShadowStrength(Lighting.ShadowStrength);
@@ -608,6 +610,7 @@ namespace LibRender2
 				CSMCaster.DepthMargin = 150.0;
 
 				ShadowStrength = shadowStrength;
+				Lighting.ShadowStrength = shadowStrength;
 
 				if (ShadowDepthShaderProgram == null)
 				{
@@ -1135,6 +1138,81 @@ namespace LibRender2
 		public void RenderFace(FaceState state, bool isDebugTouchMode = false)
 		{
 			RenderFace(CurrentShader as Shader, state.Object, state.Face, isDebugTouchMode);
+		}
+
+		public void RenderFace(AbstractShader shader, ObjectState state, MeshFace face, bool debugTouchMode = false, bool screenSpace = false, int vertexCount = -1)
+		{
+			if (shader is Shader defaultShader)
+			{
+				RenderFace(defaultShader, state, face, debugTouchMode, screenSpace, vertexCount);
+				return;
+			}
+
+			if (shader is ShadowDepthShader shadowShader)
+			{
+				RenderFaceShadow(shadowShader, state, face, vertexCount);
+				return;
+			}
+		}
+
+		private void RenderFaceShadow(ShadowDepthShader shader, ObjectState state, MeshFace face, int vertexCount)
+		{
+			if (state.Prototype == null || state.Prototype.Mesh == null || state.Prototype.Mesh.VAO == null)
+			{
+				return;
+			}
+
+			if (vertexCount == -1)
+			{
+				vertexCount = face.Vertices.Length;
+			}
+
+			if (state != lastObjectState || state.Prototype.Dynamic)
+			{
+				lastModelMatrix = state.ModelMatrix * Camera.TranslationMatrix;
+				shader.SetModelMatrix(lastModelMatrix);
+
+				if (state.Matricies != null && state.Matricies.Length > 0)
+				{
+					shader.SetCurrentAnimationMatricies(state);
+#pragma warning disable CS0618
+					GL.BindBufferBase(BufferTarget.UniformBuffer, 0, state.MatrixBufferIndex);
+#pragma warning restore CS0618
+				}
+			}
+
+			MeshMaterial material = state.Prototype.Mesh.Materials[face.Material];
+			VertexArrayObject VAO = (VertexArrayObject)state.Prototype.Mesh.VAO;
+
+			if (lastVAO != VAO.handle)
+			{
+				VAO.Bind();
+				lastVAO = VAO.handle;
+			}
+
+			bool needsTexture = material.DaytimeTexture != null &&
+								((material.Flags & MaterialFlags.TransparentColor) != 0 ||
+								 material.Color.A < 255);
+
+			if (needsTexture && currentHost.LoadTexture(ref material.DaytimeTexture, (OpenGlTextureWrapMode)(material.WrapMode ?? OpenGlTextureWrapMode.ClampClamp)))
+			{
+				SetActiveTexture(TextureUnit.Texture0);
+				GL.BindTexture(TextureTarget.Texture2D, material.DaytimeTexture.OpenGlTextures[(int)(material.WrapMode ?? OpenGlTextureWrapMode.ClampClamp)].Name);
+				shader.SetHasTexture(true);
+			}
+			else
+			{
+				shader.SetHasTexture(false);
+			}
+
+			shader.SetAlphaCutoff(0.5f);
+			shader.SetMaterialAlpha(material.Color.A / 255.0f);
+			shader.SetMaterialFlags(material.Flags);
+
+			PrimitiveType drawMode = GetPrimitiveType(face.Flags);
+			VAO.Draw(drawMode, face.IboStartIndex, vertexCount);
+
+			lastObjectState = state;
 		}
 
 		/// <summary>Draws a face using the specified shader and matricies</summary>
