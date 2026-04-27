@@ -96,9 +96,9 @@ namespace RouteViewer
 
         private void InitializeSunSliders()
         {
-            trackBarSunElevation.Value = (int)Interface.CurrentOptions.LightElevation;
-            trackBarSunAzimuth.Value = (int)Interface.CurrentOptions.LightAzimuth;
-            labelSunAzimuthValue.Text = trackBarSunAzimuth.Value + "\u00b0";
+			trackBarSunElevation.Value = Math.Max(trackBarSunElevation.Minimum, Math.Min((int)Interface.CurrentOptions.LightElevation, trackBarSunElevation.Maximum));
+			trackBarSunAzimuth.Value = Math.Max(trackBarSunAzimuth.Minimum, Math.Min((int)Interface.CurrentOptions.LightAzimuth, trackBarSunAzimuth.Maximum));
+			labelSunAzimuthValue.Text = trackBarSunAzimuth.Value + "\u00b0";
             labelSunElevationValue.Text = trackBarSunElevation.Value + "\u00b0";
         }
 
