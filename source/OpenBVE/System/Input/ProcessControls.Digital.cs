@@ -1021,6 +1021,27 @@ namespace OpenBve
 					case Translations.Command.AccessPermissiveSection:
 						TrainManager.PlayerTrain.ContactSignaller();
 						break;
+					case Translations.Command.CameraFPSMode:
+						if (Program.Renderer.Camera.CurrentMode == CameraViewMode.Track)
+						{
+							Program.Renderer.Camera.FPSMode = !Program.Renderer.Camera.FPSMode;
+							if (Program.Renderer.Camera.FPSMode)
+							{
+								Program.Renderer.Camera.GroundLevel = Program.Renderer.Camera.Alignment.Position.Y;
+								MainLoop.MouseGrabEnabled = true;
+								MainLoop.MouseGrabIgnoreOnce = true;
+							}
+							else
+							{
+								MainLoop.MouseGrabEnabled = false;
+							}
+							Program.Renderer.Camera.AlignmentSpeed = new CameraAlignment();
+							Program.Renderer.Camera.AlignmentDirection = new CameraAlignment();
+						}
+						break;
+					case Translations.Command.CameraFPSJump:
+						Program.Renderer.Camera.Move(Control.Command, Control.AnalogState);
+						break;
 				}
 			}
 			else if (Control.DigitalState == DigitalControlState.Released)

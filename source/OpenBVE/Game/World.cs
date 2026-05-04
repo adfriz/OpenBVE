@@ -175,9 +175,22 @@ namespace OpenBve {
 					Program.Renderer.UpdateViewport(ViewportChangeMode.NoChange);
 				}
 			} else {
-				// non-fly-by
+				// camera
 				{
 					// current alignment
+					if (Program.Renderer.Camera.FPSMode && Program.Renderer.Camera.CurrentMode == CameraViewMode.Track)
+					{
+						// FPS physics
+						const double gravity = 9.81;
+						Program.Renderer.Camera.VerticalVelocity -= gravity * TimeElapsed;
+						Program.Renderer.Camera.Alignment.Position.Y += Program.Renderer.Camera.VerticalVelocity * TimeElapsed;
+						if (Program.Renderer.Camera.Alignment.Position.Y < Program.Renderer.Camera.GroundLevel)
+						{
+							Program.Renderer.Camera.Alignment.Position.Y = Program.Renderer.Camera.GroundLevel;
+							Program.Renderer.Camera.VerticalVelocity = 0.0;
+						}
+					}
+
 					Program.Renderer.Camera.AdjustAlignment(ref Program.Renderer.Camera.Alignment.Position, Program.Renderer.Camera.AlignmentDirection.Position, ref Program.Renderer.Camera.AlignmentSpeed.Position, TimeElapsed, false, TrainManager.PlayerTrain.Cars[TrainManager.PlayerTrain.DriverCar].CameraRestriction);
 					if ((Program.Renderer.Camera.CurrentMode == CameraViewMode.Interior | Program.Renderer.Camera.CurrentMode == CameraViewMode.InteriorLookAhead) & Program.Renderer.Camera.CurrentRestriction == CameraRestrictionMode.On) {
 						if (Program.Renderer.Camera.Alignment.Position.Z > 0.75) {

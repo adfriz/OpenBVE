@@ -279,7 +279,10 @@ namespace OpenBveApi.Interface
 			{ Command.UncoupleFront, new CommandInfo(Command.UncoupleFront, CommandType.Digital, "UNCOUPLE_FRONT") },
 			{ Command.UncoupleRear, new CommandInfo(Command.UncoupleRear, CommandType.Digital, "UNCOUPLE_REAR") },
 			// Switch
-			{ Command.SwitchMenu, new CommandInfo(Command.SwitchMenu, CommandType.Digital, "SWITCH_MENU") }
+			{ Command.SwitchMenu, new CommandInfo(Command.SwitchMenu, CommandType.Digital, "SWITCH_MENU") },
+			// FPS Mode
+			{ Command.CameraFPSMode, new CommandInfo(Command.CameraFPSMode, CommandType.Digital, "CAMERA_FPS_MODE") },
+			{ Command.CameraFPSJump, new CommandInfo(Command.CameraFPSJump, CommandType.Digital, "CAMERA_FPS_JUMP") }
 		};
 
 		

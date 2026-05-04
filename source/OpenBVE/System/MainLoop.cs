@@ -232,6 +232,10 @@ namespace OpenBve
 				Program.Renderer.GameWindow.CursorVisible = true;
 			}
 
+			if (Program.Renderer.Camera.FPSMode)
+			{
+				MainLoop.MouseGrabEnabled = true;
+			}
 			if (MainLoop.MouseGrabEnabled)
 			{
 				double factor;

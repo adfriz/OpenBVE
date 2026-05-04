@@ -329,7 +329,11 @@ namespace OpenBveApi.Interface {
 			DriverSupervision,
 			// Added in 1.11.2.0
 			/// <summary>Press to request permission from the signaller to access a permissive section</summary>
-			AccessPermissiveSection
+			AccessPermissiveSection,
+			/// <summary>Toggles FPS mode</summary>
+			CameraFPSMode,
+			/// <summary>Jumps in FPS mode</summary>
+			CameraFPSJump
 		}
 
 		/// <summary>Defines the possible command types</summary>

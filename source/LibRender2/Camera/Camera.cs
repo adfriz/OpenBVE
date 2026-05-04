@@ -91,6 +91,10 @@ namespace LibRender2.Cameras
 					return;
 				}
 				currentMode = value;
+				if (currentMode != CameraViewMode.Track)
+				{
+					FPSMode = false;
+				}
 				Renderer.UpdateVisibility(true);
 			}
 		}
@@ -102,6 +106,12 @@ namespace LibRender2.Cameras
 		public CameraAlignment SavedTrack;
 		/// <summary>The current quad tree leaf node</summary>
 		public QuadTreeLeafNode QuadTreeLeaf;
+		/// <summary>Whether FPS mode is active</summary>
+		public bool FPSMode;
+		/// <summary>The current vertical velocity (for jumping)</summary>
+		public double VerticalVelocity;
+		/// <summary>The ground level in FPS mode</summary>
+		public double GroundLevel;
 		
 		private Vector3 absolutePosition;
 		private CameraAlignment alignmentDirection;
@@ -487,13 +497,22 @@ namespace LibRender2.Cameras
 					}
 					else
 					{
-						if (AtWorldEnd)
+						if (FPSMode && CurrentMode == CameraViewMode.Track)
 						{
-							//Don't let the camera run off the end of the worldspace
-							break;
+							s = InteriorTopSpeed * 2.0;
+							AlignmentDirection.Position.X += Math.Sin(Alignment.Yaw) * s * motion;
+							AlignmentDirection.Position.Z += Math.Cos(Alignment.Yaw) * s * motion;
 						}
+						else
+						{
+							if (AtWorldEnd)
+							{
+								//Don't let the camera run off the end of the worldspace
+								break;
+							}
 
-						AlignmentDirection.TrackPosition = ExteriorTopSpeed * motion;
+							AlignmentDirection.TrackPosition = ExteriorTopSpeed * motion;
+						}
 					}
 
 					break;
@@ -505,16 +524,43 @@ namespace LibRender2.Cameras
 					}
 					else
 					{
-						AlignmentDirection.TrackPosition = -ExteriorTopSpeed * motion;
+						if (FPSMode && CurrentMode == CameraViewMode.Track)
+						{
+							s = InteriorTopSpeed * 2.0;
+							AlignmentDirection.Position.X -= Math.Sin(Alignment.Yaw) * s * motion;
+							AlignmentDirection.Position.Z -= Math.Cos(Alignment.Yaw) * s * motion;
+						}
+						else
+						{
+							AlignmentDirection.TrackPosition = -ExteriorTopSpeed * motion;
+						}
 					}
 					break;
 				case Translations.Command.CameraMoveLeft:
 					s = CurrentMode == CameraViewMode.Interior | CurrentMode == CameraViewMode.InteriorLookAhead ? InteriorTopSpeed : ExteriorTopSpeed;
-					AlignmentDirection.Position.X = -s * motion;
+					if (FPSMode && CurrentMode == CameraViewMode.Track)
+					{
+						s = InteriorTopSpeed * 2.0;
+						AlignmentDirection.Position.X -= Math.Cos(Alignment.Yaw) * s * motion;
+						AlignmentDirection.Position.Z += Math.Sin(Alignment.Yaw) * s * motion;
+					}
+					else
+					{
+						AlignmentDirection.Position.X = -s * motion;
+					}
 					break;
 				case Translations.Command.CameraMoveRight:
 					s = CurrentMode == CameraViewMode.Interior | CurrentMode == CameraViewMode.InteriorLookAhead ? InteriorTopSpeed : ExteriorTopSpeed;
-					AlignmentDirection.Position.X = s * motion;
+					if (FPSMode && CurrentMode == CameraViewMode.Track)
+					{
+						s = InteriorTopSpeed * 2.0;
+						AlignmentDirection.Position.X += Math.Cos(Alignment.Yaw) * s * motion;
+						AlignmentDirection.Position.Z -= Math.Sin(Alignment.Yaw) * s * motion;
+					}
+					else
+					{
+						AlignmentDirection.Position.X = s * motion;
+					}
 					break;
 				case Translations.Command.CameraMoveUp:
 					s = CurrentMode == CameraViewMode.Interior | CurrentMode == CameraViewMode.InteriorLookAhead ? InteriorTopSpeed : ExteriorTopSpeed;
@@ -523,6 +569,12 @@ namespace LibRender2.Cameras
 				case Translations.Command.CameraMoveDown:
 					s = CurrentMode == CameraViewMode.Interior | CurrentMode == CameraViewMode.InteriorLookAhead ? InteriorTopSpeed : ExteriorTopSpeed;
 					AlignmentDirection.Position.Y = -s * motion;
+					break;
+				case Translations.Command.CameraFPSJump:
+					if (FPSMode && CurrentMode == CameraViewMode.Track && Alignment.Position.Y <= GroundLevel + 0.01)
+					{
+						VerticalVelocity = 5.0;
+					}
 					break;
 			}
 		}

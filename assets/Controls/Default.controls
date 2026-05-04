@@ -1,4 +1,4 @@
-﻿; Current control configuration
+; Current control configuration
 ; =============================
 ; This file was automatically generated. Please modify only if you know what you're doing.
 ; Last updated 2026.01.16
@@ -117,3 +117,5 @@ ACCESSIBILITY_NEXT_LIMIT, keyboard, L, 3
 UNCOUPLE_REAR, keyboard, Semicolon, 2
 UNCOUPLE_FRONT, keyboard, Semicolon, 3
 SWITCH_MENU, Keyboard, F9, 2, 0
+CAMERA_FPS_MODE, keyboard, F7, 0
+CAMERA_FPS_JUMP, keyboard, Space, 0
