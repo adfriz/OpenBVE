@@ -571,7 +571,7 @@ namespace LibRender2
 		}
 
 		/// <summary>Deinitializes the renderer</summary>
-		public void DeInitialize()
+		public virtual void DeInitialize()
 		{
 			if (nullDepthMap != 0)
 			{

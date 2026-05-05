@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -20,6 +21,7 @@ using OpenBveApi.Routes;
 using OpenTK.Graphics.OpenGL;
 using Vector2 = OpenBveApi.Math.Vector2;
 using Vector3 = OpenBveApi.Math.Vector3;
+using Path = OpenBveApi.Path;
 
 namespace ObjectViewer.Graphics
 {
@@ -40,6 +42,8 @@ namespace ObjectViewer.Graphics
 		private Cube redAxisVAO;
 		private Cube greenAxisVAO;
 		private Cube blueAxisVAO;
+		private ObjectState groundObject;
+		private List<FaceState> groundFaces;
 
 		public override void Initialize()
 		{
@@ -50,8 +54,37 @@ namespace ObjectViewer.Graphics
 				redAxisVAO = new Cube(this, Color128.Red);
 				greenAxisVAO = new Cube(this, Color128.Green);
 				blueAxisVAO = new Cube(this, Color128.Blue);
+				InitializeGround();
 			}
 		}
+
+		private void InitializeGround()
+		{
+			string floorFile = Path.CombineFile(Program.FileSystem.GetDataFolder("ObjectViewer"), "floor.b3d");
+			if (!System.IO.File.Exists(floorFile))
+			{
+				return;
+			}
+
+			if (Program.CurrentHost.LoadObject(floorFile, Encoding.UTF8, out UnifiedObject o))
+			{
+				if (o is StaticObject so)
+				{
+					groundObject = new ObjectState(so);
+					groundFaces = new List<FaceState>();
+					foreach (var face in so.Mesh.Faces)
+					{
+						groundFaces.Add(new FaceState(groundObject, face, this));
+					}
+				}
+			}
+		}
+
+		public override void DeInitialize()
+		{
+			base.DeInitialize();
+		}
+
 
 		internal string GetBackgroundColorName()
 		{
@@ -144,6 +177,7 @@ namespace ObjectViewer.Graphics
 					Cube.Draw(Vector3.Zero, Vector3.Forward, Vector3.Down, Vector3.Right, new Vector3(0.01, 0.01, 100.0), Camera.AbsolutePosition, null);
 				}
 			}
+
 			// opaque face
 			if (AvailableNewRenderer)
 			{
@@ -164,12 +198,25 @@ namespace ObjectViewer.Graphics
 				DefaultShader.SetTexture(0);
 				DefaultShader.SetCurrentProjectionMatrix(CurrentProjectionMatrix);
 			}
-			ResetOpenGlState();
+
 			List<FaceState> opaqueFaces, alphaFaces;
 			lock (VisibleObjects.LockObject)
 			{
 				opaqueFaces = VisibleObjects.OpaqueFaces.ToList();
 				alphaFaces = VisibleObjects.GetSortedPolygons();
+			}
+
+			if (Interface.CurrentOptions.RenderGround && groundObject != null)
+			{
+				// Update ground color from options
+				groundObject.Prototype.Mesh.Materials[0].Color = Interface.CurrentOptions.GroundColor;
+
+				// The builtin floor.b3d is 30x500, so we scale relative to that
+				double sx = Interface.CurrentOptions.GroundWidth / 30.0;
+				double sz = Interface.CurrentOptions.GroundLength / 500.0;
+				groundObject.Scale = Matrix4D.Scale(new Vector3(sx, 1.0, sz));
+				groundObject.Translation = Matrix4D.CreateTranslation(0, -0.001, 0);
+				opaqueFaces.AddRange(groundFaces);
 			}
 
 			foreach (FaceState face in opaqueFaces)

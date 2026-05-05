@@ -8,6 +8,7 @@ using OpenBveApi.Interface;
 using OpenBveApi.Input;
 using OpenBveApi.Math;
 using OpenBveApi.Objects;
+using OpenBveApi.Colors;
 using OpenTK.Graphics;
 
 namespace ObjectViewer
@@ -90,6 +91,10 @@ namespace ObjectViewer
 			comboBoxBackwards.DataSource = Enum.GetValues(typeof(Key));
 			comboBoxBackwards.SelectedItem = Interface.CurrentOptions.CameraMoveBackward;
 			checkBoxAutoReload.Checked = Interface.CurrentOptions.AutoReloadObjects;
+			checkBoxRenderGround.Checked = Interface.CurrentOptions.RenderGround;
+			numericUpDownGroundWidth.Value = (decimal)Interface.CurrentOptions.GroundWidth;
+			numericUpDownGroundLength.Value = (decimal)Interface.CurrentOptions.GroundLength;
+			buttonGroundColor.BackColor = System.Drawing.Color.FromArgb(Interface.CurrentOptions.GroundColor.R, Interface.CurrentOptions.GroundColor.G, Interface.CurrentOptions.GroundColor.B);
 		}
 
 		private void InitializeSunSliders()
@@ -252,6 +257,9 @@ namespace ObjectViewer
 				Interface.CurrentOptions.ViewingDistance = (int)Math.Ceiling(Interface.CurrentOptions.NearClipBase) + 1;
 			}
 			Interface.CurrentOptions.AutoReloadObjects = checkBoxAutoReload.Checked;
+			Interface.CurrentOptions.RenderGround = checkBoxRenderGround.Checked;
+			Interface.CurrentOptions.GroundWidth = (double)numericUpDownGroundWidth.Value;
+			Interface.CurrentOptions.GroundLength = (double)numericUpDownGroundLength.Value;
 
 			// Saving shadow settings
 			switch (comboBoxShadowResolution.SelectedIndex)
@@ -287,6 +295,18 @@ namespace ObjectViewer
 			Program.RefreshObjects();
 			DialogResult = DialogResult.OK;
 			Close();
+		}
+		private void buttonGroundColor_Click(object sender, EventArgs e)
+		{
+			using (ColorDialog dialog = new ColorDialog())
+			{
+				dialog.Color = buttonGroundColor.BackColor;
+				if (dialog.ShowDialog() == DialogResult.OK)
+				{
+					buttonGroundColor.BackColor = dialog.Color;
+					Interface.CurrentOptions.GroundColor = new Color32(dialog.Color.R, dialog.Color.G, dialog.Color.B, 255);
+				}
+			}
 		}
 	}
 }

@@ -7,6 +7,7 @@ using Formats.OpenBve;
 using ObjectViewer.Graphics;
 using OpenBveApi;
 using OpenBveApi.Input;
+using OpenBveApi.Colors;
 using Path = OpenBveApi.Path;
 
 namespace ObjectViewer
@@ -58,9 +59,18 @@ namespace ObjectViewer
 			}
 		}
 
+		internal bool RenderGround;
+		internal double GroundWidth;
+		internal double GroundLength;
+		internal Color32 GroundColor;
+
 		internal Options()
 		{
 			ObjectOptimizationMode = ObjectOptimizationMode.Low;
+			RenderGround = false;
+			GroundWidth = 30.0;
+			GroundLength = 500.0;
+			GroundColor = new Color32(160, 160, 160, 255);
 			// Shadow settings use synced base defaults
 		}
 
@@ -81,6 +91,10 @@ namespace ObjectViewer
 				Builder.AppendLine("isUseNewRenderer = " + (IsUseNewRenderer ? "true" : "false"));
 				Builder.AppendLine("nearclipbase = " + NearClipBase.ToString(Culture));
 				Builder.AppendLine("autoReloadObjects = " + (AutoReloadObjects ? "true" : "false"));
+				Builder.AppendLine("renderground = " + (RenderGround ? "true" : "false"));
+				Builder.AppendLine("groundwidth = " + GroundWidth.ToString(Culture));
+				Builder.AppendLine("groundlength = " + GroundLength.ToString(Culture));
+				Builder.AppendLine("groundcolor = " + GroundColor.R + "," + GroundColor.G + "," + GroundColor.B);
 				Builder.AppendLine();
 				Builder.AppendLine("[quality]");
 				Builder.AppendLine("interpolation = " + Interpolation);
@@ -174,6 +188,21 @@ namespace ObjectViewer
 							}
 
 							block.GetValue(OptionsKey.AutoReloadObjects, out Interface.CurrentOptions.AutoReloadObjects);
+							block.GetValue(OptionsKey.RenderGround, out Interface.CurrentOptions.RenderGround);
+							block.TryGetValue(OptionsKey.GroundWidth, ref Interface.CurrentOptions.GroundWidth, NumberRange.Positive);
+							block.TryGetValue(OptionsKey.GroundLength, ref Interface.CurrentOptions.GroundLength, NumberRange.Positive);
+							string colorValue = string.Empty;
+							if (block.TryGetValue(OptionsKey.GroundColor, ref colorValue))
+							{
+								string[] parts = colorValue.Split(',');
+								if (parts.Length == 3)
+								{
+									byte.TryParse(parts[0], out byte r);
+									byte.TryParse(parts[1], out byte g);
+									byte.TryParse(parts[2], out byte b);
+									Interface.CurrentOptions.GroundColor = new Color32(r, g, b, 255);
+								}
+							}
 							break;
 						case OptionsSection.Quality:
 							block.GetEnumValue(OptionsKey.Interpolation, out Interface.CurrentOptions.Interpolation);
