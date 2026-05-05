@@ -43,24 +43,20 @@ namespace OpenBve.Graphics
 		public override void Initialize()
 		{
 			base.Initialize();
-			if (!ForceLegacyOpenGL && Interface.CurrentOptions.IsUseNewRenderer) // GL3 has already failed. Don't trigger unnecessary exceptions
+			try
 			{
-				try
+				if (pickingShader == null)
 				{
-					if (pickingShader == null)
-					{
-						pickingShader = new Shader(this, "default", "picking", true);
-					}
+					pickingShader = new Shader(this, "default", "picking", true);
+				}
 
-					pickingShader.Activate();
-					pickingShader.Deactivate();
-				}
-				catch
-				{
-					Interface.AddMessage(MessageType.Error, false, "Initializing the touch shader failed- Falling back to legacy openGL.");
-					Interface.CurrentOptions.IsUseNewRenderer = false;
-					ForceLegacyOpenGL = true;
-				}
+				pickingShader.Activate();
+				pickingShader.Deactivate();
+			}
+			catch (Exception ex)
+			{
+				Interface.AddMessage(MessageType.Error, false, "Initializing the touch shader failed: " + ex.Message);
+				throw;
 			}
 
 			events = new Events(this);
@@ -135,10 +131,7 @@ namespace OpenBve.Graphics
 
 			UpdateViewport(ViewportChangeMode.ChangeToScenery);
 
-			if (AvailableNewRenderer)
-			{
-				PerformCSMShadowPass();
-			}
+			PerformCSMShadowPass();
 
 			if (Lighting.ShouldInitialize)
 			{
@@ -146,10 +139,6 @@ namespace OpenBve.Graphics
 				Lighting.ShouldInitialize = false;
 			}
 			
-			if (!AvailableNewRenderer)
-			{
-				GL.Light(LightName.Light0, LightParameter.Position, new[] { (float)TransformedLightPosition.X, (float)TransformedLightPosition.Y, (float)TransformedLightPosition.Z, 0.0f });
-			}
 
 			Lighting.OptionLightingResultingAmount = (Lighting.OptionAmbientColor.R + Lighting.OptionAmbientColor.G + Lighting.OptionAmbientColor.B) / 480.0f;
 
@@ -179,11 +168,8 @@ namespace OpenBve.Graphics
 				Program.CurrentRoute.CurrentFog = Program.CurrentRoute.PreviousFog;
 			}
 
-			if (AvailableNewRenderer)
-			{
-				DefaultShader.Activate();
-				BindCSMToDefaultShader();
-			}
+			DefaultShader.Activate();
+			BindCSMToDefaultShader();
 
 			// render background
 			// n.b. must disable shadows
@@ -213,8 +199,6 @@ namespace OpenBve.Graphics
 
 			// world layer
 			// opaque face
-			if (AvailableNewRenderer)
-			{
 				//Setup the shader for rendering the scene
 				if (OptionLighting)
 				{
@@ -228,7 +212,6 @@ namespace OpenBve.Graphics
 				Fog.Set();
 				DefaultShader.SetTexture(0);
 				DefaultShader.SetCurrentProjectionMatrix(CurrentProjectionMatrix);
-			}
 			ResetOpenGlState();
 			List<FaceState> opaqueFaces, alphaFaces, overlayOpaqueFaces, overlayAlphaFaces;
 			lock (VisibleObjects.LockObject)
@@ -294,7 +277,7 @@ namespace OpenBve.Graphics
 					{
 						if (additive)
 						{
-							SetAlphaFunc();
+							SetAlphaFunc(AlphaFunction.Greater, 0.9f);
 							additive = false;
 						}
 					}
@@ -311,10 +294,7 @@ namespace OpenBve.Graphics
 
 			if (Interface.CurrentOptions.MotionBlur != MotionBlurMode.None)
 			{
-				if (AvailableNewRenderer)
-				{
 					DefaultShader.Deactivate();
-				}
 				MotionBlur.RenderFullscreen(Interface.CurrentOptions.MotionBlur, FrameRate, Math.Abs(Camera.CurrentSpeed));
 			}
 
@@ -363,8 +343,6 @@ namespace OpenBve.Graphics
 			Fog.Enabled = false;
 			UpdateViewport(ViewportChangeMode.ChangeToCab);
 			
-			if (AvailableNewRenderer)
-			{
 				/*
 				 * We must reset the shader between overlay and world layers for correct lighting results.
 				 * Additionally, the viewport change updates the projection matrix
@@ -372,7 +350,6 @@ namespace OpenBve.Graphics
 				DefaultShader.Activate();
 				ResetShader(DefaultShader);
 				DefaultShader.SetCurrentProjectionMatrix(CurrentProjectionMatrix);
-			}
 			CurrentViewMatrix = Matrix4D.LookAt(Vector3.Zero, new Vector3(Camera.AbsoluteDirection.X, Camera.AbsoluteDirection.Y, -Camera.AbsoluteDirection.Z), new Vector3(Camera.AbsoluteUp.X, Camera.AbsoluteUp.Y, -Camera.AbsoluteUp.Z));
 			
 			if (Camera.CurrentRestriction == CameraRestrictionMode.NotAvailable || Camera.CurrentRestriction == CameraRestrictionMode.Restricted3D)
@@ -384,21 +361,13 @@ namespace OpenBve.Graphics
 				Color24 prevOptionDiffuseColor = Lighting.OptionDiffuseColor;
 				Lighting.OptionAmbientColor = Color24.LightGrey;
 				Lighting.OptionDiffuseColor = Color24.LightGrey;
-				if (AvailableNewRenderer)
-				{
-					DefaultShader.SetIsLight(true);
-					TransformedLightPosition = new Vector3(Lighting.OptionLightPosition.X, Lighting.OptionLightPosition.Y, -Lighting.OptionLightPosition.Z);
-					DefaultShader.SetLightPosition(TransformedLightPosition);
-					DefaultShader.SetLightAmbient(Lighting.OptionAmbientColor);
-					DefaultShader.SetLightDiffuse(Lighting.OptionDiffuseColor);
-					DefaultShader.SetLightSpecular(Lighting.OptionSpecularColor);
-					DefaultShader.SetLightModel(Lighting.LightModel);
-				}
-				else
-				{
-					GL.Light(LightName.Light0, LightParameter.Ambient, new[] { inv255 * 178, inv255 * 178, inv255 * 178, 1.0f });
-					GL.Light(LightName.Light0, LightParameter.Diffuse, new[] { inv255 * 178, inv255 * 178, inv255 * 178, 1.0f });	
-				}
+				DefaultShader.SetIsLight(true);
+				TransformedLightPosition = new Vector3(Lighting.OptionLightPosition.X, Lighting.OptionLightPosition.Y, -Lighting.OptionLightPosition.Z);
+				DefaultShader.SetLightPosition(TransformedLightPosition);
+				DefaultShader.SetLightAmbient(Lighting.OptionAmbientColor);
+				DefaultShader.SetLightDiffuse(Lighting.OptionDiffuseColor);
+				DefaultShader.SetLightSpecular(Lighting.OptionSpecularColor);
+				DefaultShader.SetLightModel(Lighting.LightModel);
 				
 
 				// overlay opaque face
@@ -456,7 +425,7 @@ namespace OpenBve.Graphics
 						{
 							if (additive)
 							{
-								SetAlphaFunc();
+								SetAlphaFunc(AlphaFunction.Greater, 0.9f);
 								additive = false;
 							}
 						}
@@ -476,10 +445,7 @@ namespace OpenBve.Graphics
                  */
 				ResetOpenGlState();
 				OptionLighting = false;
-				if (AvailableNewRenderer)
-				{
-					DefaultShader.SetIsLight(false);
-				}
+				DefaultShader.SetIsLight(false);
 				
 				SetBlendFunc();
 				UnsetAlphaFunc();

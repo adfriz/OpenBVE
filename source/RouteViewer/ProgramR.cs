@@ -48,7 +48,6 @@ namespace RouteViewer
 		private static bool ShiftPressed = false;
 		private static bool ControlPressed = false;
 		private static bool AltPressed = false;
-		private static bool RPressed = false;
 
 		// mouse
 		private static int MouseButton;
@@ -629,10 +628,7 @@ namespace RouteViewer
 						    Math.Abs(prevShadowBias - Interface.CurrentOptions.ShadowBias) > 0.000001f ||
 						    Math.Abs(prevShadowNormalBias - Interface.CurrentOptions.ShadowNormalBias) > 0.01f)
 						{
-							if (Program.Renderer.AvailableNewRenderer)
-							{
-								Program.Renderer.ReloadShadowSettings();
-							}
+							Program.Renderer.ReloadShadowSettings();
 						}
 					}
 					Application.DoEvents();
@@ -863,13 +859,6 @@ namespace RouteViewer
 						}
 					}
 					break;
-				case Key.R:
-					if (!RPressed)
-					{
-						RPressed = true;
-						Renderer.SwitchOpenGLVersion();
-					}
-					break;
 				case Key.P:
 					if (CurrentHost.Platform == HostPlatform.AppleOSX && IntPtr.Size != 4)
 					{
@@ -951,9 +940,6 @@ namespace RouteViewer
 				case Key.Keypad0:
 				case Key.KeypadPeriod:
 					Renderer.Camera.AlignmentDirection.Zoom = 0.0;
-					break;
-				case Key.R:
-					RPressed = false;
 					break;
 			}
 		}

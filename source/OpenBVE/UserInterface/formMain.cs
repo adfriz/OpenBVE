@@ -460,7 +460,6 @@ namespace OpenBve {
 			checkboxDerailments.Checked = Interface.CurrentOptions.Derailments;
 			checkBoxLoadInAdvance.Checked = Interface.CurrentOptions.LoadInAdvance;
 			checkBoxUnloadTextures.Checked = Interface.CurrentOptions.UnloadUnusedTextures;
-			checkBoxIsUseNewRenderer.Checked = Interface.CurrentOptions.IsUseNewRenderer;
 			// Shadow Resolution
 			switch (Interface.CurrentOptions.ShadowResolution)
 			{
@@ -801,7 +800,6 @@ namespace OpenBve {
 			groupBoxAdvancedOptions.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","advanced"});
 			checkBoxLoadInAdvance.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","advanced_load_advance"});
 			checkBoxUnloadTextures.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","advanced_unload_textures"});
-			checkBoxIsUseNewRenderer.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","advanced_is_use_new_renderer"});
 			labelTimeAcceleration.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","advanced_timefactor"});
 			labelCursor.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","advanced_cursor"});
 			//Other Options
@@ -1203,7 +1201,6 @@ namespace OpenBve {
 			Interface.CurrentOptions.UnloadUnusedTextures = checkBoxUnloadTextures.Checked;
 			Interface.CurrentOptions.OldTransparencyMode = checkBoxTransparencyFix.Checked;
 			Interface.CurrentOptions.EnableBveTsHacks = checkBoxHacks.Checked;
-			Interface.CurrentOptions.IsUseNewRenderer = checkBoxIsUseNewRenderer.Checked;
 			// Shadow Resolution
 			switch (comboboxShadowResolution.SelectedIndex)
 			{

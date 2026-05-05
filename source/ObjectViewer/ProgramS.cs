@@ -50,7 +50,6 @@ namespace ObjectViewer {
         internal static int LightingTarget = 1;
         internal static double LightingRelative = 1.0;
         private static bool ShiftPressed = false;
-        private static bool RPRessed = false;
 
 		internal static HostInterface CurrentHost;
 
@@ -751,13 +750,6 @@ namespace ObjectViewer {
 	                    Renderer.ApplyBackgroundColor();
 	                }
 	                break;
-				case Key.R:
-					if (!RPRessed)
-					{
-						RPRessed = true;
-						Renderer.SwitchOpenGLVersion();
-					}
-					break;
 				case Key.F11:
 					Renderer.RenderStatsOverlay = !Renderer.RenderStatsOverlay;
 					break;
@@ -816,9 +808,6 @@ namespace ObjectViewer {
 	            case Key.Keypad3:
 	                MoveZ = 0;
 	                break;
-				case Key.R:
-					RPRessed = false;
-					break;
 	        }
 	    }
 	}

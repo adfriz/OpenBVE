@@ -100,20 +100,39 @@ namespace LibRender2.Overlays
 
 			foreach (var points in sections)
 			{
-				if (points.Count == 0) continue;
+				if (points.Count < 2) continue;
 				
-				GL.LineWidth(LineWidth);
-				GL.Begin(PrimitiveType.LineStrip);
-				
-				
+				LibRenderVertex[] vertices = new LibRenderVertex[points.Count];
 				for (int j = 0; j < points.Count; j++)
 				{
-					GL.Color3(Color.R, Color.G, Color.B);
-					GL.Vertex3(points[j].X, points[j].Y, -points[j].Z);
+					vertices[j] = new LibRenderVertex(new Vector3f((float)points[j].X, (float)points[j].Y, (float)points[j].Z))
+					{
+						Color = new Color128(Color.R / 255.0f, Color.G / 255.0f, Color.B / 255.0f, 1.0f)
+					};
 				}
 
-				GL.End();
-				GL.LineWidth(1);
+				using (VertexArrayObject vao = new VertexArrayObject())
+				{
+					using (VertexBufferObject vbo = new VertexBufferObject(vertices, BufferUsageHint.StreamDraw))
+					{
+						vao.Bind();
+						vbo.Bind();
+						vbo.BufferData();
+						vbo.SetAttribute(Renderer.DefaultShader.VertexLayout);
+						
+						Renderer.DefaultShader.Activate();
+						Renderer.DefaultShader.SetCurrentProjectionMatrix(Renderer.CurrentProjectionMatrix);
+						Renderer.DefaultShader.SetCurrentModelViewMatrix(Renderer.CurrentViewMatrix);
+						Renderer.DefaultShader.SetIsLight(false);
+						Renderer.DefaultShader.DisableTexturing();
+
+						GL.LineWidth(LineWidth);
+						GL.DrawArrays(PrimitiveType.LineStrip, 0, vertices.Length);
+						GL.LineWidth(1.0f);
+						
+						Renderer.DefaultShader.Deactivate();
+					}
+				}
 			}
 		}
 

@@ -1,4 +1,4 @@
-﻿using OpenBveApi.Math;
+using OpenBveApi.Math;
 using OpenBveApi.Textures;
 using OpenTK.Graphics.OpenGL;
 using System.Collections.Generic;
@@ -47,10 +47,6 @@ namespace LibRender2.Overlays
 				{
 					double w = MarkerTextures[i].Size.X == 0 ? MarkerTextures[i].Texture.Width : MarkerTextures[i].Size.X;
 					double h = MarkerTextures[i].Size.Y == 0 ? MarkerTextures[i].Texture.Height : MarkerTextures[i].Size.Y;
-					if (!Renderer.currentOptions.ForceForwardsCompatibleContext)
-					{
-						GL.Color4(1.0, 1.0, 1.0, 1.0);
-					}
 					Renderer.Rectangle.Draw(MarkerTextures[i].Texture, new Vector2(Renderer.Screen.Width - w - 8, yCoordinate), new Vector2(w, h));
 					yCoordinate += (int)h + 8;
 				}

@@ -1,4 +1,6 @@
-﻿using System;
+using System;
+using OpenBveApi.Colors;
+using OpenBveApi.Math;
 using OpenTK.Graphics.OpenGL;
 
 namespace LibRender2.MotionBlurs
@@ -85,34 +87,8 @@ namespace LibRender2.MotionBlurs
 				// initialize
 				renderer.SetBlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
-				GL.MatrixMode(MatrixMode.Projection);
-				GL.PushMatrix();
-				GL.LoadIdentity();
-				GL.Ortho(0.0f, renderer.Screen.Width, 0.0f, renderer.Screen.Height, -1.0f, 1.0f);
-
-				GL.MatrixMode(MatrixMode.Modelview);
-				GL.PushMatrix();
-				GL.LoadIdentity();
-
 				// render
-				GL.BindTexture(TextureTarget.Texture2D, PixelBufferOpenGlTextureIndex);
-				GL.Color4(1.0f, 1.0f, 1.0f, factor);
-				GL.Begin(PrimitiveType.Polygon);
-				GL.TexCoord2(0.0f, 0.0f);
-				GL.Vertex2(0.0f, 0.0f);
-				GL.TexCoord2(0.0f, 1.0f);
-				GL.Vertex2(0.0f, renderer.Screen.Height);
-				GL.TexCoord2(1.0f, 1.0f);
-				GL.Vertex2(renderer.Screen.Width, renderer.Screen.Height);
-				GL.TexCoord2(1.0f, 0.0f);
-				GL.Vertex2(renderer.Screen.Width, 0.0f);
-				GL.End();
-
-				// finalize
-				GL.PopMatrix();
-
-				GL.MatrixMode(MatrixMode.Projection);
-				GL.PopMatrix();
+				renderer.Rectangle.Draw(PixelBufferOpenGlTextureIndex, Vector2.Null, new Vector2(renderer.Screen.Width, renderer.Screen.Height), new Color128(1.0f, 1.0f, 1.0f, factor));
 			}
 
 			// retrieve buffer
