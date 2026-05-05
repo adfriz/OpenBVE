@@ -18,6 +18,10 @@ namespace LibRender2
 		internal readonly int handle;
 		private VertexBufferObject vbo;
 		private IndexBufferObject ibo;
+		private InstanceBufferObject instanceVbo;
+
+		public InstanceBufferObject InstanceVbo => instanceVbo;
+
 		private bool disposed;
 
 		/// <summary>
@@ -90,6 +94,27 @@ namespace LibRender2
 		}
 
 		/// <summary>
+		/// Sets the Instance Buffer Object for the VAO
+		/// </summary>
+		public void SetInstanceVBO(InstanceBufferObject VBO, VertexLayout VertexLayout)
+		{
+			instanceVbo = VBO;
+			instanceVbo.Bind();
+			
+			// Set attributes for the instance matrix
+			if (VertexLayout.InstanceMatrix >= 0)
+			{
+				int mat4Size = Vector4.SizeInBytes * 4;
+				for (int i = 0; i < 4; i++)
+				{
+					GL.EnableVertexAttribArray(VertexLayout.InstanceMatrix + i);
+					GL.VertexAttribPointer(VertexLayout.InstanceMatrix + i, 4, VertexAttribPointerType.Float, false, mat4Size, (IntPtr)(i * Vector4.SizeInBytes));
+					GL.VertexAttribDivisor(VertexLayout.InstanceMatrix + i, 1);
+				}
+			}
+		}
+
+		/// <summary>
 		/// Updates the VertexData in the the VBO
 		/// </summary>
 		public void UpdateVBO(LibRenderVertex[] VertexData, int Offset = 0)
@@ -119,6 +144,14 @@ namespace LibRender2
 		}
 
 		/// <summary>
+		/// Draw using VAO with hardware instancing
+		/// </summary>
+		public void DrawInstanced(PrimitiveType DrawMode, int Start, int Count, int InstanceCount)
+		{
+			ibo.DrawInstanced(DrawMode, Start, Count, InstanceCount);
+		}
+
+		/// <summary>
 		/// Unbinds the VAO deactivating the VAO from use
 		/// </summary>
 		public void UnBind()
@@ -140,6 +173,7 @@ namespace LibRender2
 
 			ibo?.Dispose();
 			vbo?.Dispose();
+			instanceVbo?.Dispose();
 
 			GL.DeleteVertexArray(handle);
 			GC.SuppressFinalize(this);

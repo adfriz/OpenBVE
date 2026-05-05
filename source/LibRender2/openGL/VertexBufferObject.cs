@@ -80,6 +80,15 @@ namespace LibRender2
 			{
 				GL.EnableVertexAttribArray(VertexLayout.MatrixChain);
 			}
+
+			if (VertexLayout.InstanceMatrix >= 0)
+			{
+				for (int i = 0; i < 4; i++)
+				{
+					GL.EnableVertexAttribArray(VertexLayout.InstanceMatrix + i);
+					GL.VertexAttribDivisor(VertexLayout.InstanceMatrix + i, 1);
+				}
+			}
 		}
 
 		/// <summary>
@@ -116,6 +125,16 @@ namespace LibRender2
 			{
 				// NOTE: Must use VertexAttribIPointer here, as VertexAttribPointer actually converts to float and normalizes.....
 				GL.VertexAttribIPointer(VertexLayout.MatrixChain, 3, VertexAttribIntegerType.Int, vertexSize, (IntPtr)offset);
+			}
+
+			if (VertexLayout.InstanceMatrix >= 0)
+			{
+				// mat4 uses 4 attribute slots
+				int mat4Size = Vector4.SizeInBytes * 4;
+				for (int i = 0; i < 4; i++)
+				{
+					GL.VertexAttribPointer(VertexLayout.InstanceMatrix + i, 4, VertexAttribPointerType.Float, false, mat4Size, (IntPtr)(i * Vector4.SizeInBytes));
+				}
 			}
 		}
 

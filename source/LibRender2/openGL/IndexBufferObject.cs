@@ -50,6 +50,11 @@ namespace LibRender2
 		internal abstract void Draw(PrimitiveType DrawMode, int Start, int Count);
 
 		/// <summary>
+		/// Draws the object using hardware instancing
+		/// </summary>
+		internal abstract void DrawInstanced(PrimitiveType DrawMode, int Start, int Count, int InstanceCount);
+
+		/// <summary>
 		/// Dispose method to clean up the IBO/EBO releases the OpenGL Buffer
 		/// </summary>
 		public void Dispose()
@@ -113,6 +118,11 @@ namespace LibRender2
 		{
 			GL.DrawElements(DrawMode, Count, DrawElementsType.UnsignedShort, Start * sizeof(ushort));
 		}
+
+		internal override void DrawInstanced(PrimitiveType DrawMode, int Start, int Count, int InstanceCount)
+		{
+			GL.DrawElementsInstanced(DrawMode, Count, DrawElementsType.UnsignedShort, (IntPtr)(Start * sizeof(ushort)), InstanceCount);
+		}
 	}
 
 	public class IndexBufferObjectUI : IndexBufferObject<uint>
@@ -134,6 +144,11 @@ namespace LibRender2
 		internal override void Draw(PrimitiveType DrawMode, int Start, int Count)
 		{
 			GL.DrawElements(DrawMode, Count, DrawElementsType.UnsignedInt, Start * sizeof(uint));
+		}
+
+		internal override void DrawInstanced(PrimitiveType DrawMode, int Start, int Count, int InstanceCount)
+		{
+			GL.DrawElementsInstanced(DrawMode, Count, DrawElementsType.UnsignedInt, (IntPtr)(Start * sizeof(uint)), InstanceCount);
 		}
 	}
 }

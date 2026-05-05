@@ -67,6 +67,7 @@ namespace LibRender2.Shaders
 		private readonly int uNormalBias2Location;
 		private readonly int uNormalBias3Location;
 		private readonly int uCascadeCountLocation;
+		private readonly int uIsInstancedLocation;
 
 
 		/// <summary>
@@ -103,6 +104,7 @@ namespace LibRender2.Shaders
 			uNormalBias2Location = GL.GetUniformLocation(Handle, "uNormalBias2");
 			uNormalBias3Location = GL.GetUniformLocation(Handle, "uNormalBias3");
 			uCascadeCountLocation = GL.GetUniformLocation(Handle, "uCascadeCount");
+			uIsInstancedLocation = GL.GetUniformLocation(Handle, "uIsInstanced");
 
 			VertexLayout = GetVertexLayout();
 			UniformLayout = GetUniformLayout();
@@ -117,6 +119,7 @@ namespace LibRender2.Shaders
 			GL.ProgramUniform1(Handle, uShadowEnabledLocation, 0);
 			GL.ProgramUniform1(Handle, uCascadeCountLocation, 0);
 			GL.ProgramUniform1(Handle, uShadowStrengthLocation, 1.0f);
+			GL.ProgramUniform1(Handle, uIsInstancedLocation, 0);
 		}
 		
 		public VertexLayout GetVertexLayout()
@@ -128,6 +131,7 @@ namespace LibRender2.Shaders
 				UV = (short)GL.GetAttribLocation(Handle, "iUv"),
 				Color = (short)GL.GetAttribLocation(Handle, "iColor"),
 				MatrixChain = (short)GL.GetAttribLocation(Handle, "iMatrixChain"),
+				InstanceMatrix = (short)GL.GetAttribLocation(Handle, "iInstanceMatrix"),
 			};
 
 
@@ -535,6 +539,11 @@ namespace LibRender2.Shaders
 				(float)m.Row2.X, (float)m.Row2.Y, (float)m.Row2.Z, (float)m.Row2.W,
 				(float)m.Row3.X, (float)m.Row3.Y, (float)m.Row3.Z, (float)m.Row3.W
 			};
+		}
+
+		public void SetIsInstanced(bool isInstanced)
+		{
+			GL.ProgramUniform1(Handle, uIsInstancedLocation, isInstanced ? 1 : 0);
 		}
 
 		#endregion

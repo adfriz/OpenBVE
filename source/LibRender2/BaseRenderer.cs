@@ -133,6 +133,7 @@ namespace LibRender2
 		public Loading Loading;
 		public Keys Keys;
 		public MotionBlur MotionBlur;
+		public InstanceManager Instances;
 		public Fonts Fonts;
 
 		public Matrix4D CurrentProjectionMatrix;
@@ -412,6 +413,7 @@ namespace LibRender2
 			Loading = new Loading(this);
 			Keys = new Keys(this);
 			MotionBlur = new MotionBlur(this);
+			Instances = new InstanceManager(this);
 
 			StaticObjectStates = new List<ObjectState>();
 			DynamicObjectStates = new List<ObjectState>();
@@ -703,8 +705,8 @@ namespace LibRender2
 					// Render both opaque and alpha-tested geometry into the shadow map.
 					// This ensures semi-transparent cutout objects (fences, trees, etc. using `transparent`) 
 					// cast proper silhouettes instead of being skipped.
-					renderFaces(VisibleObjects.OpaqueFaces);
-					renderFaces(VisibleObjects.AlphaFaces);
+					renderOpaqueFaces(ShadowDepthShaderProgram as Shader, VisibleObjects.OpaqueFaces);
+					renderOpaqueFaces(ShadowDepthShaderProgram as Shader, VisibleObjects.AlphaFaces);
 				}
 				CSMShadowMaps.Unbind();
 			}
@@ -1518,6 +1520,47 @@ namespace LibRender2
 
 		// Cached object state and matricies for shader drawing
 		protected internal ObjectState lastObjectState;
+
+		/// <summary>Renders a collection of opaque faces, using instancing where possible</summary>
+		protected void renderOpaqueFaces(Shader shader, IEnumerable<FaceState> opaqueFaces)
+		{
+			List<FaceState> faces = opaqueFaces.ToList();
+			for (int i = 0; i < faces.Count; i++)
+			{
+				FaceState face = faces[i];
+				if (face.Object.Prototype.Mesh.VAO == null) continue;
+
+				// Batching logic
+				int batchCount = 1;
+				PrimitiveType drawMode = GetPrimitiveType(face.Face.Flags);
+
+				if (AvailableNewRenderer && shader != null && !face.Object.Prototype.Dynamic && !OptionWireFrame)
+				{
+					while (i + batchCount < faces.Count && faces[i + batchCount].Object.Prototype == face.Object.Prototype && batchCount < 1024)
+					{
+						// Ensure batching only happens if the primitive type and material are compatible
+						// For static objects, this is almost always true if they share the same Prototype.
+						if (GetPrimitiveType(faces[i + batchCount].Face.Flags) != drawMode)
+						{
+							break;
+						}
+						batchCount++;
+					}
+				}
+
+				if (batchCount > 10) 
+				{
+					Instances.RenderBatch(shader, drawMode, faces, i, batchCount);
+					i += batchCount - 1;
+					lastObjectState = null;
+					lastVAO = -1;
+				}
+				else
+				{
+					face.Draw();
+				}
+			}
+		}
 		private Matrix4D lastModelMatrix;
 		private Matrix4D lastModelViewMatrix;
 		private bool sendToShader;

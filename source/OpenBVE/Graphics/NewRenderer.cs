@@ -239,10 +239,7 @@ namespace OpenBve.Graphics
 				overlayAlphaFaces = VisibleObjects.GetSortedPolygons(true);
 			}
 
-			foreach (FaceState face in opaqueFaces)
-			{
-				face.Draw();
-			}
+			renderOpaqueFaces(DefaultShader, opaqueFaces);
 
 			// alpha face
 			ResetOpenGlState();
@@ -253,10 +250,7 @@ namespace OpenBve.Graphics
 				SetAlphaFunc(AlphaFunction.Greater, 0.0f);
 				GL.DepthMask(false);
 
-				foreach (FaceState face in alphaFaces)
-				{
-					face.Draw();
-				}
+				renderOpaqueFaces(DefaultShader, alphaFaces);
 			}
 			else
 			{
@@ -402,10 +396,7 @@ namespace OpenBve.Graphics
 				
 
 				// overlay opaque face
-				foreach (FaceState face in overlayOpaqueFaces)
-				{
-					face.Draw();
-				}
+				renderOpaqueFaces(DefaultShader, overlayOpaqueFaces);
 
 				// overlay alpha face
 				ResetOpenGlState();
@@ -485,10 +476,7 @@ namespace OpenBve.Graphics
 				UnsetAlphaFunc();
 				GL.Disable(EnableCap.DepthTest);
 				GL.DepthMask(false);
-				foreach (FaceState face in overlayAlphaFaces)
-				{
-					face.Draw();
-				}
+				renderOpaqueFaces(DefaultShader, overlayAlphaFaces);
 			}
 			// render touch
 			OptionLighting = false;

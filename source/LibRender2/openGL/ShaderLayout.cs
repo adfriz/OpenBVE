@@ -29,6 +29,11 @@ namespace LibRender2
 		/// The handle of "iMatrixChain" within the shader
 		/// </summary>
 		public short MatrixChain = -1;
+
+		/// <summary>
+		/// The handle of "iInstanceMatrix" within the shader
+		/// </summary>
+		public short InstanceMatrix = -1;
 	}
 
 	public class UniformLayout

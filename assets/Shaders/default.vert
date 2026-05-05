@@ -49,6 +49,7 @@ layout(location = 1) in vec3 iNormal;
 layout(location = 2) in vec2 iUv;
 layout(location = 3) in vec4 iColor;
 layout(location = 4) in ivec3 iMatrixChain;
+layout(location = 5) in mat4 iInstanceMatrix;
 
 uniform mat4 uCurrentProjectionMatrix;
 uniform mat4 uCurrentModelViewMatrix;
@@ -60,6 +61,7 @@ uniform mat4 uLightSpaceMatrix1;  // Cascade 1 (mid)
 uniform mat4 uLightSpaceMatrix2;  // Cascade 2 (far)
 uniform mat4 uLightSpaceMatrix3;  // Cascade 3 (extra far)
 uniform mat4 uModelMatrix;
+uniform bool uIsInstanced;
 
 
 uniform bool uIsLight;
@@ -82,9 +84,9 @@ out vec4 vPosLightSpace3;
 out float vViewDepth;
 out vec3 vNormal;
 
-vec4 getLightResult()
+vec4 getLightResult(mat4 modelView)
 {
-	vNormal = normalize(mat3(transpose(inverse(uCurrentModelViewMatrix))) * vec3(iNormal.x, iNormal.y, -iNormal.z));
+	vNormal = normalize(mat3(transpose(inverse(modelView))) * vec3(iNormal.x, iNormal.y, -iNormal.z));
 	float nDotVP = max(0.0, dot(vNormal, normalize(vec3(uLight.position))));
 	float nDotHV = max(0.0, dot(vNormal, normalize(vec3(oViewPos.xyz + uLight.position))));
 	float pf = nDotVP == 0.0 ? 0.0 : pow(nDotHV, uMaterial.shininess);
@@ -206,11 +208,12 @@ void main()
 	pos.z = -pos.z;
 	vec4 transformedPosition = vec4(pos, 1.0);
 
-	oViewPos = uCurrentModelViewMatrix * transformedPosition;
+	mat4 modelView = uIsInstanced ? iInstanceMatrix : uCurrentModelViewMatrix;
+	oViewPos = modelView * transformedPosition;
 	gl_Position = uCurrentProjectionMatrix * oViewPos;
 	
 	// Pass normal to fragment shader (un-negated Z to match lighting expected convention)
-	vNormal = normalize(mat3(transpose(inverse(uCurrentModelViewMatrix))) * vec3(iNormal.x, iNormal.y, -iNormal.z));
+	vNormal = normalize(mat3(transpose(inverse(modelView))) * vec3(iNormal.x, iNormal.y, -iNormal.z));
 
 	if (uShadowEnabled)
 	{
@@ -236,5 +239,5 @@ void main()
 
 	oUv = (uCurrentTextureMatrix * vec4(iUv, 1.0, 1.0)).xy;
 	
-	oLightResult = uIsLight && (uMaterialFlags & 4) == 0 ? getLightResult() : uMaterial.ambient;
+	oLightResult = uIsLight && (uMaterialFlags & 4) == 0 ? getLightResult(modelView) : uMaterial.ambient;
 }

@@ -208,10 +208,7 @@ namespace RouteViewer
 				alphaFaces = VisibleObjects.GetSortedPolygons();
 			}
 			
-			foreach (FaceState face in opaqueFaces)
-			{
-				face.Draw();
-			}
+			renderOpaqueFaces(DefaultShader, opaqueFaces);
 
 			// alpha face
 			ResetOpenGlState();
@@ -222,10 +219,7 @@ namespace RouteViewer
 				SetAlphaFunc(AlphaFunction.Greater, 0.0f);
 				GL.DepthMask(false);
 
-				foreach (FaceState face in alphaFaces)
-				{
-					face.Draw();
-				}
+				renderOpaqueFaces(DefaultShader, alphaFaces);
 			}
 			else
 			{
