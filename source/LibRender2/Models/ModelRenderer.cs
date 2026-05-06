@@ -98,9 +98,7 @@ namespace LibRender2.Models
 			if (state.Matricies != null && state.Matricies.Length > 0 && state != lastObjectState)
 			{
 				shader.SetCurrentAnimationMatricies(state);
-#pragma warning disable CS0618
-				GL.BindBufferBase(BufferTarget.UniformBuffer, 0, state.MatrixBufferIndex);
-#pragma warning restore CS0618
+				renderer.GraphicsDevice.BindBufferBase(BufferRangeTarget.UniformBuffer, 0, state.MatrixBufferIndex);
 			}
 
 			// matrix
@@ -196,8 +194,8 @@ namespace LibRender2.Models
 				if (material.BlendMode == MeshMaterialBlendMode.Additive)
 				{
 					factor = 1.0f;
-					GL.Enable(EnableCap.Blend);
-					GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.One);
+					renderer.GraphicsDevice.SetBlend(true);
+					renderer.GraphicsDevice.SetBlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.One);
 					shader.SetFog(false);
 				}
 				else if (material.NighttimeTexture == null || material.NighttimeTexture == material.DaytimeTexture)
@@ -226,7 +224,7 @@ namespace LibRender2.Models
 				renderer.GraphicsDevice.BindTexture(material.NighttimeTexture.OpenGlTextures[(int)material.WrapMode].Name);
 				renderer.LastBoundTexture = material.NighttimeTexture.OpenGlTextures[(int)material.WrapMode];
 
-				GL.Enable(EnableCap.Blend);
+				renderer.GraphicsDevice.SetBlend(true);
 				shader.SetAlphaTest(true);
 				shader.SetAlphaFunction(AlphaFunction.Greater, 0.0f);
 				

@@ -110,19 +110,19 @@ namespace OpenBve.Graphics
 					float cr = n * inv255 * Program.CurrentRoute.CurrentFog.Color.R;
 					float cg = n * inv255 * Program.CurrentRoute.CurrentFog.Color.G;
 					float cb = n * inv255 * Program.CurrentRoute.CurrentFog.Color.B;
-					GL.ClearColor(cr, cg, cb, 1.0f);
+					GraphicsDevice.SetClearColor(cr, cg, cb, 1.0f);
 				}
 				else
 				{
-					GL.ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+					GraphicsDevice.SetClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 				}
 			}
 			else
 			{
-				GL.ClearColor(0.67f, 0.67f, 0.67f, 1.0f);
+				GraphicsDevice.SetClearColor(0.67f, 0.67f, 0.67f, 1.0f);
 			}
 
-			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+			GraphicsDevice.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 			
 			// set up camera and lighting early for shadows
 			CurrentViewMatrix = Matrix4D.LookAt(Vector3.Zero, new Vector3(Camera.AbsoluteDirection.X, Camera.AbsoluteDirection.Y, -Camera.AbsoluteDirection.Z), new Vector3(Camera.AbsoluteUp.X, Camera.AbsoluteUp.Y, -Camera.AbsoluteUp.Z));
@@ -173,7 +173,7 @@ namespace OpenBve.Graphics
 
 			// render background
 			// n.b. must disable shadows
-			GL.Disable(EnableCap.DepthTest);
+			GraphicsDevice.SetDepthTest(false);
 			DefaultShader.SetShadowEnabled(false);
 			Program.CurrentRoute.UpdateBackground(TimeElapsed, Program.Renderer.CurrentInterface != InterfaceType.Normal);
 			DefaultShader.SetShadowEnabled(ShadowsEnabled);
@@ -234,7 +234,7 @@ namespace OpenBve.Graphics
 			{
 				SetBlendFunc();
 				SetAlphaFunc(AlphaFunction.Greater, 0.0f);
-				GL.DepthMask(false);
+				GraphicsDevice.SetDepthMask(false);
 
 				foreach (FaceState face in alphaFaces)
 				{
@@ -288,8 +288,8 @@ namespace OpenBve.Graphics
 			// motion blur
 			ResetOpenGlState();
 			SetAlphaFunc(AlphaFunction.Greater, 0.0f);
-			GL.Disable(EnableCap.DepthTest);
-			GL.DepthMask(false);
+			GraphicsDevice.SetDepthTest(false);
+			GraphicsDevice.SetDepthMask(false);
 			OptionLighting = false;
 
 			if (Interface.CurrentOptions.MotionBlur != MotionBlurMode.None)
@@ -355,7 +355,7 @@ namespace OpenBve.Graphics
 			if (Camera.CurrentRestriction == CameraRestrictionMode.NotAvailable || Camera.CurrentRestriction == CameraRestrictionMode.Restricted3D)
 			{
 				ResetOpenGlState(); // TODO: inserted
-				GL.Clear(ClearBufferMask.DepthBufferBit);
+				GraphicsDevice.Clear(ClearBufferMask.DepthBufferBit);
 				OptionLighting = true;
 				Color24 prevOptionAmbientColor = Lighting.OptionAmbientColor;
 				Color24 prevOptionDiffuseColor = Lighting.OptionDiffuseColor;
@@ -382,7 +382,7 @@ namespace OpenBve.Graphics
 				{
 					SetBlendFunc();
 					SetAlphaFunc(AlphaFunction.Greater, 0.0f);
-					GL.DepthMask(false);
+					GraphicsDevice.SetDepthMask(false);
 
 					foreach (FaceState face in overlayAlphaFaces)
 					{
@@ -393,7 +393,7 @@ namespace OpenBve.Graphics
 				{
 					UnsetBlendFunc();
 					SetAlphaFunc(AlphaFunction.Equal, 1.0f);
-					GL.DepthMask(true);
+					GraphicsDevice.SetDepthMask(true);
 
 					foreach (FaceState face in overlayAlphaFaces)
 					{
@@ -408,7 +408,7 @@ namespace OpenBve.Graphics
 
 					SetBlendFunc();
 					SetAlphaFunc(AlphaFunction.Less, 1.0f);
-					GL.DepthMask(false);
+					GraphicsDevice.SetDepthMask(false);
 					bool additive = false;
 
 					foreach (FaceState face in overlayAlphaFaces)
@@ -449,8 +449,8 @@ namespace OpenBve.Graphics
 				
 				SetBlendFunc();
 				UnsetAlphaFunc();
-				GL.Disable(EnableCap.DepthTest);
-				GL.DepthMask(false);
+				GraphicsDevice.SetDepthTest(false);
+				GraphicsDevice.SetDepthMask(false);
 				foreach (FaceState face in overlayAlphaFaces)
 				{
 					face.Draw();
@@ -464,7 +464,7 @@ namespace OpenBve.Graphics
 			ResetOpenGlState();
 			UnsetAlphaFunc();
 			SetBlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha); //FIXME: Remove when text switches between two renderer types
-			GL.Disable(EnableCap.DepthTest);
+			GraphicsDevice.SetDepthTest(false);
 			overlays.Render(RealTimeElapsed);
 			switch (CurrentInterface)
 			{

@@ -203,12 +203,46 @@ namespace LibRender2.GraphicsCore
 			}
 		}
 
+		/// <summary>Sets the clear color</summary>
+		public void SetClearColor(float r, float g, float b, float a)
+		{
+			GL.ClearColor(r, g, b, a);
+		}
+
+		/// <summary>Clears the specified buffers</summary>
+		public void Clear(ClearBufferMask mask)
+		{
+			GL.Clear(mask);
+		}
+
+		/// <summary>Sets the viewport</summary>
+		public void SetViewport(int x, int y, int width, int height)
+		{
+			GL.Viewport(x, y, width, height);
+		}
+
+		/// <summary>Sets the polygon mode (Wireframe / Solid)</summary>
+		public void SetPolygonMode(MaterialFace face, PolygonMode mode)
+		{
+			if (currentPolygonMode != mode)
+			{
+				GL.PolygonMode(face, mode);
+				currentPolygonMode = mode;
+			}
+		}
+
+		/// <summary>Binds a buffer to an indexed target</summary>
+		public void BindBufferBase(BufferRangeTarget target, int index, int buffer)
+		{
+			GL.BindBufferBase(target, index, buffer);
+		}
+
 		/// <summary>Resets the cached state (Call after external GL context changes if any)</summary>
 		public void ResetCache()
 		{
 			lastBoundVAO = -1;
 			lastBoundTexture = -1;
-			currentDepthFunc = (DepthFunction)0;
+			currentDepthFunc = (DepthFunction) 0;
 			// Re-query actual GL state for booleans
 			depthTestEnabled = GL.IsEnabled(EnableCap.DepthTest);
 			blendEnabled = GL.IsEnabled(EnableCap.Blend);
@@ -220,7 +254,9 @@ namespace LibRender2.GraphicsCore
 			activeTexture = TextureUnit.Texture0;
 			GL.GetInteger(GetPName.FramebufferBinding, out currentFramebuffer);
 			GL.GetInteger(GetPName.CullFaceMode, out int cfm2);
-			cullFaceMode = (CullFaceMode)cfm2;
+			cullFaceMode = (CullFaceMode) cfm2;
+			GL.GetInteger(GetPName.PolygonMode, out int pm);
+			currentPolygonMode = (PolygonMode) pm;
 		}
 	}
 }

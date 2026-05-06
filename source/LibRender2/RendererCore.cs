@@ -751,17 +751,20 @@ namespace LibRender2
 		/// <summary>
 		/// Performs a reset of OpenGL to the default state
 		/// </summary>
+		/// <summary>
+		/// Performs a reset of OpenGL to the default state
+		/// </summary>
 		public virtual void ResetOpenGlState()
 		{
-			GL.Enable(EnableCap.CullFace);
-			GL.CullFace(CullFaceMode.Front);
+			GraphicsDevice.SetCullFace(true);
+			GraphicsDevice.SetCullFaceMode(CullFaceMode.Front);
 			
 			SetBlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 			UnsetBlendFunc();
-			GL.Enable(EnableCap.DepthTest);
-			GL.DepthFunc(DepthFunction.Lequal);
-			GL.Disable(EnableCap.DepthClamp);
-			GL.DepthMask(true);
+			GraphicsDevice.SetDepthTest(true);
+			GraphicsDevice.SetDepthFunc(DepthFunction.Lequal);
+			GraphicsDevice.SetDepthClamp(false);
+			GraphicsDevice.SetDepthMask(true);
 			SetAlphaFunc(AlphaFunction.Greater, 0.9f);
 		}
 
