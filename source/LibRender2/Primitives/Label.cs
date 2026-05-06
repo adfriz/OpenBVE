@@ -37,7 +37,7 @@ namespace LibRender2.Primitives
 		/// <summary>The font for the label</summary>
 		public OpenGlFont Font;
 
-		public Label(BaseRenderer renderer, string text) : base(renderer)
+		public Label(RendererCore renderer, string text) : base(renderer)
 		{
 			Text = text;
 			Font = Renderer.Fonts.LargeFont;

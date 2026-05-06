@@ -312,7 +312,7 @@ namespace ObjectViewer
             Program.Renderer.Initialize();
             Program.Renderer.Lighting.Initialize();
             Program.Renderer.UpdateViewport(ViewportChangeMode.NoChange);
-			Program.Renderer.InitializeVisibility();
+			Program.Renderer.Models.InitializeVisibility();
 			Program.Renderer.UpdateVisibility(true);
             ObjectManager.UpdateAnimatedWorldObjects(0.01, true);
 			Program.RefreshObjects();

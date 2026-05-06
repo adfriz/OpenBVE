@@ -14,7 +14,7 @@ namespace LibRender2.Loadings
 {
 	public class Loading
 	{
-		private readonly BaseRenderer renderer;
+		private readonly RendererCore renderer;
 
 		// the components of the screen background color
 		private readonly Color128 bkg = Color128.Grey;
@@ -34,7 +34,7 @@ namespace LibRender2.Loadings
 		private Texture TextureLoadingBkg;
 		private string ProgramVersion = "1.0";
 
-		internal Loading(BaseRenderer renderer)
+		internal Loading(RendererCore renderer)
 		{
 			this.renderer = renderer;
 		}

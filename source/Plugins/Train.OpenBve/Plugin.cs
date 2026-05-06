@@ -32,7 +32,7 @@ namespace Train.OpenBve
 
 	    internal static Random RandomNumberGenerator = new Random();
 
-	    internal static BaseRenderer Renderer;
+	    internal static RendererCore Renderer;
 
 	    internal TrainDatParser TrainDatParser;
 
@@ -103,9 +103,9 @@ namespace Train.OpenBve
 			FileSystem = fileSystem;
 			CurrentOptions = options;
 			// ReSharper disable once MergeCastWithTypeCheck
-			if (rendererReference is BaseRenderer)
+			if (rendererReference is RendererCore)
 			{
-				Renderer = (BaseRenderer)rendererReference;
+				Renderer = (RendererCore)rendererReference;
 			}
 		}
 

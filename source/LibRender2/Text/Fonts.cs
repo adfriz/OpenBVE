@@ -74,7 +74,7 @@ namespace LibRender2.Text
 			}
 		}
 		
-		public Fonts(HostInterface host, BaseRenderer renderer, string fontName)
+		public Fonts(HostInterface host, RendererCore renderer, string fontName)
 		{
 			currentHost = host;
 			FontFamily uiFont = FontFamily.GenericSansSerif;

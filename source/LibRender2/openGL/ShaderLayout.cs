@@ -1,4 +1,4 @@
-namespace LibRender2
+namespace LibRender2.GraphicsCore
 {
 	/// <summary>
 	/// Vertex layout

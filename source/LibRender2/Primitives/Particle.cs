@@ -23,6 +23,7 @@
 //SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
+using LibRender2.GraphicsCore;
 using OpenBveApi.Math;
 using OpenBveApi.Colors;
 using System.Linq;
@@ -35,10 +36,10 @@ namespace LibRender2.Primitives
 {
 	public class Particle
 	{
-		private readonly BaseRenderer renderer;
+		private readonly RendererCore renderer;
 		private readonly VertexArrayObject[] particlesVAO;
 
-		public Particle(BaseRenderer renderer)
+		public Particle(RendererCore renderer)
 		{
 			this.renderer = renderer;
 			try

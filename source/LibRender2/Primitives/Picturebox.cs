@@ -13,7 +13,7 @@ namespace LibRender2.Primitives
 		private bool flipX;
 		private bool flipY;
 
-		public Picturebox(BaseRenderer renderer) : base(renderer)
+		public Picturebox(RendererCore renderer) : base(renderer)
 		{
 			SizeMode = ImageSizeMode.Zoom;
 		}

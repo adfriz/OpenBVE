@@ -50,7 +50,7 @@ namespace LibRender2.Smoke
 
 		internal readonly double MaximumGrownSize;
 
-		internal readonly BaseRenderer Renderer;
+		internal readonly RendererCore Renderer;
 
 		/// <summary>The texture used for drawing particles</summary>
 		/// <remarks>Must be a 4x4 texture atlas</remarks>
@@ -86,7 +86,7 @@ namespace LibRender2.Smoke
 		/// <param name="movementSpeed">The initial movement vector for a particle (exhaust direction)</param>
 		/// <param name="maximumLifeSpan">The maximum lifespan of a particle</param>
 		/// <param name="type">The type of particles</param>
-		public ParticleSource(BaseRenderer renderer, AbstractCar car, Vector3 offset, double maximumSize, double maximumGrownSize, Vector3 movementSpeed, double maximumLifeSpan, ParticleType type = ParticleType.Smoke)
+		public ParticleSource(RendererCore renderer, AbstractCar car, Vector3 offset, double maximumSize, double maximumGrownSize, Vector3 movementSpeed, double maximumLifeSpan, ParticleType type = ParticleType.Smoke)
 		{
 			Renderer = renderer;
 			Random = new Random();

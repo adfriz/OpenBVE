@@ -1,3 +1,4 @@
+using LibRender2.GraphicsCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,7 +14,7 @@ namespace LibRender2.Overlays
 	{
 		private readonly HostInterface currentHost;
 
-		private readonly BaseRenderer Renderer;
+		private readonly RendererCore Renderer;
 		/// <summary>The length of a track block</summary>
 		private readonly double BlockLength;
 		/// <summary>The overlay color to render</summary>
@@ -137,7 +138,7 @@ namespace LibRender2.Overlays
 		}
 
 
-		public RailPath(HostInterface host, BaseRenderer renderer, int key, double blockLength, Color24 color)
+		public RailPath(HostInterface host, RendererCore renderer, int key, double blockLength, Color24 color)
 		{
 			currentHost = host;
 			Renderer = renderer;

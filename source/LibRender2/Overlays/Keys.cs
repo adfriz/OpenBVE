@@ -7,9 +7,9 @@ namespace LibRender2.Overlays
 {
 	public class Keys
 	{
-		private readonly BaseRenderer renderer;
+		private readonly RendererCore renderer;
 
-		internal Keys(BaseRenderer renderer)
+		internal Keys(RendererCore renderer)
 		{
 			this.renderer = renderer;
 		}

@@ -1,3 +1,4 @@
+using LibRender2.GraphicsCore;
 using System;
 using OpenBveApi.Math;
 using OpenBveApi.Objects;
@@ -9,9 +10,9 @@ namespace LibRender2.Backgrounds
 {
 	public class Background
 	{
-		private readonly BaseRenderer renderer;
+		private readonly RendererCore renderer;
 
-		internal Background(BaseRenderer Renderer)
+		internal Background(RendererCore Renderer)
 		{
 			renderer = Renderer;
 		}
@@ -211,7 +212,7 @@ namespace LibRender2.Backgrounds
 					}
 				}
 				GL.Enable(EnableCap.DepthClamp);
-				renderer.RenderFace(renderer.DefaultShader, data.ObjectState, face, Matrix4D.NoTransformation, Matrix4D.Scale(1.0) * renderer.CurrentViewMatrix);
+				renderer.Models.RenderFace(renderer.DefaultShader, data.ObjectState, face, Matrix4D.NoTransformation, Matrix4D.Scale(1.0) * renderer.CurrentViewMatrix);
 				GL.Disable(EnableCap.DepthClamp);
 			}
 		}

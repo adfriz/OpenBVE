@@ -22,7 +22,7 @@ namespace ObjectViewer {
 			Interface.LogMessages.Clear();
 			Program.CurrentHost.ClearErrors();
 			Program.Renderer.Reset();
-			Program.Renderer.InitializeVisibility();
+			Program.Renderer.Models.InitializeVisibility();
 			ObjectManager.AnimatedWorldObjects = new WorldObject[4];
 			ObjectManager.AnimatedWorldObjectsUsed = 0;
 		}

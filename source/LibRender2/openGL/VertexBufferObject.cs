@@ -2,7 +2,7 @@ using System;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
 
-namespace LibRender2
+namespace LibRender2.GraphicsCore
 {
 	/// <summary>
 	/// Class that represents an OpenGL/OpenTK vertex buffer object 
@@ -172,9 +172,9 @@ namespace LibRender2
 				return;
 			}
 
-			lock (BaseRenderer.vboToDelete)
+			lock (RendererCore.vboToDelete)
 			{
-				BaseRenderer.vboToDelete.Add(handle);
+				RendererCore.vboToDelete.Add(handle);
 			}
 		}
 	}

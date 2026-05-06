@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using LibRender2;
+using LibRender2.GraphicsCore;
 using LibRender2.Trains;
 using OpenBveApi.Interface;
 using OpenBveApi.Math;
@@ -121,7 +122,7 @@ namespace OpenBve.Graphics.Renderers
 
 				foreach (MeshFace face in touchableObject[i].Prototype.Mesh.Faces)
 				{
-					renderer.RenderFace(renderer.pickingShader, touchableObject[i], face);
+					renderer.Models.RenderFace(renderer.pickingShader, touchableObject[i], face);
 				}
 			}
 
@@ -143,7 +144,7 @@ namespace OpenBve.Graphics.Renderers
 				{
 					foreach (MeshFace face in objectState.Prototype.Mesh.Faces)
 					{
-						renderer.RenderFace(renderer.DefaultShader, objectState, face, true);
+						renderer.Models.RenderFace(renderer.DefaultShader, objectState, face, true);
 					}
 				}
 

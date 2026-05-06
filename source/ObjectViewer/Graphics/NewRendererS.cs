@@ -23,7 +23,7 @@ using Vector3 = OpenBveApi.Math.Vector3;
 
 namespace ObjectViewer.Graphics
 {
-	internal class NewRenderer : BaseRenderer
+	internal class NewRenderer : RendererCore
 	{
 		// stats
 		internal bool RenderStatsOverlay = true;
@@ -140,10 +140,10 @@ namespace ObjectViewer.Graphics
 			DefaultShader.SetCurrentProjectionMatrix(CurrentProjectionMatrix);
 			ResetOpenGlState();
 			List<FaceState> opaqueFaces, alphaFaces;
-			lock (VisibleObjects.LockObject)
+			lock (Models.VisibleObjects.LockObject)
 			{
-				opaqueFaces = VisibleObjects.OpaqueFaces.ToList();
-				alphaFaces = VisibleObjects.GetSortedPolygons();
+				opaqueFaces = Models.VisibleObjects.OpaqueFaces.ToList();
+				alphaFaces = Models.VisibleObjects.GetSortedPolygons();
 			}
 
 			foreach (FaceState face in opaqueFaces)
@@ -240,10 +240,10 @@ namespace ObjectViewer.Graphics
 				int objectCount, animatedObjectsUsed, opaqueFaces, alphaFaces;
 				lock (VisibilityUpdateLock)
 				{
-					objectCount = VisibleObjects.Objects.Count;
+					objectCount = Models.VisibleObjects.Objects.Count;
 					animatedObjectsUsed = ObjectManager.AnimatedWorldObjectsUsed;
-					opaqueFaces = VisibleObjects.OpaqueFaces.Count;
-					alphaFaces = VisibleObjects.AlphaFaces.Count;
+					opaqueFaces = Models.VisibleObjects.OpaqueFaces.Count;
+					alphaFaces = Models.VisibleObjects.AlphaFaces.Count;
 				}
 				if (objectCount == 0 && ObjectManager.AnimatedWorldObjectsUsed == 0)
 				{

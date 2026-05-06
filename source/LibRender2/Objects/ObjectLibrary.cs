@@ -15,7 +15,7 @@ namespace LibRender2.Objects
 {
 	public class VisibleObjectLibrary
 	{
-		private readonly BaseRenderer renderer;
+		private readonly RendererCore renderer;
 
 		public readonly QuadTree quadTree;
 
@@ -31,7 +31,7 @@ namespace LibRender2.Objects
 
 		public readonly object LockObject = new object();
 
-		internal VisibleObjectLibrary(BaseRenderer Renderer)
+		internal VisibleObjectLibrary(RendererCore Renderer)
 		{
 			renderer = Renderer;
 			// Note: .Net has no Concurrent HashSet, so use a dictionary with a byte value instead
@@ -78,8 +78,8 @@ namespace LibRender2.Objects
 				myAlphaFaces.Clear();
 				myOverlayOpaqueFaces.Clear();
 				myOverlayAlphaFaces.Clear();
-				renderer.StaticObjectStates.Clear();
-				renderer.DynamicObjectStates.Clear();
+				renderer.Models.StaticObjectStates.Clear();
+				renderer.Models.DynamicObjectStates.Clear();
 			}
 		}
 

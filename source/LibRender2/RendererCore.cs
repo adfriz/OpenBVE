@@ -21,7 +21,9 @@ using LibRender2.Shaders;
 using LibRender2.Shadows;
 using LibRender2.Text;
 using LibRender2.Textures;
+using LibRender2.GraphicsCore;
 using LibRender2.Viewports;
+using LibRender2.Models;
 using OpenBveApi;
 using OpenBveApi.Colors;
 using OpenBveApi.FileSystem;
@@ -42,10 +44,10 @@ using Vector3 = OpenBveApi.Math.Vector3;
 
 namespace LibRender2
 {
-	public abstract class BaseRenderer
+	public abstract class RendererCore
 	{
 		// constants
-		protected const float inv255 = 1.0f / 255.0f;
+		public const float inv255 = 1.0f / 255.0f;
 
 		/// <summary>Holds the lock for GDI Plus functions</summary>
 		public static readonly object GdiPlusLock = new object();
@@ -58,15 +60,16 @@ namespace LibRender2
 		/// <summary>Holds a reference to the current options</summary>
 		internal BaseOptions currentOptions;
 
-		public List<ObjectState> StaticObjectStates;
-		public List<ObjectState> DynamicObjectStates;
-		public VisibleObjectLibrary VisibleObjects;
+		public ModelRenderer Models;
 
-		protected int[] ObjectsSortedByStart;
-		protected int[] ObjectsSortedByEnd;
-		protected int ObjectsSortedByStartPointer;
-		protected int ObjectsSortedByEndPointer;
-		protected internal double LastUpdatedTrackPosition;
+		private VisibilityUpdate updateVisibility;
+		/// <summary>The lock to be held whilst visibility updates or loading operations are in progress</summary>
+		public object VisibilityUpdateLock = new object();
+
+		public bool VisibilityThreadShouldRun = true;
+
+		public Thread VisibilityThread;
+
 		/// <summary>Whether ReShade is in use</summary>
 		/// <remarks>Don't use OpenGL error checking with ReShade, as this breaks</remarks>
 		public bool ReShadeInUse;
@@ -134,6 +137,7 @@ namespace LibRender2
 		public Keys Keys;
 		public MotionBlur MotionBlur;
 		public Fonts Fonts;
+		public GraphicsCore.GraphicsDevice GraphicsDevice;
 
 		public Matrix4D CurrentProjectionMatrix;
 		public Matrix4D CurrentViewMatrix;
@@ -312,7 +316,7 @@ namespace LibRender2
 		public Dictionary<Texture, HashSet<Vector3>> CubesToDraw = new Dictionary<Texture, HashSet<Vector3>>();
 
 
-		protected BaseRenderer(HostInterface CurrentHost, BaseOptions CurrentOptions, FileSystem FileSystem)
+		protected RendererCore(HostInterface CurrentHost, BaseOptions CurrentOptions, FileSystem FileSystem)
 		{
 			currentHost = CurrentHost;
 			currentOptions = CurrentOptions;
@@ -344,6 +348,10 @@ namespace LibRender2
 		[HandleProcessCorruptedStateExceptions] //As some graphics cards crash really nastily if we request unsupported features
 		public virtual void Initialize()
 		{
+			GraphicsDevice = new GraphicsCore.GraphicsDevice();
+			GraphicsDevice.Initialize();
+			Models = new ModelRenderer(this);
+
 			try
 			{
 				if (DefaultShader == null)
@@ -375,9 +383,6 @@ namespace LibRender2
 			Keys = new Keys(this);
 			MotionBlur = new MotionBlur(this);
 
-			StaticObjectStates = new List<ObjectState>();
-			DynamicObjectStates = new List<ObjectState>();
-			VisibleObjects = new VisibleObjectLibrary(this);
 			whitePixel = new Texture(new Texture(1, 1, PixelFormat.RGBAlpha, new byte[] {255, 255, 255, 255}, null));
 			nullDepthMap = GL.GenTexture();
 			GL.BindTexture(TextureTarget.Texture2D, nullDepthMap);
@@ -387,9 +392,9 @@ namespace LibRender2
 			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
 			GL.BindTexture(TextureTarget.Texture2D, 0);
 			GL.ClearColor(0.67f, 0.67f, 0.67f, 1.0f);
-			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-			GL.Enable(EnableCap.DepthTest);
-			GL.DepthFunc(DepthFunction.Lequal);
+			GraphicsDevice.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+			GraphicsDevice.SetDepthTest(true);
+			GraphicsDevice.SetDepthFunc(DepthFunction.Lequal);
 			SetBlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 			if (currentOptions.ForceForwardsCompatibleContext == false)
 			{
@@ -400,7 +405,7 @@ namespace LibRender2
 				GL.Hint(HintTarget.PolygonSmoothHint, HintMode.Fastest);
 			}
 
-			GL.Enable(EnableCap.CullFace);
+			GraphicsDevice.SetCullFace(true);
 			GL.CullFace(CullFaceMode.Front);
 			GL.Disable(EnableCap.Dither);
 			
@@ -577,7 +582,7 @@ namespace LibRender2
 				GL.Clear(ClearBufferMask.DepthBufferBit);
 				ShadowDepthShaderProgram.SetLightSpaceMatrix(CSMCaster.LightSpaceMatrices[cascade]);
 
-				lock (VisibleObjects.LockObject)
+				lock (Models.VisibleObjects.LockObject)
 				{
 					int lastVAOHandle = -1;
 
@@ -635,8 +640,8 @@ namespace LibRender2
 					// Render both opaque and alpha-tested geometry into the shadow map.
 					// This ensures semi-transparent cutout objects (fences, trees, etc. using `transparent`) 
 					// cast proper silhouettes instead of being skipped.
-					renderFaces(VisibleObjects.OpaqueFaces);
-					renderFaces(VisibleObjects.AlphaFaces);
+					renderFaces(Models.VisibleObjects.OpaqueFaces);
+					renderFaces(Models.VisibleObjects.AlphaFaces);
 				}
 				CSMShadowMaps.Unbind();
 			}
@@ -804,7 +809,7 @@ namespace LibRender2
 				}
 			}
 			TextureManager.UnloadAllTextures(true);
-			VisibleObjects.Clear();
+			Models.VisibleObjects.Clear();
 		}
 
 		public int CreateStaticObject(StaticObject Prototype, Vector3 Position, Transformation WorldTransformation, Transformation LocalTransformation, ObjectDisposalMode AccurateObjectDisposal, ObjectCreationParameters Parameters, double BlockLength)
@@ -883,7 +888,7 @@ namespace LibRender2
 					}
 					break;
 			}
-			StaticObjectStates.Add(new ObjectState
+			Models.StaticObjectStates.Add(new ObjectState
 			{
 				Prototype = Prototype,
 				Translation = Translate,
@@ -916,73 +921,8 @@ namespace LibRender2
 				}
 			}
 
-			return StaticObjectStates.Count - 1;
+			return Models.StaticObjectStates.Count - 1;
 		}
-
-		public void CreateDynamicObject(ref ObjectState internalObject)
-		{
-			if (internalObject == null)
-			{
-				internalObject = new ObjectState( new StaticObject(currentHost));
-			}
-
-			internalObject.Prototype.Dynamic = true;
-
-			DynamicObjectStates.Add(internalObject);
-		}
-
-		/// <summary>Initializes the visibility of all objects within the game world</summary>
-		/// <remarks>If the new renderer is enabled, this must be run in a thread processing an openGL context in order to successfully create
-		/// the required VAO objects</remarks>
-		public void InitializeVisibility()
-		{
-			for (int i = 0; i < StaticObjectStates.Count; i++)
-			{
-				VAOExtensions.CreateVAO(StaticObjectStates[i].Prototype.Mesh, false, DefaultShader.VertexLayout, this);
-				/*
-				 * n.b.
-				 * Only create the actual matrix buffer at first frame render time
-				 * I can't find why at the minute, but Object Viewer otherwise doesn't show them, and attempting
-				 * to retrieve previously set matricies from the shader shows all zeros
-				 *
-				 * Probably a timing issue, but it works doing it that way :/
-				 */
-			}
-			for (int i = 0; i < DynamicObjectStates.Count; i++)
-			{
-				VAOExtensions.CreateVAO(DynamicObjectStates[i].Prototype.Mesh, false, DefaultShader.VertexLayout, this);
-			}
-			ObjectsSortedByStart = StaticObjectStates.Select((x, i) => new { Index = i, Distance = x.StartingDistance }).OrderBy(x => x.Distance).Select(x => x.Index).ToArray();
-			ObjectsSortedByEnd = StaticObjectStates.Select((x, i) => new { Index = i, Distance = x.EndingDistance }).OrderBy(x => x.Distance).Select(x => x.Index).ToArray();
-			ObjectsSortedByStartPointer = 0;
-			ObjectsSortedByEndPointer = 0;
-			
-			if (currentOptions.ObjectDisposalMode == ObjectDisposalMode.QuadTree)
-			{
-				foreach (ObjectState state in StaticObjectStates)
-				{
-					VisibleObjects.quadTree.Add(state, Orientation3.Default);
-				}
-				VisibleObjects.quadTree.Initialize(currentOptions.QuadTreeLeafSize);
-				UpdateQuadTreeVisibility();
-			}
-			else
-			{
-				double p = CameraTrackFollower.TrackPosition + Camera.Alignment.Position.Z;
-				foreach (ObjectState state in StaticObjectStates.Where(recipe => recipe.StartingDistance <= p + Camera.ForwardViewingDistance & recipe.EndingDistance >= p - Camera.BackwardViewingDistance))
-				{
-					VisibleObjects.ShowObject(state, ObjectType.Static);
-				}
-			}
-		}
-
-		private VisibilityUpdate updateVisibility;
-		/// <summary>The lock to be held whilst visibility updates or loading operations are in progress</summary>
-		public object VisibilityUpdateLock = new object();
-		
-		public bool VisibilityThreadShouldRun = true;
-
-		public Thread VisibilityThread;
 
 		private void RunVisibiliityThread()
 		{
@@ -992,7 +932,8 @@ namespace LibRender2
 				{
 					if (updateVisibility != VisibilityUpdate.None && CameraTrackFollower != null)
 					{
-						UpdateVisibility(CameraTrackFollower.TrackPosition + Camera.Alignment.Position.Z);
+						Models.UpdateVisibility(CameraTrackFollower.TrackPosition + Camera.Alignment.Position.Z, updateVisibility);
+						updateVisibility = VisibilityUpdate.None;
 					}
 				}
 
@@ -1006,156 +947,6 @@ namespace LibRender2
 		public void UpdateVisibility(bool force)
 		{
 			updateVisibility = force ? VisibilityUpdate.Force : VisibilityUpdate.Normal;
-		}
-
-		private void UpdateVisibility(double trackPosition)
-		{
-			if (currentOptions.ObjectDisposalMode == ObjectDisposalMode.QuadTree)
-			{
-				UpdateQuadTreeVisibility();
-			}
-			else
-			{
-				if (updateVisibility == VisibilityUpdate.Normal)
-				{
-					UpdateLegacyVisibility(trackPosition);
-				}
-				else
-				{
-					/*
-					 * The original visibility algorithm fails to handle correctly cases where the
-					 * camera angle is rotated, but the track position does not change
-					 *
-					 * Horrible kludge...
-					 */
-					UpdateLegacyVisibility(trackPosition + 0.01);
-					UpdateLegacyVisibility(trackPosition - 0.01);
-				}
-				
-			}
-
-			updateVisibility = VisibilityUpdate.None;
-		}
-
-		private void UpdateQuadTreeVisibility()
-		{
-			if (VisibleObjects == null || VisibleObjects.quadTree == null)
-			{
-				Thread.Sleep(10);
-				return;
-			}
-			Camera.UpdateQuadTreeLeaf();
-		}
-
-		private void UpdateLegacyVisibility(double trackPosition)
-		{
-			if (ObjectsSortedByStart == null || ObjectsSortedByStart.Length == 0 || StaticObjectStates.Count == 0)
-			{
-				return;
-			}
-			double d = trackPosition - LastUpdatedTrackPosition;
-			int n = ObjectsSortedByStart.Length;
-			double p = CameraTrackFollower.TrackPosition + Camera.Alignment.Position.Z;
-
-			if (d < 0.0)
-			{
-				if (ObjectsSortedByStartPointer >= n)
-				{
-					ObjectsSortedByStartPointer = n - 1;
-				}
-
-				if (ObjectsSortedByEndPointer >= n)
-				{
-					ObjectsSortedByEndPointer = n - 1;
-				}
-
-				// dispose
-				while (ObjectsSortedByStartPointer >= 0)
-				{
-					int o = ObjectsSortedByStart[ObjectsSortedByStartPointer];
-
-					if (StaticObjectStates[o].StartingDistance > p + Camera.ForwardViewingDistance)
-					{
-						VisibleObjects.HideObject(StaticObjectStates[o]);
-						ObjectsSortedByStartPointer--;
-					}
-					else
-					{
-						break;
-					}
-				}
-
-				// introduce
-				while (ObjectsSortedByEndPointer >= 0)
-				{
-					int o = ObjectsSortedByEnd[ObjectsSortedByEndPointer];
-
-					if (StaticObjectStates[o].EndingDistance >= p - Camera.BackwardViewingDistance)
-					{
-						if (StaticObjectStates[o].StartingDistance <= p + Camera.ForwardViewingDistance)
-						{
-							VisibleObjects.ShowObject(StaticObjectStates[o], ObjectType.Static);
-						}
-
-						ObjectsSortedByEndPointer--;
-					}
-					else
-					{
-						break;
-					}
-				}
-			}
-			else if (d > 0.0)
-			{
-				if (ObjectsSortedByStartPointer < 0)
-				{
-					ObjectsSortedByStartPointer = 0;
-				}
-
-				if (ObjectsSortedByEndPointer < 0)
-				{
-					ObjectsSortedByEndPointer = 0;
-				}
-
-				// dispose
-				while (ObjectsSortedByEndPointer < n)
-				{
-					int o = ObjectsSortedByEnd[ObjectsSortedByEndPointer];
-
-					if (StaticObjectStates[o].EndingDistance < p - Camera.BackwardViewingDistance)
-					{
-						VisibleObjects.HideObject(StaticObjectStates[o]);
-						ObjectsSortedByEndPointer++;
-					}
-					else
-					{
-						break;
-					}
-				}
-				n = ObjectsSortedByStart.Length;
-
-				// introduce
-				while (ObjectsSortedByStartPointer < n)
-				{
-					int o = ObjectsSortedByStart[ObjectsSortedByStartPointer];
-
-					if (StaticObjectStates[o].StartingDistance <= p + Camera.ForwardViewingDistance)
-					{
-						if (StaticObjectStates[o].EndingDistance >= p - Camera.BackwardViewingDistance)
-						{
-							VisibleObjects.ShowObject(StaticObjectStates[o], ObjectType.Static);
-						}
-
-						ObjectsSortedByStartPointer++;
-					}
-					else
-					{
-						break;
-					}
-				}
-			}
-
-			LastUpdatedTrackPosition = trackPosition;
 		}
 
 		public void UpdateViewingDistances(double backgroundImageDistance)
@@ -1343,26 +1134,22 @@ namespace LibRender2
 			blendEnabled = true;
 			blendSrcFactor = srcFactor;
 			blendDestFactor = destFactor;
-			GL.Enable(EnableCap.Blend);
-			GL.BlendFunc(srcFactor, destFactor);
+			GraphicsDevice.SetBlend(true);
+			GraphicsDevice.SetBlendFunc(srcFactor, destFactor);
 		}
 
 		public void UnsetBlendFunc()
 		{
 			blendEnabled = false;
-			GL.Disable(EnableCap.Blend);
+			GraphicsDevice.SetBlend(false);
 		}
 
 		public void RestoreBlendFunc()
 		{
+			GraphicsDevice.SetBlend(blendEnabled);
 			if (blendEnabled)
 			{
-				GL.Enable(EnableCap.Blend);
-				GL.BlendFunc(blendSrcFactor, blendDestFactor);
-			}
-			else
-			{
-				GL.Disable(EnableCap.Blend);
+				GraphicsDevice.SetBlendFunc(blendSrcFactor, blendDestFactor);
 			}
 		}
 
@@ -1409,257 +1196,6 @@ namespace LibRender2
 		/// <summary>Draws a face using the current shader</summary>
 		/// <param name="state">The FaceState to draw</param>
 		/// <param name="isDebugTouchMode">Whether debug touch mode</param>
-		public void RenderFace(FaceState state, bool isDebugTouchMode = false)
-		{
-			RenderFace(CurrentShader as Shader, state.Object, state.Face, isDebugTouchMode);
-		}
-
-		/// <summary>Draws a face using the specified shader and matricies</summary>
-		/// <param name="shader">The shader to use</param>
-		/// <param name="state">The ObjectState to draw</param>
-		/// <param name="face">The Face within the ObjectState</param>
-		/// <param name="modelMatrix">The model matrix to use</param>
-		/// <param name="modelViewMatrix">The modelview matrix to use</param>
-		public void RenderFace(Shader shader, ObjectState state, MeshFace face, Matrix4D modelMatrix, Matrix4D modelViewMatrix)
-		{
-			lastModelMatrix = modelMatrix;
-			lastModelViewMatrix = modelViewMatrix;
-			sendToShader = true;
-			RenderFace(shader, state, face, false, true);
-		}
-
-		/// <summary>Draws a face using the specified shader</summary>
-		/// <param name="shader">The shader to use</param>
-		/// <param name="state">The ObjectState to draw</param>
-		/// <param name="face">The Face within the ObjectState</param>
-		/// <param name="debugTouchMode">Whether debug touch mode</param>
-		/// <param name="screenSpace">Used when a forced matrix, for items which are in screen space not camera space</param>
-		public void RenderFace(Shader shader, ObjectState state, MeshFace face, bool debugTouchMode = false, bool screenSpace = false)
-		{
-			if ((state != lastObjectState || state.Prototype.Dynamic) && !screenSpace)
-			{
-				lastModelMatrix = state.ModelMatrix * Camera.TranslationMatrix;
-				lastModelViewMatrix = lastModelMatrix * CurrentViewMatrix;
-				sendToShader = true;
-			}
-
-			if (state.Prototype.Mesh.Vertices.Length < 1)
-			{
-				return;
-			}
-
-			MeshMaterial material = state.Prototype.Mesh.Materials[face.Material];
-			VertexArrayObject VAO = (VertexArrayObject)state.Prototype.Mesh.VAO;
-
-			if (lastVAO != VAO.handle)
-			{
-				VAO.Bind();
-				lastVAO = VAO.handle;
-			}
-
-			if (!OptionBackFaceCulling || (face.Flags & FaceFlags.Face2Mask) != 0)
-			{
-				GL.Disable(EnableCap.CullFace);
-			}
-			else if (OptionBackFaceCulling)
-			{
-				if ((face.Flags & FaceFlags.Face2Mask) == 0)
-				{
-					GL.Enable(EnableCap.CullFace);
-				}
-			}
-
-			// model matricies
-			if (state.Matricies != null && state.Matricies.Length > 0 && state != lastObjectState)
-			{
-				// n.b. if buffer has no data in it (matricies are of zero length), attempting to bind generates an InvalidValue
-				shader.SetCurrentAnimationMatricies(state);
-#pragma warning disable CS0618
-				GL.BindBufferBase(BufferTarget.UniformBuffer, 0, state.MatrixBufferIndex);
-#pragma warning restore CS0618
-			}
-
-			// matrix
-			if (sendToShader)
-			{
-				shader.SetCurrentModelViewMatrix(lastModelViewMatrix);
-				shader.SetCurrentTextureMatrix(state.TextureTranslation);
-				sendToShader = false;
-			}
-			
-			if (OptionWireFrame || debugTouchMode)
-			{
-				GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
-			}
-			
-			// lighting
-			shader.SetMaterialFlags(material.Flags);
-			if (OptionLighting)
-			{
-				if (material.Color != lastColor)
-				{
-					shader.SetMaterialAmbient(material.Color);
-					shader.SetMaterialDiffuse(material.Color);
-					shader.SetMaterialSpecular((material.Flags & MaterialFlags.Specular) != 0 ? material.SpecularColor : material.Color);
-				}
-				if ((material.Flags & MaterialFlags.Emissive) != 0)
-				{
-					shader.SetMaterialEmission(material.EmissiveColor);
-				}
-
-				shader.SetMaterialShininess(1.0f);
-			}
-			else
-			{
-				if (material.Color != lastColor)
-				{
-					shader.SetMaterialAmbient(material.Color);
-				}
-			}
-
-			lastColor = material.Color;
-			PrimitiveType drawMode;
-
-			switch (face.Flags & FaceFlags.FaceTypeMask)
-			{
-				case FaceFlags.Triangles:
-					drawMode = PrimitiveType.Triangles;
-					break;
-				case FaceFlags.TriangleStrip:
-					drawMode = PrimitiveType.TriangleStrip;
-					break;
-				case FaceFlags.Quads:
-					drawMode = PrimitiveType.Quads;
-					break;
-				case FaceFlags.QuadStrip:
-					drawMode = PrimitiveType.QuadStrip;
-					break;
-				default:
-					drawMode = PrimitiveType.Polygon;
-					break;
-			}
-
-			// blend factor
-			float distanceFactor;
-			if (material.GlowAttenuationData != 0)
-			{
-				distanceFactor = (float)Glow.GetDistanceFactor(lastModelMatrix, state.Prototype.Mesh.Vertices, ref face, material.GlowAttenuationData);
-			}
-			else
-			{
-				distanceFactor = 1.0f;
-			}
-
-			float blendFactor = inv255 * state.DaytimeNighttimeBlend + 1.0f - Lighting.OptionLightingResultingAmount;
-			if (blendFactor > 1.0)
-			{
-				blendFactor = 1.0f;
-			}
-
-			// daytime polygon
-			{
-				// texture
-				// ReSharper disable once PossibleInvalidOperationException
-				if (material.DaytimeTexture != null && currentHost.LoadTexture(ref material.DaytimeTexture, (OpenGlTextureWrapMode)material.WrapMode))
-				{
-					if (LastBoundTexture != material.DaytimeTexture.OpenGlTextures[(int)material.WrapMode])
-					{
-						GL.BindTexture(TextureTarget.Texture2D,
-							material.DaytimeTexture.OpenGlTextures[(int)material.WrapMode].Name);
-						LastBoundTexture = material.DaytimeTexture.OpenGlTextures[(int)material.WrapMode];
-					}
-				}
-				else
-				{
-					shader.DisableTexturing();
-				}
-				// Calculate the brightness of the poly to render
-				float factor;
-				if (material.BlendMode == MeshMaterialBlendMode.Additive)
-				{
-					//Additive blending- Full brightness
-					factor = 1.0f;
-					GL.Enable(EnableCap.Blend);
-					GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.One);
-					shader.SetFog(false);
-				}
-				else if (material.NighttimeTexture == null || material.NighttimeTexture == material.DaytimeTexture)
-				{
-					//No nighttime texture or both are identical- Darken the polygon to match the light conditions
-					factor = 1.0f - 0.7f * blendFactor;
-				}
-				else
-				{
-					//Valid nighttime texture- Blend the two textures by DNB at max brightness
-					factor = 1.0f;
-				}
-				shader.SetBrightness(factor);
-
-				float alphaFactor = distanceFactor;
-				if (material.NighttimeTexture != null && (material.Flags & MaterialFlags.CrossFadeTexture) != 0)
-				{
-					alphaFactor *= 1.0f - blendFactor;
-				}
-
-				shader.SetOpacity(inv255 * material.Color.A * alphaFactor);
-
-				// render polygon
-				VAO.Draw(drawMode, face.IboStartIndex, face.Vertices.Length);
-			}
-
-			// nighttime polygon
-			if (blendFactor != 0 && material.NighttimeTexture != null && material.NighttimeTexture != material.DaytimeTexture && currentHost.LoadTexture(ref material.NighttimeTexture, (OpenGlTextureWrapMode)material.WrapMode))
-			{
-				// texture
-				if (LastBoundTexture != material.NighttimeTexture.OpenGlTextures[(int)material.WrapMode])
-				{
-					GL.BindTexture(TextureTarget.Texture2D, material.NighttimeTexture.OpenGlTextures[(int)material.WrapMode].Name);
-					LastBoundTexture = material.NighttimeTexture.OpenGlTextures[(int)material.WrapMode];
-				}
-
-
-				GL.Enable(EnableCap.Blend);
-
-				// alpha test
-				shader.SetAlphaTest(true);
-				shader.SetAlphaFunction(AlphaFunction.Greater, 0.0f);
-				
-				// blend mode
-				float alphaFactor = distanceFactor * blendFactor;
-
-				shader.SetOpacity(inv255 * material.Color.A * alphaFactor);
-
-				// render polygon
-				VAO.Draw(drawMode, face.IboStartIndex, face.Vertices.Length);
-				RestoreBlendFunc();
-				RestoreAlphaFunc();
-			}
-
-
-			// normals
-			if (OptionNormals)
-			{
-				shader.DisableTexturing();
-				shader.SetBrightness(1.0f);
-				shader.SetOpacity(1.0f);
-				VertexArrayObject normalsVao = (VertexArrayObject)state.Prototype.Mesh.NormalsVAO;
-				normalsVao.Bind();
-				lastVAO = normalsVao.handle;
-				normalsVao.Draw(PrimitiveType.Lines, face.NormalsIboStartIndex, face.Vertices.Length * 2);
-			}
-
-			// finalize
-			if (material.BlendMode == MeshMaterialBlendMode.Additive)
-			{
-				RestoreBlendFunc();
-				shader.SetFog(Fog.Enabled);
-			}
-			if (OptionWireFrame || debugTouchMode)
-			{
-				GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
-			}
-			lastObjectState = state;
-		}
 
 
 		/// <summary>Sets the current MouseCursor</summary>

@@ -57,7 +57,7 @@ namespace LibRender2.Primitives
 		/// <summary>The font for the button</summary>
 		public OpenGlFont Font;
 
-		public Button(BaseRenderer renderer, string text) : base(renderer)
+		public Button(RendererCore renderer, string text) : base(renderer)
 		{
 			Font = Renderer.Fonts.LargeFont;
 			Text = text;

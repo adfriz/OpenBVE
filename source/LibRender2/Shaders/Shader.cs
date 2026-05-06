@@ -24,6 +24,7 @@
 
 using LibRender2.Fogs;
 using OpenBveApi.Colors;
+using LibRender2.GraphicsCore;
 using OpenBveApi.Math;
 using OpenBveApi.Objects;
 using OpenBveApi.Textures;
@@ -76,7 +77,7 @@ namespace LibRender2.Shaders
 		/// <param name="vertexShaderName">file path and name to vertex shader source</param>
 		/// <param name="fragmentShaderName">file path and name to fragment shader source</param>
 		/// <param name="isFromStream"></param>
-		public Shader(BaseRenderer Renderer, string vertexShaderName, string fragmentShaderName, bool isFromStream = false) : base(Renderer, vertexShaderName, fragmentShaderName, isFromStream, true)
+		public Shader(RendererCore Renderer, string vertexShaderName, string fragmentShaderName, bool isFromStream = false) : base(Renderer, vertexShaderName, fragmentShaderName, isFromStream, true)
 		{
 			uShadowEnabledLocation = GL.GetUniformLocation(Handle, "uShadowEnabled");
 			uLightSpaceMatrix0Location = GL.GetUniformLocation(Handle, "uLightSpaceMatrix0");

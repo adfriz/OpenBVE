@@ -19,7 +19,7 @@ namespace Train.MsTs
 
 		internal static HostInterface CurrentHost;
 
-		internal static BaseRenderer Renderer;
+		internal static RendererCore Renderer;
 
 		internal static FileSystem FileSystem;
 
@@ -37,7 +37,7 @@ namespace Train.MsTs
 			CurrentHost = host;
 			FileSystem = fileSystem;
 			CurrentOptions = options;
-			Renderer = (BaseRenderer) rendererReference;
+			Renderer = (RendererCore) rendererReference;
 			try
 			{
 				if (!string.IsNullOrEmpty(FileSystem.MSTSDirectory))

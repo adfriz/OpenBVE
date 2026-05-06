@@ -9,11 +9,11 @@ namespace LibRender2.Text
 {
 	public class OpenGlString
 	{
-		private readonly BaseRenderer renderer;
+		private readonly RendererCore renderer;
 
 		private readonly Shader Shader;
 
-		internal OpenGlString(BaseRenderer renderer)
+		internal OpenGlString(RendererCore renderer)
 		{
 			this.renderer = renderer;
 			try

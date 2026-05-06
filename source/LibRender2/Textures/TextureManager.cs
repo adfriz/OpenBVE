@@ -18,7 +18,7 @@ namespace LibRender2.Textures
 	{
 		private readonly HostInterface currentHost;
 
-		private readonly BaseRenderer renderer;
+		private readonly RendererCore renderer;
 
 		/// <summary>Holds all currently registered textures.</summary>
 		public static Texture[] RegisteredTextures;
@@ -30,7 +30,7 @@ namespace LibRender2.Textures
 		/// <summary>The number of currently registered textures.</summary>
 		public int RegisteredTexturesCount;
 
-		internal TextureManager(HostInterface CurrentHost, BaseRenderer Renderer)
+		internal TextureManager(HostInterface CurrentHost, RendererCore Renderer)
 		{
 			currentHost = CurrentHost;
 			RegisteredTextures = new Texture[16];

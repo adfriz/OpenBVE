@@ -60,7 +60,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Backgrounds\Background.cs" />
-    <Compile Include="BaseRenderer.cs" />
+    <Compile Include="Models\ModelRenderer.cs" />
+    <Compile Include="RendererCore.cs" />
     <Compile Include="Camera\Camera.cs" />
     <Compile Include="Camera\CameraAlignment.cs" />
     <Compile Include="Camera\CameraRestriction.cs" />
@@ -89,6 +90,7 @@
     <Compile Include="openGL\ShaderLayout.cs" />
     <Compile Include="openGL\VertexArrayObject.cs" />
     <Compile Include="openGL\VertexBufferObject.cs" />
+    <Compile Include="openGL\GraphicsDevice.cs" />
     <Compile Include="Overlays\DisplayedTimetable.cs" />
     <Compile Include="Overlays\DistanceToNextStationDisplayMode.cs" />
     <Compile Include="Overlays\GradientDisplayMode.cs" />

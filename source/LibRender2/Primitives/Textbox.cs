@@ -86,7 +86,7 @@ namespace LibRender2.Primitives
 			return wrappedLines;
 		}
 
-		public Textbox(BaseRenderer Renderer, OpenGlFont Font, Color128 FontColor, Color128 backgroundColor) : base(Renderer)
+		public Textbox(RendererCore Renderer, OpenGlFont Font, Color128 FontColor, Color128 backgroundColor) : base(Renderer)
 		{
 			myFont = Font;
 			myFontColor = FontColor;

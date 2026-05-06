@@ -6,7 +6,7 @@ using OpenTK.Graphics.OpenGL;
 
 namespace TrainEditor2.Graphics
 {
-	internal class NewRenderer : BaseRenderer
+	internal class NewRenderer : RendererCore
 	{
 		public override void Initialize()
 		{

@@ -24,6 +24,7 @@
 
 
 using System.Linq;
+using LibRender2.GraphicsCore;
 using OpenBveApi.Colors;
 using OpenBveApi.Math;
 using OpenBveApi.Textures;
@@ -36,16 +37,16 @@ namespace LibRender2.Primitives
 	/// <summary>A Cube of nominal 1.0 size</summary>
 	public class Cube
 	{
-		private readonly BaseRenderer renderer;
+		private readonly RendererCore renderer;
 		private readonly VertexArrayObject defaultVAO;
 
 		/// <summary>Creates a new cube</summary>
-		public Cube(BaseRenderer renderer) : this(renderer, Color128.White)
+		public Cube(RendererCore renderer) : this(renderer, Color128.White)
 		{
 		}
 
 		/// <summary>Creates a new colored cube</summary>
-		public Cube(BaseRenderer renderer, Color128 color)
+		public Cube(RendererCore renderer, Color128 color)
 		{
 			this.renderer = renderer;
 

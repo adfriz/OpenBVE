@@ -41,7 +41,7 @@ namespace RouteManager2
 
 		public void LoadInformation()
 		{
-			lock (BaseRenderer.GdiPlusLock)
+			lock (RendererCore.GdiPlusLock)
 			{
 				RouteMap = Illustrations.CreateRouteMap(500, 500, true, out _);
 				RouteMinX = Illustrations.LastRouteMinX;

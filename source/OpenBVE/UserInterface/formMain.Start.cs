@@ -1301,7 +1301,7 @@ namespace OpenBve
 						throw e;
 					}
 
-					lock (BaseRenderer.GdiPlusLock)
+					lock (RendererCore.GdiPlusLock)
 					{
 						pictureboxRouteMap.Image = Illustrations.CreateRouteMap(pictureboxRouteMap.Width, pictureboxRouteMap.Height, false, out _);
 						pictureboxRouteGradient.Image = Illustrations.CreateRouteGradientProfile(pictureboxRouteGradient.Width,

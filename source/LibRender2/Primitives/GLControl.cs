@@ -33,7 +33,7 @@ namespace LibRender2.Primitives
 	public abstract class GLControl
 	{
 		/// <summary>Holds a reference to the base renderer</summary>
-		internal readonly BaseRenderer Renderer;
+		internal readonly RendererCore Renderer;
 		/// <summary>The background color for the control</summary>
 		public Color128 BackgroundColor;
 		/// <summary>The texture for the control</summary>
@@ -49,7 +49,7 @@ namespace LibRender2.Primitives
 		/// <summary>Whether the control is currently visible</summary>
 		public bool IsVisible;
 
-		protected GLControl(BaseRenderer renderer)
+		protected GLControl(RendererCore renderer)
 		{
 			Renderer = renderer;
 		}

@@ -8,11 +8,11 @@ namespace LibRender2.Overlays
 	public class Marker
 	{
 
-		private readonly BaseRenderer Renderer;
+		private readonly RendererCore Renderer;
 		/// <summary>Holds the array of marker textures currently displayed in-game</summary>
 		public List<MarkerTexture> MarkerTextures;
 
-		internal Marker(BaseRenderer renderer)
+		internal Marker(RendererCore renderer)
 		{
 			Renderer = renderer;
 			MarkerTextures = new List<MarkerTexture>();

@@ -25,7 +25,7 @@ using Vector3 = OpenBveApi.Math.Vector3;
 
 namespace OpenBve.Graphics
 {
-	internal class NewRenderer : BaseRenderer
+	internal class NewRenderer : RendererCore
 	{
 		internal bool OptionClock = false;
 		internal GradientDisplayMode OptionGradient = GradientDisplayMode.None;
@@ -62,8 +62,8 @@ namespace OpenBve.Graphics
 			events = new Events(this);
 			overlays = new Overlays(this);
 			Touch = new Touch(this);
-			ObjectsSortedByStart = new int[] { };
-			ObjectsSortedByEnd = new int[] { };
+			Models.ObjectsSortedByStart = new int[] { };
+			Models.ObjectsSortedByEnd = new int[] { };
 			
 			
 			Program.FileSystem.AppendToLogFile("Renderer initialised successfully.");
@@ -214,12 +214,12 @@ namespace OpenBve.Graphics
 				DefaultShader.SetCurrentProjectionMatrix(CurrentProjectionMatrix);
 			ResetOpenGlState();
 			List<FaceState> opaqueFaces, alphaFaces, overlayOpaqueFaces, overlayAlphaFaces;
-			lock (VisibleObjects.LockObject)
+			lock (Models.VisibleObjects.LockObject)
 			{
-				opaqueFaces = VisibleObjects.OpaqueFaces.ToList();
-				alphaFaces = VisibleObjects.GetSortedPolygons();
-				overlayOpaqueFaces = VisibleObjects.OverlayOpaqueFaces.ToList();
-				overlayAlphaFaces = VisibleObjects.GetSortedPolygons(true);
+				opaqueFaces = Models.VisibleObjects.OpaqueFaces.ToList();
+				alphaFaces = Models.VisibleObjects.GetSortedPolygons();
+				overlayOpaqueFaces = Models.VisibleObjects.OverlayOpaqueFaces.ToList();
+				overlayAlphaFaces = Models.VisibleObjects.GetSortedPolygons(true);
 			}
 
 			foreach (FaceState face in opaqueFaces)

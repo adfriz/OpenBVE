@@ -1,8 +1,8 @@
-﻿namespace LibRender2.Objects
+namespace LibRender2.Objects
 {
 	/// <summary>The mode in which visibility updates are performed</summary>
 	/// <remarks>Only relevant whilst using non QuadTree visibility modes</remarks>
-	internal enum VisibilityUpdate
+	public enum VisibilityUpdate
 	{
 		/// <summary>No update is performed</summary>
 		None,

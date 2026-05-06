@@ -498,7 +498,7 @@ namespace OpenBve {
 
 		public override void CreateDynamicObject(ref ObjectState internalObject)
 		{
-			Program.Renderer.CreateDynamicObject(ref internalObject);
+			Program.Renderer.Models.CreateDynamicObject(ref internalObject);
 		}
 
 		public override void AddObjectForCustomTimeTable(AnimatedObject animatedObject)
@@ -508,12 +508,12 @@ namespace OpenBve {
 
 		public override void ShowObject(ObjectState objectToShow, ObjectType objectType)
 		{
-			Program.Renderer.VisibleObjects.ShowObject(objectToShow, objectType);
+			Program.Renderer.Models.VisibleObjects.ShowObject(objectToShow, objectType);
 		}
 
 		public override void HideObject(ObjectState objectToHide)
 		{
-			Program.Renderer.VisibleObjects.HideObject(objectToHide);
+			Program.Renderer.Models.VisibleObjects.HideObject(objectToHide);
 		}
 
 		public override bool SoundIsPlaying(object SoundSource)

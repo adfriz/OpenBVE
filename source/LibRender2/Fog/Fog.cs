@@ -6,7 +6,7 @@ namespace LibRender2.Fogs
 	public class Fog
 	{
 		/// <summary>Holds a reference to the base renderer</summary>
-		private readonly BaseRenderer Renderer;
+		private readonly RendererCore Renderer;
 
 		public bool Enabled;
 
@@ -25,7 +25,7 @@ namespace LibRender2.Fogs
 		/// <summary>The color of the fog</summary>
 		public Color24 Color;
 
-		public Fog(BaseRenderer renderer)
+		public Fog(RendererCore renderer)
 		{
 			Renderer = renderer;
 		}

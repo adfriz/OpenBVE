@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using LibRender2;
+using LibRender2.GraphicsCore;
 using LibRender2.Camera;
 using LibRender2.Cameras;
 using LibRender2.Smoke;

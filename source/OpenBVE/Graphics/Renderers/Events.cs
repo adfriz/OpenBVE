@@ -13,7 +13,7 @@ namespace OpenBve.Graphics.Renderers
 {
 	internal class Events
 	{
-		private readonly BaseRenderer renderer;
+		private readonly RendererCore renderer;
 
 		private Texture BrightnessChangeTexture;
 		private Texture BackgroundChangeTexture;
@@ -34,7 +34,7 @@ namespace OpenBve.Graphics.Renderers
 
 		internal double LastTrackPosition;
 
-		internal Events(BaseRenderer renderer)
+		internal Events(RendererCore renderer)
 		{
 			this.renderer = renderer;
 			Init();

@@ -225,7 +225,7 @@ namespace RouteViewer
 
 			Renderer.Camera.QuadTreeLeaf = null;
 			Renderer.Lighting.Initialize();
-			Renderer.InitializeVisibility();
+			Renderer.Models.InitializeVisibility();
 			for (int i = 0; i < CurrentRoute.Tracks.Count; i++)
 			{
 				int key = CurrentRoute.Tracks.ElementAt(i).Key;

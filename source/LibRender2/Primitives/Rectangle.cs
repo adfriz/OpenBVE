@@ -33,11 +33,11 @@ namespace LibRender2.Primitives
 	public class Rectangle
 	{
 		/// <summary>Holds a reference to the base renderer</summary>
-		private readonly BaseRenderer renderer;
+		private readonly RendererCore renderer;
 		/// <summary>If using GL3, the shader to draw the rectangle with</summary>
 		private readonly Shader Shader;
 
-		internal Rectangle(BaseRenderer renderer)
+		internal Rectangle(RendererCore renderer)
 		{
 			this.renderer = renderer;
 			try

@@ -7,7 +7,7 @@ namespace LibRender2.MotionBlurs
 {
 	public class MotionBlur
 	{
-		private readonly BaseRenderer renderer;
+		private readonly RendererCore renderer;
 
 		/// <summary>The pixel buffer used for rendering the motion blur</summary>
 		/// <remarks>Must be static to avoid re-allocating the array memory every frame</remarks>
@@ -15,7 +15,7 @@ namespace LibRender2.MotionBlurs
 		/// <summary>The OpenGL texture index from which the blurred image is rendered</summary>
 		private int PixelBufferOpenGlTextureIndex;
 
-		internal MotionBlur(BaseRenderer renderer)
+		internal MotionBlur(RendererCore renderer)
 		{
 			this.renderer = renderer;
 		}

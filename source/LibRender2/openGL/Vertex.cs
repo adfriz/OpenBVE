@@ -3,7 +3,7 @@ using OpenBveApi.Colors;
 using OpenBveApi.Math;
 using OpenBveApi.Objects;
 
-namespace LibRender2
+namespace LibRender2.GraphicsCore
 {
 	/// <summary>Vertex structure</summary>
 	[StructLayout(LayoutKind.Sequential)]

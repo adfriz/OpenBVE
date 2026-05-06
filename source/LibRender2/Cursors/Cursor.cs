@@ -10,14 +10,14 @@ namespace LibRender2
 {
 	public class MouseCursor
 	{
-		internal readonly BaseRenderer Renderer;
+		internal readonly RendererCore Renderer;
 		public readonly string FileName;
 		public readonly OpenTK.MouseCursor MyCursor;
 		public readonly OpenTK.MouseCursor MyCursorPlus;
 		public readonly OpenTK.MouseCursor MyCursorMinus;
 		public readonly Image Image;
 
-		public MouseCursor(BaseRenderer renderer, string fileName, Bitmap image)
+		public MouseCursor(RendererCore renderer, string fileName, Bitmap image)
 		{
 			Renderer = renderer;
 			FileName = fileName;
@@ -102,8 +102,8 @@ namespace LibRender2
 		public static OpenTK.MouseCursor CurrentCursorPlus;
 		public static OpenTK.MouseCursor CurrentCursorMinus;
 		public static OpenTK.MouseCursor ScrollCursor;
-		internal static BaseRenderer Renderer;
-		public static void LoadCursorImages(BaseRenderer renderer, string CursorFolder)
+		internal static RendererCore Renderer;
+		public static void LoadCursorImages(RendererCore renderer, string CursorFolder)
 		{
 			Renderer = renderer;
 			if (!Directory.Exists(CursorFolder))

@@ -265,7 +265,7 @@ namespace ObjectViewer {
 			LightingRelative = -1.0;
 			Game.Reset();
 			RefreshObjects();
-			Renderer.InitializeVisibility();
+			Renderer.Models.InitializeVisibility();
 			Renderer.UpdateVisibility(true);
 			ObjectManager.UpdateAnimatedWorldObjects(0.01, true);
 			Renderer.ApplyBackgroundColor();
@@ -437,7 +437,7 @@ namespace ObjectViewer {
 			NearestTrain.Apply();
 			formTrain.Instance?.EnableUI();
 
-		    Renderer.InitializeVisibility();
+		    Renderer.Models.InitializeVisibility();
 		    Renderer.UpdateViewingDistances(600);
 		    Renderer.UpdateVisibility(true);
 		    ObjectManager.UpdateAnimatedWorldObjects(0.01, true);

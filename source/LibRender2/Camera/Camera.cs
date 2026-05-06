@@ -12,7 +12,7 @@ namespace LibRender2.Cameras
 {
 	public class CameraProperties
 	{
-		private readonly BaseRenderer Renderer;
+		private readonly RendererCore Renderer;
 		/// <summary>The current viewing distance in the forward direction.</summary>
 		public double ForwardViewingDistance;
 		/// <summary>The current viewing distance in the backward direction.</summary>
@@ -122,7 +122,7 @@ namespace LibRender2.Cameras
 		private CameraAlignment alignmentDirection;
 
 		private CameraViewMode currentMode;
-		internal CameraProperties(BaseRenderer renderer)
+		internal CameraProperties(RendererCore renderer)
 		{
 			Renderer = renderer;
 			alignmentDirection = new CameraAlignment();
@@ -377,7 +377,7 @@ namespace LibRender2.Cameras
 			/*
 			 * Find the leaf node the camera is currently in.
 			 * */
-			Renderer.VisibleObjects.quadTree.GetLeafNode(AbsolutePosition, out QuadTreeLeafNode currentLeaf);
+			Renderer.Models.VisibleObjects.quadTree.GetLeafNode(AbsolutePosition, out QuadTreeLeafNode currentLeaf);
 			
 			/*
 			 * Check if the leaf node the camera is in has changed.

@@ -84,7 +84,7 @@ namespace LibRender2.Menu
 		public Vector2 menuMax;
 
 		/// <summary>Holds a reference to the base renderer</summary>
-		public readonly BaseRenderer Renderer;
+		public readonly RendererCore Renderer;
 
 		/// <summary>Holds a reference to the options</summary>
 		public readonly BaseOptions CurrentOptions;
@@ -114,7 +114,7 @@ namespace LibRender2.Menu
 		public Key MenuBackKey;
 
 		/// <summary>Creates a new menu instance</summary>
-		protected AbstractMenu(BaseRenderer renderer, BaseOptions currentOptions)
+		protected AbstractMenu(RendererCore renderer, BaseOptions currentOptions)
 		{
 			Renderer = renderer;
 			CurrentOptions = currentOptions;

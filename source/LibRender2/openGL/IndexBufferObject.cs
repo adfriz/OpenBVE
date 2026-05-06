@@ -1,7 +1,7 @@
 using System;
 using OpenTK.Graphics.OpenGL;
 
-namespace LibRender2
+namespace LibRender2.GraphicsCore
 {
 	/// <summary>
 	/// Class representing the abstract IBO
@@ -71,9 +71,9 @@ namespace LibRender2
 				return;
 			}
 
-			lock (BaseRenderer.iboToDelete)
+			lock (RendererCore.iboToDelete)
 			{
-				BaseRenderer.iboToDelete.Add(handle);
+				RendererCore.iboToDelete.Add(handle);
 			}
 		}
 	}

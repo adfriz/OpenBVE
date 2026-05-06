@@ -1,3 +1,4 @@
+using LibRender2.GraphicsCore;
 using OpenBveApi.Objects;
 
 namespace LibRender2.Objects
@@ -10,9 +11,9 @@ namespace LibRender2.Objects
 		/// <summary>The face to draw</summary>
 		public readonly MeshFace Face;
 		/// <summary>Holds the reference to the base renderer</summary>
-		public readonly BaseRenderer Renderer;
+		public readonly RendererCore Renderer;
 
-		public FaceState(ObjectState _object, MeshFace face, BaseRenderer renderer)
+		public FaceState(ObjectState _object, MeshFace face, RendererCore renderer)
 		{
 			Object = _object;
 			Face = face;
@@ -25,7 +26,7 @@ namespace LibRender2.Objects
 
 		public void Draw()
 		{
-			Renderer.RenderFace(this);
+			Renderer.Models.RenderFace(this);
 		}
 	}
 }

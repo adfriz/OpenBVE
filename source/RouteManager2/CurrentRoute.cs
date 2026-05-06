@@ -23,7 +23,7 @@ namespace RouteManager2
 
 		private readonly HostInterface currentHost;
 
-		private readonly BaseRenderer renderer;
+		private readonly RendererCore renderer;
 
 		/// <summary>Holds the information properties of the route</summary>
 		public RouteInformation Information;
@@ -102,7 +102,7 @@ namespace RouteManager2
 		/// <summary>All switches on the route</summary>
 		public Dictionary<Guid, Switch> Switches;
 
-		public CurrentRoute(HostInterface host, BaseRenderer renderer)
+		public CurrentRoute(HostInterface host, RendererCore renderer)
 		{
 			currentHost = host;
 			this.renderer = renderer;

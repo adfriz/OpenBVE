@@ -44,7 +44,7 @@ namespace LibRender2.Text
 
 			if (Tables[hi] == null || Tables[hi].Texture == null)
 			{
-				lock (BaseRenderer.GdiPlusLock)
+				lock (RendererCore.GdiPlusLock)
 				{
 					Tables[hi] = new OpenGlFontTable(Font, hi << 8);
 				}

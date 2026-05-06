@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using OpenTK.Graphics.OpenGL;
 
-namespace LibRender2
+namespace LibRender2.GraphicsCore
 {
 	public class FrameBufferObject : IDisposable
 	{

@@ -40,10 +40,10 @@ namespace LibRender2.Shaders
 		/// <summary>The OpenGL handle to the fragment shader component</summary>
 		internal int FragmentShader;
 		/// <summary>Holds a reference to the base renderer</summary>
-		internal readonly BaseRenderer Renderer;
+		internal readonly RendererCore Renderer;
 
 		internal bool IsActive;
-		public AbstractShader(BaseRenderer renderer, string vertexShaderName, string fragmentShaderName, bool isFromStream, bool fragColor)
+		public AbstractShader(RendererCore renderer, string vertexShaderName, string fragmentShaderName, bool isFromStream, bool fragColor)
 		{
 			Handle = GL.CreateProgram();
 			Renderer = renderer;

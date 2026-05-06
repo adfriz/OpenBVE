@@ -8,7 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace LibRender2
+namespace LibRender2.GraphicsCore
 {
 	/// <summary>
 	/// Class representing an OpenGL/OpenTK VAO
@@ -153,9 +153,9 @@ namespace LibRender2
 				return;
 			}
 
-			lock (BaseRenderer.vaoToDelete)
+			lock (RendererCore.vaoToDelete)
 			{
-				BaseRenderer.vaoToDelete.Add(handle);
+				RendererCore.vaoToDelete.Add(handle);
 			}
 		}
 	}
@@ -167,7 +167,7 @@ namespace LibRender2
 		/// <param name="isDynamic">Whether the mesh is dynamic (e.g. part of an animated object / train)</param>
 		/// <param name="vertexLayout">The vertex layout to use</param>
 		/// <param name="renderer">A reference to the base renderer</param>
-		public static void CreateVAO(Mesh mesh, bool isDynamic, VertexLayout vertexLayout, BaseRenderer renderer)
+		public static void CreateVAO(Mesh mesh, bool isDynamic, VertexLayout vertexLayout, RendererCore renderer)
 		{
 			if (!renderer.GameWindow.Context.IsCurrent)
 			{
@@ -183,7 +183,7 @@ namespace LibRender2
 		}
 
 		
-		private static void createVAO(Mesh mesh, bool isDynamic, VertexLayout vertexLayout, BaseRenderer renderer)
+		private static void createVAO(Mesh mesh, bool isDynamic, VertexLayout vertexLayout, RendererCore renderer)
 		{
 			if (mesh == null)
 			{
@@ -270,7 +270,7 @@ namespace LibRender2
 		/// <param name="background">The background</param>
 		/// <param name="vertexLayout">The vertex layout to use</param>
 		/// <param name="renderer">A reference to the base renderer</param>
-		public static void CreateVAO(this StaticBackground background, VertexLayout vertexLayout, BaseRenderer renderer)
+		public static void CreateVAO(this StaticBackground background, VertexLayout vertexLayout, RendererCore renderer)
 		{
 			try
 			{

@@ -15,7 +15,7 @@ namespace TrainManager
 	public abstract class TrainManagerBase
 	{
 		internal static HostInterface currentHost;
-		internal static BaseRenderer Renderer;
+		internal static RendererCore Renderer;
 		public static CurrentRoute CurrentRoute;
 		internal static FileSystem FileSystem;
 		public static bool Toppling;
@@ -33,7 +33,7 @@ namespace TrainManager
 		/// <summary>Stores the plugin error message string, or a null reference if no error encountered</summary>
 		public static string PluginError;
 
-		protected TrainManagerBase(HostInterface host, BaseRenderer renderer, BaseOptions Options, FileSystem fileSystem)
+		protected TrainManagerBase(HostInterface host, RendererCore renderer, BaseOptions Options, FileSystem fileSystem)
 		{
 			currentHost = host;
 			Renderer = renderer;

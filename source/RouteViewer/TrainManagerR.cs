@@ -15,7 +15,7 @@ namespace RouteViewer {
 
 	internal class TrainManager : TrainManagerBase {
 
-		public TrainManager(HostInterface host, BaseRenderer renderer, BaseOptions options, FileSystem fileSystem) : base(host, renderer, options, fileSystem)
+		public TrainManager(HostInterface host, RendererCore renderer, BaseOptions options, FileSystem fileSystem) : base(host, renderer, options, fileSystem)
 		{
 		}
 	}

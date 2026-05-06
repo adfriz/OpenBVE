@@ -617,7 +617,7 @@ namespace OpenBve
 				Close();
 			}
 
-			lock (BaseRenderer.GdiPlusLock)
+			lock (RendererCore.GdiPlusLock)
 			{
 				Timetable.CreateTimetable();
 			}
@@ -646,7 +646,7 @@ namespace OpenBve
 				Program.Renderer.TextureManager.UnloadAllTextures(false);
 			}
 			// camera
-			Program.Renderer.InitializeVisibility();
+			Program.Renderer.Models.InitializeVisibility();
 			Program.Renderer.CameraTrackFollower.UpdateAbsolute(0.0, true, false);
 			Program.Renderer.CameraTrackFollower.UpdateAbsolute(-0.1, true, false);
 			Program.Renderer.CameraTrackFollower.UpdateAbsolute(0.1, true, false);

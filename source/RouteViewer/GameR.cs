@@ -64,9 +64,9 @@ namespace RouteViewer {
 			Program.Renderer.InfoTotalQuads = 0;
 			Program.Renderer.InfoTotalQuadStrip = 0;
 			Program.Renderer.InfoTotalPolygon = 0;
-			Program.Renderer.VisibleObjects.quadTree.Clear();
+			Program.Renderer.Models.VisibleObjects.quadTree.Clear();
 			// object manager
-			Program.Renderer.InitializeVisibility();
+			Program.Renderer.Models.InitializeVisibility();
 			ObjectManager.AnimatedWorldObjects = new WorldObject[4];
 			ObjectManager.AnimatedWorldObjectsUsed = 0;
 			// renderer / sound
