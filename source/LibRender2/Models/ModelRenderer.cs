@@ -78,19 +78,19 @@ namespace LibRender2.Models
 
 			if (lastVAO != VAO.handle)
 			{
-				VAO.Bind();
+				renderer.GraphicsDevice.BindVAO(VAO.handle);
 				lastVAO = VAO.handle;
 			}
 
 			if (!renderer.OptionBackFaceCulling || (face.Flags & FaceFlags.Face2Mask) != 0)
 			{
-				GL.Disable(EnableCap.CullFace);
+				renderer.GraphicsDevice.SetCullFace(false);
 			}
 			else if (renderer.OptionBackFaceCulling)
 			{
 				if ((face.Flags & FaceFlags.Face2Mask) == 0)
 				{
-					GL.Enable(EnableCap.CullFace);
+					renderer.GraphicsDevice.SetCullFace(true);
 				}
 			}
 
@@ -113,7 +113,7 @@ namespace LibRender2.Models
 
 			if (renderer.OptionWireFrame || debugTouchMode)
 			{
-				GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
+				renderer.GraphicsDevice.SetWireframe(true);
 			}
 
 			// lighting
@@ -184,11 +184,8 @@ namespace LibRender2.Models
 			{
 				if (material.DaytimeTexture != null && renderer.currentHost.LoadTexture(ref material.DaytimeTexture, (OpenGlTextureWrapMode)material.WrapMode))
 				{
-					if (renderer.LastBoundTexture != material.DaytimeTexture.OpenGlTextures[(int)material.WrapMode])
-					{
-						GL.BindTexture(TextureTarget.Texture2D, material.DaytimeTexture.OpenGlTextures[(int)material.WrapMode].Name);
-						renderer.LastBoundTexture = material.DaytimeTexture.OpenGlTextures[(int)material.WrapMode];
-					}
+					renderer.GraphicsDevice.BindTexture(material.DaytimeTexture.OpenGlTextures[(int)material.WrapMode].Name);
+					renderer.LastBoundTexture = material.DaytimeTexture.OpenGlTextures[(int)material.WrapMode];
 				}
 				else
 				{
@@ -226,11 +223,8 @@ namespace LibRender2.Models
 			// nighttime polygon
 			if (blendFactor != 0 && material.NighttimeTexture != null && material.NighttimeTexture != material.DaytimeTexture && renderer.currentHost.LoadTexture(ref material.NighttimeTexture, (OpenGlTextureWrapMode)material.WrapMode))
 			{
-				if (renderer.LastBoundTexture != material.NighttimeTexture.OpenGlTextures[(int)material.WrapMode])
-				{
-					GL.BindTexture(TextureTarget.Texture2D, material.NighttimeTexture.OpenGlTextures[(int)material.WrapMode].Name);
-					renderer.LastBoundTexture = material.NighttimeTexture.OpenGlTextures[(int)material.WrapMode];
-				}
+				renderer.GraphicsDevice.BindTexture(material.NighttimeTexture.OpenGlTextures[(int)material.WrapMode].Name);
+				renderer.LastBoundTexture = material.NighttimeTexture.OpenGlTextures[(int)material.WrapMode];
 
 				GL.Enable(EnableCap.Blend);
 				shader.SetAlphaTest(true);
@@ -251,7 +245,7 @@ namespace LibRender2.Models
 				shader.SetBrightness(1.0f);
 				shader.SetOpacity(1.0f);
 				VertexArrayObject normalsVao = (VertexArrayObject)state.Prototype.Mesh.NormalsVAO;
-				normalsVao.Bind();
+				renderer.GraphicsDevice.BindVAO(normalsVao.handle);
 				lastVAO = normalsVao.handle;
 				normalsVao.Draw(PrimitiveType.Lines, face.NormalsIboStartIndex, face.Vertices.Length * 2);
 			}
@@ -264,7 +258,7 @@ namespace LibRender2.Models
 			}
 			if (renderer.OptionWireFrame || debugTouchMode)
 			{
-				GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
+				renderer.GraphicsDevice.SetWireframe(false);
 			}
 			lastObjectState = state;
 		}

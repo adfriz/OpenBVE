@@ -118,11 +118,11 @@ namespace LibRender2.Backgrounds
 				renderer.LastBoundTexture = t.OpenGlTextures[(int)OpenGlTextureWrapMode.RepeatClamp];
 				if (alpha == 1.0f)
 				{
-					GL.Disable(EnableCap.Blend);
+					renderer.GraphicsDevice.SetBlend(false);
 				}
 				else
 				{
-					GL.Enable(EnableCap.Blend);
+					renderer.GraphicsDevice.SetBlend(true);
 				}
 
 				if (data.VAO == null)
@@ -150,7 +150,7 @@ namespace LibRender2.Backgrounds
 				}
 
 				// texture
-				GL.BindTexture(TextureTarget.Texture2D, t.OpenGlTextures[(int)OpenGlTextureWrapMode.RepeatClamp].Name);
+				renderer.GraphicsDevice.BindTexture(t.OpenGlTextures[(int)OpenGlTextureWrapMode.RepeatClamp].Name);
 				renderer.LastBoundTexture = null;
 
 				// alpha test
@@ -161,7 +161,7 @@ namespace LibRender2.Backgrounds
 
 				// render polygon
 				VertexArrayObject VAO = (VertexArrayObject)data.VAO;
-				VAO.Bind();
+				renderer.GraphicsDevice.BindVAO(VAO.handle);
 				renderer.lastVAO = VAO.handle;
 				for (int i = 0; i + 11 < 32 * 12; i += 12)
 				{
@@ -176,7 +176,7 @@ namespace LibRender2.Backgrounds
 		/// <param name="data">The background object</param>
 		private void RenderBackgroundObject(BackgroundObject data)
 		{
-			GL.Enable(EnableCap.Blend);
+			renderer.GraphicsDevice.SetBlend(true);
 			// alpha test
 			renderer.SetAlphaFunc(AlphaFunction.Greater, 0.0f);
 			renderer.DefaultShader.Activate();
@@ -211,9 +211,9 @@ namespace LibRender2.Backgrounds
 						data.Object.Mesh.Materials[face.Material].WrapMode = wrap;
 					}
 				}
-				GL.Enable(EnableCap.DepthClamp);
+				renderer.GraphicsDevice.SetDepthClamp(true);
 				renderer.Models.RenderFace(renderer.DefaultShader, data.ObjectState, face, Matrix4D.NoTransformation, Matrix4D.Scale(1.0) * renderer.CurrentViewMatrix);
-				GL.Disable(EnableCap.DepthClamp);
+				renderer.GraphicsDevice.SetDepthClamp(false);
 			}
 		}
 	}

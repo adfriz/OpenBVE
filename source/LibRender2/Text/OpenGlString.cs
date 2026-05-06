@@ -118,7 +118,7 @@ namespace LibRender2.Text
 				i += font.GetCharacterData(text, i, out Texture texture, out OpenGlFontChar data) - 1;
 				if (renderer.currentHost.LoadTexture(ref texture, OpenGlTextureWrapMode.ClampClamp))
 				{
-					GL.BindTexture(TextureTarget.Texture2D, texture.OpenGlTextures[(int)OpenGlTextureWrapMode.ClampClamp].Name);
+					renderer.GraphicsDevice.BindTexture(texture.OpenGlTextures[(int)OpenGlTextureWrapMode.ClampClamp].Name);
 					Shader.SetAtlasLocation(data.TextureCoordinates);
 					double x = left - (data.PhysicalSize.X - data.TypographicSize.X) / 2;
 					double y = top - (data.PhysicalSize.Y - data.TypographicSize.Y) / 2;
@@ -126,18 +126,18 @@ namespace LibRender2.Text
 					/*
 					 * In the first pass, mask off the background with pure black.
 					 */
-					GL.BlendFunc(BlendingFactor.Zero, BlendingFactor.OneMinusSrcColor);
+					renderer.GraphicsDevice.SetBlendFunc(BlendingFactor.Zero, BlendingFactor.OneMinusSrcColor);
 					Shader.SetColor(new Color128(color.A, color.A, color.A, 1.0f));
 					Shader.SetPoint(new Vector2(x, y));
 					Shader.SetSize(data.PhysicalSize);
 					/*
 					 * In order to call GL.DrawArrays with procedural data within the shader,
 					 * we first need to bind a dummy VAO
-					* If this is not done, it will generate an InvalidOperation error code
+					 * If this is not done, it will generate an InvalidOperation error code
 					*/
-					renderer.dummyVao.Bind();
+					renderer.GraphicsDevice.BindVAO(renderer.dummyVao.handle);
 					GL.DrawArrays(PrimitiveType.TriangleStrip, 0, 6);
-					GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.One);
+					renderer.GraphicsDevice.SetBlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.One);
 					Shader.SetColor(color);
 					GL.DrawArrays(PrimitiveType.TriangleStrip, 0, 6);
 				}

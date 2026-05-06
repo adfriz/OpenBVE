@@ -115,31 +115,31 @@ namespace LibRender2.Shadows
         }
 
         /// <summary>Binds a specific cascade's FBO for depth writing.</summary>
-        public void BindCascadeForWriting(int cascadeIndex)
+        public void BindCascadeForWriting(int cascadeIndex, GraphicsCore.GraphicsDevice device)
         {
-            GL.BindFramebuffer(FramebufferTarget.Framebuffer, FBOs[cascadeIndex]);
-            GL.Viewport(0, 0, Resolution, Resolution);
+            device.BindFramebuffer(FramebufferTarget.Framebuffer, FBOs[cascadeIndex]);
+            device.SetViewport(0, 0, Resolution, Resolution);
         }
 
         /// <summary>Unbinds shadow FBO.</summary>
-        public void Unbind()
+        public void Unbind(GraphicsCore.GraphicsDevice device)
         {
-            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+            device.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
         }
 
         /// <summary>
         /// Binds all cascade depth textures sequentially starting from the given texture unit.
         /// E.g., if baseUnit = TextureUnit.Texture4, cascade 0 → unit 4, cascade 1 → unit 5, etc.
         /// </summary>
-        public void BindAllCascadesForReading(TextureUnit baseUnit)
+        public void BindAllCascadesForReading(TextureUnit baseUnit, GraphicsCore.GraphicsDevice device)
         {
             for (int i = 0; i < CascadeCount; i++)
             {
-                GL.ActiveTexture(baseUnit + i);
-                GL.BindTexture(TextureTarget.Texture2D, DepthTextures[i]);
+                device.SetActiveTexture(baseUnit + i);
+                device.BindTexture(DepthTextures[i]);
             }
             // Restore active texture to 0 so normal rendering isn't affected
-            GL.ActiveTexture(TextureUnit.Texture0);
+            device.SetActiveTexture(TextureUnit.Texture0);
         }
 
         public void Dispose()

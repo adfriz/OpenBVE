@@ -570,16 +570,16 @@ namespace LibRender2
 			// 3. Setup rendering state
 			CurrentShader?.Deactivate();
 			ShadowDepthShaderProgram.Activate();
-			GL.Enable(EnableCap.DepthTest);
-			GL.DepthFunc(DepthFunction.Less);
-			GL.Disable(EnableCap.CullFace);
-			GL.DepthMask(true); // Ensure depth writes are enabled before clearing
+			GraphicsDevice.SetDepthTest(true);
+			GraphicsDevice.SetDepthFunc(DepthFunction.Less);
+			GraphicsDevice.SetCullFace(false);
+			GraphicsDevice.SetDepthMask(true); // Ensure depth writes are enabled before clearing
 			ShadowDepthShaderProgram.SetTexture(0); // always use texture unit 0
 
 			for (int cascade = 0; cascade < CSMCaster.CascadeCount; cascade++)
 			{
-				CSMShadowMaps.BindCascadeForWriting(cascade);
-				GL.Clear(ClearBufferMask.DepthBufferBit);
+				CSMShadowMaps.BindCascadeForWriting(cascade, GraphicsDevice);
+				GraphicsDevice.Clear(ClearBufferMask.DepthBufferBit);
 				ShadowDepthShaderProgram.SetLightSpaceMatrix(CSMCaster.LightSpaceMatrices[cascade]);
 
 				lock (Models.VisibleObjects.LockObject)
@@ -601,8 +601,8 @@ namespace LibRender2
 							var material = face.Object.Prototype.Mesh.Materials[face.Face.Material];
 							if (material.DaytimeTexture != null && currentHost.LoadTexture(ref material.DaytimeTexture, (OpenGlTextureWrapMode)(material.WrapMode ?? OpenGlTextureWrapMode.ClampClamp)))
 							{
-								GL.ActiveTexture(TextureUnit.Texture0);
-								GL.BindTexture(TextureTarget.Texture2D,
+								GraphicsDevice.SetActiveTexture(TextureUnit.Texture0);
+								GraphicsDevice.BindTexture(
 									material.DaytimeTexture.OpenGlTextures[(int)(material.WrapMode ?? OpenGlTextureWrapMode.ClampClamp)].Name);
 								ShadowDepthShaderProgram.SetHasTexture(true);
 							}
@@ -629,7 +629,7 @@ namespace LibRender2
 							VertexArrayObject vao = (VertexArrayObject)face.Object.Prototype.Mesh.VAO;
 							if (vao.handle != lastVAOHandle)
 							{
-								vao.Bind();
+								GraphicsDevice.BindVAO(vao.handle);
 								lastVAOHandle = vao.handle;
 							}
 							PrimitiveType drawMode = GetPrimitiveType(face.Face.Flags);
@@ -643,13 +643,13 @@ namespace LibRender2
 					renderFaces(Models.VisibleObjects.OpaqueFaces);
 					renderFaces(Models.VisibleObjects.AlphaFaces);
 				}
-				CSMShadowMaps.Unbind();
+				CSMShadowMaps.Unbind(GraphicsDevice);
 			}
 
 			// 4. Restore state
-			GL.DepthFunc(DepthFunction.Lequal);
-			GL.CullFace(CullFaceMode.Front);
-			GL.Viewport(0, 0, Screen.Width, Screen.Height);
+			GraphicsDevice.SetDepthFunc(DepthFunction.Lequal);
+			GraphicsDevice.SetCullFaceMode(CullFaceMode.Front);
+			GraphicsDevice.SetViewport(0, 0, Screen.Width, Screen.Height);
 
 			// Shadow pass corrupts the GL texture state without updating LastBoundTexture
 			// Clear it here so the main pass is forced to rebind the correct texture or whitePixel.
@@ -668,10 +668,10 @@ namespace LibRender2
 				// texture even if shadows are disabled, as the shader contains sampler2DShadow uniforms.
 				for (int i = 0; i < 4; i++)
 				{
-					GL.ActiveTexture(TextureUnit.Texture4 + i);
-					GL.BindTexture(TextureTarget.Texture2D, nullDepthMap);
+					GraphicsDevice.SetActiveTexture(TextureUnit.Texture4 + i);
+					GraphicsDevice.BindTexture(nullDepthMap);
 				}
-				GL.ActiveTexture(TextureUnit.Texture0);
+				GraphicsDevice.SetActiveTexture(TextureUnit.Texture0);
 				return;
 			}
 
@@ -682,7 +682,7 @@ namespace LibRender2
 			DefaultShader.SetShadowStrength((float)currentOptions.ShadowStrength);
 			DefaultShader.SetCurrentViewMatrix(CurrentViewMatrix);
 
-			CSMShadowMaps.BindAllCascadesForReading(TextureUnit.Texture4);
+			CSMShadowMaps.BindAllCascadesForReading(TextureUnit.Texture4, GraphicsDevice);
 
 			int cascadeCount = CSMCaster.CascadeCount;
 			for (int i = 0; i < cascadeCount; i++)

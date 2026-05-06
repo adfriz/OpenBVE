@@ -61,11 +61,11 @@ namespace LibRender2.Primitives
 		{
 			renderer.UnsetBlendFunc();
 			renderer.SetAlphaFunc(AlphaFunction.Equal, 1.0f);
-			GL.DepthMask(true);
+			renderer.GraphicsDevice.SetDepthMask(true);
 			Draw(texture, point, size, color, textureCoordinates, wrapMode);
 			renderer.SetBlendFunc();
 			renderer.SetAlphaFunc(AlphaFunction.Less, 1.0f);
-			GL.DepthMask(false);
+			renderer.GraphicsDevice.SetDepthMask(false);
 			Draw(texture, point, size, color, textureCoordinates, wrapMode);
 			renderer.SetAlphaFunc(AlphaFunction.Equal, 1.0f);
 		}
@@ -83,11 +83,11 @@ namespace LibRender2.Primitives
 			}
 			renderer.UnsetBlendFunc();
 			renderer.SetAlphaFunc(AlphaFunction.Equal, 1.0f);
-			GL.DepthMask(true);
+			renderer.GraphicsDevice.SetDepthMask(true);
 			Draw(texture, point, texture.Size, color, textureCoordinates);
 			renderer.SetBlendFunc();
 			renderer.SetAlphaFunc(AlphaFunction.Less, 1.0f);
-			GL.DepthMask(false);
+			renderer.GraphicsDevice.SetDepthMask(false);
 			Draw(texture, point, texture.Size, color, textureCoordinates);
 			renderer.SetAlphaFunc(AlphaFunction.Equal, 1.0f);
 		}
@@ -135,14 +135,14 @@ namespace LibRender2.Primitives
 		public void Draw(int textureName, Vector2 point, Vector2 size, Color128? color = null)
 		{
 			Shader.Activate();
-			GL.BindTexture(TextureTarget.Texture2D, textureName);
+			renderer.GraphicsDevice.BindTexture(textureName);
 			Shader.SetCurrentProjectionMatrix(renderer.CurrentProjectionMatrix);
 			Shader.SetCurrentModelViewMatrix(renderer.CurrentViewMatrix);
 			Shader.SetColor(color ?? Color128.White);
 			Shader.SetPoint(point);
 			Shader.SetSize(size);
 			Shader.SetCoordinates(Vector2.One);
-			renderer.dummyVao.Bind();
+			renderer.GraphicsDevice.BindVAO(renderer.dummyVao.handle);
 			GL.DrawArrays(PrimitiveType.TriangleStrip, 0, 6);
 		}
 
@@ -157,7 +157,7 @@ namespace LibRender2.Primitives
 
 			if (texture != null && renderer.currentHost.LoadTexture(ref texture, (OpenGlTextureWrapMode)wrapMode))
 			{
-				GL.BindTexture(TextureTarget.Texture2D, texture.OpenGlTextures[(int)wrapMode].Name);
+				renderer.GraphicsDevice.BindTexture(texture.OpenGlTextures[(int)wrapMode].Name);
 				renderer.LastBoundTexture = texture.OpenGlTextures[(int)wrapMode];
 			}
 			else
@@ -172,11 +172,10 @@ namespace LibRender2.Primitives
 			Shader.SetSize(size);
 			Shader.SetCoordinates(coordinates);
 			/*
-			 * In order to call GL.DrawArrays with procedural data within the shader,
 			 * we first need to bind a dummy VAO
 			 * If this is not done, it will generate an InvalidOperation error code
 			 */
-			renderer.dummyVao.Bind();
+			renderer.GraphicsDevice.BindVAO(renderer.dummyVao.handle);
 			GL.DrawArrays(PrimitiveType.TriangleStrip, 0, 6);
 		}
 	}

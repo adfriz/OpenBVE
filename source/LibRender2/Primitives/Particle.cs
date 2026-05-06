@@ -78,7 +78,7 @@ namespace LibRender2.Primitives
 						};
 
 						particlesVAO[i * 4 + j] = new VertexArrayObject();
-						particlesVAO[i * 4 + j].Bind();
+						renderer.GraphicsDevice.BindVAO(particlesVAO[i * 4 + j].handle);
 						particlesVAO[i * 4 + j].SetVBO(new VertexBufferObject(vertexData, BufferUsageHint.StaticDraw));
 						particlesVAO[i * 4 + j].SetIBO(new IndexBufferObjectUS(Enumerable.Range(0, vertexData.Length).Select(x => (ushort)x).ToArray(), BufferUsageHint.StaticDraw));
 						particlesVAO[i * 4 + j].SetAttributes(renderer.DefaultShader.VertexLayout);
@@ -96,11 +96,11 @@ namespace LibRender2.Primitives
 		{
 			renderer.UnsetBlendFunc();
 			renderer.SetAlphaFunc(AlphaFunction.Equal, 1.0f);
-			GL.DepthMask(true);
+			renderer.GraphicsDevice.SetDepthMask(true);
 			DrawRetained(particleIndex, worldPosition, worldDirection, worldUp, worldSide, size, texture, opacity);
 			renderer.SetBlendFunc();
 			renderer.SetAlphaFunc(AlphaFunction.Less, 1.0f);
-			GL.DepthMask(false);
+			renderer.GraphicsDevice.SetDepthMask(false);
 			DrawRetained(particleIndex, worldPosition, worldDirection, worldUp, worldSide, size, texture, opacity);
 		}
 
@@ -120,17 +120,15 @@ namespace LibRender2.Primitives
 			// texture
 			if (texture != null && renderer.currentHost.LoadTexture(ref texture, OpenGlTextureWrapMode.ClampClamp))
 			{
-				GL.Enable(EnableCap.Texture2D);
-				GL.BindTexture(TextureTarget.Texture2D, texture.OpenGlTextures[(int)OpenGlTextureWrapMode.ClampClamp].Name);
+				renderer.GraphicsDevice.BindTexture(texture.OpenGlTextures[(int)OpenGlTextureWrapMode.ClampClamp].Name);
 			}
 			else
 			{
-				GL.Disable(EnableCap.Texture2D);
+				renderer.GraphicsDevice.BindTexture(0);
 			}
 
-			particlesVAO[particleIndex].Bind();
+			renderer.GraphicsDevice.BindVAO(particlesVAO[particleIndex].handle);
 			particlesVAO[particleIndex].Draw(PrimitiveType.Quads);
-			GL.Disable(EnableCap.Texture2D);
 
 		}
 

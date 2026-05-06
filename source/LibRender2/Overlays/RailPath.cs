@@ -116,7 +116,7 @@ namespace LibRender2.Overlays
 				{
 					using (VertexBufferObject vbo = new VertexBufferObject(vertices, BufferUsageHint.StreamDraw))
 					{
-						vao.Bind();
+						Renderer.GraphicsDevice.BindVAO(vao.handle);
 						vbo.Bind();
 						vbo.BufferData();
 						vbo.SetAttribute(Renderer.DefaultShader.VertexLayout);
@@ -127,9 +127,9 @@ namespace LibRender2.Overlays
 						Renderer.DefaultShader.SetIsLight(false);
 						Renderer.DefaultShader.DisableTexturing();
 
-						GL.LineWidth(LineWidth);
+						Renderer.GraphicsDevice.SetLineWidth(LineWidth);
 						GL.DrawArrays(PrimitiveType.LineStrip, 0, vertices.Length);
-						GL.LineWidth(1.0f);
+						Renderer.GraphicsDevice.SetLineWidth(1.0f);
 						
 						Renderer.DefaultShader.Deactivate();
 					}

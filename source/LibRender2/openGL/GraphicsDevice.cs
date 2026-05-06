@@ -13,9 +13,19 @@ namespace LibRender2.GraphicsCore
 		private bool blendEnabled;
 		private bool cullFaceEnabled;
 		private bool scissorTestEnabled;
+		private bool depthClampEnabled;
+		private bool depthMaskEnabled;
 
 		private BlendingFactor currentSrcBlend = (BlendingFactor)0;
 		private BlendingFactor currentDestBlend = (BlendingFactor)0;
+
+		private int lastBoundVAO = -1;
+		private int lastBoundTexture = -1;
+		private bool wireframeEnabled;
+		private float currentLineWidth = 1.0f;
+		private TextureUnit activeTexture = TextureUnit.Texture0;
+		private int currentFramebuffer = 0;
+		private CullFaceMode cullFaceMode = CullFaceMode.Back;
 
 		/// <summary>
 		/// Initializes the graphics device with default OpenGL states.
@@ -27,6 +37,13 @@ namespace LibRender2.GraphicsCore
 			blendEnabled = GL.IsEnabled(EnableCap.Blend);
 			cullFaceEnabled = GL.IsEnabled(EnableCap.CullFace);
 			scissorTestEnabled = GL.IsEnabled(EnableCap.ScissorTest);
+			depthClampEnabled = GL.IsEnabled(EnableCap.DepthClamp);
+			GL.GetBoolean(GetPName.DepthWritemask, out depthMaskEnabled);
+			GL.GetFloat(GetPName.LineWidth, out currentLineWidth);
+			activeTexture = TextureUnit.Texture0; // GL default
+			GL.GetInteger(GetPName.FramebufferBinding, out currentFramebuffer);
+			GL.GetInteger(GetPName.CullFaceMode, out int cfm);
+			cullFaceMode = (CullFaceMode)cfm;
 		}
 
 		public void SetDepthTest(bool enabled)
@@ -56,6 +73,15 @@ namespace LibRender2.GraphicsCore
 				if (enabled) GL.Enable(EnableCap.CullFace);
 				else GL.Disable(EnableCap.CullFace);
 				cullFaceEnabled = enabled;
+			}
+		}
+
+		public void SetCullFaceMode(CullFaceMode mode)
+		{
+			if (cullFaceMode != mode)
+			{
+				GL.CullFace(mode);
+				cullFaceMode = mode;
 			}
 		}
 
@@ -102,6 +128,99 @@ namespace LibRender2.GraphicsCore
 				GL.DepthFunc(func);
 				currentDepthFunc = func;
 			}
+		}
+
+		public void SetDepthClamp(bool enabled)
+		{
+			if (depthClampEnabled != enabled)
+			{
+				if (enabled) GL.Enable(EnableCap.DepthClamp);
+				else GL.Disable(EnableCap.DepthClamp);
+				depthClampEnabled = enabled;
+			}
+		}
+
+		public void SetDepthMask(bool enabled)
+		{
+			if (depthMaskEnabled != enabled)
+			{
+				GL.DepthMask(enabled);
+				depthMaskEnabled = enabled;
+			}
+		}
+
+		public void SetWireframe(bool enabled)
+		{
+			if (wireframeEnabled != enabled)
+			{
+				GL.PolygonMode(MaterialFace.FrontAndBack, enabled ? PolygonMode.Line : PolygonMode.Fill);
+				wireframeEnabled = enabled;
+			}
+		}
+
+		public void SetLineWidth(float width)
+		{
+			if (Math.Abs(currentLineWidth - width) > float.Epsilon)
+			{
+				GL.LineWidth(width);
+				currentLineWidth = width;
+			}
+		}
+
+		public void BindVAO(int handle)
+		{
+			if (lastBoundVAO != handle)
+			{
+				GL.BindVertexArray(handle);
+				lastBoundVAO = handle;
+			}
+		}
+
+		public void BindTexture(int handle)
+		{
+			if (lastBoundTexture != handle)
+			{
+				GL.BindTexture(TextureTarget.Texture2D, handle);
+				lastBoundTexture = handle;
+			}
+		}
+
+		public void BindFramebuffer(FramebufferTarget target, int handle)
+		{
+			if (currentFramebuffer != handle)
+			{
+				GL.BindFramebuffer(target, handle);
+				currentFramebuffer = handle;
+			}
+		}
+
+		public void SetActiveTexture(TextureUnit unit)
+		{
+			if (activeTexture != unit)
+			{
+				GL.ActiveTexture(unit);
+				activeTexture = unit;
+			}
+		}
+
+		/// <summary>Resets the cached state (Call after external GL context changes if any)</summary>
+		public void ResetCache()
+		{
+			lastBoundVAO = -1;
+			lastBoundTexture = -1;
+			currentDepthFunc = (DepthFunction)0;
+			// Re-query actual GL state for booleans
+			depthTestEnabled = GL.IsEnabled(EnableCap.DepthTest);
+			blendEnabled = GL.IsEnabled(EnableCap.Blend);
+			cullFaceEnabled = GL.IsEnabled(EnableCap.CullFace);
+			scissorTestEnabled = GL.IsEnabled(EnableCap.ScissorTest);
+			depthClampEnabled = GL.IsEnabled(EnableCap.DepthClamp);
+			GL.GetBoolean(GetPName.DepthWritemask, out depthMaskEnabled);
+			GL.GetFloat(GetPName.LineWidth, out currentLineWidth);
+			activeTexture = TextureUnit.Texture0;
+			GL.GetInteger(GetPName.FramebufferBinding, out currentFramebuffer);
+			GL.GetInteger(GetPName.CullFaceMode, out int cfm2);
+			cullFaceMode = (CullFaceMode)cfm2;
 		}
 	}
 }

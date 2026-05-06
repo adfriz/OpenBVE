@@ -284,7 +284,7 @@ namespace LibRender2.Primitives
 			try
 			{
 				defaultVAO = new VertexArrayObject();
-				defaultVAO.Bind();
+				renderer.GraphicsDevice.BindVAO(defaultVAO.handle);
 				defaultVAO.SetVBO(new VertexBufferObject(vertexData, BufferUsageHint.StaticDraw));
 				defaultVAO.SetIBO(new IndexBufferObjectUS(Enumerable.Range(0, vertexData.Length).Select(x => (ushort)x).ToArray(), BufferUsageHint.StaticDraw));
 				defaultVAO.SetAttributes(renderer.DefaultShader.VertexLayout);
@@ -334,18 +334,16 @@ namespace LibRender2.Primitives
 			// texture
 			if (TextureIndex != null && renderer.currentHost.LoadTexture(ref TextureIndex, OpenGlTextureWrapMode.ClampClamp))
 			{
-				GL.Enable(EnableCap.Texture2D);
-				GL.BindTexture(TextureTarget.Texture2D, TextureIndex.OpenGlTextures[(int)OpenGlTextureWrapMode.ClampClamp].Name);
+				renderer.GraphicsDevice.BindTexture(TextureIndex.OpenGlTextures[(int)OpenGlTextureWrapMode.ClampClamp].Name);
 			}
 			else
 			{
-				GL.Disable(EnableCap.Texture2D);
+				renderer.GraphicsDevice.BindTexture(0);
 			}
 
 			// render polygon
-			VAO.Bind();
+			renderer.GraphicsDevice.BindVAO(VAO.handle);
 			VAO.Draw(PrimitiveType.Triangles);
-			GL.Disable(EnableCap.Texture2D);
 		}
 	}
 }
