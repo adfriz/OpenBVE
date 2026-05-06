@@ -1,3 +1,4 @@
+using System;
 using OpenTK.Graphics.OpenGL;
 
 namespace LibRender2.GraphicsCore
@@ -26,6 +27,7 @@ namespace LibRender2.GraphicsCore
 		private TextureUnit activeTexture = TextureUnit.Texture0;
 		private int currentFramebuffer = 0;
 		private CullFaceMode cullFaceMode = CullFaceMode.Back;
+		private PolygonMode currentPolygonMode = PolygonMode.Fill;
 
 		/// <summary>
 		/// Initializes the graphics device with default OpenGL states.
@@ -105,20 +107,6 @@ namespace LibRender2.GraphicsCore
 			}
 		}
 
-		public void SetViewport(int x, int y, int width, int height)
-		{
-			GL.Viewport(x, y, width, height);
-		}
-
-		public void SetClearColor(float r, float g, float b, float a)
-		{
-			GL.ClearColor(r, g, b, a);
-		}
-
-		public void Clear(ClearBufferMask mask)
-		{
-			GL.Clear(mask);
-		}
 		private DepthFunction currentDepthFunc = (DepthFunction)0;
 
 		public void SetDepthFunc(DepthFunction func)

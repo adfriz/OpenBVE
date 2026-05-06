@@ -366,11 +366,7 @@ namespace OpenBveApi.Math
 		/// <param name="vec">The vector to transform</param>
 		/// <param name="mat">The desired transformation</param>
 		/// <param name="result">The transformed vector</param>
-		/// <summary>Transforms a Vector by the given Matrix</summary>
-		/// <param name="vec">The vector to transform</param>
-		/// <param name="mat">The desired transformation</param>
-		/// <param name="result">The transformed vector</param>
-		public static void Transform(ref Vector4 vec, in Matrix4D mat, out Vector4 result)
+		public static void Transform(ref Vector4 vec, ref Matrix4D mat, out Vector4 result)
 		{
 			result = new Vector4(
 				vec.X * mat.Row0.X + vec.Y * mat.Row1.X + vec.Z * mat.Row2.X + vec.W * mat.Row3.X,

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using OpenBveApi.Colors;
+using OpenBveApi.Hosts;
 using OpenBveApi.Math;
 using OpenBveApi.World;
 
@@ -677,6 +678,11 @@ namespace OpenBveApi.Objects
 			{
 				Array.Resize(ref Mesh.Faces, f);
 			}
+		}
+		/// <inheritdoc />
+		public override void CreateObject(Vector3 position, Transformation worldTransformation, Transformation localTransformation, ObjectCreationParameters Parameters)
+		{
+			currentHost.CreateStaticObject(this, position, Parameters, worldTransformation, localTransformation);
 		}
 	}
 }

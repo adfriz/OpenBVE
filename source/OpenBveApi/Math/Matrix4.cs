@@ -347,7 +347,7 @@ namespace OpenBveApi.Math
 		public static Matrix4D operator *(Matrix4D left, Matrix4D right)
 		{
 			Matrix4D result = new Matrix4D();
-			Multiply(in left, in right, out result);
+			Multiply(ref left, ref right, out result);
 			return result;
 		}
 
@@ -355,7 +355,7 @@ namespace OpenBveApi.Math
 		/// <param name="left">The left matrix</param>
 		/// <param name="right">The right matrix</param>
 		/// <param name="result">The resulting matrix</param>
-		public static void Multiply(in Matrix4D left, in Matrix4D right, out Matrix4D result)
+		public static void Multiply(ref Matrix4D left, ref Matrix4D right, out Matrix4D result)
 		{
 			result.Row0.X = (((left.Row0.X * right.Row0.X) + (left.Row0.Y * right.Row1.X)) + (left.Row0.Z * right.Row2.X)) + (left.Row0.W * right.Row3.X);
 			result.Row0.Y = (((left.Row0.X * right.Row0.Y) + (left.Row0.Y * right.Row1.Y)) + (left.Row0.Z * right.Row2.Y)) + (left.Row0.W * right.Row3.Y);
