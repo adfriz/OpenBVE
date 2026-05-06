@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 // ReSharper disable MergeCastWithTypeCheck
 
 namespace OpenBveApi.Math
@@ -69,11 +69,7 @@ namespace OpenBveApi.Math
 		/// <returns>The sum of the two vectors.</returns>
 		public static Vector4 operator +(Vector4 a, Vector4 b)
 		{
-			a.X += b.X;
-			a.Y += b.Y;
-			a.Z += b.Z;
-			a.W += b.W;
-			return a;
+			return new Vector4(a.X + b.X, a.Y + b.Y, a.Z + b.Z, a.W + b.W);
 		}
 
 		/// <summary>Adds two vectors.</summary>
@@ -119,11 +115,7 @@ namespace OpenBveApi.Math
 		/// <returns>The difference of the two vectors.</returns>
 		public static Vector4 operator -(Vector4 a, Vector4 b)
 		{
-			a.X -= b.X;
-			a.Y -= b.Y;
-			a.Z -= b.Z;
-			a.W -= b.W;
-			return a;
+			return new Vector4(a.X - b.X, a.Y - b.Y, a.Z - b.Z, a.W - b.W);
 		}
 
 		/// <summary>Subtracts two vectors.</summary>
@@ -306,11 +298,7 @@ namespace OpenBveApi.Math
 		/// <param name="b">The second vector.</param>
 		/// <returns>Whether the two vectors are equal.</returns>
 		public static bool operator ==(Vector4 a, Vector4 b) {
-			if (a.X != b.X) return false;
-			if (a.Y != b.Y) return false;
-			if (a.Z != b.Z) return false;
-			if (a.W != b.W) return false;
-			return true;
+			return a.X == b.X && a.Y == b.Y && a.Z == b.Z && a.W == b.W;
 		}
 
 		/// <summary>Returns the hashcode for this instance.</summary>
@@ -378,7 +366,11 @@ namespace OpenBveApi.Math
 		/// <param name="vec">The vector to transform</param>
 		/// <param name="mat">The desired transformation</param>
 		/// <param name="result">The transformed vector</param>
-		public static void Transform(ref Vector4 vec, ref Matrix4D mat, out Vector4 result)
+		/// <summary>Transforms a Vector by the given Matrix</summary>
+		/// <param name="vec">The vector to transform</param>
+		/// <param name="mat">The desired transformation</param>
+		/// <param name="result">The transformed vector</param>
+		public static void Transform(ref Vector4 vec, in Matrix4D mat, out Vector4 result)
 		{
 			result = new Vector4(
 				vec.X * mat.Row0.X + vec.Y * mat.Row1.X + vec.Z * mat.Row2.X + vec.W * mat.Row3.X,

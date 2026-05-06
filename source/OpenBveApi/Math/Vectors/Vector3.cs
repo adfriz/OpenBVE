@@ -703,18 +703,16 @@ namespace OpenBveApi.Math {
 		/// <summary>Transforms the Vector based upon the given transform matrix</summary>
 		/// <param name="transformMatrix">The matrix by which to transform the Vector</param>
 		/// <param name="ignoreW">Whether the W component of the matrix should be ignored</param>
-		public void Transform(Matrix4D transformMatrix, bool ignoreW = true)
+		/// <summary>Transforms the Vector based upon the given transform matrix</summary>
+		/// <param name="transformMatrix">The matrix by which to transform the Vector</param>
+		/// <param name="ignoreW">Whether the W component of the matrix should be ignored</param>
+		public void Transform(in Matrix4D transformMatrix, bool ignoreW = true)
 		{
 			double x = (X * transformMatrix.Row0.X) + (Y * transformMatrix.Row1.X) + (Z * transformMatrix.Row2.X);
 			double y = (X * transformMatrix.Row0.Y) + (Y * transformMatrix.Row1.Y) + (Z * transformMatrix.Row2.Y);
 			double z = (X * transformMatrix.Row0.Z) + (Y * transformMatrix.Row1.Z) + (Z * transformMatrix.Row2.Z);
 			if (!ignoreW)
 			{
-				/*
-				 * Multiplying a Vector3 by a Matrix4 is actually mathematically undefined behaviour
-				 * Some implementations appear to expect a constant W value to be added to the vector,
-				 * whereas others ignore it
-				 */
 				x += transformMatrix.Row3.X;
 				y += transformMatrix.Row3.Y;
 				z += transformMatrix.Row3.Z;
@@ -738,15 +736,19 @@ namespace OpenBveApi.Math {
 		/// <param name="vec">The vector to transform.</param>
 		/// <param name="quat">The quaternion to rotate the vector by.</param>
 		/// <param name="result">The result of the operation.</param>
-		public static void Transform(ref Vector3 vec, ref Quaternion quat, out Vector3 result)
+		/// <summary>Transforms a vector by a quaternion rotation.</summary>
+		/// <param name="vec">The vector to transform.</param>
+		/// <param name="quat">The quaternion to rotate the vector by.</param>
+		/// <param name="result">The result of the operation.</param>
+		public static void Transform(ref Vector3 vec, in Quaternion quat, out Vector3 result)
 		{
 			// Since vec.W == 0, we can optimize quat * vec * quat^-1 as follows:
 			// vec + 2.0 * cross(quat.xyz, cross(quat.xyz, vec) + quat.w * vec)
 			Vector3 xyz = quat.Xyz, temp, temp2;
-			temp = Cross(xyz, vec);
+			temp = Cross(in xyz, in vec);
 			temp2 = vec * quat.W;
 			temp += temp2;
-			temp2 = Cross(xyz, temp);
+			temp2 = Cross(in xyz, in temp);
 			temp2 *= 2f;
 			result = vec + temp2;
 		}

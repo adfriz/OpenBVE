@@ -347,6 +347,16 @@ namespace OpenBveApi.Math
 		public static Matrix4D operator *(Matrix4D left, Matrix4D right)
 		{
 			Matrix4D result = new Matrix4D();
+			Multiply(in left, in right, out result);
+			return result;
+		}
+
+		/// <summary>Multiplies two matrices</summary>
+		/// <param name="left">The left matrix</param>
+		/// <param name="right">The right matrix</param>
+		/// <param name="result">The resulting matrix</param>
+		public static void Multiply(in Matrix4D left, in Matrix4D right, out Matrix4D result)
+		{
 			result.Row0.X = (((left.Row0.X * right.Row0.X) + (left.Row0.Y * right.Row1.X)) + (left.Row0.Z * right.Row2.X)) + (left.Row0.W * right.Row3.X);
 			result.Row0.Y = (((left.Row0.X * right.Row0.Y) + (left.Row0.Y * right.Row1.Y)) + (left.Row0.Z * right.Row2.Y)) + (left.Row0.W * right.Row3.Y);
 			result.Row0.Z = (((left.Row0.X * right.Row0.Z) + (left.Row0.Y * right.Row1.Z)) + (left.Row0.Z * right.Row2.Z)) + (left.Row0.W * right.Row3.Z);
@@ -363,7 +373,6 @@ namespace OpenBveApi.Math
 			result.Row3.Y = (((left.Row3.X * right.Row0.Y) + (left.Row3.Y * right.Row1.Y)) + (left.Row3.Z * right.Row2.Y)) + (left.Row3.W * right.Row3.Y);
 			result.Row3.Z = (((left.Row3.X * right.Row0.Z) + (left.Row3.Y * right.Row1.Z)) + (left.Row3.Z * right.Row2.Z)) + (left.Row3.W * right.Row3.Z);
 			result.Row3.W = (((left.Row3.X * right.Row0.W) + (left.Row3.Y * right.Row1.W)) + (left.Row3.Z * right.Row2.W)) + (left.Row3.W * right.Row3.W);
-			return result;
 		}
 
 		/// <summary>Adds two matrices</summary>
