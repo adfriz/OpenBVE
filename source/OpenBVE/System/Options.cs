@@ -305,6 +305,8 @@ namespace OpenBve
 				Builder.AppendLine("cameraInteriorTransition = " + (CameraInteriorTransition ? "true" : "false"));
 				Builder.AppendLine("cameraExteriorTransition = " + (CameraExteriorTransition ? "true" : "false"));
 				Builder.AppendLine("cameraTransitionSpeed = " + CameraTransitionSpeed.ToString(Culture));
+				Builder.AppendLine("externalCameraMode = " + (int)ExternalCameraMode);
+				Builder.AppendLine("orbitCameraSpeed = " + OrbitCameraSpeed.ToString(Culture));
 				Builder.AppendLine();
 				Builder.AppendLine("[quality]");
 				Builder.AppendLine("interpolation = " + Interpolation);
@@ -505,6 +507,8 @@ namespace OpenBve
 							{
 								CurrentOptions.CameraTransitionSpeed = 0.4;
 							}
+							block.TryGetEnumValue(OptionsKey.ExternalCameraMode, ref CurrentOptions.ExternalCameraMode);
+							block.TryGetValue(OptionsKey.OrbitCameraSpeed, ref CurrentOptions.OrbitCameraSpeed, NumberRange.Positive);
 							break;
 						case OptionsSection.Quality:
 							block.GetEnumValue(OptionsKey.Interpolation, out Interface.CurrentOptions.Interpolation);

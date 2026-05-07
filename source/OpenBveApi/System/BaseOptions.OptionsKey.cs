@@ -41,6 +41,8 @@ namespace OpenBveApi
 		CameraInteriorTransition,
 		CameraExteriorTransition,
 		CameraTransitionSpeed,
+		ExternalCameraMode,
+		OrbitCameraSpeed,
 		// Quality
 		Interpolation,
 		AnisotropicFilteringLevel,

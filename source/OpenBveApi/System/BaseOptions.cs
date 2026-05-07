@@ -141,6 +141,10 @@ namespace OpenBveApi
 		public double NearClipCab = 0.025;
 		/// <summary>The near clipping plane for the base renderer</summary>
 		public double NearClipBase = 0.2;
+		/// <summary>The external camera mode</summary>
+		public ExternalCameraMode ExternalCameraMode = ExternalCameraMode.Default;
+		/// <summary>The speed multiplier for the orbit camera</summary>
+		public double OrbitCameraSpeed = 1.0;
 
 		/// <summary>Saves the options to the specified filename</summary>
 		/// <param name="fileName">The filename to save the options to</param>

@@ -5,6 +5,7 @@ using System.Linq;
 using DavyKager;
 using LibRender2.Cameras;
 using LibRender2.Screens;
+using OpenBveApi.Graphics;
 using OpenBve.Input;
 using OpenBveApi.Hosts;
 using OpenBveApi.Interface;
@@ -513,7 +514,14 @@ namespace OpenBve
 					TrainManagerBase.PlayerTrain.Cars[TrainManagerBase.PlayerTrain.CameraCar].InteriorCamera = Program.Renderer.Camera.Alignment;
 					break;
 				case CameraViewMode.Exterior:
-					Program.Renderer.Camera.SavedExterior = Program.Renderer.Camera.Alignment;
+					if (Interface.CurrentOptions.ExternalCameraMode == ExternalCameraMode.Orbit)
+					{
+						Program.Renderer.Camera.SavedOrbit = Program.Renderer.Camera.Alignment;
+					}
+					else
+					{
+						Program.Renderer.Camera.SavedExterior = Program.Renderer.Camera.Alignment;
+					}
 					Program.Renderer.Camera.SavedExterior.CameraCar = TrainManagerBase.PlayerTrain.CameraCar;
 					break;
 				case CameraViewMode.Track:
@@ -534,7 +542,14 @@ namespace OpenBve
 					Program.Renderer.Camera.Alignment = TrainManagerBase.PlayerTrain.Cars[TrainManagerBase.PlayerTrain.CameraCar].InteriorCamera ?? TrainManagerBase.PlayerTrain.Cars[TrainManagerBase.PlayerTrain.DriverCar].InteriorCamera ?? new CameraAlignment();
 					break;
 				case CameraViewMode.Exterior:
-					Program.Renderer.Camera.Alignment = Program.Renderer.Camera.SavedExterior;
+					if (Interface.CurrentOptions.ExternalCameraMode == ExternalCameraMode.Orbit)
+					{
+						Program.Renderer.Camera.Alignment = Program.Renderer.Camera.SavedOrbit ?? new CameraAlignment { Position = new OpenBveApi.Math.Vector3(0, 0, -5) };
+					}
+					else
+					{
+						Program.Renderer.Camera.Alignment = Program.Renderer.Camera.SavedExterior;
+					}
 					TrainManagerBase.PlayerTrain.CameraCar = Program.Renderer.Camera.SavedExterior.CameraCar;
 					break;
 				case CameraViewMode.Track:

@@ -98,6 +98,8 @@ namespace LibRender2.Cameras
 		public CameraRestrictionMode CurrentRestriction = CameraRestrictionMode.NotAvailable;
 		/// <summary>The saved exterior camera alignment</summary>
 		public CameraAlignment SavedExterior;
+		/// <summary>The saved orbit camera alignment</summary>
+		public CameraAlignment SavedOrbit;
 		/// <summary>The saved track camera alignment</summary>
 		public CameraAlignment SavedTrack;
 		/// <summary>The current quad tree leaf node</summary>

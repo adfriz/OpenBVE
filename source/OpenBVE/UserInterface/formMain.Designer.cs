@@ -167,6 +167,10 @@ namespace OpenBve {
             this.checkboxCameraExteriorTransition = new System.Windows.Forms.CheckBox();
             this.labelCameraTransitionSpeed = new System.Windows.Forms.Label();
             this.updownCameraTransitionSpeed = new System.Windows.Forms.NumericUpDown();
+            this.labelExternalCameraMode = new System.Windows.Forms.Label();
+            this.comboBoxExternalCameraMode = new System.Windows.Forms.ComboBox();
+            this.labelOrbitCameraSpeed = new System.Windows.Forms.Label();
+            this.updownOrbitCameraSpeed = new System.Windows.Forms.NumericUpDown();
             this.panelOptionsPage2 = new System.Windows.Forms.Panel();
             this.groupboxDistance = new System.Windows.Forms.GroupBox();
             this.updownNearClipBase = new System.Windows.Forms.NumericUpDown();
@@ -2654,10 +2658,14 @@ namespace OpenBve {
             this.groupboxCamera.Controls.Add(this.checkboxCameraExteriorTransition);
             this.groupboxCamera.Controls.Add(this.labelCameraTransitionSpeed);
             this.groupboxCamera.Controls.Add(this.updownCameraTransitionSpeed);
+            this.tabPageCamera.Controls.Add(this.labelExternalCameraMode);
+            this.tabPageCamera.Controls.Add(this.comboBoxExternalCameraMode);
+            this.tabPageCamera.Controls.Add(this.labelOrbitCameraSpeed);
+            this.tabPageCamera.Controls.Add(this.updownOrbitCameraSpeed);
             this.groupboxCamera.ForeColor = System.Drawing.Color.Black;
             this.groupboxCamera.Location = new System.Drawing.Point(330, 0);
             this.groupboxCamera.Name = "groupboxCamera";
-            this.groupboxCamera.Size = new System.Drawing.Size(321, 120);
+            this.groupboxCamera.Size = new System.Drawing.Size(321, 130);
             this.groupboxCamera.TabIndex = 22;
             this.groupboxCamera.TabStop = false;
             this.groupboxCamera.Text = "Camera options";
@@ -2718,6 +2726,66 @@ namespace OpenBve {
             0,
             0,
             65536});
+            // 
+            // labelExternalCameraMode
+            // 
+            this.labelExternalCameraMode.AutoSize = true;
+            this.labelExternalCameraMode.Location = new System.Drawing.Point(8, 98);
+            this.labelExternalCameraMode.Name = "labelExternalCameraMode";
+            this.labelExternalCameraMode.Size = new System.Drawing.Size(120, 13);
+            this.labelExternalCameraMode.TabIndex = 4;
+            this.labelExternalCameraMode.Text = "External camera mode:";
+            // 
+            // comboBoxExternalCameraMode
+            // 
+            this.comboBoxExternalCameraMode.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboBoxExternalCameraMode.FormattingEnabled = true;
+            this.comboBoxExternalCameraMode.Items.AddRange(new object[] {
+            "Default",
+            "Orbit"});
+            this.comboBoxExternalCameraMode.Location = new System.Drawing.Point(140, 95);
+            this.comboBoxExternalCameraMode.Name = "comboBoxExternalCameraMode";
+            this.comboBoxExternalCameraMode.Size = new System.Drawing.Size(120, 21);
+            this.comboBoxExternalCameraMode.TabIndex = 5;
+            this.comboBoxExternalCameraMode.SelectedIndexChanged += new System.EventHandler(this.comboBoxExternalCameraMode_SelectedIndexChanged);
+            // 
+            // labelOrbitCameraSpeed
+            // 
+            this.labelOrbitCameraSpeed.AutoSize = true;
+            this.labelOrbitCameraSpeed.Location = new System.Drawing.Point(8, 124);
+            this.labelOrbitCameraSpeed.Name = "labelOrbitCameraSpeed";
+            this.labelOrbitCameraSpeed.Size = new System.Drawing.Size(102, 13);
+            this.labelOrbitCameraSpeed.TabIndex = 6;
+            this.labelOrbitCameraSpeed.Text = "Orbit camera speed:";
+            // 
+            // updownOrbitCameraSpeed
+            // 
+            this.updownOrbitCameraSpeed.DecimalPlaces = 1;
+            this.updownOrbitCameraSpeed.Increment = new decimal(new int[] {
+            1,
+            0,
+            0,
+            65536});
+            this.updownOrbitCameraSpeed.Location = new System.Drawing.Point(140, 122);
+            this.updownOrbitCameraSpeed.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            65536});
+            this.updownOrbitCameraSpeed.Maximum = new decimal(new int[] {
+            100,
+            0,
+            0,
+            0});
+            this.updownOrbitCameraSpeed.Name = "updownOrbitCameraSpeed";
+            this.updownOrbitCameraSpeed.Size = new System.Drawing.Size(60, 20);
+            this.updownOrbitCameraSpeed.TabIndex = 7;
+            this.updownOrbitCameraSpeed.Value = new decimal(new int[] {
+            10,
+            0,
+            0,
+            65536});
+            this.updownOrbitCameraSpeed.ValueChanged += new System.EventHandler(this.updownOrbitCameraSpeed_ValueChanged);
             // 
             // labelShadowResolution
             // 
@@ -7022,6 +7090,12 @@ namespace OpenBve {
 		private System.Windows.Forms.CheckBox checkboxCameraExteriorTransition;
 		private System.Windows.Forms.Label labelCameraTransitionSpeed;
 		private System.Windows.Forms.NumericUpDown updownCameraTransitionSpeed;
+        private System.Windows.Forms.Label labelExternalCameraMode;
+        private System.Windows.Forms.ComboBox comboBoxExternalCameraMode;
+        private System.Windows.Forms.Label labelOrbitCameraSpeed;
+        private System.Windows.Forms.NumericUpDown updownOrbitCameraSpeed;
 		private System.Windows.Forms.Panel panelOptionsPage2;
 	}
+}
+}
 }

@@ -525,6 +525,8 @@ namespace OpenBve {
 			checkboxCameraInteriorTransition.Checked = Interface.CurrentOptions.CameraInteriorTransition;
 			checkboxCameraExteriorTransition.Checked = Interface.CurrentOptions.CameraExteriorTransition;
 			updownCameraTransitionSpeed.Value = (decimal)Interface.CurrentOptions.CameraTransitionSpeed;
+			comboBoxExternalCameraMode.SelectedIndex = (int)Interface.CurrentOptions.ExternalCameraMode;
+			updownOrbitCameraSpeed.Value = (decimal)Interface.CurrentOptions.OrbitCameraSpeed;
 			ListInputDevicePlugins();
 			if (Program.CurrentHost.MonoRuntime)
 			{
@@ -779,6 +781,10 @@ namespace OpenBve {
 			checkboxCameraInteriorTransition.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","camera_interior_transition"});
 			checkboxCameraExteriorTransition.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","camera_exterior_transition"});
 			labelCameraTransitionSpeed.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","camera_transition_duration"});
+			labelExternalCameraMode.Text = "External camera mode:";
+			comboBoxExternalCameraMode.Items[0] = "Default";
+			comboBoxExternalCameraMode.Items[1] = "Orbit";
+			labelOrbitCameraSpeed.Text = "Orbit camera speed:";
 			checkboxToppling.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","misc_simulation_toppling"});
 			checkboxCollisions.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","misc_simulation_collisions"});
 			checkboxDerailments.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","misc_simulation_derailments"});
@@ -2217,6 +2223,16 @@ namespace OpenBve {
 					textBoxMSTSTrainsetDirectory.Text = folderSelectDialog.SelectedPath;
 				}
 			}
+		}
+
+		private void comboBoxExternalCameraMode_SelectedIndexChanged(object sender, EventArgs e)
+		{
+			Interface.CurrentOptions.ExternalCameraMode = (ExternalCameraMode)comboBoxExternalCameraMode.SelectedIndex;
+		}
+
+		private void updownOrbitCameraSpeed_ValueChanged(object sender, EventArgs e)
+		{
+			Interface.CurrentOptions.OrbitCameraSpeed = (double)updownOrbitCameraSpeed.Value;
 		}
 	}
 }

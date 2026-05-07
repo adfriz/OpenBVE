@@ -185,8 +185,15 @@ namespace OpenBve {
 						}
 					}
 					bool q = Program.Renderer.Camera.AlignmentSpeed.Yaw != 0.0 | Program.Renderer.Camera.AlignmentSpeed.Pitch != 0.0 | Program.Renderer.Camera.AlignmentSpeed.Roll != 0.0;
-					Program.Renderer.Camera.AdjustAlignment(ref Program.Renderer.Camera.Alignment.Yaw, Program.Renderer.Camera.AlignmentDirection.Yaw, ref Program.Renderer.Camera.AlignmentSpeed.Yaw, TimeElapsed, false, TrainManager.PlayerTrain.Cars[TrainManager.PlayerTrain.DriverCar].CameraRestriction);
-					Program.Renderer.Camera.AdjustAlignment(ref Program.Renderer.Camera.Alignment.Pitch, Program.Renderer.Camera.AlignmentDirection.Pitch, ref Program.Renderer.Camera.AlignmentSpeed.Pitch, TimeElapsed, false, TrainManager.PlayerTrain.Cars[TrainManager.PlayerTrain.DriverCar].CameraRestriction);
+					double yawDir = Program.Renderer.Camera.AlignmentDirection.Yaw;
+					double pitchDir = Program.Renderer.Camera.AlignmentDirection.Pitch;
+					if (Program.Renderer.Camera.CurrentMode == CameraViewMode.Exterior && Interface.CurrentOptions.ExternalCameraMode == ExternalCameraMode.Orbit)
+					{
+						yawDir *= Interface.CurrentOptions.OrbitCameraSpeed;
+						pitchDir *= Interface.CurrentOptions.OrbitCameraSpeed;
+					}
+					Program.Renderer.Camera.AdjustAlignment(ref Program.Renderer.Camera.Alignment.Yaw, yawDir, ref Program.Renderer.Camera.AlignmentSpeed.Yaw, TimeElapsed, false, TrainManager.PlayerTrain.Cars[TrainManager.PlayerTrain.DriverCar].CameraRestriction);
+					Program.Renderer.Camera.AdjustAlignment(ref Program.Renderer.Camera.Alignment.Pitch, pitchDir, ref Program.Renderer.Camera.AlignmentSpeed.Pitch, TimeElapsed, false, TrainManager.PlayerTrain.Cars[TrainManager.PlayerTrain.DriverCar].CameraRestriction);
 					Program.Renderer.Camera.AdjustAlignment(ref Program.Renderer.Camera.Alignment.Roll, Program.Renderer.Camera.AlignmentDirection.Roll, ref Program.Renderer.Camera.AlignmentSpeed.Roll, TimeElapsed, false, TrainManager.PlayerTrain.Cars[TrainManager.PlayerTrain.DriverCar].CameraRestriction);
 					double tr = Program.Renderer.Camera.Alignment.TrackPosition;
 					Program.Renderer.Camera.AdjustAlignment(ref Program.Renderer.Camera.Alignment.TrackPosition, Program.Renderer.Camera.AlignmentDirection.TrackPosition, ref Program.Renderer.Camera.AlignmentSpeed.TrackPosition, TimeElapsed, false, TrainManager.PlayerTrain.Cars[TrainManager.PlayerTrain.DriverCar].CameraRestriction);
@@ -200,6 +207,17 @@ namespace OpenBve {
 				}
 				// camera
 				Vector3 cF = new Vector3(Program.Renderer.CameraTrackFollower.WorldPosition);
+				Vector3 focusPoint = cF;
+				if (Program.Renderer.Camera.CurrentMode == CameraViewMode.Exterior && Interface.CurrentOptions.ExternalCameraMode == ExternalCameraMode.Orbit && TrainManager.PlayerTrain != null)
+				{
+					int carIndex = TrainManager.PlayerTrain.CameraCar;
+					if (carIndex >= 0 && carIndex < TrainManager.PlayerTrain.Cars.Length)
+					{
+						var car = TrainManager.PlayerTrain.Cars[carIndex];
+						focusPoint = 0.5 * (car.FrontAxle.Follower.WorldPosition + car.RearAxle.Follower.WorldPosition);
+						focusPoint += car.Up * (0.5 * car.Height);
+					}
+				}
 				Vector3 dF = new Vector3(Program.Renderer.CameraTrackFollower.WorldDirection);
 				Vector3 uF = new Vector3(Program.Renderer.CameraTrackFollower.WorldUp);
 				Vector3 sF = new Vector3(Program.Renderer.CameraTrackFollower.WorldSide);
@@ -254,15 +272,47 @@ namespace OpenBve {
 						}
 					}
 
-					cF += sF * Program.Renderer.Camera.Alignment.Position.X + u2 * Program.Renderer.Camera.Alignment.Position.Y + d2 * Program.Renderer.Camera.Alignment.Position.Z;
+					if (Program.Renderer.Camera.CurrentMode == CameraViewMode.Exterior && Interface.CurrentOptions.ExternalCameraMode == ExternalCameraMode.Orbit)
+					{
+						double radius = -Program.Renderer.Camera.Alignment.Position.Z;
+						if (radius < 0.1) radius = 0.1;
+						Vector3 relPos = new Vector3(0.0, 0.0, -radius);
+						relPos.Rotate(new Vector3(1.0, 0.0, 0.0), Program.Renderer.Camera.Alignment.Pitch);
+						relPos.Rotate(new Vector3(0.0, 1.0, 0.0), Program.Renderer.Camera.Alignment.Yaw);
+						
+						// Apply X and Y position as offset to the focus point
+						focusPoint += sF * Program.Renderer.Camera.Alignment.Position.X + uF * Program.Renderer.Camera.Alignment.Position.Y;
+						
+						cF = focusPoint + relPos;
+					}
+					else
+					{
+						cF += sF * Program.Renderer.Camera.Alignment.Position.X + u2 * Program.Renderer.Camera.Alignment.Position.Y + d2 * Program.Renderer.Camera.Alignment.Position.Z;
+					}
 
 				}
 				// yaw, pitch, roll
-				double headYaw = Program.Renderer.Camera.Alignment.Yaw + lookaheadYaw;
+				double headYaw;
+				if (Program.Renderer.Camera.CurrentMode == CameraViewMode.Exterior && Interface.CurrentOptions.ExternalCameraMode == ExternalCameraMode.Orbit)
+				{
+					headYaw = 0.0;
+				}
+				else
+				{
+					headYaw = Program.Renderer.Camera.Alignment.Yaw + lookaheadYaw;
+				}
 				if (TrainManager.PlayerTrain != null && (Program.Renderer.Camera.CurrentMode == CameraViewMode.Interior | Program.Renderer.Camera.CurrentMode == CameraViewMode.InteriorLookAhead)) {
 					headYaw += TrainManager.PlayerTrain.Cars[TrainManager.PlayerTrain.DriverCar].DriverYaw;
 				}
-				double headPitch = Program.Renderer.Camera.Alignment.Pitch + lookaheadPitch;
+				double headPitch;
+				if (Program.Renderer.Camera.CurrentMode == CameraViewMode.Exterior && Interface.CurrentOptions.ExternalCameraMode == ExternalCameraMode.Orbit)
+				{
+					headPitch = 0.0;
+				}
+				else
+				{
+					headPitch = Program.Renderer.Camera.Alignment.Pitch + lookaheadPitch;
+				}
 				if ((Program.Renderer.Camera.CurrentMode == CameraViewMode.Interior | Program.Renderer.Camera.CurrentMode == CameraViewMode.InteriorLookAhead) & TrainManager.PlayerTrain != null) {
 					headPitch += TrainManager.PlayerTrain.Cars[TrainManager.PlayerTrain.DriverCar].DriverPitch;
 				}
@@ -324,7 +374,23 @@ namespace OpenBve {
 					}
 				} else {
 					// without body or head
-					if (headYaw != 0.0) {
+					if (Program.Renderer.Camera.CurrentMode == CameraViewMode.Exterior && Interface.CurrentOptions.ExternalCameraMode == ExternalCameraMode.Orbit)
+					{
+						dF = focusPoint - cF;
+						dF.Normalize();
+						sF = new Vector3(dF.Z, 0.0, -dF.X);
+						double magnitude = sF.Norm();
+						if (magnitude < 0.000001)
+						{
+							sF = new Vector3(1.0, 0.0, 0.0);
+						}
+						else
+						{
+							sF /= magnitude;
+						}
+						uF = Vector3.Cross(dF, sF);
+					}
+					else if (headYaw != 0.0) {
 						dF.Rotate(uF, headYaw);
 						sF.Rotate(uF, headYaw);
 					}
