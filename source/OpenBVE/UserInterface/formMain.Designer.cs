@@ -7097,5 +7097,3 @@ namespace OpenBve {
 		private System.Windows.Forms.Panel panelOptionsPage2;
 	}
 }
-}
-}
