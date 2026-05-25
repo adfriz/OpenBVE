@@ -58,6 +58,8 @@ namespace RouteViewer
 
 		internal static NewRenderer Renderer;
 
+		internal static NewRendererNext RendererNext;
+
 		internal static CurrentRoute CurrentRoute;
 
 		internal static Sounds Sounds;
@@ -95,6 +97,7 @@ namespace RouteViewer
 			Toolkit.Init(options);
 
 			Renderer = new NewRenderer(CurrentHost, Interface.CurrentOptions, FileSystem);
+			RendererNext = new NewRendererNext(CurrentHost, Interface.CurrentOptions, FileSystem);
 			CurrentRoute = new CurrentRoute(CurrentHost, Renderer);
 			TrainManager = new TrainManager(CurrentHost, Renderer, Interface.CurrentOptions, FileSystem);
 			if (!CurrentHost.LoadPlugins(FileSystem, Interface.CurrentOptions, out string error, TrainManager, Renderer))

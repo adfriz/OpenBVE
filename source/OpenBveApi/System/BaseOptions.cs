@@ -82,6 +82,8 @@ namespace OpenBveApi
 		public int SoundNumber;
 		/// <summary>Whether to use the new rendering method.</summary>
 		public bool IsUseNewRenderer;
+		/// <summary>The selected renderer type</summary>
+		public RendererType SelectedRenderer = RendererType.NewRenderer;
 		/// <summary>Shadow map resolution per cascade. Off disables shadows.</summary>
 		public ShadowMapResolution ShadowResolution = ShadowMapResolution.Off;
 		/// <summary>Maximum distance from the camera at which shadows appear.</summary>
@@ -151,5 +153,16 @@ namespace OpenBveApi
 		/// <summary>Saves the options to the specified filename</summary>
 		/// <param name="fileName">The filename to save the options to</param>
 		public abstract void Save(string fileName);
+	}
+
+	/// <summary>The type of renderer to use</summary>
+	public enum RendererType
+	{
+		/// <summary>Legacy OpenGL 1.2 renderer</summary>
+		Legacy = 0,
+		/// <summary>New OpenGL 3 renderer (LibRender2)</summary>
+		NewRenderer = 1,
+		/// <summary>Modern OpenGL 4.3 renderer (LibRenderNext)</summary>
+		LibRenderNext = 2
 	}
 }

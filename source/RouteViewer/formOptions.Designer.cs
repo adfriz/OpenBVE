@@ -52,6 +52,8 @@ namespace RouteViewer
             this.label11 = new System.Windows.Forms.Label();
             this.checkBoxProgressBar = new System.Windows.Forms.CheckBox();
             this.label13 = new System.Windows.Forms.Label();
+            this.labelRenderer = new System.Windows.Forms.Label();
+            this.comboBoxRenderer = new System.Windows.Forms.ComboBox();
             this.label12 = new System.Windows.Forms.Label();
             this.comboBoxNewXParser = new System.Windows.Forms.ComboBox();
             this.label14 = new System.Windows.Forms.Label();
@@ -139,6 +141,8 @@ namespace RouteViewer
             this.tabPageOptions.Controls.Add(this.label11);
             this.tabPageOptions.Controls.Add(this.checkBoxProgressBar);
             this.tabPageOptions.Controls.Add(this.label13);
+            this.tabPageOptions.Controls.Add(this.labelRenderer);
+            this.tabPageOptions.Controls.Add(this.comboBoxRenderer);
             this.tabPageOptions.Controls.Add(this.label12);
             this.tabPageOptions.Controls.Add(this.comboBoxNewXParser);
             this.tabPageOptions.Controls.Add(this.label14);
@@ -396,10 +400,32 @@ namespace RouteViewer
             this.label13.TabIndex = 26;
             this.label13.Text = "Other";
             // 
+            // labelRenderer
+            // 
+            this.labelRenderer.AutoSize = true;
+            this.labelRenderer.Location = new System.Drawing.Point(6, 340);
+            this.labelRenderer.Name = "labelRenderer";
+            this.labelRenderer.Size = new System.Drawing.Size(52, 13);
+            this.labelRenderer.TabIndex = 58;
+            this.labelRenderer.Text = "Renderer:";
+            // 
+            // comboBoxRenderer
+            // 
+            this.comboBoxRenderer.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboBoxRenderer.FormattingEnabled = true;
+            this.comboBoxRenderer.Items.AddRange(new object[] {
+            "Legacy (OpenGL 1.2)",
+            "New (OpenGL 4)",
+            "LibRenderNext (OpenGL 4.3)"});
+            this.comboBoxRenderer.Location = new System.Drawing.Point(160, 340);
+            this.comboBoxRenderer.Name = "comboBoxRenderer";
+            this.comboBoxRenderer.Size = new System.Drawing.Size(121, 21);
+            this.comboBoxRenderer.TabIndex = 57;
+            // 
             // label12
             // 
             this.label12.AutoSize = true;
-            this.label12.Location = new System.Drawing.Point(6, 340);
+            this.label12.Location = new System.Drawing.Point(6, 366);
             this.label12.Name = "label12";
             this.label12.Size = new System.Drawing.Size(97, 13);
             this.label12.TabIndex = 32;
@@ -412,7 +438,7 @@ namespace RouteViewer
             "OriginalXParser",
             "NewXParser",
             "AssimpXParser"});
-            this.comboBoxNewXParser.Location = new System.Drawing.Point(160, 340);
+            this.comboBoxNewXParser.Location = new System.Drawing.Point(160, 366);
             this.comboBoxNewXParser.Name = "comboBoxNewXParser";
             this.comboBoxNewXParser.Size = new System.Drawing.Size(121, 21);
             this.comboBoxNewXParser.TabIndex = 31;
@@ -420,7 +446,7 @@ namespace RouteViewer
             // label14
             // 
             this.label14.AutoSize = true;
-            this.label14.Location = new System.Drawing.Point(6, 366);
+            this.label14.Location = new System.Drawing.Point(6, 392);
             this.label14.Name = "label14";
             this.label14.Size = new System.Drawing.Size(106, 13);
             this.label14.TabIndex = 28;
@@ -432,7 +458,7 @@ namespace RouteViewer
             this.comboBoxNewObjParser.Items.AddRange(new object[] {
             "OriginalObjParser",
             "AssimpObjParser"});
-            this.comboBoxNewObjParser.Location = new System.Drawing.Point(160, 366);
+            this.comboBoxNewObjParser.Location = new System.Drawing.Point(160, 392);
             this.comboBoxNewObjParser.Name = "comboBoxNewObjParser";
             this.comboBoxNewObjParser.Size = new System.Drawing.Size(121, 21);
             this.comboBoxNewObjParser.TabIndex = 27;
@@ -440,7 +466,7 @@ namespace RouteViewer
             // label15
             // 
             this.label15.AutoSize = true;
-            this.label15.Location = new System.Drawing.Point(6, 393);
+            this.label15.Location = new System.Drawing.Point(6, 419);
             this.label15.Name = "label15";
             this.label15.Size = new System.Drawing.Size(109, 13);
             this.label15.TabIndex = 34;
@@ -448,7 +474,7 @@ namespace RouteViewer
             // 
             // numericUpDownViewingDistance
             // 
-            this.numericUpDownViewingDistance.Location = new System.Drawing.Point(160, 391);
+            this.numericUpDownViewingDistance.Location = new System.Drawing.Point(160, 417);
             this.numericUpDownViewingDistance.Maximum = new decimal(new int[] {
             4096,
             0,
@@ -741,7 +767,7 @@ namespace RouteViewer
             // labelNearClip
             // 
             this.labelNearClip.AutoSize = true;
-            this.labelNearClip.Location = new System.Drawing.Point(7, 417);
+            this.labelNearClip.Location = new System.Drawing.Point(7, 443);
             this.labelNearClip.Name = "labelNearClip";
             this.labelNearClip.Size = new System.Drawing.Size(70, 13);
             this.labelNearClip.TabIndex = 36;
@@ -755,7 +781,7 @@ namespace RouteViewer
             0,
             0,
             131072});
-            this.numericUpDownNearClip.Location = new System.Drawing.Point(161, 417);
+            this.numericUpDownNearClip.Location = new System.Drawing.Point(161, 443);
             this.numericUpDownNearClip.Minimum = new decimal(new int[] {
             1,
             0,
@@ -871,5 +897,7 @@ namespace RouteViewer
         private System.Windows.Forms.NumericUpDown numericUpDownShadowNormalBias;
         private System.Windows.Forms.Label labelShadowFilterCascades;
         private System.Windows.Forms.CheckBox checkBoxShadowFilterCascades;
+        private System.Windows.Forms.Label labelRenderer;
+        private System.Windows.Forms.ComboBox comboBoxRenderer;
     }
 }

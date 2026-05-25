@@ -1,6 +1,7 @@
 using LibRender2.Viewports;
 using OpenBveApi;
 using OpenBveApi.Hosts;
+using OpenBveApi.Interface;
 using OpenBveApi.Math;
 using OpenTK;
 using OpenTK.Graphics;
@@ -81,7 +82,14 @@ namespace RouteViewer
 	            Program.Sounds.Update(TimeElapsed, SoundModels.Linear);
             }
             Program.Renderer.Lighting.UpdateLighting(Program.CurrentRoute.SecondsSinceMidnight, Program.CurrentRoute.LightDefinitions);
-            Program.Renderer.RenderScene(TimeElapsed);
+            if (Interface.CurrentOptions.SelectedRenderer == OpenBveApi.RendererType.LibRenderNext)
+            {
+                Program.RendererNext.RenderScene(TimeElapsed);
+            }
+            else
+            {
+                Program.Renderer.RenderScene(TimeElapsed);
+            }
             MessageManager.UpdateMessages(TimeElapsed);
             SwapBuffers();
             
@@ -111,6 +119,13 @@ namespace RouteViewer
 
             Program.Renderer.Initialize();
             Program.Renderer.Lighting.Initialize();
+			if (Interface.CurrentOptions.SelectedRenderer == OpenBveApi.RendererType.LibRenderNext)
+			{
+				Program.RendererNext.Screen.Width = Program.Renderer.Screen.Width;
+				Program.RendererNext.Screen.Height = Program.Renderer.Screen.Height;
+				Program.RendererNext.Initialize();
+				Program.RendererNext.Lighting.Initialize();
+			}
 			Program.Sounds.Initialize(SoundRange.Low);
 			Program.Renderer.UpdateViewport(ViewportChangeMode.NoChange);
             if (Program.processCommandLineArgs)

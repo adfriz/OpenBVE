@@ -31,6 +31,7 @@ namespace OpenBveApi
 		UnloadTextures,
 		ForwardsCompatibleContext,
 		IsUseNewRenderer,
+		RendererType,
 		ViewingDistance,
 		QuadLeafSize,
 		UIScaleFactor,

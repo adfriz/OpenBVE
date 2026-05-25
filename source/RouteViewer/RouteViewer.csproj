@@ -113,6 +113,7 @@
     <Compile Include="GameR.cs" />
     <Compile Include="InterfaceR.cs" />
     <Compile Include="NewRendererR.cs" />
+    <Compile Include="NewRendererNext.cs" />
     <Compile Include="Options.cs" />
     <Compile Include="ObjectManager.cs" />
     <Compile Include="Audio\Sounds.Update.cs" />
@@ -161,6 +162,10 @@
     <ProjectReference Include="..\LibRender2\LibRender2.csproj">
       <Project>{68215476-302c-49f2-9f7e-aae20a2b6b12}</Project>
       <Name>LibRender2</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\LibRenderNext\LibRenderNext.csproj">
+      <Project>{68215476-302C-49F2-9F7E-AAE20A2B6B13}</Project>
+      <Name>LibRenderNext</Name>
     </ProjectReference>
     <ProjectReference Include="..\OpenBveApi\OpenBveApi.csproj">
       <Project>{27134980-4415-4375-A564-40A9014DFA5F}</Project>

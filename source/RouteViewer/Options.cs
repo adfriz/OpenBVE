@@ -39,6 +39,7 @@ namespace RouteViewer
 				Builder.AppendLine("windowWidth = " + Program.Renderer.Screen.Width.ToString(Culture));
 				Builder.AppendLine("windowHeight = " + Program.Renderer.Screen.Height.ToString(Culture));
 				Builder.AppendLine("isUseNewRenderer = " + (IsUseNewRenderer ? "true" : "false"));
+				Builder.AppendLine("renderertype = " + (int)SelectedRenderer);
 				Builder.AppendLine();
 				Builder.AppendLine("[quality]");
 				Builder.AppendLine("interpolation = " + Interpolation);
@@ -113,6 +114,13 @@ namespace RouteViewer
 							block.TryGetValue(OptionsKey.WindowHeight, ref Interface.CurrentOptions.WindowHeight, NumberRange.Positive);
 							block.GetValue(OptionsKey.VSync, out Interface.CurrentOptions.VerticalSynchronization);
 							block.GetValue(OptionsKey.IsUseNewRenderer, out Interface.CurrentOptions.IsUseNewRenderer);
+							{
+								int rendererIdx = 0;
+								if (block.TryGetValue(OptionsKey.RendererType, ref rendererIdx))
+								{
+									Interface.CurrentOptions.SelectedRenderer = (RendererType)rendererIdx;
+								}
+							}
 							block.TryGetValue(OptionsKey.ViewingDistance, ref Interface.CurrentOptions.ViewingDistance, NumberRange.Positive);
 							block.TryGetValue(OptionsKey.QuadLeafSize, ref Interface.CurrentOptions.QuadTreeLeafSize, NumberRange.Positive);
 							block.TryGetValue(OptionsKey.NearClipBase, ref Interface.CurrentOptions.NearClipBase, NumberRange.Positive);
