@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using LibRender2.Menu;
 using LibRender2.Screens;
 using OpenTK.Input;
@@ -39,32 +39,56 @@ namespace OpenBve
 				Game.Menu.SetControlKbdCustomData((OpenBveApi.Input.Key)e.Key, CurrentKeyboardModifier);
 				return;
 			}
-			//Traverse the controls array
-			for (int i = 0; i < Interface.CurrentControls.Length; i++)
-			{
-				//If we're using keyboard for this input
-				if (Interface.CurrentControls[i].Method != ControlMethod.Keyboard) continue;
-				//Compare the current and previous keyboard states
-				//Only process if they are different
-				if (!Enum.IsDefined(typeof(OpenBveApi.Input.Key), Interface.CurrentControls[i].Key)) continue;
-				if ((OpenBveApi.Input.Key)e.Key == Interface.CurrentControls[i].Key && Interface.CurrentControls[i].Modifier == CurrentKeyboardModifier)
-				{
 
-					Interface.CurrentControls[i].AnalogState = 1.0;
-					Interface.CurrentControls[i].DigitalState = DigitalControlState.Pressed;
-					//Key repeats should not be added in non-game interface modes, unless they are Menu Up/ Menu Down commands
-					if (Program.Renderer.CurrentInterface == InterfaceType.Normal || Interface.CurrentControls[i].Command == Translations.Command.MenuUp || Interface.CurrentControls[i].Command == Translations.Command.MenuDown)
+			bool fpsOverride = false;
+			Translations.Command overriddenCommand = Translations.Command.None;
+			if (Program.Renderer.Camera.FPSMode && Program.Renderer.CurrentInterface == InterfaceType.Normal)
+			{
+				if (e.Key == Key.W) { fpsOverride = true; overriddenCommand = Translations.Command.CameraMoveForward; }
+				else if (e.Key == Key.S) { fpsOverride = true; overriddenCommand = Translations.Command.CameraMoveBackward; }
+				else if (e.Key == Key.A) { fpsOverride = true; overriddenCommand = Translations.Command.CameraMoveLeft; }
+				else if (e.Key == Key.D) { fpsOverride = true; overriddenCommand = Translations.Command.CameraMoveRight; }
+			}
+
+			if (fpsOverride)
+			{
+				for (int i = 0; i < Interface.CurrentControls.Length; i++)
+				{
+					if (Interface.CurrentControls[i].Command == overriddenCommand)
 					{
-						if (Interface.CurrentControls[i].Command == Translations.Command.CameraInterior |
-						    Interface.CurrentControls[i].Command == Translations.Command.CameraExterior |
-						    Interface.CurrentControls[i].Command == Translations.Command.CameraFlyBy |
-						    Interface.CurrentControls[i].Command == Translations.Command.CameraTrack |
-						    Interface.CurrentControls[i].Command == Translations.Command.MiscFullscreen)
+						Interface.CurrentControls[i].AnalogState = 1.0;
+						Interface.CurrentControls[i].DigitalState = DigitalControlState.Pressed;
+					}
+				}
+			}
+			else
+			{
+				//Traverse the controls array
+				for (int i = 0; i < Interface.CurrentControls.Length; i++)
+				{
+					//If we're using keyboard for this input
+					if (Interface.CurrentControls[i].Method != ControlMethod.Keyboard) continue;
+					//Compare the current and previous keyboard states
+					//Only process if they are different
+					if (!Enum.IsDefined(typeof(OpenBveApi.Input.Key), Interface.CurrentControls[i].Key)) continue;
+					if ((OpenBveApi.Input.Key)e.Key == Interface.CurrentControls[i].Key && Interface.CurrentControls[i].Modifier == CurrentKeyboardModifier)
+					{
+						Interface.CurrentControls[i].AnalogState = 1.0;
+						Interface.CurrentControls[i].DigitalState = DigitalControlState.Pressed;
+						//Key repeats should not be added in non-game interface modes, unless they are Menu Up/ Menu Down commands
+						if (Program.Renderer.CurrentInterface == InterfaceType.Normal || Interface.CurrentControls[i].Command == Translations.Command.MenuUp || Interface.CurrentControls[i].Command == Translations.Command.MenuDown)
 						{
-							//HACK: We don't want to bounce between camera modes when holding down the mode switch key
-							continue;
+							if (Interface.CurrentControls[i].Command == Translations.Command.CameraInterior |
+								Interface.CurrentControls[i].Command == Translations.Command.CameraExterior |
+								Interface.CurrentControls[i].Command == Translations.Command.CameraFlyBy |
+								Interface.CurrentControls[i].Command == Translations.Command.CameraTrack |
+								Interface.CurrentControls[i].Command == Translations.Command.MiscFullscreen)
+							{
+								//HACK: We don't want to bounce between camera modes when holding down the mode switch key
+								continue;
+							}
+							AddControlRepeat(i);
 						}
-						AddControlRepeat(i);
 					}
 				}
 			}
@@ -105,6 +129,26 @@ namespace OpenBve
 			}
 			//We don't need to check for modifiers on key up
 			BlockKeyRepeat = true;
+			// Handle potential WASD camera movement releases unconditionally
+			Translations.Command releasedCameraCommand = Translations.Command.None;
+			if (e.Key == Key.W) releasedCameraCommand = Translations.Command.CameraMoveForward;
+			else if (e.Key == Key.S) releasedCameraCommand = Translations.Command.CameraMoveBackward;
+			else if (e.Key == Key.A) releasedCameraCommand = Translations.Command.CameraMoveLeft;
+			else if (e.Key == Key.D) releasedCameraCommand = Translations.Command.CameraMoveRight;
+
+			if (releasedCameraCommand != Translations.Command.None)
+			{
+				for (int i = 0; i < Interface.CurrentControls.Length; i++)
+				{
+					if (Interface.CurrentControls[i].Command == releasedCameraCommand)
+					{
+						Interface.CurrentControls[i].AnalogState = 0.0;
+						Interface.CurrentControls[i].DigitalState = DigitalControlState.Released;
+						RemoveControlRepeat(i);
+					}
+				}
+			}
+
 			//Traverse the controls array
 			for (int i = 0; i < Interface.CurrentControls.Length; i++)
 			{

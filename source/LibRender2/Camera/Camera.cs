@@ -502,6 +502,12 @@ namespace LibRender2.Cameras
 		public void Move(Translations.Command movementDirection, double motion)
 		{
 			double s;
+			double fpsSpeed = InteriorTopSpeed * 4.0;
+			if (OpenTK.Input.Keyboard.GetState().IsKeyDown(OpenTK.Input.Key.LShift) || OpenTK.Input.Keyboard.GetState().IsKeyDown(OpenTK.Input.Key.RShift))
+			{
+				fpsSpeed *= 5.0;
+			}
+
 			switch (movementDirection)
 			{
 				case Translations.Command.CameraMoveForward:
@@ -514,7 +520,7 @@ namespace LibRender2.Cameras
 					{
 						if (FPSMode && CurrentMode == CameraViewMode.Track)
 						{
-							s = InteriorTopSpeed * 2.0;
+							s = fpsSpeed;
 							AlignmentDirection.Position.X += Math.Sin(Alignment.Yaw) * s * motion;
 							AlignmentDirection.Position.Z += Math.Cos(Alignment.Yaw) * s * motion;
 						}
@@ -541,7 +547,7 @@ namespace LibRender2.Cameras
 					{
 						if (FPSMode && CurrentMode == CameraViewMode.Track)
 						{
-							s = InteriorTopSpeed * 2.0;
+							s = fpsSpeed;
 							AlignmentDirection.Position.X -= Math.Sin(Alignment.Yaw) * s * motion;
 							AlignmentDirection.Position.Z -= Math.Cos(Alignment.Yaw) * s * motion;
 						}
@@ -555,7 +561,7 @@ namespace LibRender2.Cameras
 					s = CurrentMode == CameraViewMode.Interior | CurrentMode == CameraViewMode.InteriorLookAhead ? InteriorTopSpeed : ExteriorTopSpeed;
 					if (FPSMode && CurrentMode == CameraViewMode.Track)
 					{
-						s = InteriorTopSpeed * 2.0;
+						s = fpsSpeed;
 						AlignmentDirection.Position.X -= Math.Cos(Alignment.Yaw) * s * motion;
 						AlignmentDirection.Position.Z += Math.Sin(Alignment.Yaw) * s * motion;
 					}
@@ -568,7 +574,7 @@ namespace LibRender2.Cameras
 					s = CurrentMode == CameraViewMode.Interior | CurrentMode == CameraViewMode.InteriorLookAhead ? InteriorTopSpeed : ExteriorTopSpeed;
 					if (FPSMode && CurrentMode == CameraViewMode.Track)
 					{
-						s = InteriorTopSpeed * 2.0;
+						s = fpsSpeed;
 						AlignmentDirection.Position.X += Math.Cos(Alignment.Yaw) * s * motion;
 						AlignmentDirection.Position.Z -= Math.Sin(Alignment.Yaw) * s * motion;
 					}
