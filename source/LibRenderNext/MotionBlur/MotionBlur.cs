@@ -36,7 +36,7 @@ namespace LibRenderNext.MotionBlurs
 			int[] a = new int[1];
 
 			GL.GenTextures(1, a);
-			RHI.RHIStateCache.BindTexture( a[0]);
+			RDI.RDIStateCache.BindTexture( a[0]);
 			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMagFilter.Linear);
 			GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgb, renderer.Screen.Width, renderer.Screen.Height, 0, PixelFormat.Rgb, PixelType.UnsignedByte, PixelBuffer);
 			PixelBufferOpenGlTextureIndex = a[0];
@@ -95,7 +95,7 @@ namespace LibRenderNext.MotionBlurs
 				GL.LoadIdentity();
 
 				// render
-				RHI.RHIStateCache.BindTexture( PixelBufferOpenGlTextureIndex);
+				RDI.RDIStateCache.BindTexture( PixelBufferOpenGlTextureIndex);
 				GL.Color4(1.0f, 1.0f, 1.0f, factor);
 				GL.Begin(PrimitiveType.Polygon);
 				GL.TexCoord2(0.0f, 0.0f);
@@ -117,7 +117,7 @@ namespace LibRenderNext.MotionBlurs
 
 			// retrieve buffer
 			{
-				RHI.RHIStateCache.BindTexture( PixelBufferOpenGlTextureIndex);
+				RDI.RDIStateCache.BindTexture( PixelBufferOpenGlTextureIndex);
 				GL.CopyTexImage2D(TextureTarget.Texture2D, 0, InternalFormat.Rgb8, 0, 0, renderer.Screen.Width, renderer.Screen.Height, 0);
 			}
 			GL.Disable(EnableCap.Texture2D);

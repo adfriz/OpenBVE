@@ -37,7 +37,7 @@ namespace LibRenderNext
 		/// </summary>
 		public void Bind()
 		{
-			RHI.RHIStateCache.BindVertexArray(handle);
+			RDI.RDIStateCache.BindVertexArray(handle);
 		}
 
 		/// <summary>
@@ -123,9 +123,9 @@ namespace LibRenderNext
 		/// </summary>
 		public void UnBind()
 		{
-			RHI.RHIStateCache.BindVertexArray(0);
-			RHI.RHIStateCache.BindVertexBuffer(0);
-			RHI.RHIStateCache.BindIndexBuffer(0);
+			RDI.RDIStateCache.BindVertexArray(0);
+			RDI.RDIStateCache.BindVertexBuffer(0);
+			RDI.RDIStateCache.BindIndexBuffer(0);
 		}
 
 		/// <summary>

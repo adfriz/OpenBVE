@@ -28,7 +28,7 @@ namespace LibRenderNext
 		/// </summary>
 		internal void Bind()
 		{
-			RHI.RHIStateCache.BindIndexBuffer(handle);
+			RDI.RDIStateCache.BindIndexBuffer(handle);
 		}
 
 		/// <summary>Copies the Indices into the IBO/EBO</summary>

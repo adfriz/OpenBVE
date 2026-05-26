@@ -188,23 +188,23 @@ namespace LibRenderNext
 			internal TextureBuffer(PixelInternalFormat InternalFormat, PixelFormat Format, PixelType Type, int Width, int Height)
 			{
 				GL.GenTextures(1, out handle);
-				RHI.RHIStateCache.BindTexture( handle);
+				RDI.RDIStateCache.BindTexture( handle);
 				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
 				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
 				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
 				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
 				GL.TexImage2D(TextureTarget.Texture2D, 0, InternalFormat, Width, Height, 0, Format, Type, IntPtr.Zero);
-				RHI.RHIStateCache.BindTexture( 0);
+				RDI.RDIStateCache.BindTexture( 0);
 			}
 
 			internal override void Bind()
 			{
-				RHI.RHIStateCache.BindTexture( handle);
+				RDI.RDIStateCache.BindTexture( handle);
 			}
 
 			internal override void UnBind()
 			{
-				RHI.RHIStateCache.BindTexture( 0);
+				RDI.RDIStateCache.BindTexture( 0);
 			}
 
 			public override void Dispose()

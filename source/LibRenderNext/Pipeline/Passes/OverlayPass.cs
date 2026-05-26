@@ -86,7 +86,7 @@ namespace LibRenderNext.Pipeline.Passes
 				{
 					renderer.SetBlendFunc();
 					renderer.SetAlphaFunc(AlphaFunction.Greater, 0.0f);
-					RHI.RHIStateCache.SetDepthState(true, DepthFunction.Lequal, false);
+					RDI.RDIStateCache.SetDepthState(true, DepthFunction.Lequal, false);
 
 					foreach (var face in overlayAlphaFaces)
 					{
@@ -97,7 +97,7 @@ namespace LibRenderNext.Pipeline.Passes
 				{
 					renderer.UnsetBlendFunc();
 					renderer.SetAlphaFunc(AlphaFunction.Equal, 1.0f);
-					RHI.RHIStateCache.SetDepthState(true, DepthFunction.Lequal, true);
+					RDI.RDIStateCache.SetDepthState(true, DepthFunction.Lequal, true);
 
 					foreach (var face in overlayAlphaFaces)
 					{
@@ -113,7 +113,7 @@ namespace LibRenderNext.Pipeline.Passes
 
 					renderer.SetBlendFunc();
 					renderer.SetAlphaFunc(AlphaFunction.Less, 1.0f);
-					RHI.RHIStateCache.SetDepthState(true, DepthFunction.Lequal, false);
+					RDI.RDIStateCache.SetDepthState(true, DepthFunction.Lequal, false);
 					bool additive = false;
 
 					foreach (var face in overlayAlphaFaces)
@@ -155,14 +155,14 @@ namespace LibRenderNext.Pipeline.Passes
 
 				renderer.SetBlendFunc();
 				renderer.UnsetAlphaFunc();
-				RHI.RHIStateCache.SetDepthState(true, DepthFunction.Lequal, true);
+				RDI.RDIStateCache.SetDepthState(true, DepthFunction.Lequal, true);
 
 				foreach (var face in overlayOpaqueFaces)
 				{
 					face.Draw();
 				}
 
-				RHI.RHIStateCache.SetDepthState(false, DepthFunction.Lequal, false);
+				RDI.RDIStateCache.SetDepthState(false, DepthFunction.Lequal, false);
 
 				foreach (var face in overlayAlphaFaces)
 				{
@@ -175,7 +175,7 @@ namespace LibRenderNext.Pipeline.Passes
 			renderer.ResetOpenGlState();
 			renderer.SetBlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 			renderer.SetAlphaFunc(AlphaFunction.Greater, 0.0f);
-			RHI.RHIStateCache.SetDepthState(false, DepthFunction.Lequal, false);
+			RDI.RDIStateCache.SetDepthState(false, DepthFunction.Lequal, false);
 
 			if (renderer.AvailableNewRenderer)
 			{

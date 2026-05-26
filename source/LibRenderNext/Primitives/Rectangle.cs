@@ -193,7 +193,7 @@ namespace LibRenderNext.Primitives
 			else
 			{
 				GL.Enable(EnableCap.Texture2D);
-				RHI.RHIStateCache.BindTexture( texture.OpenGlTextures[(int)wrapMode].Name);
+				RDI.RDIStateCache.BindTexture( texture.OpenGlTextures[(int)wrapMode].Name);
 
 				if (color.HasValue)
 				{
@@ -244,7 +244,7 @@ namespace LibRenderNext.Primitives
 
 			if (texture != null && renderer.currentHost.LoadTexture(ref texture, (OpenGlTextureWrapMode)wrapMode))
 			{
-				RHI.RHIStateCache.BindTexture( texture.OpenGlTextures[(int)wrapMode].Name);
+				RDI.RDIStateCache.BindTexture( texture.OpenGlTextures[(int)wrapMode].Name);
 				renderer.LastBoundTexture = texture.OpenGlTextures[(int)wrapMode];
 			}
 			else

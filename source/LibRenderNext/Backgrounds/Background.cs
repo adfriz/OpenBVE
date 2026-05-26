@@ -156,7 +156,7 @@ namespace LibRenderNext.Backgrounds
 				}
 
 				// texture
-				RHI.RHIStateCache.BindTexture( t.OpenGlTextures[(int)OpenGlTextureWrapMode.RepeatClamp].Name);
+				RDI.RDIStateCache.BindTexture( t.OpenGlTextures[(int)OpenGlTextureWrapMode.RepeatClamp].Name);
 				renderer.LastBoundTexture = null;
 
 				// alpha test
@@ -212,7 +212,7 @@ namespace LibRenderNext.Backgrounds
 					GL.Enable(EnableCap.Blend);
 					renderer.SetAlphaFunc(AlphaFunction.Greater, 0.0f);
 				}
-				RHI.RHIStateCache.BindTexture( t.OpenGlTextures[(int)OpenGlTextureWrapMode.RepeatClamp].Name);
+				RDI.RDIStateCache.BindTexture( t.OpenGlTextures[(int)OpenGlTextureWrapMode.RepeatClamp].Name);
 				renderer.LastBoundTexture = t.OpenGlTextures[(int)OpenGlTextureWrapMode.RepeatClamp];
 				GL.Color4(1.0f, 1.0f, 1.0f, alpha);
 				if (renderer.Fog.Enabled)

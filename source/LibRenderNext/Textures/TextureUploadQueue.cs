@@ -73,7 +73,7 @@ namespace LibRenderNext.Textures
 		{
 			int[] names = new int[1];
 			GL.GenTextures(1, names);
-			RHI.RHIStateCache.BindTexture(names[0]);
+			RDI.RDIStateCache.BindTexture(names[0]);
 			handle.OpenGlTextures[(int)wrap].Name = names[0];
 			if (texture.MultipleFrames)
 			{

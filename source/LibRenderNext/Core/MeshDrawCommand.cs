@@ -52,7 +52,7 @@ namespace LibRenderNext.Core
 			// Set textures
 			if (HasTexture)
 			{
-				RHI.RHIStateCache.BindTexture(TextureUnit.Texture0, TextureId);
+				RDI.RDIStateCache.BindTexture(TextureUnit.Texture0, TextureId);
 			}
 			else
 			{
@@ -79,7 +79,7 @@ namespace LibRenderNext.Core
 			Program.SetMaterialFlags(MaterialFlags);
 
 			// Set cull state depending on Face2Mask
-			RHI.RHIStateCache.SetCullState(true, CullFaceMode.Front);
+			RDI.RDIStateCache.SetCullState(true, CullFaceMode.Front);
 
 			// Draw
 			VAO.Draw(DrawMode, IndexStart, IndexCount);

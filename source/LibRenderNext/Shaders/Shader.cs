@@ -353,7 +353,7 @@ namespace LibRenderNext.Shaders
 				 * This eliminates some shader branching, and is marginally faster in some cases
 				 */
 				Renderer.currentHost.LoadTexture(ref Renderer.whitePixel, OpenGlTextureWrapMode.ClampClamp);
-				RHI.RHIStateCache.BindTexture( Renderer.whitePixel.OpenGlTextures[(int)OpenGlTextureWrapMode.ClampClamp].Name);
+				RDI.RDIStateCache.BindTexture( Renderer.whitePixel.OpenGlTextures[(int)OpenGlTextureWrapMode.ClampClamp].Name);
 				Renderer.LastBoundTexture = Renderer.whitePixel.OpenGlTextures[(int) OpenGlTextureWrapMode.ClampClamp];
 			}
 		}

@@ -39,7 +39,7 @@ namespace LibRenderNext.Pipeline.Passes
 			}
 
 			renderer.ResetOpenGlState();
-			RHI.RHIStateCache.SetDepthState(true, DepthFunction.Lequal, true);
+			RDI.RDIStateCache.SetDepthState(true, DepthFunction.Lequal, true);
 
 			if (renderer.OptionWireFrame)
 			{
@@ -87,13 +87,13 @@ namespace LibRenderNext.Pipeline.Passes
 
 			// Render Alpha Faces
 			renderer.ResetOpenGlState();
-			RHI.RHIStateCache.SetDepthState(true, DepthFunction.Lequal, true);
+			RDI.RDIStateCache.SetDepthState(true, DepthFunction.Lequal, true);
 
 			if (renderer.currentOptions.TransparencyMode == TransparencyMode.Performance)
 			{
 				renderer.SetBlendFunc();
 				renderer.SetAlphaFunc(AlphaFunction.Greater, 0.0f);
-				RHI.RHIStateCache.SetDepthState(true, DepthFunction.Lequal, false);
+				RDI.RDIStateCache.SetDepthState(true, DepthFunction.Lequal, false);
 
 				foreach (var face in alphaFaces)
 				{
@@ -105,7 +105,7 @@ namespace LibRenderNext.Pipeline.Passes
 				// Quality Transparency
 				renderer.UnsetBlendFunc();
 				renderer.SetAlphaFunc(AlphaFunction.Equal, 1.0f);
-				RHI.RHIStateCache.SetDepthState(true, DepthFunction.Lequal, true);
+				RDI.RDIStateCache.SetDepthState(true, DepthFunction.Lequal, true);
 
 				foreach (var face in alphaFaces)
 				{
@@ -121,7 +121,7 @@ namespace LibRenderNext.Pipeline.Passes
 
 				renderer.SetBlendFunc();
 				renderer.SetAlphaFunc(AlphaFunction.Less, 1.0f);
-				RHI.RHIStateCache.SetDepthState(true, DepthFunction.Lequal, false);
+				RDI.RDIStateCache.SetDepthState(true, DepthFunction.Lequal, false);
 				bool additive = false;
 
 				foreach (var face in alphaFaces)
@@ -147,7 +147,7 @@ namespace LibRenderNext.Pipeline.Passes
 				}
 			}
 
-			RHI.RHIStateCache.SetDepthState(true, DepthFunction.Lequal, true);
+			RDI.RDIStateCache.SetDepthState(true, DepthFunction.Lequal, true);
 
 			if (renderer.OptionWireFrame)
 			{

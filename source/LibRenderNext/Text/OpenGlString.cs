@@ -145,7 +145,7 @@ namespace LibRenderNext.Text
 
 				if (renderer.currentHost.LoadTexture(ref texture, OpenGlTextureWrapMode.ClampClamp))
 				{
-					RHI.RHIStateCache.BindTexture( texture.OpenGlTextures[(int)OpenGlTextureWrapMode.ClampClamp].Name);
+					RDI.RDIStateCache.BindTexture( texture.OpenGlTextures[(int)OpenGlTextureWrapMode.ClampClamp].Name);
 
 					double x = left - (data.PhysicalSize.X - data.TypographicSize.X) / 2;
 					double y = top - (data.PhysicalSize.Y - data.TypographicSize.Y) / 2;
@@ -207,7 +207,7 @@ namespace LibRenderNext.Text
 				i += font.GetCharacterData(text, i, out Texture texture, out OpenGlFontChar data) - 1;
 				if (renderer.currentHost.LoadTexture(ref texture, OpenGlTextureWrapMode.ClampClamp))
 				{
-					RHI.RHIStateCache.BindTexture( texture.OpenGlTextures[(int)OpenGlTextureWrapMode.ClampClamp].Name);
+					RDI.RDIStateCache.BindTexture( texture.OpenGlTextures[(int)OpenGlTextureWrapMode.ClampClamp].Name);
 					Shader.SetAtlasLocation(data.TextureCoordinates);
 					double x = left - (data.PhysicalSize.X - data.TypographicSize.X) / 2;
 					double y = top - (data.PhysicalSize.Y - data.TypographicSize.Y) / 2;

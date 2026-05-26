@@ -37,7 +37,7 @@ namespace LibRenderNext
 		/// </summary>
 		internal void Bind()
 		{
-			RHI.RHIStateCache.BindVertexBuffer(handle);
+			RDI.RDIStateCache.BindVertexBuffer(handle);
 		}
 
 		/// <summary>Copies the VertexData into the the VBO</summary>

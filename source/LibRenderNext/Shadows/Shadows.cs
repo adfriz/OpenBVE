@@ -228,8 +228,8 @@ namespace LibRenderNext.ShadowMapping
 				}
 				if (material.DaytimeTexture != null && renderer.currentHost.LoadTexture(ref material.DaytimeTexture, (OpenGlTextureWrapMode)(material.WrapMode ?? OpenGlTextureWrapMode.ClampClamp)))
 				{
-					RHI.RHIStateCache.SetActiveTexture(TextureUnit.Texture0);
-					RHI.RHIStateCache.BindTexture( material.DaytimeTexture.OpenGlTextures[(int)(material.WrapMode ?? OpenGlTextureWrapMode.ClampClamp)].Name);
+					RDI.RDIStateCache.SetActiveTexture(TextureUnit.Texture0);
+					RDI.RDIStateCache.BindTexture( material.DaytimeTexture.OpenGlTextures[(int)(material.WrapMode ?? OpenGlTextureWrapMode.ClampClamp)].Name);
 					DepthShader.SetHasTexture(true);
 				}
 				else
@@ -282,10 +282,10 @@ namespace LibRenderNext.ShadowMapping
 				// even if shadow is disabled, to avoid "sampler collision" errors.
 				for (int i = 0; i < 4; i++)
 				{
-					RHI.RHIStateCache.SetActiveTexture(TextureUnit.Texture4 + i);
-					RHI.RHIStateCache.BindTexture( renderer.nullDepthMap);
+					RDI.RDIStateCache.SetActiveTexture(TextureUnit.Texture4 + i);
+					RDI.RDIStateCache.BindTexture( renderer.nullDepthMap);
 				}
-				RHI.RHIStateCache.SetActiveTexture(TextureUnit.Texture0);
+				RDI.RDIStateCache.SetActiveTexture(TextureUnit.Texture0);
 				return;
 			}
 

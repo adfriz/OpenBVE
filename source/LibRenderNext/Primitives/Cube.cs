@@ -360,7 +360,7 @@ namespace LibRenderNext.Primitives
 			if (TextureIndex != null && renderer.currentHost.LoadTexture(ref TextureIndex, OpenGlTextureWrapMode.ClampClamp))
 			{
 				GL.Enable(EnableCap.Texture2D);
-				RHI.RHIStateCache.BindTexture( TextureIndex.OpenGlTextures[(int)OpenGlTextureWrapMode.ClampClamp].Name);
+				RDI.RDIStateCache.BindTexture( TextureIndex.OpenGlTextures[(int)OpenGlTextureWrapMode.ClampClamp].Name);
 			}
 			else
 			{
@@ -439,7 +439,7 @@ namespace LibRenderNext.Primitives
 				return;
 			}
 			GL.Enable(EnableCap.Texture2D);
-			RHI.RHIStateCache.BindTexture( TextureIndex.OpenGlTextures[(int)OpenGlTextureWrapMode.ClampClamp].Name);
+			RDI.RDIStateCache.BindTexture( TextureIndex.OpenGlTextures[(int)OpenGlTextureWrapMode.ClampClamp].Name);
 			Vector2[][] t = new Vector2[6][];
 			t[0] = new[] { new Vector2(1.0, 0.0), new Vector2(1.0, 1.0), new Vector2(0.0, 1.0), new Vector2(0.0, 0.0) };
 			t[1] = new[] { new Vector2(0.0, 0.0), new Vector2(1.0, 0.0), new Vector2(1.0, 1.0), new Vector2(0.0, 1.0) };

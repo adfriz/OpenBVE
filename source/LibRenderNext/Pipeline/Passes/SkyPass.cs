@@ -17,12 +17,12 @@ namespace LibRenderNext.Pipeline.Passes
 			var renderer = context.Renderer;
 
 			// Background rendered with depth writes disabled
-			RHI.RHIStateCache.SetDepthState(true, OpenTK.Graphics.OpenGL.DepthFunction.Lequal, false);
+			RDI.RDIStateCache.SetDepthState(true, OpenTK.Graphics.OpenGL.DepthFunction.Lequal, false);
 			renderer.DefaultShader.SetShadowEnabled(false);
 
 			updateBackgroundAction?.Invoke(context);
 
-			RHI.RHIStateCache.SetDepthState(true, OpenTK.Graphics.OpenGL.DepthFunction.Lequal, true);
+			RDI.RDIStateCache.SetDepthState(true, OpenTK.Graphics.OpenGL.DepthFunction.Lequal, true);
 		}
 	}
 }

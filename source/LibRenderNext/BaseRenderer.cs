@@ -419,12 +419,12 @@ namespace LibRenderNext
 			if (AvailableNewRenderer)
 			{
 				nullDepthMap = GL.GenTexture();
-				RHI.RHIStateCache.BindTexture( nullDepthMap);
+				RDI.RDIStateCache.BindTexture( nullDepthMap);
 				GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent16, 1, 1, 0, OpenTK.Graphics.OpenGL.PixelFormat.DepthComponent, PixelType.Float, IntPtr.Zero);
 				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureCompareMode, (int)TextureCompareMode.CompareRefToTexture);
 				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
 				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
-				RHI.RHIStateCache.BindTexture( 0);
+				RDI.RDIStateCache.BindTexture( 0);
 			}
 			GL.ClearColor(currentOptions.ClearColor.R * inv255, currentOptions.ClearColor.G * inv255, currentOptions.ClearColor.B * inv255, 1.0f);
 			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
@@ -1455,7 +1455,7 @@ namespace LibRenderNext
 				{
 					if (LastBoundTexture != material.DaytimeTexture.OpenGlTextures[(int)material.WrapMode])
 					{
-						RHI.RHIStateCache.BindTexture(
+						RDI.RDIStateCache.BindTexture(
 							material.DaytimeTexture.OpenGlTextures[(int)material.WrapMode].Name);
 						LastBoundTexture = material.DaytimeTexture.OpenGlTextures[(int)material.WrapMode];
 					}
@@ -1504,7 +1504,7 @@ namespace LibRenderNext
 				// texture
 				if (LastBoundTexture != material.NighttimeTexture.OpenGlTextures[(int)material.WrapMode])
 				{
-					RHI.RHIStateCache.BindTexture( material.NighttimeTexture.OpenGlTextures[(int)material.WrapMode].Name);
+					RDI.RDIStateCache.BindTexture( material.NighttimeTexture.OpenGlTextures[(int)material.WrapMode].Name);
 					LastBoundTexture = material.NighttimeTexture.OpenGlTextures[(int)material.WrapMode];
 				}
 
@@ -1687,7 +1687,7 @@ namespace LibRenderNext
 						GL.Enable(EnableCap.Texture2D);
 						if (LastBoundTexture != material.DaytimeTexture.OpenGlTextures[(int)material.WrapMode])
 						{
-							RHI.RHIStateCache.BindTexture( material.DaytimeTexture.OpenGlTextures[(int)material.WrapMode].Name);
+							RDI.RDIStateCache.BindTexture( material.DaytimeTexture.OpenGlTextures[(int)material.WrapMode].Name);
 							LastBoundTexture = material.DaytimeTexture.OpenGlTextures[(int)material.WrapMode];
 						}
 					}
@@ -1756,7 +1756,7 @@ namespace LibRenderNext
 				GL.Enable(EnableCap.Texture2D);
 				if (LastBoundTexture != material.NighttimeTexture.OpenGlTextures[(int)material.WrapMode])
 				{
-					RHI.RHIStateCache.BindTexture( material.NighttimeTexture.OpenGlTextures[(int)material.WrapMode].Name);
+					RDI.RDIStateCache.BindTexture( material.NighttimeTexture.OpenGlTextures[(int)material.WrapMode].Name);
 					LastBoundTexture = material.NighttimeTexture.OpenGlTextures[(int)material.WrapMode];
 				}
 

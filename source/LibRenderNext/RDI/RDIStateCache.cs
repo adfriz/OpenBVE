@@ -1,9 +1,9 @@
 using System;
 using OpenTK.Graphics.OpenGL;
 
-namespace LibRenderNext.RHI
+namespace LibRenderNext.RDI
 {
-	public static class RHIStateCache
+	public static class RDIStateCache
 	{
 		private static int activeShader = 0;
 		private static int activeVao = 0;
@@ -64,7 +64,7 @@ namespace LibRenderNext.RHI
 		{
 			if (activeTextureUnit != unit)
 			{
-				RHI.RHIStateCache.SetActiveTexture(unit);
+				RDI.RDIStateCache.SetActiveTexture(unit);
 				activeTextureUnit = unit;
 			}
 		}
@@ -77,13 +77,13 @@ namespace LibRenderNext.RHI
 			{
 				if (boundTextures[unitIndex] != textureId)
 				{
-					RHI.RHIStateCache.BindTexture( textureId);
+					RDI.RDIStateCache.BindTexture( textureId);
 					boundTextures[unitIndex] = textureId;
 				}
 			}
 			else
 			{
-				RHI.RHIStateCache.BindTexture( textureId);
+				RDI.RDIStateCache.BindTexture( textureId);
 			}
 		}
 

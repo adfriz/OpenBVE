@@ -69,7 +69,7 @@ namespace LibRenderNext.ShadowMapping
         {
             // Generate depth texture
             DepthTextures[index] = GL.GenTexture();
-            RHI.RHIStateCache.BindTexture( DepthTextures[index]);
+            RDI.RDIStateCache.BindTexture( DepthTextures[index]);
             GL.TexImage2D(TextureTarget.Texture2D, 0,
                 PixelInternalFormat.DepthComponent24,
                 Resolution, Resolution, 0,
@@ -93,7 +93,7 @@ namespace LibRenderNext.ShadowMapping
             GL.TexParameter(TextureTarget.Texture2D,
                 TextureParameterName.TextureCompareFunc,
                 (int)All.Lequal);
-            RHI.RHIStateCache.BindTexture( 0);
+            RDI.RDIStateCache.BindTexture( 0);
 
             // Generate FBO
             FBOs[index] = GL.GenFramebuffer();
@@ -135,11 +135,11 @@ namespace LibRenderNext.ShadowMapping
         {
             for (int i = 0; i < CascadeCount; i++)
             {
-                RHI.RHIStateCache.SetActiveTexture(baseUnit + i);
-                RHI.RHIStateCache.BindTexture( DepthTextures[i]);
+                RDI.RDIStateCache.SetActiveTexture(baseUnit + i);
+                RDI.RDIStateCache.BindTexture( DepthTextures[i]);
             }
             // Restore active texture to 0 so normal rendering isn't affected
-            RHI.RHIStateCache.SetActiveTexture(TextureUnit.Texture0);
+            RDI.RDIStateCache.SetActiveTexture(TextureUnit.Texture0);
         }
 
         public void Dispose()

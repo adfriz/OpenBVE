@@ -144,7 +144,7 @@ namespace LibRenderNext.Shaders
 			{
 				Renderer.CurrentShader.IsActive = false;
 			}
-			RHI.RHIStateCache.BindShader(Handle);
+			RDI.RDIStateCache.BindShader(Handle);
 			IsActive = true;
 			Renderer.lastVAO = -1;
 			Renderer.CurrentShader = this;
@@ -159,7 +159,7 @@ namespace LibRenderNext.Shaders
 				return;
 			}
 			IsActive = false;
-			RHI.RHIStateCache.BindShader(0);
+			RDI.RDIStateCache.BindShader(0);
 			Renderer.lastVAO = -1;
 		}
 

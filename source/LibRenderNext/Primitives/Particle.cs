@@ -135,7 +135,7 @@ namespace LibRenderNext.Primitives
 			if (texture != null && renderer.currentHost.LoadTexture(ref texture, OpenGlTextureWrapMode.ClampClamp))
 			{
 				GL.Enable(EnableCap.Texture2D);
-				RHI.RHIStateCache.BindTexture( texture.OpenGlTextures[(int)OpenGlTextureWrapMode.ClampClamp].Name);
+				RDI.RDIStateCache.BindTexture( texture.OpenGlTextures[(int)OpenGlTextureWrapMode.ClampClamp].Name);
 			}
 			else
 			{

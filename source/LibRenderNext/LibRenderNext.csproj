@@ -121,7 +121,7 @@
     <Compile Include="Shadows\CascadedShadowMap.cs" />
     <Compile Include="Shadows\FrustumUtils.cs" />
     <Compile Include="Shadows\Shadows.cs" />
-    <Compile Include="RHI\RHIStateCache.cs" />
+    <Compile Include="RDI\RDIStateCache.cs" />
     <Compile Include="Core\MeshDrawCommand.cs" />
     <Compile Include="Core\SceneManager.cs" />
     <Compile Include="Pipeline\RenderContext.cs" />
