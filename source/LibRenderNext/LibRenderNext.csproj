@@ -130,7 +130,9 @@
     <Compile Include="Pipeline\Passes\ShadowPass.cs" />
     <Compile Include="Pipeline\Passes\SkyPass.cs" />
     <Compile Include="Pipeline\Passes\GeometryPass.cs" />
+    <Compile Include="Pipeline\Passes\TransparentPass.cs" />
     <Compile Include="Pipeline\Passes\OverlayPass.cs" />
+    <Compile Include="Pipeline\Passes\HUDPass.cs" />
     <Compile Include="Textures\TextureManager.cs" />
     <Compile Include="Textures\TextureUploadQueue.cs" />
     <Compile Include="Text\Fonts.BlockedFonts.cs" />

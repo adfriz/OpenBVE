@@ -47,13 +47,10 @@ namespace LibRenderNext.Pipeline.Passes
 			}
 
 			List<FaceState> sortedOpaque;
-			List<FaceState> alphaFacesToSort;
 			lock (renderer.VisibleObjects.LockObject)
 			{
 				sortedOpaque = new List<FaceState>(renderer.VisibleObjects.OpaqueFaces);
-				alphaFacesToSort = new List<FaceState>(renderer.VisibleObjects.AlphaFaces);
 			}
-			List<FaceState> alphaFaces = renderer.VisibleObjects.GetSortedPolygons(alphaFacesToSort);
 
 			// Sort by Texture Name first, then by VAO handle to group them together
 			sortedOpaque.Sort((a, b) =>
@@ -84,70 +81,6 @@ namespace LibRenderNext.Pipeline.Passes
 			{
 				sortedOpaque[i].Draw();
 			}
-
-			// Render Alpha Faces
-			renderer.ResetOpenGlState();
-			RDI.RDIStateCache.SetDepthState(true, DepthFunction.Lequal, true);
-
-			if (renderer.currentOptions.TransparencyMode == TransparencyMode.Performance)
-			{
-				renderer.SetBlendFunc();
-				renderer.SetAlphaFunc(AlphaFunction.Greater, 0.0f);
-				RDI.RDIStateCache.SetDepthState(true, DepthFunction.Lequal, false);
-
-				foreach (var face in alphaFaces)
-				{
-					face.Draw();
-				}
-			}
-			else
-			{
-				// Quality Transparency
-				renderer.UnsetBlendFunc();
-				renderer.SetAlphaFunc(AlphaFunction.Equal, 1.0f);
-				RDI.RDIStateCache.SetDepthState(true, DepthFunction.Lequal, true);
-
-				foreach (var face in alphaFaces)
-				{
-					var material = face.Object.Prototype.Mesh.Materials[face.Face.Material];
-					if (material.BlendMode == MeshMaterialBlendMode.Normal && material.GlowAttenuationData == 0)
-					{
-						if (material.Color.A == 255)
-						{
-							face.Draw();
-						}
-					}
-				}
-
-				renderer.SetBlendFunc();
-				renderer.SetAlphaFunc(AlphaFunction.Less, 1.0f);
-				RDI.RDIStateCache.SetDepthState(true, DepthFunction.Lequal, false);
-				bool additive = false;
-
-				foreach (var face in alphaFaces)
-				{
-					var material = face.Object.Prototype.Mesh.Materials[face.Face.Material];
-					if (material.BlendMode == MeshMaterialBlendMode.Additive)
-					{
-						if (!additive)
-						{
-							renderer.UnsetAlphaFunc();
-							additive = true;
-						}
-					}
-					else
-					{
-						if (additive)
-						{
-							renderer.SetAlphaFunc();
-							additive = false;
-						}
-					}
-					face.Draw();
-				}
-			}
-
-			RDI.RDIStateCache.SetDepthState(true, DepthFunction.Lequal, true);
 
 			if (renderer.OptionWireFrame)
 			{

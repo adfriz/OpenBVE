@@ -15,11 +15,8 @@ namespace LibRenderNext.Pipeline.Passes
 {
 	public class OverlayPass : IRenderPass
 	{
-		private readonly Action<RenderContext> renderUiAction;
-
-		public OverlayPass(Action<RenderContext> renderUiAction)
+		public OverlayPass()
 		{
-			this.renderUiAction = renderUiAction;
 		}
 
 		public void Execute(RenderContext context)
@@ -170,20 +167,6 @@ namespace LibRenderNext.Pipeline.Passes
 				}
 			}
 
-			// Render UI
-			renderer.OptionLighting = false;
-			renderer.ResetOpenGlState();
-			renderer.SetBlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
-			renderer.SetAlphaFunc(AlphaFunction.Greater, 0.0f);
-			RDI.RDIStateCache.SetDepthState(false, DepthFunction.Lequal, false);
-
-			if (renderer.AvailableNewRenderer)
-			{
-				renderer.CurrentViewMatrix = Matrix4D.Identity;
-				renderer.DefaultShader.SetCurrentViewMatrix(renderer.CurrentViewMatrix);
-			}
-
-			renderUiAction?.Invoke(context);
 		}
 	}
 }

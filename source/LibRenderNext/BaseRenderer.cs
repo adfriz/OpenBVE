@@ -539,7 +539,9 @@ namespace LibRenderNext
 			Pipeline.AddPass(new Pipeline.Passes.ShadowPass());
 			Pipeline.AddPass(new Pipeline.Passes.SkyPass(drawBackground));
 			Pipeline.AddPass(new Pipeline.Passes.GeometryPass());
-			Pipeline.AddPass(new Pipeline.Passes.OverlayPass(drawUi));
+			Pipeline.AddPass(new Pipeline.Passes.TransparentPass());
+			Pipeline.AddPass(new Pipeline.Passes.OverlayPass());
+			Pipeline.AddPass(new Pipeline.Passes.HUDPass(drawUi));
 		}
 
 		internal PrimitiveType GetPrimitiveType(FaceFlags flags)
