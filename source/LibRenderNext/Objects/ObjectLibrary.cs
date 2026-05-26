@@ -279,37 +279,66 @@ namespace LibRenderNext.Objects
 			RemoveObject(State);
 		}
 
-		public List<FaceState> GetSortedPolygons(bool overlay = false)
+		private struct AlphaFaceDistance : IComparable<AlphaFaceDistance>
 		{
-			if (overlay)
+			public FaceState Face;
+			public double Distance;
+
+			public int CompareTo(AlphaFaceDistance other)
 			{
-				myOverlayAlphaFaces = GetSortedPolygons(myOverlayAlphaFaces.AsReadOnly());
-				OverlayAlphaFaces = myOverlayAlphaFaces.AsReadOnly();
-				return OverlayAlphaFaces.ToList();
+				return Distance.CompareTo(other.Distance);
 			}
-			return GetSortedPolygons(AlphaFaces);
 		}
 
-		private List<FaceState> GetSortedPolygons(ReadOnlyCollection<FaceState> faces)
+		public List<FaceState> GetSortedPolygons(bool overlay = false)
 		{
-			// calculate distance
-			double[] distances = new double[faces.Count];
-
-			Parallel.For(0, faces.Count, i =>
+			List<FaceState> listToSort;
+			lock (LockObject)
 			{
-				if (faces[i].Face.Vertices.Length >= 3)
+				listToSort = new List<FaceState>(overlay ? myOverlayAlphaFaces : myAlphaFaces);
+			}
+			List<FaceState> sorted = GetSortedPolygons(listToSort);
+			if (overlay)
+			{
+				lock (LockObject)
 				{
-					Vector4 v0 = new Vector4(faces[i].Object.Prototype.Mesh.Vertices[faces[i].Face.Vertices[0].Index].Coordinates, 1.0);
-					Vector4 v1 = new Vector4(faces[i].Object.Prototype.Mesh.Vertices[faces[i].Face.Vertices[1].Index].Coordinates, 1.0);
-					Vector4 v2 = new Vector4(faces[i].Object.Prototype.Mesh.Vertices[faces[i].Face.Vertices[2].Index].Coordinates, 1.0);
+					myOverlayAlphaFaces = sorted;
+					OverlayAlphaFaces = myOverlayAlphaFaces.AsReadOnly();
+				}
+			}
+			return sorted;
+		}
+
+		public List<FaceState> GetSortedPolygons(List<FaceState> faces)
+		{
+			int count = faces.Count;
+			if (count == 0)
+			{
+				return new List<FaceState>();
+			}
+
+			AlphaFaceDistance[] pairs = new AlphaFaceDistance[count];
+			Vector3 absolutePosition = renderer.Camera.AbsolutePosition;
+
+			Parallel.For(0, count, i =>
+			{
+				pairs[i].Face = faces[i];
+				var faceState = faces[i];
+				var mesh = faceState.Object.Prototype.Mesh;
+				var face = faceState.Face;
+				if (face.Vertices.Length >= 3)
+				{
+					Vector4 v0 = new Vector4(mesh.Vertices[face.Vertices[0].Index].Coordinates, 1.0);
+					Vector4 v1 = new Vector4(mesh.Vertices[face.Vertices[1].Index].Coordinates, 1.0);
+					Vector4 v2 = new Vector4(mesh.Vertices[face.Vertices[2].Index].Coordinates, 1.0);
 					Vector4 w1 = v1 - v0;
 					Vector4 w2 = v2 - v0;
 					v0.Z *= -1.0;
 					w1.Z *= -1.0;
 					w2.Z *= -1.0;
-					v0 = Vector4.Transform(v0, faces[i].Object.ModelMatrix);
-					w1 = Vector4.Transform(w1, faces[i].Object.ModelMatrix);
-					w2 = Vector4.Transform(w2, faces[i].Object.ModelMatrix);
+					v0 = Vector4.Transform(v0, faceState.Object.ModelMatrix);
+					w1 = Vector4.Transform(w1, faceState.Object.ModelMatrix);
+					w2 = Vector4.Transform(w2, faceState.Object.ModelMatrix);
 					v0.Z *= -1.0;
 					w1.Z *= -1.0;
 					w2.Z *= -1.0;
@@ -319,14 +348,21 @@ namespace LibRenderNext.Objects
 					if (t != 0.0)
 					{
 						d /= t;
-						Vector3 w0 = v0.Xyz - renderer.Camera.AbsolutePosition;
+						Vector3 w0 = v0.Xyz - absolutePosition;
 						t = Vector3.Dot(d, w0);
-						distances[i] = -t * t;
+						pairs[i].Distance = -t * t;
 					}
 				}
 			});
-			// sort
-			return faces.Select((face, index) => new { Face = face, Distance = distances[index] }).OrderBy(list => list.Distance).Select(list => list.Face).ToList();
+
+			Array.Sort(pairs);
+
+			List<FaceState> sorted = new List<FaceState>(count);
+			for (int i = 0; i < count; i++)
+			{
+				sorted.Add(pairs[i].Face);
+			}
+			return sorted;
 		}
 	}
 }

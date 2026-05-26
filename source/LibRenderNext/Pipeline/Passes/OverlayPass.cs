@@ -45,12 +45,13 @@ namespace LibRenderNext.Pipeline.Passes
 				renderer.DefaultShader.SetCurrentViewMatrix(renderer.CurrentViewMatrix);
 			}
 
-			List<FaceState> overlayOpaqueFaces, overlayAlphaFaces;
+			List<FaceState> overlayOpaqueFaces, overlayAlphaFacesToSort;
 			lock (renderer.VisibleObjects.LockObject)
 			{
 				overlayOpaqueFaces = renderer.VisibleObjects.OverlayOpaqueFaces.ToList();
-				overlayAlphaFaces = renderer.VisibleObjects.GetSortedPolygons(true);
+				overlayAlphaFacesToSort = renderer.VisibleObjects.OverlayAlphaFaces.ToList();
 			}
+			List<FaceState> overlayAlphaFaces = renderer.VisibleObjects.GetSortedPolygons(overlayAlphaFacesToSort);
 
 			if (renderer.Camera.CurrentRestriction == CameraRestrictionMode.NotAvailable || renderer.Camera.CurrentRestriction == CameraRestrictionMode.Restricted3D)
 			{

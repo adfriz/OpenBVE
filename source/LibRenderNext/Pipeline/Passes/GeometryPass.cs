@@ -47,12 +47,13 @@ namespace LibRenderNext.Pipeline.Passes
 			}
 
 			List<FaceState> sortedOpaque;
-			List<FaceState> alphaFaces;
+			List<FaceState> alphaFacesToSort;
 			lock (renderer.VisibleObjects.LockObject)
 			{
 				sortedOpaque = new List<FaceState>(renderer.VisibleObjects.OpaqueFaces);
-				alphaFaces = renderer.VisibleObjects.GetSortedPolygons(false);
+				alphaFacesToSort = new List<FaceState>(renderer.VisibleObjects.AlphaFaces);
 			}
+			List<FaceState> alphaFaces = renderer.VisibleObjects.GetSortedPolygons(alphaFacesToSort);
 
 			// Sort by Texture Name first, then by VAO handle to group them together
 			sortedOpaque.Sort((a, b) =>
