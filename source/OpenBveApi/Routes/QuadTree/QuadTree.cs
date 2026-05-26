@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using OpenBveApi.Math;
 using OpenBveApi.Objects;
@@ -13,6 +13,8 @@ namespace OpenBveApi.Routes
 
 		/// <summary>The side length of a leaf node.</summary>
 		internal readonly double SideLength;
+
+		private QuadTreeLeafNode lastFoundLeaf;
 
 		internal readonly List<ObjectState> Objects;
 
@@ -30,6 +32,7 @@ namespace OpenBveApi.Routes
 		{
 			Objects.Clear();
 			Root = null;
+			lastFoundLeaf = null;
 		}
 
 		/// <summary>Adds a new instance of a static object to the quad.</summary>
@@ -292,14 +295,27 @@ namespace OpenBveApi.Routes
 		/// <returns>The success of the operation.</returns>
 		public bool GetLeafNode(Vector3 position, out QuadTreeLeafNode leaf)
 		{
+			if (lastFoundLeaf != null &&
+			    position.X >= lastFoundLeaf.Rectangle.Left &&
+			    position.X <= lastFoundLeaf.Rectangle.Right &&
+			    position.Z >= lastFoundLeaf.Rectangle.Near &&
+			    position.Z <= lastFoundLeaf.Rectangle.Far)
+			{
+				leaf = lastFoundLeaf;
+				return true;
+			}
+
 			if (Root != null)
 			{
-				return Root.GetLeafNode(position, out leaf);
+				if (Root.GetLeafNode(position, out leaf))
+				{
+					lastFoundLeaf = leaf;
+					return true;
+				}
 			}
 
 			leaf = null;
 			return false;
-
 		}
 	}
 }
