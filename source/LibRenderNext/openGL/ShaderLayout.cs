@@ -232,5 +232,10 @@ namespace LibRenderNext
 		/// The handle of "uCurrentViewMatrix" within the shader
 		/// </summary>
 		public short CurrentViewMatrix = -1;
+
+		/// <summary>
+		/// The handle of "uNormalMatrix" within the shader
+		/// </summary>
+		public short NormalMatrix = -1;
 	}
 }

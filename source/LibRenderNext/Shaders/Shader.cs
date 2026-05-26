@@ -49,18 +49,9 @@ namespace LibRenderNext.Shaders
 		private readonly int uShadowMap1Location;
 		private readonly int uShadowMap2Location;
 		private readonly int uShadowMap3Location;
-		private readonly int uShadowSplit0Location;
-		private readonly int uShadowSplit1Location;
-		private readonly int uShadowSplit2Location;
-		private readonly int uShadowSplit3Location;
-		private readonly int uShadowBias0Location;
-		private readonly int uShadowBias1Location;
-		private readonly int uShadowBias2Location;
-		private readonly int uShadowBias3Location;
-		private readonly int uShadowNormalBias0Location;
-		private readonly int uShadowNormalBias1Location;
-		private readonly int uShadowNormalBias2Location;
-		private readonly int uShadowNormalBias3Location;
+		private readonly int uShadowSplitsLocation;
+		private readonly int uShadowBiasesLocation;
+		private readonly int uShadowNormalBiasesLocation;
 		private readonly int uLightSpaceMatrix0Location;
 		private readonly int uLightSpaceMatrix1Location;
 		private readonly int uLightSpaceMatrix2Location;
@@ -85,18 +76,9 @@ namespace LibRenderNext.Shaders
 			uShadowMap1Location = GL.GetUniformLocation(Handle, "uShadowMap1");
 			uShadowMap2Location = GL.GetUniformLocation(Handle, "uShadowMap2");
 			uShadowMap3Location = GL.GetUniformLocation(Handle, "uShadowMap3");
-			uShadowSplit0Location = GL.GetUniformLocation(Handle, "uShadowSplit0");
-			uShadowSplit1Location = GL.GetUniformLocation(Handle, "uShadowSplit1");
-			uShadowSplit2Location = GL.GetUniformLocation(Handle, "uShadowSplit2");
-			uShadowSplit3Location = GL.GetUniformLocation(Handle, "uShadowSplit3");
-			uShadowBias0Location = GL.GetUniformLocation(Handle, "uShadowBias0");
-			uShadowBias1Location = GL.GetUniformLocation(Handle, "uShadowBias1");
-			uShadowBias2Location = GL.GetUniformLocation(Handle, "uShadowBias2");
-			uShadowBias3Location = GL.GetUniformLocation(Handle, "uShadowBias3");
-			uShadowNormalBias0Location = GL.GetUniformLocation(Handle, "uShadowNormalBias0");
-			uShadowNormalBias1Location = GL.GetUniformLocation(Handle, "uShadowNormalBias1");
-			uShadowNormalBias2Location = GL.GetUniformLocation(Handle, "uShadowNormalBias2");
-			uShadowNormalBias3Location = GL.GetUniformLocation(Handle, "uShadowNormalBias3");
+			uShadowSplitsLocation = GL.GetUniformLocation(Handle, "uShadowSplits");
+			uShadowBiasesLocation = GL.GetUniformLocation(Handle, "uShadowBiases");
+			uShadowNormalBiasesLocation = GL.GetUniformLocation(Handle, "uShadowNormalBiases");
 			uLightSpaceMatrix0Location = GL.GetUniformLocation(Handle, "uLightSpaceMatrix0");
 			uLightSpaceMatrix1Location = GL.GetUniformLocation(Handle, "uLightSpaceMatrix1");
 			uLightSpaceMatrix2Location = GL.GetUniformLocation(Handle, "uLightSpaceMatrix2");
@@ -176,6 +158,7 @@ namespace LibRenderNext.Shaders
 				ShadowMap1 = (short)GL.GetUniformLocation(Handle, "uShadowMap1"),
 				ShadowMap2 = (short)GL.GetUniformLocation(Handle, "uShadowMap2"),
 				CurrentViewMatrix = (short)GL.GetUniformLocation(Handle, "uCurrentViewMatrix"),
+				NormalMatrix = (short)GL.GetUniformLocation(Handle, "uNormalMatrix"),
 			};
 		}
 
@@ -187,6 +170,15 @@ namespace LibRenderNext.Shaders
 				(float)mat.Row1.X, (float)mat.Row1.Y, (float)mat.Row1.Z, (float)mat.Row1.W,
 				(float)mat.Row2.X, (float)mat.Row2.Y, (float)mat.Row2.Z, (float)mat.Row2.W,
 				(float)mat.Row3.X, (float)mat.Row3.Y, (float)mat.Row3.Z, (float)mat.Row3.W
+			);
+		}
+
+		private Matrix3 ConvertToMatrix3(Matrix4D mat)
+		{
+			return new Matrix3(
+				(float)mat.Row0.X, (float)mat.Row0.Y, (float)mat.Row0.Z,
+				(float)mat.Row1.X, (float)mat.Row1.Y, (float)mat.Row1.Z,
+				(float)mat.Row2.X, (float)mat.Row2.Y, (float)mat.Row2.Z
 			);
 		}
 
@@ -261,6 +253,10 @@ namespace LibRenderNext.Shaders
 			// | m13 m23 m33 m43 |
 			// | m14 m24 m34 m44 |
 			GL.ProgramUniformMatrix4(Handle, UniformLayout.CurrentModelViewMatrix, false, ref matrix);
+
+			Matrix4D invTrans = Matrix4D.Transpose(Matrix4D.Invert(ModelViewMatrix));
+			Matrix3 normalMat = ConvertToMatrix3(invTrans);
+			GL.ProgramUniformMatrix3(Handle, UniformLayout.NormalMatrix, false, ref normalMat);
 		}
 		
 		/// <summary>
@@ -462,46 +458,19 @@ namespace LibRenderNext.Shaders
 			GL.ProgramUniform1(Handle, loc, textureUnit);
 		}
 
-		public void SetShadowSplitDistance(int cascade, float distance)
+		public void SetShadowSplits(float[] splits)
 		{
-			int loc;
-			switch (cascade)
-			{
-				case 0: loc = uShadowSplit0Location; break;
-				case 1: loc = uShadowSplit1Location; break;
-				case 2: loc = uShadowSplit2Location; break;
-				case 3: loc = uShadowSplit3Location; break;
-				default: return;
-			}
-			GL.ProgramUniform1(Handle, loc, distance);
+			GL.ProgramUniform4(Handle, uShadowSplitsLocation, splits[0], splits[1], splits[2], splits[3]);
 		}
 
-		public void SetCascadeBias(int cascade, float bias)
+		public void SetShadowBiases(float[] biases)
 		{
-			int loc;
-			switch (cascade)
-			{
-				case 0: loc = uShadowBias0Location; break;
-				case 1: loc = uShadowBias1Location; break;
-				case 2: loc = uShadowBias2Location; break;
-				case 3: loc = uShadowBias3Location; break;
-				default: return;
-			}
-			GL.ProgramUniform1(Handle, loc, bias);
+			GL.ProgramUniform4(Handle, uShadowBiasesLocation, biases[0], biases[1], biases[2], biases[3]);
 		}
 
-		public void SetNormalBias(int cascade, float bias)
+		public void SetShadowNormalBiases(float[] normalBiases)
 		{
-			int loc;
-			switch (cascade)
-			{
-				case 0: loc = uShadowNormalBias0Location; break;
-				case 1: loc = uShadowNormalBias1Location; break;
-				case 2: loc = uShadowNormalBias2Location; break;
-				case 3: loc = uShadowNormalBias3Location; break;
-				default: return;
-			}
-			GL.ProgramUniform1(Handle, loc, bias);
+			GL.ProgramUniform4(Handle, uShadowNormalBiasesLocation, normalBiases[0], normalBiases[1], normalBiases[2], normalBiases[3]);
 		}
 
 		public void SetShadowCascadeCount(int count)

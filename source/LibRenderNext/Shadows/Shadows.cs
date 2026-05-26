@@ -297,20 +297,29 @@ namespace LibRenderNext.ShadowMapping
 			Map.BindAllCascadesForReading(TextureUnit.Texture4);
 
 			int cascadeCount = Caster.CascadeCount;
+			float[] splits = new float[4];
+			float[] biases = new float[4];
+			float[] normalBiases = new float[4];
+
 			for (int i = 0; i < cascadeCount; i++)
 			{
 				shader.SetCascadeLightSpaceMatrix(i, Caster.LightSpaceMatrices[i]);
 				shader.SetCascadeShadowMapUnit(i, 4 + i);
-				// Split distance = the view-space Z where this cascade ends.
-				shader.SetShadowSplitDistance(i, (float)Caster.SplitDistances[i]);
-				shader.SetCascadeBias(i, Caster.CascadeBiases[i] + (float)renderer.currentOptions.ShadowBias);
-				shader.SetNormalBias(i, (float)renderer.currentOptions.ShadowNormalBias);
+				splits[i] = (float)Caster.SplitDistances[i];
+				biases[i] = Caster.CascadeBiases[i] + (float)renderer.currentOptions.ShadowBias;
+				normalBiases[i] = (float)renderer.currentOptions.ShadowNormalBias;
 			}
 
 			for (int i = cascadeCount; i < 4; i++)
 			{
-				shader.SetShadowSplitDistance(i, 0.0f);
+				splits[i] = 0.0f;
+				biases[i] = 0.0f;
+				normalBiases[i] = 0.0f;
 			}
+
+			shader.SetShadowSplits(splits);
+			shader.SetShadowBiases(biases);
+			shader.SetShadowNormalBiases(normalBiases);
 			shader.SetShadowCascadeCount(cascadeCount);
 		}
 

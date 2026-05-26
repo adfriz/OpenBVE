@@ -38,20 +38,9 @@ uniform sampler2DShadow   uShadowMap1;
 uniform sampler2DShadow   uShadowMap2;
 uniform sampler2DShadow   uShadowMap3;
 
-uniform float             uShadowSplit0;      // Boundary where cascade 0 ends and 1 begins
-uniform float             uShadowSplit1;      // Boundary where cascade 1 ends and 2 begins
-uniform float             uShadowSplit2;      // Boundary where cascade 2 ends and 3 begins
-uniform float             uShadowSplit3;      // Final shadow distance boundary
-
-uniform float             uShadowBias0;
-uniform float             uShadowBias1;
-uniform float             uShadowBias2;
-uniform float             uShadowBias3;
-
-uniform float             uShadowNormalBias0;
-uniform float             uShadowNormalBias1;
-uniform float             uShadowNormalBias2;
-uniform float             uShadowNormalBias3;
+uniform vec4              uShadowSplits;      // Cascade boundary splits (X=split0, Y=split1, Z=split2, W=split3)
+uniform vec4              uShadowBiases;      // Cascade shadow biases (X=bias0, Y=bias1, Z=bias2, W=bias3)
+uniform vec4              uShadowNormalBiases;// Cascade shadow normal biases (X=normalBias0, etc.)
 
 uniform vec2              uAlphaTest;
 uniform sampler2D uTexture;
@@ -124,21 +113,17 @@ float GetCascadeShadowFactor(sampler2DShadow shadowMap, vec4 posLightSpace, floa
 /// Helper to sample a cascade by index.
 float SampleCascadeByIndex(int idx)
 {
-    if (idx == 0) return GetCascadeShadowFactor(uShadowMap0, vPosLightSpace0, uShadowBias0, uShadowNormalBias0);
-    if (idx == 1) return GetCascadeShadowFactor(uShadowMap1, vPosLightSpace1, uShadowBias1, uShadowNormalBias1);
-    if (idx == 2) return GetCascadeShadowFactor(uShadowMap2, vPosLightSpace2, uShadowBias2, uShadowNormalBias2);
-    if (idx == 3) return GetCascadeShadowFactor(uShadowMap3, vPosLightSpace3, uShadowBias3, uShadowNormalBias3);
+    if (idx == 0) return GetCascadeShadowFactor(uShadowMap0, vPosLightSpace0, uShadowBiases.x, uShadowNormalBiases.x);
+    if (idx == 1) return GetCascadeShadowFactor(uShadowMap1, vPosLightSpace1, uShadowBiases.y, uShadowNormalBiases.y);
+    if (idx == 2) return GetCascadeShadowFactor(uShadowMap2, vPosLightSpace2, uShadowBiases.z, uShadowNormalBiases.z);
+    if (idx == 3) return GetCascadeShadowFactor(uShadowMap3, vPosLightSpace3, uShadowBiases.w, uShadowNormalBiases.w);
     return 1.0;
 }
 
 /// Helper to get the split distance of a cascade by index.
 float GetShadowSplitDistance(int idx)
 {
-    if (idx == 0) return uShadowSplit0;
-    if (idx == 1) return uShadowSplit1;
-    if (idx == 2) return uShadowSplit2;
-    if (idx == 3) return uShadowSplit3;
-    return 0.0;
+    return uShadowSplits[idx];
 }
 
 /// Calculates the final shadow factor using CSM with smooth blending.

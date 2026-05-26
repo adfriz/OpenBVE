@@ -21,22 +21,81 @@ namespace LibRenderNext.Textures
 		private readonly BaseRenderer renderer;
 
 		/// <summary>Holds all currently registered textures.</summary>
-		public static Texture[] RegisteredTextures;
+		public static List<Texture> RegisteredTextures;
 		/// <summary>Holds cached texture origins</summary>
 		internal static Dictionary<TextureOrigin, Texture> textureCache = new Dictionary<TextureOrigin, Texture>();
 
 		private static Dictionary<TextureOrigin, Texture> animatedTextures;
 
+		private struct TextureLookupKey : IEquatable<TextureLookupKey>
+		{
+			public readonly string Path;
+			public readonly TextureParameters Parameters;
+
+			public TextureLookupKey(string path, TextureParameters parameters)
+			{
+				Path = path ?? string.Empty;
+				Parameters = parameters;
+			}
+
+			public bool Equals(TextureLookupKey other)
+			{
+				if (!string.Equals(Path, other.Path, StringComparison.InvariantCultureIgnoreCase))
+				{
+					return false;
+				}
+				if (ReferenceEquals(Parameters, other.Parameters))
+				{
+					return true;
+				}
+				if (Parameters is null || other.Parameters is null)
+				{
+					return false;
+				}
+				return Parameters == other.Parameters;
+			}
+
+			public override bool Equals(object obj)
+			{
+				return obj is TextureLookupKey other && Equals(other);
+			}
+
+			public override int GetHashCode()
+			{
+				unchecked
+				{
+					int hash = StringComparer.InvariantCultureIgnoreCase.GetHashCode(Path);
+					if (Parameters != null)
+					{
+						if (Parameters.ClipRegion != null)
+						{
+							hash = hash * 397 ^ Parameters.ClipRegion.Left;
+							hash = hash * 397 ^ Parameters.ClipRegion.Top;
+							hash = hash * 397 ^ Parameters.ClipRegion.Width;
+							hash = hash * 397 ^ Parameters.ClipRegion.Height;
+						}
+						if (Parameters.TransparentColor != null)
+						{
+							hash = hash * 397 ^ Parameters.TransparentColor.Value.GetHashCode();
+						}
+					}
+					return hash;
+				}
+			}
+		}
+
+		private static Dictionary<TextureLookupKey, Texture> lookupCache = new Dictionary<TextureLookupKey, Texture>();
+
 		/// <summary>The number of currently registered textures.</summary>
-		public int RegisteredTexturesCount;
+		public int RegisteredTexturesCount => RegisteredTextures.Count;
 
 		internal TextureManager(HostInterface CurrentHost, BaseRenderer Renderer)
 		{
 			currentHost = CurrentHost;
-			RegisteredTextures = new Texture[16];
-			RegisteredTexturesCount = 0;
+			RegisteredTextures = new List<Texture>();
 			renderer = Renderer;
 			animatedTextures = new Dictionary<TextureOrigin, Texture>();
+			lookupCache = new Dictionary<TextureLookupKey, Texture>();
 		}
 
 
@@ -60,82 +119,19 @@ namespace LibRenderNext.Textures
 		{
 			if (!File.Exists(path))
 			{
-				// shouldn't happen, but handle gracefully
 				handle = null;
 				return false;
 			}
-			/* BUG:
-			 * Attempt to delete null texture handles from the end of the array
-			 * These sometimes seem to end up there
-			 * 
-			 * Have also seen a registered textures count of 72 and an array length of 64
-			 * Is it possible for a texture to fail to register, but still increment the registered textures count?
-			 * 
-			 * There appears to be a timing issue somewhere whilst loading, as this only happens intermittently
-			 */
-			if (RegisteredTexturesCount > RegisteredTextures.Length)
+
+			TextureLookupKey key = new TextureLookupKey(path, parameters);
+			if (lookupCache.TryGetValue(key, out handle))
 			{
-				/* BUG:
-				 * The registered textures count very occasional becomes greater than the array length (Texture loader crashes possibly?)
-				 * This then crashes when we attempt to itinerate the array, so reset it...
-				 */
-				RegisteredTexturesCount = RegisteredTextures.Length;
+				return true;
 			}
 
-			if (RegisteredTexturesCount != 0)
-			{
-				try
-				{
-					for (int i = RegisteredTexturesCount - 1; i >= 0; i--)
-					{
-						if (RegisteredTextures[i] != null)
-						{
-							break;
-						}
-
-						Array.Resize(ref RegisteredTextures, RegisteredTextures.Length - 1);
-					}
-				}
-				catch
-				{
-					// ignored
-				}
-			}
-
-			/*
-			 * Check if the texture is already registered.
-			 * If so, return the existing handle.
-			 * */
-			for (int i = 0; i < RegisteredTexturesCount; i++)
-			{
-				if (RegisteredTextures[i] != null)
-				{
-					try
-					{
-						//The only exceptions thrown were these when it barfed
-						PathOrigin source = RegisteredTextures[i].Origin as PathOrigin;
-
-						if (source != null && source.Path.Equals(path, StringComparison.InvariantCultureIgnoreCase) && source.Parameters == parameters)
-						{
-							handle = RegisteredTextures[i];
-							return true;
-						}
-					}
-					catch
-					{
-						// ignored
-					}
-				}
-
-			}
-
-			/*
-			 * Register the texture and return the newly created handle.
-			 * */
-			int idx = GetNextFreeTexture();
-			RegisteredTextures[idx] = new Texture(path, parameters, currentHost);
-			RegisteredTexturesCount++;
-			handle = RegisteredTextures[idx];
+			handle = new Texture(new PathOrigin(path, parameters, currentHost));
+			RegisteredTextures.Add(handle);
+			lookupCache[key] = handle;
 			return true;
 		}
 
@@ -144,13 +140,13 @@ namespace LibRenderNext.Textures
 		/// <returns>The handle to the texture.</returns>
 		public Texture RegisterTexture(Texture texture)
 		{
-			/*
-			 * Register the texture and return the newly created handle.
-			 * */
-			int idx = GetNextFreeTexture();
-			RegisteredTextures[idx] = new Texture(texture);
-			RegisteredTexturesCount++;
-			return RegisteredTextures[idx];
+			RegisteredTextures.Add(texture);
+			if (texture.Origin is PathOrigin pathOrigin)
+			{
+				TextureLookupKey key = new TextureLookupKey(pathOrigin.Path, pathOrigin.Parameters);
+				lookupCache[key] = texture;
+			}
+			return texture;
 		}
 
 		/// <summary>Registers a texture and returns a handle to the texture.</summary>
@@ -160,13 +156,9 @@ namespace LibRenderNext.Textures
 		/// <remarks>Be sure not to dispose of the bitmap after calling this function.</remarks>
 		public Texture RegisterTexture(Bitmap bitmap, TextureParameters parameters)
 		{
-			/*
-			 * Register the texture and return the newly created handle.
-			 * */
-			int idx = GetNextFreeTexture();
-			RegisteredTextures[idx] = new Texture(bitmap, parameters);
-			RegisteredTexturesCount++;
-			return RegisteredTextures[idx];
+			Texture texture = new Texture(bitmap, parameters);
+			RegisteredTextures.Add(texture);
+			return texture;
 		}
 
 		/// <summary>Registers a texture and returns a handle to the texture.</summary>
@@ -175,13 +167,9 @@ namespace LibRenderNext.Textures
 		/// <remarks>Be sure not to dispose of the bitmap after calling this function.</remarks>
 		public Texture RegisterTexture(Bitmap bitmap)
 		{
-			/*
-			 * Register the texture and return the newly created handle.
-			 * */
-			int idx = GetNextFreeTexture();
-			RegisteredTextures[idx] = new Texture(bitmap);
-			RegisteredTexturesCount++;
-			return RegisteredTextures[idx];
+			Texture texture = new Texture(bitmap);
+			RegisteredTextures.Add(texture);
+			return texture;
 		}
 
 
@@ -196,9 +184,6 @@ namespace LibRenderNext.Textures
 		/// <returns>Whether loading the texture was successful.</returns>
 		public bool LoadTexture(ref Texture handle, OpenGlTextureWrapMode wrap, int currentTicks, InterpolationMode Interpolation, int AnisotropicFilteringLevel)
 		{
-
-			Texture texture = null;
-			//Don't try to load a texture to a null handle, this is a seriously bad idea....
 			if (handle == null || handle.OpenGlTextures == null)
 			{
 				return false;
@@ -206,11 +191,11 @@ namespace LibRenderNext.Textures
 			
 			if (handle.MultipleFrames)
 			{
+				Texture texture = null;
 				if (!animatedTextures.TryGetValue(handle.Origin, out texture))
 				{
 					if (!handle.Origin.GetTexture(out texture))
 					{
-						//Loading animated texture barfed
 						return false;
 					}
 					animatedTextures.Add(handle.Origin, texture);
@@ -224,16 +209,11 @@ namespace LibRenderNext.Textures
 					texture.CurrentFrame %= texture.TotalFrames;
 					handle.LastAccess = currentTicks;
 				}
+				handle = texture;
 			}
 			else
 			{
 				handle.LastAccess = currentTicks;
-			}
-			//Set last access time
-
-			if (texture != null)
-			{
-				handle = texture;
 			}
 
 			if (handle.OpenGlTextures[(int)wrap].Valid)
@@ -241,231 +221,48 @@ namespace LibRenderNext.Textures
 				return true;
 			}
 
-			
-			
 			if (handle.Ignore)
 			{
 				return false;
 			}
 
-			if (texture == null && handle.Origin.GetTexture(out texture) || texture != null)
+			var task = TextureUploadQueue.AsyncTasks.GetOrAdd(handle, h => new TextureLoadTask());
+
+			if (task.State == AsyncLoadState.NotStarted)
 			{
-				if (texture.MultipleFrames)
+				task.State = AsyncLoadState.Decoding;
+				Texture captureHandle = handle;
+				System.Threading.ThreadPool.QueueUserWorkItem(_ =>
 				{
-					handle.MultipleFrames = true;
-				}
-				//if (texture.BitsPerPixel == 32)
-				{
-					int[] names = new int[1];
-					GL.GenTextures(1, names);
-					RHI.RHIStateCache.BindTexture( names[0]);
-					handle.OpenGlTextures[(int)wrap].Name = names[0];
-					if (texture.MultipleFrames)
+					try
 					{
-						texture.OpenGlTextures[(int)wrap].Name = names[0];
-					}
-
-					handle.Size = texture.Size;
-					handle.Transparency = texture.GetTransparencyType();
-
-					switch (Interpolation)
-					{
-						case InterpolationMode.NearestNeighbor:
-							GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Nearest);
-							GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Nearest);
-							break;
-						case InterpolationMode.Bilinear:
-							GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Linear);
-							GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
-							break;
-						case InterpolationMode.NearestNeighborMipmapped:
-							GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.NearestMipmapNearest);
-							GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Nearest);
-							break;
-						case InterpolationMode.BilinearMipmapped:
-							GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.NearestMipmapLinear);
-							GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
-							break;
-						case InterpolationMode.TrilinearMipmapped:
-							GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.LinearMipmapLinear);
-							GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
-							break;
-						default:
-							GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.LinearMipmapLinear);
-							GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
-							break;
-					}
-
-					if ((wrap & OpenGlTextureWrapMode.RepeatClamp) != 0)
-					{
-						GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (float)TextureWrapMode.Repeat);
-					}
-					else
-					{
-						GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (float)TextureWrapMode.ClampToEdge);
-					}
-
-					if ((wrap & OpenGlTextureWrapMode.ClampRepeat) != 0)
-					{
-						GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (float)TextureWrapMode.Repeat);
-					}
-					else
-					{
-						GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (float)TextureWrapMode.ClampToEdge);
-					}
-
-					if (renderer.ForceLegacyOpenGL)
-					{
-						if (Interpolation == InterpolationMode.NearestNeighbor || Interpolation == InterpolationMode.Bilinear)
+						Texture decoded;
+						if (captureHandle.Origin.GetTexture(out decoded))
 						{
-							GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.GenerateMipmap, 0);
+							task.DecodedTexture = decoded;
+							task.State = AsyncLoadState.ReadyToUpload;
+							TextureUploadQueue.Queue.Enqueue(new UploadJob { Handle = captureHandle, Wrap = wrap, DecodedTexture = decoded });
 						}
 						else
 						{
-							GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.GenerateMipmap, 1);
+							task.State = AsyncLoadState.Failed;
 						}
 					}
-
-					if (Interpolation == InterpolationMode.AnisotropicFiltering && AnisotropicFilteringLevel > 0)
+					catch (Exception ex)
 					{
-						GL.TexParameter(TextureTarget.Texture2D, (TextureParameterName)ExtTextureFilterAnisotropic.TextureMaxAnisotropyExt, AnisotropicFilteringLevel);
+						task.Error = ex;
+						task.State = AsyncLoadState.Failed;
 					}
-					
-					bool noLuminanceChannel = currentHost.Platform == HostPlatform.AppleOSX || renderer.currentOptions.ForceForwardsCompatibleContext;
-					
-					if (handle.Transparency == TextureTransparencyType.Opaque)
-					{
-						switch (texture.PixelFormat)
-						{
-							case PixelFormat.Grayscale:
-								// send as is to the luminance channel [NOTE: deprecated in GL4, so use Red channel instead]
-								// n.b. Make sure to set the unpack alignment as otherwise we corrupt textures where stride > width
-								GL.PixelStore(PixelStoreParameter.UnpackAlignment, 1);
-								GL.TexImage2D(TextureTarget.Texture2D, 0,
-									noLuminanceChannel ? PixelInternalFormat.R8 : PixelInternalFormat.Luminance,
-									texture.Width, texture.Height, 0,
-									noLuminanceChannel ? OpenTK.Graphics.OpenGL.PixelFormat.Red : OpenTK.Graphics.OpenGL.PixelFormat.Luminance,
-									PixelType.UnsignedByte, texture.Bytes);
-								
-								if (noLuminanceChannel)
-								{
-									// small cheat: Use GL_RED (6403) to swizzle our R channel when called by the shader
-									GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureSwizzleRgba, new[] { 6403, 6403, 6403, 1});
-								}
-								break;
-							case PixelFormat.RGB:
-								// send as is
-								// n.b. Make sure to set the unpack alignment as otherwise we corrupt textures where stride > width
-								GL.PixelStore(PixelStoreParameter.UnpackAlignment, 1);
-								GL.TexImage2D(TextureTarget.Texture2D, 0,
-									PixelInternalFormat.Rgb8,
-									texture.Width, texture.Height, 0,
-									OpenTK.Graphics.OpenGL.PixelFormat.Rgb,
-									PixelType.UnsignedByte, texture.Bytes);
-								break;
-							case PixelFormat.RGBAlpha:
-								// down convert to RGB
-								int stride = (3 * (texture.Width + 1) >> 2) << 2;
-								byte[] newBytes = new byte[stride * texture.Height];
-								int i = 0, j = 0;
-
-								for (int y = 0; y < texture.Height; y++)
-								{
-									for (int x = 0; x < texture.Width; x++)
-									{
-										newBytes[j + 0] = texture.Bytes[i + 0];
-										newBytes[j + 1] = texture.Bytes[i + 1];
-										newBytes[j + 2] = texture.Bytes[i + 2];
-										i += 4;
-										j += 3;
-									}
-
-									j += stride - 3 * texture.Width;
-								}
-								// send as is
-								// n.b. Must reset the unpack alignment in case of changes
-								GL.PixelStore(PixelStoreParameter.UnpackAlignment, 4);
-								GL.TexImage2D(TextureTarget.Texture2D, 0,
-									PixelInternalFormat.Rgb8,
-									texture.Width, texture.Height, 0,
-									OpenTK.Graphics.OpenGL.PixelFormat.Rgb,
-									PixelType.UnsignedByte, newBytes);
-								break;
-						}
-					}
-					else
-					{
-						switch (texture.PixelFormat)
-						{
-							case PixelFormat.GrayscaleAlpha:
-								// NOTE: LuminanceAlpha is deprecated in GL4, so just upconvert to RGBA
-								if (noLuminanceChannel)
-								{
-									int stride = (2 * (texture.Width + 1) >> 2) << 2;
-									byte[] newBytes = new byte[stride * texture.Height];
-									int i = 0, j = 0;
-
-									for (int y = 0; y < texture.Height; y++)
-									{
-										for (int x = 0; x < texture.Width; x++)
-										{
-											newBytes[j + 0] = texture.Bytes[i + 0];
-											newBytes[j + 1] = texture.Bytes[i + 0];
-											newBytes[j + 2] = texture.Bytes[i + 0];
-											newBytes[j + 3] = texture.Bytes[i + 1];
-											i += 4;
-											j += 4;
-										}
-
-										j += stride - 3 * texture.Width;
-										GL.PixelStore(PixelStoreParameter.UnpackAlignment, 4);
-										GL.TexImage2D(TextureTarget.Texture2D, 0,
-											PixelInternalFormat.Rgba8,
-											texture.Width, texture.Height, 0,
-											OpenTK.Graphics.OpenGL.PixelFormat.Rgba,
-											PixelType.UnsignedByte, newBytes);
-									}
-								}
-								else
-								{
-									GL.PixelStore(PixelStoreParameter.UnpackAlignment, 1);
-									GL.TexImage2D(TextureTarget.Texture2D, 0,
-										PixelInternalFormat.LuminanceAlpha,
-										texture.Width, texture.Height, 0,
-										OpenTK.Graphics.OpenGL.PixelFormat.LuminanceAlpha,
-										PixelType.UnsignedByte, texture.Bytes);
-								}
-								break;
-							case PixelFormat.RGBAlpha:
-								/*
-								* The texture uses its alpha channel, so send the bitmap data
-								* in 32-bits per channel as-is.
-								* */
-								// n.b. Must reset the unpack alignment in case of changes
-								GL.PixelStore(PixelStoreParameter.UnpackAlignment, 4);
-								GL.TexImage2D(TextureTarget.Texture2D, 0,
-									PixelInternalFormat.Rgba8,
-									texture.Width, texture.Height, 0,
-									OpenTK.Graphics.OpenGL.PixelFormat.Rgba,
-									PixelType.UnsignedByte, texture.Bytes);
-								break;
-						}
-						
-					}
-					if (renderer.ForceLegacyOpenGL == false)
-					{
-						GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
-					}
-					handle.OpenGlTextures[(int)wrap].Valid = true;
-					if (texture.MultipleFrames)
-					{
-						texture.OpenGlTextures[(int)wrap].Valid = true;
-					}
-					return true;
-				}
+				});
 			}
 
-			handle.Ignore = true;
+			TextureUploadQueue.ProcessUploadQueue(Interpolation, AnisotropicFilteringLevel, renderer, currentHost);
+
+			if (handle.OpenGlTextures[(int)wrap].Valid)
+			{
+				return true;
+			}
+
 			return false;
 		}
 
@@ -516,32 +313,39 @@ namespace LibRenderNext.Textures
 			if (handle.Origin != null)
 			{
 				textureCache.Remove(handle.Origin);
+				if (handle.Origin is PathOrigin pathOrigin)
+				{
+					TextureLookupKey key = new TextureLookupKey(pathOrigin.Path, pathOrigin.Parameters);
+					lookupCache.Remove(key);
+				}
 			}
 		}
 
 		/// <summary>Loads all registered textures.</summary>
 		public void LoadAllTextures()
 		{
-			for (int i = 0; i < RegisteredTexturesCount; i++)
+			for (int i = 0; i < RegisteredTextures.Count; i++)
 			{
 				for (int j = 0; j < 4; j++)
 				{
 					if (RegisteredTextures[i] != null && RegisteredTextures[i].OpenGlTextures[j].Used)
 					{
-						LoadTexture(ref RegisteredTextures[i], (OpenGlTextureWrapMode)j, CPreciseTimer.GetClockTicks(), renderer.currentOptions.Interpolation, renderer.currentOptions.AnisotropicFilteringLevel);
+						Texture t = RegisteredTextures[i];
+						LoadTexture(ref t, (OpenGlTextureWrapMode)j, CPreciseTimer.GetClockTicks(), renderer.currentOptions.Interpolation, renderer.currentOptions.AnisotropicFilteringLevel);
+						RegisteredTextures[i] = t;
 					}
-
 				}
-
 			}
 		}
 
 		/// <summary>Unloads all registered textures.</summary>
 		public void UnloadAllTextures(bool currentlyReloading)
 		{
-			for (int i = 0; i < RegisteredTexturesCount; i++)
+			for (int i = 0; i < RegisteredTextures.Count; i++)
 			{
-				UnloadTexture(ref RegisteredTextures[i]);
+				Texture t = RegisteredTextures[i];
+				UnloadTexture(ref t);
+				RegisteredTextures[i] = t;
 			}
 			if (currentlyReloading)
 			{
@@ -552,6 +356,8 @@ namespace LibRenderNext.Textures
 						if (!File.Exists(pathOrigin.Path) || pathOrigin.FileSize != new FileInfo(pathOrigin.Path).Length || pathOrigin.LastModificationTime != File.GetLastWriteTime(pathOrigin.Path))
 						{
 							textureCache.Remove(origin);
+							TextureLookupKey key = new TextureLookupKey(pathOrigin.Path, pathOrigin.Parameters);
+							lookupCache.Remove(key);
 						}
 					}
 				}
@@ -559,10 +365,10 @@ namespace LibRenderNext.Textures
 			else
 			{
 				textureCache.Clear();
+				lookupCache.Clear();
 			}
 			
 			GC.Collect(); //Speculative- https://bveworldwide.forumotion.com/t1873-object-routeviewer-out-of-memory#19423
-			
 		}
 
 		/// <summary>Unloads any textures which have not been accessed</summary>
@@ -585,11 +391,13 @@ namespace LibRenderNext.Textures
 #endif
 			if (renderer.CurrentInterface == InterfaceType.Normal)
 			{
-				for (int i = 0; i < RegisteredTextures.Length; i++)
+				for (int i = 0; i < RegisteredTextures.Count; i++)
 				{
 					if (RegisteredTextures[i] != null && RegisteredTextures[i].AvailableToUnload && (CPreciseTimer.GetClockTicks() - RegisteredTextures[i].LastAccess) > 20000)
 					{
-						UnloadTexture(ref RegisteredTextures[i]);
+						Texture t = RegisteredTextures[i];
+						UnloadTexture(ref t);
+						RegisteredTextures[i] = t;
 					}
 				}
 			}
@@ -614,7 +422,7 @@ namespace LibRenderNext.Textures
 		/// <returns>The number of registered textures.</returns>
 		public int GetNumberOfRegisteredTextures()
 		{
-			return RegisteredTexturesCount;
+			return RegisteredTextures.Count;
 		}
 
 		/// <summary>Gets the number of loaded textures.</summary>
@@ -623,7 +431,7 @@ namespace LibRenderNext.Textures
 		{
 			int count = 0;
 
-			for (int i = 0; i < RegisteredTexturesCount; i++)
+			for (int i = 0; i < RegisteredTextures.Count; i++)
 			{
 				if (RegisteredTextures[i] == null || RegisteredTextures[i].MultipleFrames)
 				{
@@ -641,7 +449,7 @@ namespace LibRenderNext.Textures
 		public int GetNumberOfLoadedAnimatedTextures()
 		{
 			int count = 0;
-			for (int i = 0; i < RegisteredTexturesCount; i++)
+			for (int i = 0; i < RegisteredTextures.Count; i++)
 			{
 				if (RegisteredTextures[i] == null || RegisteredTextures[i].MultipleFrames == false)
 				{
@@ -661,21 +469,7 @@ namespace LibRenderNext.Textures
 		/// <returns>The index of the next free texture</returns>
 		public int GetNextFreeTexture()
 		{
-			if (RegisteredTextures.Length == RegisteredTexturesCount)
-			{
-				Array.Resize(ref RegisteredTextures, RegisteredTextures.Length << 1);
-			}
-			else if (RegisteredTexturesCount > RegisteredTextures.Length)
-			{
-				/* BUG:
-				 * The registered textures count very occasional becomes greater than the array length (Texture loader crashes possibly?)
-				 * This then crashes when we attempt to itinerate the array, so reset it...
-				 */
-				RegisteredTexturesCount = RegisteredTextures.Length;
-				Array.Resize(ref RegisteredTextures, RegisteredTextures.Length << 1);
-			}
-
-			return RegisteredTexturesCount;
+			return RegisteredTextures.Count;
 		}
 
 

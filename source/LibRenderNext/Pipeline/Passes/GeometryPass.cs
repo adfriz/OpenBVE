@@ -46,16 +46,42 @@ namespace LibRenderNext.Pipeline.Passes
 				GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
 			}
 
+			List<FaceState> sortedOpaque;
 			List<FaceState> alphaFaces;
 			lock (renderer.VisibleObjects.LockObject)
 			{
-				// Render Opaque Faces
-				int opaqueCount = renderer.VisibleObjects.OpaqueFaces.Count;
-				for (int i = 0; i < opaqueCount; i++)
-				{
-					renderer.VisibleObjects.OpaqueFaces[i].Draw();
-				}
+				sortedOpaque = new List<FaceState>(renderer.VisibleObjects.OpaqueFaces);
 				alphaFaces = renderer.VisibleObjects.GetSortedPolygons(false);
+			}
+
+			// Sort by Texture Name first, then by VAO handle to group them together
+			sortedOpaque.Sort((a, b) =>
+			{
+				var aMesh = a.Object.Prototype.Mesh;
+				var bMesh = b.Object.Prototype.Mesh;
+				
+				var aMat = aMesh.Materials[a.Face.Material];
+				var bMat = bMesh.Materials[b.Face.Material];
+
+				int aTexId = aMat.DaytimeTexture?.OpenGlTextures[(int)aMat.WrapMode]?.Name ?? 0;
+				int bTexId = bMat.DaytimeTexture?.OpenGlTextures[(int)bMat.WrapMode]?.Name ?? 0;
+
+				if (aTexId != bTexId)
+				{
+					return aTexId.CompareTo(bTexId);
+				}
+
+				int aVao = (aMesh.VAO as VertexArrayObject)?.handle ?? 0;
+				int bVao = (bMesh.VAO as VertexArrayObject)?.handle ?? 0;
+
+				return aVao.CompareTo(bVao);
+			});
+
+			// Render Opaque Faces
+			int opaqueCount = sortedOpaque.Count;
+			for (int i = 0; i < opaqueCount; i++)
+			{
+				sortedOpaque[i].Draw();
 			}
 
 			// Render Alpha Faces

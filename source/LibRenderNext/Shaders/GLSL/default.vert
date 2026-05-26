@@ -52,6 +52,7 @@ layout(location = 4) in ivec3 iMatrixChain;
 
 uniform mat4 uCurrentProjectionMatrix;
 uniform mat4 uCurrentModelViewMatrix;
+uniform mat3 uNormalMatrix;
 uniform mat4 uCurrentTextureMatrix;
 uniform mat4 uCurrentViewMatrix;
 uniform bool uShadowEnabled;
@@ -209,7 +210,7 @@ void main()
 	gl_Position = uCurrentProjectionMatrix * oViewPos;
 	
 	// Pass normal to fragment shader (un-negated Z to match lighting expected convention)
-	vNormal = normalize(mat3(transpose(inverse(uCurrentModelViewMatrix))) * vec3(iNormal.x, iNormal.y, -iNormal.z));
+	vNormal = normalize(uNormalMatrix * vec3(iNormal.x, iNormal.y, -iNormal.z));
 
 	if (uShadowEnabled)
 	{

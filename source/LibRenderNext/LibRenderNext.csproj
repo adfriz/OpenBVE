@@ -132,6 +132,7 @@
     <Compile Include="Pipeline\Passes\GeometryPass.cs" />
     <Compile Include="Pipeline\Passes\OverlayPass.cs" />
     <Compile Include="Textures\TextureManager.cs" />
+    <Compile Include="Textures\TextureUploadQueue.cs" />
     <Compile Include="Text\Fonts.BlockedFonts.cs" />
     <Compile Include="Text\Fonts.cs" />
     <Compile Include="Text\OpenGlFont.cs" />
