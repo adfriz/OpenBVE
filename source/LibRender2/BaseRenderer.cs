@@ -1362,6 +1362,8 @@ namespace LibRender2
 			{
 				shader.SetCurrentModelViewMatrix(lastModelViewMatrix);
 				shader.SetCurrentTextureMatrix(state.TextureTranslation);
+				// Flag train meshes so the fragment shader can write a special alpha tag for motion blur masking
+				shader.SetIsTrain(state.IsPartOfTrain);
 				sendToShader = false;
 			}
 			

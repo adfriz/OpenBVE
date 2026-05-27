@@ -81,6 +81,7 @@ uniform float uFogEnd;
 uniform vec3  uFogColor;
 uniform float uFogDensity;
 uniform bool uFogIsLinear;
+uniform bool uIsTrain;
 out vec4 fragColor;
 
 /// Samples a single cascade using hardware PCF.
@@ -278,5 +279,6 @@ void main(void)
 		}
 	}
 
-	fragColor = vec4(mix(uFogColor, finalColor.rgb, fogFactor), finalColor.a);
+	// Flag train pixels by writing 0.0 to the alpha channel, allowing the motion blur post-process shader to mask them
+	fragColor = vec4(mix(uFogColor, finalColor.rgb, fogFactor), uIsTrain ? 0.0 : finalColor.a);
 }

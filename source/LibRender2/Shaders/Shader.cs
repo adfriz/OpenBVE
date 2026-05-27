@@ -67,6 +67,7 @@ namespace LibRender2.Shaders
 		private readonly int uLightSpaceMatrix3Location;
 		private readonly int uModelMatrixLocation;
 		private readonly int uCurrentViewMatrixLocation;
+		private readonly int uIsTrainLocation;
 
 
 		/// <summary>
@@ -103,6 +104,7 @@ namespace LibRender2.Shaders
 			uLightSpaceMatrix3Location = GL.GetUniformLocation(Handle, "uLightSpaceMatrix3");
 			uModelMatrixLocation = GL.GetUniformLocation(Handle, "uModelMatrix");
 			uCurrentViewMatrixLocation = GL.GetUniformLocation(Handle, "uCurrentViewMatrix");
+			uIsTrainLocation = GL.GetUniformLocation(Handle, "uIsTrain");
 
 			VertexLayout = GetVertexLayout();
 			UniformLayout = GetUniformLayout();
@@ -524,6 +526,15 @@ namespace LibRender2.Shaders
 		{
 			Matrix4 matrix = ConvertToMatrix4(modelMatrix);
 			GL.ProgramUniformMatrix4(Handle, uModelMatrixLocation, false, ref matrix);
+		}
+
+		/// <summary>Sets whether the currently rendered object is part of the train carriage/cab</summary>
+		public void SetIsTrain(bool isTrain)
+		{
+			if (uIsTrainLocation != -1)
+			{
+				GL.ProgramUniform1(Handle, uIsTrainLocation, isTrain ? 1 : 0);
+			}
 		}
 
 		private static float[] Matrix4DToFloatArray(OpenBveApi.Math.Matrix4D m)

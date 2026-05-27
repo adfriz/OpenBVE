@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using OpenBveApi.Math;
 
 namespace OpenBveApi.Objects
@@ -24,6 +24,8 @@ namespace OpenBveApi.Objects
 		public int MatrixBufferIndex;
 		/// <summary>Whether shadow casting is disabled for this object</summary>
 		public bool DisableShadowCasting;
+		/// <summary>Whether this object is part of a train</summary>
+		public bool IsPartOfTrain;
 		/// <summary>The translation matrix to be applied</summary>
 		public Matrix4D Translation
 		{

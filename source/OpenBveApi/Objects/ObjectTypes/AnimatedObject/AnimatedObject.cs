@@ -128,7 +128,8 @@ namespace OpenBveApi.Objects
 			currentHost = host;
 			States = new [] { new ObjectState() };
 			States[0].Prototype = staticObject;
-			internalObject = new ObjectState(staticObject);
+			// Copy the train-flag to the object state so the renderer shader can query it for motion blur masking
+			internalObject = new ObjectState(staticObject) { IsPartOfTrain = this.IsPartOfTrain };
 			CurrentState = 0;
 		}
 
@@ -223,6 +224,8 @@ namespace OpenBveApi.Objects
 			if (t >= 0)
 			{
 				internalObject.Prototype = States[t].Prototype;
+				// Copy the train-flag to the object state so the renderer shader can query it for motion blur masking
+				internalObject.IsPartOfTrain = IsPartOfTrain;
 			}
 			
 			CurrentState = StateIndex;
@@ -675,6 +678,8 @@ namespace OpenBveApi.Objects
 
 			// update prototype
 			internalObject.Prototype = States[CurrentState].Prototype;
+			// Copy the train-flag to the object state so the renderer shader can query it for motion blur masking
+			internalObject.IsPartOfTrain = IsPartOfTrain;
 
 			// update VAO for led if required
 			UpdateVAO = led;
