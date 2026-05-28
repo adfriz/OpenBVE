@@ -13,7 +13,7 @@ namespace OpenBve.Graphics.Renderers
 {
 	internal class Events
 	{
-		private readonly BaseRenderer renderer;
+		private readonly INextRenderer renderer;
 
 		private Texture BrightnessChangeTexture;
 		private Texture BackgroundChangeTexture;
@@ -34,7 +34,7 @@ namespace OpenBve.Graphics.Renderers
 
 		internal double LastTrackPosition;
 
-		internal Events(BaseRenderer renderer)
+		internal Events(INextRenderer renderer)
 		{
 			this.renderer = renderer;
 			Init();
@@ -43,21 +43,21 @@ namespace OpenBve.Graphics.Renderers
 		private void Init()
 		{
 			string Folder = Path.CombineDirectory(Program.FileSystem.GetDataFolder(), "RouteViewer");
-			renderer.TextureManager.RegisterTexture(Path.CombineFile(Folder, "background.png"), out BackgroundChangeTexture);
-			renderer.TextureManager.RegisterTexture(Path.CombineFile(Folder, "brightness.png"), out BrightnessChangeTexture);
-			renderer.TextureManager.RegisterTexture(Path.CombineFile(Folder, "transponder.png"), out TransponderTexture);
-			renderer.TextureManager.RegisterTexture(Path.CombineFile(Folder, "section.png"), out SectionTexture);
-			renderer.TextureManager.RegisterTexture(Path.CombineFile(Folder, "limit.png"), out LimitTexture);
-			renderer.TextureManager.RegisterTexture(Path.CombineFile(Folder, "station_start.png"), out StationStartTexture);
-			renderer.TextureManager.RegisterTexture(Path.CombineFile(Folder, "station_end.png"), out StationEndTexture);
-			renderer.TextureManager.RegisterTexture(Path.CombineFile(Folder, "stop.png"), out StopTexture);
-			renderer.TextureManager.RegisterTexture(Path.CombineFile(Folder, "buffer.png"), out BufferTexture);
-			renderer.TextureManager.RegisterTexture(Path.CombineFile(Folder, "sound.png"), out SoundTexture);
-			renderer.TextureManager.RegisterTexture(Path.CombineFile(Folder, "switchsound.png"), out PointSoundTexture);
-			renderer.TextureManager.RegisterTexture(Path.CombineFile(Folder, "runsound.png"), out RunSoundTexture);
-			renderer.TextureManager.RegisterTexture(Path.CombineFile(Folder, "lighting.png"), out LightingEventTexture);
-			renderer.TextureManager.RegisterTexture(Path.CombineFile(Folder, "weather.png"), out WeatherEventTexture);
-			renderer.TextureManager.RegisterTexture(Path.CombineFile(Folder, "switchevent.png"), out SwitchEventTexture);
+			renderer.RegisterTexture(Path.CombineFile(Folder, "background.png"), out BackgroundChangeTexture);
+			renderer.RegisterTexture(Path.CombineFile(Folder, "brightness.png"), out BrightnessChangeTexture);
+			renderer.RegisterTexture(Path.CombineFile(Folder, "transponder.png"), out TransponderTexture);
+			renderer.RegisterTexture(Path.CombineFile(Folder, "section.png"), out SectionTexture);
+			renderer.RegisterTexture(Path.CombineFile(Folder, "limit.png"), out LimitTexture);
+			renderer.RegisterTexture(Path.CombineFile(Folder, "station_start.png"), out StationStartTexture);
+			renderer.RegisterTexture(Path.CombineFile(Folder, "station_end.png"), out StationEndTexture);
+			renderer.RegisterTexture(Path.CombineFile(Folder, "stop.png"), out StopTexture);
+			renderer.RegisterTexture(Path.CombineFile(Folder, "buffer.png"), out BufferTexture);
+			renderer.RegisterTexture(Path.CombineFile(Folder, "sound.png"), out SoundTexture);
+			renderer.RegisterTexture(Path.CombineFile(Folder, "switchsound.png"), out PointSoundTexture);
+			renderer.RegisterTexture(Path.CombineFile(Folder, "runsound.png"), out RunSoundTexture);
+			renderer.RegisterTexture(Path.CombineFile(Folder, "lighting.png"), out LightingEventTexture);
+			renderer.RegisterTexture(Path.CombineFile(Folder, "weather.png"), out WeatherEventTexture);
+			renderer.RegisterTexture(Path.CombineFile(Folder, "switchevent.png"), out SwitchEventTexture);
 		}
 
 		/// <summary>Finds visible events on a rail index</summary>
@@ -73,15 +73,15 @@ namespace OpenBve.Graphics.Renderers
 			GL.Enable(EnableCap.DepthTest);
 			GL.DepthMask(true);
 
-			double da = -renderer.Camera.BackwardViewingDistance - renderer.Camera.ExtraViewingDistance;
-			double db = renderer.Camera.ForwardViewingDistance + renderer.Camera.ExtraViewingDistance;
+			double da = -renderer.CameraBackwardViewingDistance - renderer.CameraExtraViewingDistance;
+			double db = renderer.CameraForwardViewingDistance + renderer.CameraExtraViewingDistance;
 			bool[] sta = new bool[Program.CurrentRoute.Stations.Length];
 
 			// events
 			for (int i = 0; i < Program.CurrentRoute.Tracks[railIndex].Elements.Length; i++)
 			{
 				double p = Program.CurrentRoute.Tracks[railIndex].Elements[i].StartingTrackPosition;
-				double d = p - renderer.CameraTrackFollower.TrackPosition;
+				double d = p - renderer.CameraTrackFollowerTrackPosition;
 
 				if (d >= da & d <= db)
 				{
@@ -222,7 +222,7 @@ namespace OpenBve.Graphics.Renderers
 						f.WorldPosition.Y += dy * f.WorldUp.Y;
 						f.WorldPosition.Z += dy * f.WorldUp.Z;
 
-						renderer.Cube.Draw(f.WorldPosition, f.WorldDirection, f.WorldUp, f.WorldSide, s, renderer.Camera.AbsolutePosition, StopTexture);
+						renderer.DrawCube(f.WorldPosition, f.WorldDirection, f.WorldUp, f.WorldSide, s, renderer.CameraAbsolutePosition, StopTexture);
 					}
 				}
 			}
@@ -230,7 +230,7 @@ namespace OpenBve.Graphics.Renderers
 			// buffers
 			foreach (BufferStop stop in Program.CurrentRoute.BufferTrackPositions)
 			{
-				double d = stop.TrackPosition - Program.Renderer.CameraTrackFollower.TrackPosition;
+				double d = stop.TrackPosition - renderer.CameraTrackFollowerTrackPosition;
 
 				if (d >= da & d <= db)
 				{
@@ -247,7 +247,7 @@ namespace OpenBve.Graphics.Renderers
 					f.WorldPosition.Y += dy * f.WorldUp.Y;
 					f.WorldPosition.Z += dy * f.WorldUp.Z;
 
-					renderer.Cube.Draw(f.WorldPosition, f.WorldDirection, f.WorldUp, f.WorldSide, s, renderer.Camera.AbsolutePosition, BufferTexture);
+					renderer.DrawCube(f.WorldPosition, f.WorldDirection, f.WorldUp, f.WorldSide, s, renderer.CameraAbsolutePosition, BufferTexture);
 				}
 			}
 		}

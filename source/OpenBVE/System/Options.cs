@@ -300,6 +300,7 @@ namespace OpenBve
 				Builder.AppendLine("loadInAdvance = " + (LoadInAdvance ? "true" : "false"));
 				Builder.AppendLine("unloadtextures = " + (UnloadUnusedTextures ? "true" : "false"));
 				Builder.AppendLine("isUseNewRenderer = " + (IsUseNewRenderer ? "true" : "false"));
+				Builder.AppendLine("renderertype = " + (int)SelectedRenderer);
 				Builder.AppendLine("forwardsCompatibleContext = " + (ForceForwardsCompatibleContext ? "true" : "false"));
 				Builder.AppendLine("uiscalefactor = " + UserInterfaceScaleFactor);
 				Builder.AppendLine("cameraInteriorTransition = " + (CameraInteriorTransition ? "true" : "false"));
@@ -485,6 +486,17 @@ namespace OpenBve
 							block.GetValue(OptionsKey.LoadInAdvance, out Interface.CurrentOptions.LoadInAdvance);
 							block.GetValue(OptionsKey.UnloadTextures, out CurrentOptions.UnloadUnusedTextures);
 							block.GetValue(OptionsKey.IsUseNewRenderer, out Interface.CurrentOptions.IsUseNewRenderer);
+							{
+								int rendererIdx = 1;
+								if (block.TryGetValue(OptionsKey.RendererType, ref rendererIdx))
+								{
+									CurrentOptions.SelectedRenderer = (RendererType)rendererIdx;
+								}
+								else
+								{
+									CurrentOptions.SelectedRenderer = CurrentOptions.IsUseNewRenderer ? RendererType.NewRenderer : RendererType.Legacy;
+								}
+							}
 							block.GetValue(OptionsKey.ForwardsCompatibleContext, out CurrentOptions.ForceForwardsCompatibleContext);
 							block.TryGetValue(OptionsKey.ViewingDistance, ref Interface.CurrentOptions.ViewingDistance, NumberRange.Positive);
 							block.TryGetValue(OptionsKey.QuadLeafSize, ref Interface.CurrentOptions.QuadTreeLeafSize, NumberRange.Positive);

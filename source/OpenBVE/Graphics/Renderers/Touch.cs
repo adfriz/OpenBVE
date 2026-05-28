@@ -23,7 +23,7 @@ namespace OpenBve.Graphics.Renderers
 			internal double MaxDepth;
 		}
 
-		private readonly NewRenderer renderer;
+		private readonly INextRenderer renderer;
 		private readonly List<ObjectState> touchableObject;
 		private readonly FrameBufferObject fbo;
 		
@@ -32,7 +32,7 @@ namespace OpenBve.Graphics.Renderers
 		/// <summary>The object picked on the last touch down event</summary>
 		private ObjectState previouslyPickedObject;
 
-		internal Touch(NewRenderer renderer)
+		internal Touch(INextRenderer renderer)
 		{
 			this.renderer = renderer;
 			touchableObject = new List<ObjectState>();
@@ -44,7 +44,7 @@ namespace OpenBve.Graphics.Renderers
 			}
 			fbo = new FrameBufferObject();
 			fbo.Bind();
-			fbo.SetTextureBuffer(FrameBufferObject.TargetBuffer.Color, PixelInternalFormat.R32f, PixelFormat.Red, PixelType.Float, renderer.Screen.Width, renderer.Screen.Height);
+			fbo.SetTextureBuffer(FrameBufferObject.TargetBuffer.Color, PixelInternalFormat.R32f, PixelFormat.Red, PixelType.Float, renderer.ScreenWidth, renderer.ScreenHeight);
 			fbo.DrawBuffers(new[] { DrawBuffersEnum.ColorAttachment0 });
 			fbo.UnBind();
 		}
@@ -56,7 +56,7 @@ namespace OpenBve.Graphics.Renderers
 				return;
 			}
 			fbo.Bind();
-			fbo.SetTextureBuffer(FrameBufferObject.TargetBuffer.Color, PixelInternalFormat.R32f, PixelFormat.Red, PixelType.Float, renderer.Screen.Width, renderer.Screen.Height);
+			fbo.SetTextureBuffer(FrameBufferObject.TargetBuffer.Color, PixelInternalFormat.R32f, PixelFormat.Red, PixelType.Float, renderer.ScreenWidth, renderer.ScreenHeight);
 			fbo.DrawBuffers(new[] { DrawBuffersEnum.ColorAttachment0 });
 			fbo.UnBind();
 		}
@@ -67,7 +67,7 @@ namespace OpenBve.Graphics.Renderers
 
 			if (renderer.AvailableNewRenderer && state.Prototype.Mesh.VAO == null)
 			{
-				VAOExtensions.CreateVAO(state.Prototype.Mesh, state.Prototype.Dynamic, renderer.pickingShader.VertexLayout, renderer);
+				renderer.CreateVAO(state.Prototype.Mesh, state.Prototype.Dynamic);
 			}
 		}
 
@@ -81,7 +81,10 @@ namespace OpenBve.Graphics.Renderers
 			}
 
 			CarBase Car = TrainManager.PlayerTrain.Cars[TrainManager.PlayerTrain.DriverCar];
-			if (renderer.Camera.CurrentMode > CameraViewMode.InteriorLookAhead || !Car.CarSections.TryGetValue(CarSectionType.Interior, out CarSection interiorSection))
+			CarSection interiorSection;
+			bool hasInterior = Car.CarSections.TryGetValue(CarSectionType.Interior, out interiorSection);
+			CameraViewMode cameraMode = renderer.CameraCurrentMode;
+			if (cameraMode > CameraViewMode.InteriorLookAhead || !hasInterior)
 			{
 				return;
 			}
@@ -123,21 +126,20 @@ namespace OpenBve.Graphics.Renderers
 				fbo.Bind();
 				GL.ClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 				GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-				renderer.pickingShader.Activate();
-				renderer.pickingShader.SetCurrentProjectionMatrix(renderer.CurrentProjectionMatrix);
+				renderer.ActivatePickingShader(0);
 
 				for (int i = 0; i < touchableObject.Count; i++)
 				{
-					renderer.pickingShader.SetObjectIndex(i + 1);
+					renderer.ActivatePickingShader(i + 1);
 
 					foreach (MeshFace face in touchableObject[i].Prototype.Mesh.Faces)
 					{
-						renderer.RenderFace(renderer.pickingShader, touchableObject[i], face);
+						renderer.RenderFace(touchableObject[i], face, true);
 					}
 				}
 
 				//Must deactivate and unbind here
-				renderer.pickingShader.Deactivate();
+				renderer.DeactivatePickingShader();
 				fbo.UnBind();
 			}
 
@@ -149,19 +151,18 @@ namespace OpenBve.Graphics.Renderers
 
 				if (renderer.AvailableNewRenderer)
 				{
-					renderer.DefaultShader.Activate();
-					renderer.ResetShader(renderer.DefaultShader);
-					renderer.DefaultShader.SetCurrentProjectionMatrix(renderer.CurrentProjectionMatrix);
+					renderer.ActivateDefaultShader();
+					renderer.ResetDefaultShader();
 
 					foreach (ObjectState objectState in touchableObject)
 					{
 						foreach (MeshFace face in objectState.Prototype.Mesh.Faces)
 						{
-							renderer.RenderFace(renderer.DefaultShader, objectState, face, true);
+							renderer.RenderFace(objectState, face, true);
 						}
 					}
 
-					renderer.DefaultShader.Deactivate();
+					renderer.DeactivateDefaultShader();
 				}
 				else
 				{
@@ -183,7 +184,7 @@ namespace OpenBve.Graphics.Renderers
 
 			fbo.Bind();
 			GL.ReadBuffer(ReadBufferMode.ColorAttachment0);
-			GL.ReadPixels((int)topLeft.X, renderer.Screen.Height - (int)topLeft.Y, deltaX, deltaY, PixelFormat.Red, PixelType.Float, objectIndices);
+			GL.ReadPixels((int)topLeft.X, renderer.ScreenHeight - (int)topLeft.Y, deltaX, deltaY, PixelFormat.Red, PixelType.Float, objectIndices);
 			GL.ReadBuffer(ReadBufferMode.None);
 			fbo.UnBind();
 
@@ -210,8 +211,8 @@ namespace OpenBve.Graphics.Renderers
 				return Matrix4D.Identity;
 			}
 
-			Matrix4D translateMatrix = Matrix4D.CreateTranslation((renderer.Screen.Width - 2 * point.X) / delta.X, (2 * point.Y - renderer.Screen.Height) / delta.Y, 0);
-			Matrix4D scaleMatrix = Matrix4D.Scale(renderer.Screen.Width / delta.X, renderer.Screen.Height / delta.Y, 1.0);
+			Matrix4D translateMatrix = Matrix4D.CreateTranslation((renderer.ScreenWidth - 2 * point.X) / delta.X, (2 * point.Y - renderer.ScreenHeight) / delta.Y, 0);
+			Matrix4D scaleMatrix = Matrix4D.Scale(renderer.ScreenWidth / delta.X, renderer.ScreenHeight / delta.Y, 1.0);
 
 			return renderer.CurrentProjectionMatrix * scaleMatrix * translateMatrix;
 		}

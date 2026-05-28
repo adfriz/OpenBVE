@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
 using LibRender2;
@@ -22,6 +22,12 @@ namespace OpenBve
             Program.Renderer.Screen.Width = Interface.CurrentOptions.FullscreenMode ? Interface.CurrentOptions.FullscreenWidth : Interface.CurrentOptions.WindowWidth;
             Program.Renderer.Screen.Height = Interface.CurrentOptions.FullscreenMode ? Interface.CurrentOptions.FullscreenHeight : Interface.CurrentOptions.WindowHeight;
             Program.Renderer.Screen.Fullscreen = Interface.CurrentOptions.FullscreenMode;
+			if (Program.RendererNext != null)
+			{
+				Program.RendererNext.Screen.Width = Program.Renderer.Screen.Width;
+				Program.RendererNext.Screen.Height = Program.Renderer.Screen.Height;
+				Program.RendererNext.Screen.Fullscreen = Program.Renderer.Screen.Fullscreen;
+			}
 			//Set a new graphics mode, using 8 bits for R,G,B,A & a 8 bit stencil buffer (Currently unused)
 			Program.Renderer.GraphicsMode = new GraphicsMode(new ColorFormat(8, 8, 8, 8), 24, 8, Interface.CurrentOptions.AntiAliasingLevel);
 			if (Interface.CurrentOptions.FullscreenMode)
@@ -143,9 +149,18 @@ namespace OpenBve
         {
 	        Program.Renderer.Screen.Width = newWidth;
 	        Program.Renderer.Screen.Height = newHeight;
+			if (Program.RendererNext != null)
+			{
+				Program.RendererNext.Screen.Width = newWidth;
+				Program.RendererNext.Screen.Height = newHeight;
+			}
             if (Loading.Complete)
             {
 	            Program.Renderer.UpdateViewport(ViewportChangeMode.NoChange);
+				if (Program.RendererNext != null)
+				{
+					Program.RendererNext.UpdateViewport(LibRenderNext.Viewports.ViewportChangeMode.NoChange);
+				}
                 World.InitializeCameraRestriction();
                 if (Program.Renderer.OptionBackFaceCulling)
                 {
@@ -213,6 +228,14 @@ namespace OpenBve
 
                 Program.Renderer.Screen.Width = Interface.CurrentOptions.WindowWidth;
                 Program.Renderer.Screen.Height = Interface.CurrentOptions.WindowHeight;
+			}
+			if (Program.RendererNext != null)
+			{
+				Program.RendererNext.Screen.Width = Program.Renderer.Screen.Width;
+				Program.RendererNext.Screen.Height = Program.Renderer.Screen.Height;
+				Program.RendererNext.Screen.Fullscreen = Program.Renderer.Screen.Fullscreen;
+				Program.RendererNext.Lighting.Initialize();
+				Program.RendererNext.UpdateViewport(LibRenderNext.Viewports.ViewportChangeMode.NoChange);
 			}
 			Program.Renderer.Lighting.Initialize();
 			Program.Renderer.UpdateViewport(ViewportChangeMode.NoChange);

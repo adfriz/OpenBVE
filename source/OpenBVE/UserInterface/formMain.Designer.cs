@@ -227,7 +227,7 @@ namespace OpenBve {
             this.checkBoxUnloadTextures = new System.Windows.Forms.CheckBox();
             this.labelTimeAcceleration = new System.Windows.Forms.Label();
             this.updownTimeAccelerationFactor = new System.Windows.Forms.NumericUpDown();
-            this.checkBoxIsUseNewRenderer = new System.Windows.Forms.CheckBox();
+            this.comboboxRendererType = new System.Windows.Forms.ComboBox();
             this.checkBoxLoadInAdvance = new System.Windows.Forms.CheckBox();
             this.groupBoxPackageOptions = new System.Windows.Forms.GroupBox();
             this.buttonMSTSTrainsetDirectory = new System.Windows.Forms.Button();
@@ -3156,7 +3156,7 @@ namespace OpenBve {
             this.groupBoxAdvancedOptions.Controls.Add(this.checkBoxUnloadTextures);
             this.groupBoxAdvancedOptions.Controls.Add(this.labelTimeAcceleration);
             this.groupBoxAdvancedOptions.Controls.Add(this.updownTimeAccelerationFactor);
-            this.groupBoxAdvancedOptions.Controls.Add(this.checkBoxIsUseNewRenderer);
+            this.groupBoxAdvancedOptions.Controls.Add(this.comboboxRendererType);
             this.groupBoxAdvancedOptions.Controls.Add(this.checkBoxLoadInAdvance);
             this.groupBoxAdvancedOptions.ForeColor = System.Drawing.Color.Black;
             this.groupBoxAdvancedOptions.Location = new System.Drawing.Point(0, 323);
@@ -3257,15 +3257,19 @@ namespace OpenBve {
             this.updownTimeAccelerationFactor.TabIndex = 16;
             this.updownTimeAccelerationFactor.ValueChanged += new System.EventHandler(this.updownTimeAccelerationFactor_ValueChanged);
             // 
-            // checkBoxIsUseNewRenderer
+            // comboboxRendererType
             // 
-            this.checkBoxIsUseNewRenderer.AutoSize = true;
-            this.checkBoxIsUseNewRenderer.Location = new System.Drawing.Point(8, 43);
-            this.checkBoxIsUseNewRenderer.Name = "checkBoxIsUseNewRenderer";
-            this.checkBoxIsUseNewRenderer.Size = new System.Drawing.Size(159, 17);
-            this.checkBoxIsUseNewRenderer.TabIndex = 2;
-            this.checkBoxIsUseNewRenderer.Text = "Disable OpenGL display lists";
-            this.checkBoxIsUseNewRenderer.UseVisualStyleBackColor = true;
+            this.comboboxRendererType.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboboxRendererType.FormattingEnabled = true;
+            this.comboboxRendererType.Items.AddRange(new object[] {
+            "Legacy (OpenGL 1.2)",
+            "Standard (OpenGL 4.1)",
+            "Next (OpenGL 4.3+)"});
+            this.comboboxRendererType.Location = new System.Drawing.Point(8, 43);
+            this.comboboxRendererType.Name = "comboboxRendererType";
+            this.comboboxRendererType.Size = new System.Drawing.Size(180, 21);
+            this.comboboxRendererType.TabIndex = 2;
+            this.comboboxRendererType.SelectedIndexChanged += new System.EventHandler(this.comboboxRendererType_SelectedIndexChanged);
             // 
             // checkBoxLoadInAdvance
             // 
@@ -6983,7 +6987,7 @@ namespace OpenBve {
 		private System.Windows.Forms.Label labelCursor;
         private System.Windows.Forms.ComboBox comboboxCursor;
 		private System.Windows.Forms.CheckBox checkBoxPanel2Extended;
-		private System.Windows.Forms.CheckBox checkBoxIsUseNewRenderer;
+		private System.Windows.Forms.ComboBox comboboxRendererType;
 		private System.Windows.Forms.CheckBox checkBoxLoadInAdvance;
 		private System.Windows.Forms.GroupBox groupBoxRailDriver;
 		private System.Windows.Forms.Label labelRailDriverCalibration;

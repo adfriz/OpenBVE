@@ -53,6 +53,8 @@ namespace OpenBve {
 
 		internal static NewRenderer Renderer;
 
+		internal static NextRenderer RendererNext;
+
 		internal static Sounds Sounds;
 
 		internal static CurrentRoute CurrentRoute;
@@ -133,6 +135,10 @@ namespace OpenBve {
 			}
 
 			Renderer = new NewRenderer(CurrentHost, Interface.CurrentOptions, FileSystem);
+			if (Interface.CurrentOptions.SelectedRenderer == RendererType.LibRenderNext)
+			{
+				RendererNext = new NextRenderer(CurrentHost, Interface.CurrentOptions, FileSystem);
+			}
 			Sounds = new Sounds(CurrentHost);
 			CurrentRoute = new CurrentRoute(CurrentHost, Renderer);
 			
@@ -393,6 +399,7 @@ namespace OpenBve {
 			Program.CurrentHost.UnloadPlugins(out _);
 			Sounds.DeInitialize();
 			Renderer.DeInitialize();
+			RendererNext?.DeInitialize();
 		}
 
 		internal static void ShowMessageBox(string messageText, string captionText)

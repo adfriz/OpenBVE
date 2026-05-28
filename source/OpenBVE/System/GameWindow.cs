@@ -128,7 +128,7 @@ namespace OpenBve
 				{
 					Thread.Sleep(10);
 				}
-				Program.Renderer.RenderScene(TimeElapsed, RealTimeElapsed);
+				RenderScene(TimeElapsed, RealTimeElapsed);
 				SwapBuffers();
 				if (MainLoop.Quit != QuitMode.ContinueGame)
 				{
@@ -265,7 +265,7 @@ namespace OpenBve
 			{
 				Program.Renderer.Lighting.UpdateLighting(Program.CurrentRoute.SecondsSinceMidnight, Program.CurrentRoute.LightDefinitions);
 			}
-			Program.Renderer.RenderScene(TimeElapsed, RealTimeElapsed);
+			RenderScene(TimeElapsed, RealTimeElapsed);
 			Program.Sounds.Update(TimeElapsed, Interface.CurrentOptions.SoundModel);
 			Program.Renderer.GameWindow.SwapBuffers();
 			Game.UpdateBlackBox();
@@ -460,11 +460,24 @@ namespace OpenBve
 			//Initialise the loader thread queues
 			Program.Renderer.Initialize();
 			Program.Renderer.DetermineMaxAFLevel();
+			if (Program.RendererNext != null)
+			{
+				Program.RendererNext.Initialize();
+				Program.RendererNext.DetermineMaxAFLevel();
+			}
 			Interface.CurrentOptions.Save(OpenBveApi.Path.CombineFile(Program.FileSystem.SettingsFolder, "1.5.0/options.cfg"));
 			HUD.LoadHUD();
 			Program.Renderer.Loading.InitLoading(Program.FileSystem.GetDataFolder("In-game"), typeof(NewRenderer).Assembly.GetName().Version.ToString());
 			Program.Renderer.UpdateViewport(ViewportChangeMode.NoChange);
+			if (Program.RendererNext != null)
+			{
+				Program.RendererNext.UpdateViewport(LibRenderNext.Viewports.ViewportChangeMode.NoChange);
+			}
 			Program.Renderer.MotionBlur.Initialize(Interface.CurrentOptions.MotionBlur);
+			if (Program.RendererNext != null)
+			{
+				Program.RendererNext.MotionBlur.Initialize((LibRenderNext.MotionBlurs.MotionBlurMode)Interface.CurrentOptions.MotionBlur);
+			}
 			if (string.IsNullOrEmpty(MainLoop.currentResult.RouteFile))
 			{
 				Game.Menu.PushMenu(MenuType.GameStart);
@@ -1210,6 +1223,26 @@ namespace OpenBve
 			Program.Renderer.PopMatrix(MatrixMode.Modelview);
 			Program.Renderer.PopMatrix(MatrixMode.Projection);
 			SetupSimulation();
+		}
+
+		private void RenderScene(double timeElapsed, double realTimeElapsed)
+		{
+			if (Interface.CurrentOptions.SelectedRenderer == RendererType.LibRenderNext && Program.RendererNext != null)
+			{
+				Program.RendererNext.CurrentInterface = (LibRenderNext.Screens.InterfaceType)Program.Renderer.CurrentInterface;
+				Program.RendererNext.Camera.CurrentMode = Program.Renderer.Camera.CurrentMode;
+				Program.RendererNext.Camera.AbsolutePosition = Program.Renderer.Camera.AbsolutePosition;
+				Program.RendererNext.Camera.AbsoluteDirection = Program.Renderer.Camera.AbsoluteDirection;
+				Program.RendererNext.Camera.AbsoluteUp = Program.Renderer.Camera.AbsoluteUp;
+				Program.RendererNext.Camera.AbsoluteSide = Program.Renderer.Camera.AbsoluteSide;
+				Program.RendererNext.CameraTrackFollower.TrackPosition = Program.Renderer.CameraTrackFollower.TrackPosition;
+
+				Program.RendererNext.RenderScene(timeElapsed, realTimeElapsed);
+			}
+			else
+			{
+				Program.Renderer.RenderScene(timeElapsed, realTimeElapsed);
+			}
 		}
 	}
 }

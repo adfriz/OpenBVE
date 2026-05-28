@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using DavyKager;
 using LibRender2.Overlays;
 using LibRender2.Screens;
@@ -22,14 +22,14 @@ namespace OpenBve.Graphics.Renderers
 		 * This file contains the base drawing routines for screen overlays
 		 * -------------------------------------------------------------- */
 
-		private readonly NewRenderer renderer;
+		private readonly INextRenderer renderer;
 
 		private bool PauseAnnounced;
 
 		// fade to black
 		private double FadeToBlackDueToChangeEnds;
 
-		internal Overlays(NewRenderer renderer)
+		internal Overlays(INextRenderer renderer)
 		{
 			this.renderer = renderer;
 		}
@@ -46,7 +46,9 @@ namespace OpenBve.Graphics.Renderers
 			renderer.SetBlendFunc();
 			GL.Enable(EnableCap.Blend);
 			renderer.PushMatrix(MatrixMode.Projection);
-			Matrix4D.CreateOrthographicOffCenter(0.0f, renderer.Screen.Width, renderer.Screen.Height, 0.0f, -1.0f, 1.0f, out renderer.CurrentProjectionMatrix);
+			Matrix4D projMatrix;
+			Matrix4D.CreateOrthographicOffCenter(0.0f, renderer.Screen.Width, renderer.Screen.Height, 0.0f, -1.0f, 1.0f, out projMatrix);
+			renderer.CurrentProjectionMatrix = projMatrix;
 			renderer.PushMatrix(MatrixMode.Modelview);
 			renderer.CurrentViewMatrix = Matrix4D.Identity;
 

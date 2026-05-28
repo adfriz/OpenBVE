@@ -25,7 +25,7 @@ using Vector3 = OpenBveApi.Math.Vector3;
 
 namespace OpenBve.Graphics
 {
-	internal class NewRenderer : BaseRenderer
+	internal class NewRenderer : BaseRenderer, INextRenderer
 	{
 		internal bool OptionClock = false;
 		internal GradientDisplayMode OptionGradient = GradientDisplayMode.None;
@@ -524,5 +524,135 @@ namespace OpenBve.Graphics
 		public NewRenderer(HostInterface currentHost, BaseOptions CurrentOptions, FileSystem fileSystem) : base(currentHost, CurrentOptions, fileSystem)
 		{
 		}
+
+		#region INextRenderer Implementation
+		bool INextRenderer.OptionClock => OptionClock;
+		dynamic INextRenderer.OptionGradient => OptionGradient;
+		dynamic INextRenderer.OptionSpeed => OptionSpeed;
+		dynamic INextRenderer.OptionDistanceToNextStation => OptionDistanceToNextStation;
+		bool INextRenderer.OptionFrameRates => OptionFrameRates;
+		bool INextRenderer.OptionBrakeSystems => OptionBrakeSystems;
+		bool INextRenderer.DebugTouchMode => DebugTouchMode;
+		bool INextRenderer.ForceLegacyOpenGL => ForceLegacyOpenGL;
+		bool INextRenderer.AvailableNewRenderer => AvailableNewRenderer;
+		double INextRenderer.FrameRate { get => FrameRate; set => FrameRate = value; }
+		dynamic INextRenderer.CurrentOutputMode => CurrentOutputMode;
+
+		int INextRenderer.ScreenWidth => Screen.Width;
+		int INextRenderer.ScreenHeight => Screen.Height;
+
+		dynamic INextRenderer.CameraCurrentMode => Camera.CurrentMode;
+		double INextRenderer.CameraBackwardViewingDistance => Camera.BackwardViewingDistance;
+		double INextRenderer.CameraForwardViewingDistance => Camera.ForwardViewingDistance;
+		double INextRenderer.CameraExtraViewingDistance => Camera.ExtraViewingDistance;
+		double INextRenderer.CameraTrackFollowerTrackPosition => CameraTrackFollower.TrackPosition;
+		Vector3 INextRenderer.CameraAbsolutePosition => Camera.AbsolutePosition;
+		Vector3 INextRenderer.CameraAbsoluteDirection => Camera.AbsoluteDirection;
+		Vector3 INextRenderer.CameraAbsoluteUp => Camera.AbsoluteUp;
+		Vector3 INextRenderer.CameraAbsoluteSide => Camera.AbsoluteSide;
+		Matrix4D INextRenderer.CameraTranslationMatrix => Camera.TranslationMatrix;
+
+		Matrix4D INextRenderer.CurrentProjectionMatrix { get => CurrentProjectionMatrix; set => CurrentProjectionMatrix = value; }
+		Matrix4D INextRenderer.CurrentViewMatrix { get => CurrentViewMatrix; set => CurrentViewMatrix = value; }
+
+		public void PushMatrix(MatrixMode mode)
+		{
+			GL.MatrixMode(mode);
+			GL.PushMatrix();
+		}
+
+		public void PopMatrix(MatrixMode mode)
+		{
+			GL.MatrixMode(mode);
+			GL.PopMatrix();
+		}
+
+		public void CreateVAO(Mesh mesh, bool dynamic)
+		{
+			if (mesh.VAO == null)
+			{
+				VAOExtensions.CreateVAO(mesh, dynamic, pickingShader != null ? pickingShader.VertexLayout : DefaultShader.VertexLayout, this);
+			}
+		}
+
+		public void RenderFace(ObjectState state, MeshFace face, bool debugTouchMode = false)
+		{
+			RenderFace(debugTouchMode ? pickingShader : DefaultShader, state, face, debugTouchMode);
+		}
+
+		public void RenderFaceImmediateMode(ObjectState state, MeshFace face, bool debugTouchMode = false)
+		{
+			RenderFaceImmediateMode(state, face, debugTouchMode);
+		}
+
+		public void ActivatePickingShader(int objectIndex)
+		{
+			if (pickingShader != null)
+			{
+				pickingShader.Activate();
+				pickingShader.SetCurrentProjectionMatrix(CurrentProjectionMatrix);
+				pickingShader.SetObjectIndex(objectIndex);
+			}
+		}
+
+		public void DeactivatePickingShader()
+		{
+			pickingShader?.Deactivate();
+		}
+
+		public void ActivateDefaultShader()
+		{
+			DefaultShader.Activate();
+			DefaultShader.SetCurrentProjectionMatrix(CurrentProjectionMatrix);
+		}
+
+		public void DeactivateDefaultShader()
+		{
+			DefaultShader.Deactivate();
+		}
+
+		public void ResetDefaultShader()
+		{
+			ResetShader(DefaultShader);
+		}
+
+		public bool LoadTexture(ref Texture texture, OpenGlTextureWrapMode wrapMode)
+		{
+			return TextureManager.LoadTexture(ref texture, wrapMode, CPreciseTimer.GetClockTicks(), Interface.CurrentOptions.Interpolation, Interface.CurrentOptions.AnisotropicFilteringLevel);
+		}
+
+		public void RegisterTexture(string file, out Texture texture)
+		{
+			TextureManager.RegisterTexture(file, out texture);
+		}
+
+		public Dictionary<Texture, HashSet<Vector3>> CubesToDraw => CubesToDraw;
+
+		public void DrawCube(Vector3 position, Vector3 direction, Vector3 up, Vector3 side, double size, Vector3 cameraPosition, Texture texture)
+		{
+			Cube.Draw(position, direction, up, side, size, cameraPosition, texture);
+		}
+
+		public void DrawRectangle(Texture texture, Vector2 position, Vector2 size, Color128 color)
+		{
+			Rectangle.Draw(texture, position, size, color);
+		}
+
+		public void DrawString(object font, string text, Vector2 position, TextAlignment alignment, Color128 color, bool shadow = false)
+		{
+			OpenGlString.Draw((LibRender2.Text.OpenGlFont)font, text, position, alignment, color, shadow);
+		}
+
+		public object FontSmall => Fonts.SmallFont;
+		public object FontNormal => Fonts.NormalFont;
+		public object FontVeryLarge => Fonts.VeryLargeFont;
+
+		dynamic INextRenderer.Camera => Camera;
+		dynamic INextRenderer.Screen => Screen;
+		dynamic INextRenderer.Rectangle => Rectangle;
+		dynamic INextRenderer.OpenGlString => OpenGlString;
+		dynamic INextRenderer.Fonts => Fonts;
+		dynamic INextRenderer.TextureManager => TextureManager;
+		#endregion
 	}
 }

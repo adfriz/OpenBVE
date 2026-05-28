@@ -1,6 +1,7 @@
 using System;
 using System.Windows.Forms;
 using LibRender2.Overlays;
+using OpenBveApi;
 using OpenBveApi.Graphics;
 using OpenBveApi.Hosts;
 using OpenBveApi.Interface;
@@ -195,6 +196,13 @@ namespace OpenBve {
 		{
 			if (Tag != null) return;
 			Cursors.SelectedCursor(comboboxCursor, pictureboxCursor);
+		}
+
+		private void comboboxRendererType_SelectedIndexChanged(object sender, EventArgs e)
+		{
+			if (Tag != null) return;
+			Interface.CurrentOptions.SelectedRenderer = (RendererType)comboboxRendererType.SelectedIndex;
+			Interface.CurrentOptions.IsUseNewRenderer = Interface.CurrentOptions.SelectedRenderer != RendererType.Legacy;
 		}
 	}
 }
