@@ -48,19 +48,44 @@ namespace OpenBve.Graphics
 			Screen.Height = height;
 			GL.Viewport(0, 0, Screen.Width, Screen.Height);
 
-			Screen.AspectRatio = Screen.Width / (double)Screen.Height;
-			Camera.HorizontalViewingAngle = 2.0 * Math.Atan(Math.Tan(0.5 * Camera.VerticalViewingAngle) * Screen.AspectRatio);
+			double aspect = Screen.Width / (double)Screen.Height;
+			if (aspect <= 0 || double.IsNaN(aspect) || double.IsInfinity(aspect))
+			{
+				aspect = 1.0;
+			}
+			Screen.AspectRatio = aspect;
+
+			double fov = Camera.VerticalViewingAngle;
+			if (fov <= 0 || fov >= Math.PI || double.IsNaN(fov))
+			{
+				fov = 45.0 * Math.PI / 180.0;
+			}
+
+			Camera.HorizontalViewingAngle = 2.0 * Math.Atan(Math.Tan(0.5 * fov) * Screen.AspectRatio);
 
 			switch (CurrentViewportMode)
 			{
 				case ViewportMode.Scenery:
 					double cd = Program.CurrentRoute.CurrentBackground is BackgroundObject b ? Math.Max(Program.CurrentRoute.CurrentBackground.BackgroundImageDistance, b.ClipDistance) : Program.CurrentRoute.CurrentBackground.BackgroundImageDistance;
+					if (cd <= 0 || double.IsNaN(cd) || double.IsInfinity(cd))
+					{
+						cd = 1000.0;
+					}
 					double nearClipScenery = Math.Max(0.01, Interface.CurrentOptions.NearClipScenery);
-					CurrentProjectionMatrix = Matrix4D.CreatePerspectiveFieldOfView(Camera.VerticalViewingAngle, Screen.AspectRatio, nearClipScenery, cd);
+					if (nearClipScenery >= cd)
+					{
+						cd = nearClipScenery + 1.0;
+					}
+					CurrentProjectionMatrix = Matrix4D.CreatePerspectiveFieldOfView(fov, Screen.AspectRatio, nearClipScenery, cd);
 					break;
 				case ViewportMode.Cab:
 					double nearClipCab = Math.Max(0.01, Interface.CurrentOptions.NearClipCab);
-					CurrentProjectionMatrix = Matrix4D.CreatePerspectiveFieldOfView(Camera.VerticalViewingAngle, Screen.AspectRatio, nearClipCab, 50.0);
+					double cdCab = 50.0;
+					if (nearClipCab >= cdCab)
+					{
+						cdCab = nearClipCab + 1.0;
+					}
+					CurrentProjectionMatrix = Matrix4D.CreatePerspectiveFieldOfView(fov, Screen.AspectRatio, nearClipCab, cdCab);
 					break;
 			}
 

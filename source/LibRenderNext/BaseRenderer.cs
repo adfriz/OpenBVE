@@ -1128,10 +1128,31 @@ namespace LibRenderNext
 			Screen.Height = Height;
 			GL.Viewport(0, 0, Screen.Width, Screen.Height);
 
-			Screen.AspectRatio = Screen.Width / (double)Screen.Height;
-			Camera.HorizontalViewingAngle = 2.0 * Math.Atan(Math.Tan(0.5 * Camera.VerticalViewingAngle) * Screen.AspectRatio);
+			double aspect = Screen.Width / (double)Screen.Height;
+			if (aspect <= 0 || double.IsNaN(aspect) || double.IsInfinity(aspect))
+			{
+				aspect = 1.0;
+			}
+			Screen.AspectRatio = aspect;
+
+			double fov = Camera.VerticalViewingAngle;
+			if (fov <= 0 || fov >= Math.PI || double.IsNaN(fov))
+			{
+				fov = 45.0 * Math.PI / 180.0;
+			}
+
+			Camera.HorizontalViewingAngle = 2.0 * Math.Atan(Math.Tan(0.5 * fov) * Screen.AspectRatio);
 			double nearClip = Math.Max(0.01, currentOptions.NearClipBase);
-			CurrentProjectionMatrix = Matrix4D.CreatePerspectiveFieldOfView(Camera.VerticalViewingAngle, Screen.AspectRatio, nearClip, currentOptions.ViewingDistance);
+			double farClip = currentOptions.ViewingDistance;
+			if (farClip <= 0 || double.IsNaN(farClip) || double.IsInfinity(farClip))
+			{
+				farClip = 1000.0;
+			}
+			if (nearClip >= farClip)
+			{
+				farClip = nearClip + 1.0;
+			}
+			CurrentProjectionMatrix = Matrix4D.CreatePerspectiveFieldOfView(fov, Screen.AspectRatio, nearClip, farClip);
 		}
 
 		public void ResetShader(Shader shader)
