@@ -483,6 +483,10 @@ namespace OpenBve
 				Game.Menu.PushMenu(MenuType.GameStart);
 				Loading.Complete = true;
 				Program.Renderer.CameraTrackFollower = new TrackFollower(Program.CurrentHost);
+				if (Program.RendererNext != null)
+				{
+					Program.RendererNext.CameraTrackFollower = new TrackFollower(Program.CurrentHost);
+				}
 				loadComplete = true;
 			}
 			else
