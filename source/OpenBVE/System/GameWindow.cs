@@ -670,10 +670,23 @@ namespace OpenBve
 			}
 			// camera
 			Program.Renderer.InitializeVisibility();
+			if (Program.RendererNext != null)
+			{
+				Program.RendererNext.StaticObjectStates = Program.Renderer.StaticObjectStates;
+				Program.RendererNext.DynamicObjectStates = Program.Renderer.DynamicObjectStates;
+				Program.RendererNext.InitializeVisibility();
+			}
 			Program.Renderer.CameraTrackFollower.UpdateAbsolute(0.0, true, false);
 			Program.Renderer.CameraTrackFollower.UpdateAbsolute(-0.1, true, false);
 			Program.Renderer.CameraTrackFollower.UpdateAbsolute(0.1, true, false);
 			Program.Renderer.CameraTrackFollower.TriggerType = EventTriggerType.Camera;
+			if (Program.RendererNext != null)
+			{
+				Program.RendererNext.CameraTrackFollower.UpdateAbsolute(0.0, true, false);
+				Program.RendererNext.CameraTrackFollower.UpdateAbsolute(-0.1, true, false);
+				Program.RendererNext.CameraTrackFollower.UpdateAbsolute(0.1, true, false);
+				Program.RendererNext.CameraTrackFollower.TriggerType = EventTriggerType.Camera;
+			}
 			// starting time and track position
 			Program.CurrentRoute.SecondsSinceMidnight = 0.0;
 			Game.StartupTime = 0.0;
