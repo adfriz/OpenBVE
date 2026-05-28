@@ -219,9 +219,12 @@ namespace LibRenderNext
 					normalsIndexData.AddRange(Enumerable.Range(mesh.Faces[i].NormalsIboStartIndex, mesh.Faces[i].Vertices.Length * 2).Select(x => (uint)x));
 				}
 
-				VertexArrayObject VAO = (VertexArrayObject)mesh.VAO;
-				VAO?.UnBind();
-				VAO?.Dispose();
+				VertexArrayObject VAO = mesh.VAO as VertexArrayObject;
+				if (VAO != null)
+				{
+					VAO.UnBind();
+					VAO.Dispose();
+				}
 
 				VAO = new VertexArrayObject();
 				VAO.Bind();
@@ -239,9 +242,12 @@ namespace LibRenderNext
 				VAO.SetAttributes(vertexLayout);
 				VAO.UnBind();
 				mesh.VAO = VAO;
-				VertexArrayObject NormalsVAO = (VertexArrayObject)mesh.NormalsVAO;
-				NormalsVAO?.UnBind();
-				NormalsVAO?.Dispose();
+				VertexArrayObject NormalsVAO = mesh.NormalsVAO as VertexArrayObject;
+				if (NormalsVAO != null)
+				{
+					NormalsVAO.UnBind();
+					NormalsVAO.Dispose();
+				}
 
 				NormalsVAO = new VertexArrayObject();
 				NormalsVAO.Bind();
@@ -377,9 +383,12 @@ namespace LibRenderNext
 					textureX += textureIncrement;
 				}
 
-				VertexArrayObject VAO = (VertexArrayObject)background.VAO;
-				VAO?.UnBind();
-				VAO?.Dispose();
+				VertexArrayObject VAO = background.VAO as VertexArrayObject;
+				if (VAO != null)
+				{
+					VAO.UnBind();
+					VAO.Dispose();
+				}
 
 				VAO = new VertexArrayObject();
 				VAO.Bind();
