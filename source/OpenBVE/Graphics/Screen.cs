@@ -141,6 +141,10 @@ namespace OpenBve
 			//Program.currentGameWindow.TargetUpdateFrequency = Interface.CurrentOptions.FPSLimit;
 			//Program.currentGameWindow.TargetRenderFrequency = Interface.CurrentOptions.FPSLimit;
 			Program.Renderer.GameWindow.VSync = Interface.CurrentOptions.VerticalSynchronization ? VSyncMode.On : VSyncMode.Off;
+			if (Program.RendererNext != null)
+			{
+				Program.RendererNext.GameWindow = Program.Renderer.GameWindow;
+			}
 			
 		}
 		
