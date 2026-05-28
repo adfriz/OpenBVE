@@ -1316,7 +1316,12 @@ namespace LibRenderNext
 			}
 
 			MeshMaterial material = state.Prototype.Mesh.Materials[face.Material];
-			VertexArrayObject VAO = (VertexArrayObject)state.Prototype.Mesh.VAO;
+			VertexArrayObject VAO = state.Prototype.Mesh.VAO as VertexArrayObject;
+			if (VAO == null)
+			{
+				VAOExtensions.CreateVAO(state.Prototype.Mesh, state.Prototype.Dynamic, shader.VertexLayout, this);
+				VAO = state.Prototype.Mesh.VAO as VertexArrayObject;
+			}
 
 			if (lastVAO != VAO.handle)
 			{
