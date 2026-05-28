@@ -312,7 +312,7 @@ namespace LibRenderNext
 
 		public Dictionary<Texture, HashSet<Vector3>> CubesToDraw = new Dictionary<Texture, HashSet<Vector3>>();
 
-		public bool AvailableNewRenderer => currentOptions != null && currentOptions.IsUseNewRenderer && !ForceLegacyOpenGL;
+		public bool AvailableNewRenderer => true;
 
 		protected BaseRenderer(HostInterface CurrentHost, BaseOptions CurrentOptions, FileSystem FileSystem)
 		{
@@ -416,16 +416,13 @@ namespace LibRenderNext
 			DynamicObjectStates = new List<ObjectState>();
 			VisibleObjects = new VisibleObjectLibrary(this);
 			whitePixel = new Texture(new Texture(1, 1, PixelFormat.RGBAlpha, new byte[] {255, 255, 255, 255}, null));
-			if (AvailableNewRenderer)
-			{
-				nullDepthMap = GL.GenTexture();
-				RDI.RDIStateCache.BindTexture( nullDepthMap);
-				GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent16, 1, 1, 0, OpenTK.Graphics.OpenGL.PixelFormat.DepthComponent, PixelType.Float, IntPtr.Zero);
-				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureCompareMode, (int)TextureCompareMode.CompareRefToTexture);
-				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
-				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
-				RDI.RDIStateCache.BindTexture( 0);
-			}
+			nullDepthMap = GL.GenTexture();
+			RDI.RDIStateCache.BindTexture( nullDepthMap);
+			GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent16, 1, 1, 0, OpenTK.Graphics.OpenGL.PixelFormat.DepthComponent, PixelType.Float, IntPtr.Zero);
+			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureCompareMode, (int)TextureCompareMode.CompareRefToTexture);
+			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
+			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
+			RDI.RDIStateCache.BindTexture( 0);
 			GL.ClearColor(currentOptions.ClearColor.R * inv255, currentOptions.ClearColor.G * inv255, currentOptions.ClearColor.B * inv255, 1.0f);
 			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 			GL.Enable(EnableCap.DepthTest);
@@ -448,11 +445,7 @@ namespace LibRenderNext
 			GL.CullFace(CullFaceMode.Front);
 			GL.Disable(EnableCap.Dither);
 			
-			if (!AvailableNewRenderer)
-			{
-				GL.Disable(EnableCap.Texture2D);
-				GL.Fog(FogParameter.FogMode, (int)FogMode.Linear);
-			}
+
 			
 			// ReSharper disable once PossibleNullReferenceException
 			string openGLdll = Path.CombineFile(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), "opengl32.dll");
@@ -475,10 +468,7 @@ namespace LibRenderNext
 
 			Lighting.Initialize();
 
-			if (AvailableNewRenderer)
-			{
-				Shadows.Initialize();
-			}
+			Shadows.Initialize();
 		}
 
 		/// <summary>Initializes (or reinitializes) shadow mapping from current options.</summary>
@@ -595,12 +585,7 @@ namespace LibRenderNext
 		{
 			GL.Enable(EnableCap.CullFace);
 			GL.CullFace(CullFaceMode.Front);
-			if (!AvailableNewRenderer)
-			{
-				GL.Disable(EnableCap.Lighting);
-				GL.Disable(EnableCap.Fog);
-				GL.Disable(EnableCap.Texture2D);
-			}
+
 			
 			SetBlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 			UnsetBlendFunc();
@@ -1234,16 +1219,8 @@ namespace LibRenderNext
 			alphaTestEnabled = true;
 			alphaFuncComparison = comparison;
 			alphaFuncValue = value;
-			if (AvailableNewRenderer)
-			{
-				CurrentShader.SetAlphaTest(true);
-				CurrentShader.SetAlphaFunction(comparison, value);
-			}
-			else
-			{
-				GL.Enable(EnableCap.AlphaTest);
-				GL.AlphaFunc(comparison, value);	
-			}
+			CurrentShader.SetAlphaTest(true);
+			CurrentShader.SetAlphaFunction(comparison, value);
 			
 		}
 
@@ -1251,44 +1228,20 @@ namespace LibRenderNext
 		public void UnsetAlphaFunc()
 		{
 			alphaTestEnabled = false;
-			if (AvailableNewRenderer)
-			{
-				CurrentShader.SetAlphaTest(false);
-			}
-			else
-			{
-				GL.Disable(EnableCap.AlphaTest);	
-			}
+			CurrentShader.SetAlphaTest(false);
 			
 		}
 
-		/// <summary>Restores the OpenGL alpha function to it's previous state</summary>
 		public void RestoreAlphaFunc()
 		{
 			if (alphaTestEnabled)
 			{
-				if (AvailableNewRenderer)
-				{
-					CurrentShader.SetAlphaTest(true);
-					CurrentShader.SetAlphaFunction(alphaFuncComparison, alphaFuncValue);
-				}
-				else
-				{
-					GL.Enable(EnableCap.AlphaTest);
-					GL.AlphaFunc(alphaFuncComparison, alphaFuncValue);
-				}
-				
+				CurrentShader.SetAlphaTest(true);
+				CurrentShader.SetAlphaFunction(alphaFuncComparison, alphaFuncValue);
 			}
 			else
 			{
-				if (AvailableNewRenderer)
-				{
-					CurrentShader.SetAlphaTest(false);
-				}
-				else
-				{
-					GL.Disable(EnableCap.AlphaTest);
-				}
+				CurrentShader.SetAlphaTest(false);
 			}
 		}
 

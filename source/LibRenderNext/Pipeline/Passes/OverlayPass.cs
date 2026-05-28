@@ -27,20 +27,14 @@ namespace LibRenderNext.Pipeline.Passes
 			renderer.Fog.Enabled = false;
 			renderer.UpdateViewport(ViewportChangeMode.ChangeToCab);
 
-			if (renderer.AvailableNewRenderer)
-			{
-				renderer.DefaultShader.Activate();
-				renderer.ResetShader(renderer.DefaultShader);
-				renderer.DefaultShader.SetCurrentProjectionMatrix(renderer.CurrentProjectionMatrix);
-			}
+			renderer.DefaultShader.Activate();
+			renderer.ResetShader(renderer.DefaultShader);
+			renderer.DefaultShader.SetCurrentProjectionMatrix(renderer.CurrentProjectionMatrix);
 
 			renderer.CurrentViewMatrix = Matrix4D.LookAt(Vector3.Zero, new Vector3(renderer.Camera.AbsoluteDirection.X, renderer.Camera.AbsoluteDirection.Y, -renderer.Camera.AbsoluteDirection.Z), new Vector3(renderer.Camera.AbsoluteUp.X, renderer.Camera.AbsoluteUp.Y, -renderer.Camera.AbsoluteUp.Z));
 			context.ViewMatrix = renderer.CurrentViewMatrix;
 
-			if (renderer.AvailableNewRenderer)
-			{
-				renderer.DefaultShader.SetCurrentViewMatrix(renderer.CurrentViewMatrix);
-			}
+			renderer.DefaultShader.SetCurrentViewMatrix(renderer.CurrentViewMatrix);
 
 			List<FaceState> overlayOpaqueFaces, overlayAlphaFacesToSort;
 			lock (renderer.VisibleObjects.LockObject)
@@ -62,16 +56,13 @@ namespace LibRenderNext.Pipeline.Passes
 				renderer.Lighting.OptionAmbientColor = Color24.LightGrey;
 				renderer.Lighting.OptionDiffuseColor = Color24.LightGrey;
 
-				if (renderer.AvailableNewRenderer)
-				{
-					renderer.DefaultShader.SetIsLight(true);
-					Vector3 lightPos = new Vector3(renderer.Lighting.OptionLightPosition.X, renderer.Lighting.OptionLightPosition.Y, -renderer.Lighting.OptionLightPosition.Z);
-					renderer.DefaultShader.SetLightPosition(lightPos);
-					renderer.DefaultShader.SetLightAmbient(renderer.Lighting.OptionAmbientColor);
-					renderer.DefaultShader.SetLightDiffuse(renderer.Lighting.OptionDiffuseColor);
-					renderer.DefaultShader.SetLightSpecular(renderer.Lighting.OptionSpecularColor);
-					renderer.DefaultShader.SetLightModel(renderer.Lighting.LightModel);
-				}
+				renderer.DefaultShader.SetIsLight(true);
+				Vector3 lightPos = new Vector3(renderer.Lighting.OptionLightPosition.X, renderer.Lighting.OptionLightPosition.Y, -renderer.Lighting.OptionLightPosition.Z);
+				renderer.DefaultShader.SetLightPosition(lightPos);
+				renderer.DefaultShader.SetLightAmbient(renderer.Lighting.OptionAmbientColor);
+				renderer.DefaultShader.SetLightDiffuse(renderer.Lighting.OptionDiffuseColor);
+				renderer.DefaultShader.SetLightSpecular(renderer.Lighting.OptionSpecularColor);
+				renderer.DefaultShader.SetLightModel(renderer.Lighting.LightModel);
 
 				foreach (var face in overlayOpaqueFaces)
 				{
@@ -145,10 +136,7 @@ namespace LibRenderNext.Pipeline.Passes
 				// 2D Cab
 				renderer.ResetOpenGlState();
 				renderer.OptionLighting = false;
-				if (renderer.AvailableNewRenderer)
-				{
-					renderer.DefaultShader.SetIsLight(false);
-				}
+				renderer.DefaultShader.SetIsLight(false);
 
 				renderer.SetBlendFunc();
 				renderer.UnsetAlphaFunc();

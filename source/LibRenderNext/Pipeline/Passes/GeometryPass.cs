@@ -15,27 +15,24 @@ namespace LibRenderNext.Pipeline.Passes
 			var renderer = context.Renderer;
 
 			// Setup lighting and fog
-			if (renderer.AvailableNewRenderer)
+			if (renderer.OptionLighting)
 			{
-				if (renderer.OptionLighting)
-				{
-					renderer.DefaultShader.SetIsLight(true);
-					renderer.DefaultShader.SetLightPosition(renderer.TransformedLightPosition);
-					renderer.DefaultShader.SetLightAmbient(renderer.Lighting.OptionAmbientColor);
-					renderer.DefaultShader.SetLightDiffuse(renderer.Lighting.OptionDiffuseColor);
-					renderer.DefaultShader.SetLightSpecular(renderer.Lighting.OptionSpecularColor);
-					renderer.DefaultShader.SetLightModel(renderer.Lighting.LightModel);
-				}
-				renderer.Fog.Set();
-				renderer.DefaultShader.SetTexture(0);
-				renderer.CurrentProjectionMatrix = context.ProjectionMatrix;
-				renderer.CurrentViewMatrix = context.ViewMatrix;
-				renderer.DefaultShader.SetCurrentProjectionMatrix(renderer.CurrentProjectionMatrix);
-				renderer.DefaultShader.SetCurrentViewMatrix(renderer.CurrentViewMatrix);
-				if (renderer.ShadowsEnabled && renderer.Shadows != null)
-				{
-					renderer.Shadows.Bind(renderer.DefaultShader);
-				}
+				renderer.DefaultShader.SetIsLight(true);
+				renderer.DefaultShader.SetLightPosition(renderer.TransformedLightPosition);
+				renderer.DefaultShader.SetLightAmbient(renderer.Lighting.OptionAmbientColor);
+				renderer.DefaultShader.SetLightDiffuse(renderer.Lighting.OptionDiffuseColor);
+				renderer.DefaultShader.SetLightSpecular(renderer.Lighting.OptionSpecularColor);
+				renderer.DefaultShader.SetLightModel(renderer.Lighting.LightModel);
+			}
+			renderer.Fog.Set();
+			renderer.DefaultShader.SetTexture(0);
+			renderer.CurrentProjectionMatrix = context.ProjectionMatrix;
+			renderer.CurrentViewMatrix = context.ViewMatrix;
+			renderer.DefaultShader.SetCurrentProjectionMatrix(renderer.CurrentProjectionMatrix);
+			renderer.DefaultShader.SetCurrentViewMatrix(renderer.CurrentViewMatrix);
+			if (renderer.ShadowsEnabled && renderer.Shadows != null)
+			{
+				renderer.Shadows.Bind(renderer.DefaultShader);
 			}
 
 			renderer.ResetOpenGlState();

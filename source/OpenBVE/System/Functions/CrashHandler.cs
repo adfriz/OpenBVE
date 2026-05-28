@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -220,7 +220,10 @@ namespace OpenBve
                     //These may occur if we feed dud data to the sim
                     outputFile.WriteLine("Current routefile is: " + Program.CurrentRoute.Information.RouteFile);
                     outputFile.WriteLine("Current train is: " + Program.CurrentRoute.Information.TrainFolder);
-                    outputFile.WriteLine("Current train plugin is: " + TrainManager.PlayerTrain.Plugin.PluginTitle);
+                    if (TrainManager.PlayerTrain != null && TrainManager.PlayerTrain.Plugin != null)
+                    {
+                        outputFile.WriteLine("Current train plugin is: " + TrainManager.PlayerTrain.Plugin.PluginTitle);
+                    }
                 }
                 catch
                 {

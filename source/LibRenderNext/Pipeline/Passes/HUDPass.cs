@@ -25,11 +25,8 @@ namespace LibRenderNext.Pipeline.Passes
 			renderer.SetAlphaFunc(AlphaFunction.Greater, 0.0f);
 			RDI.RDIStateCache.SetDepthState(false, DepthFunction.Lequal, false);
 
-			if (renderer.AvailableNewRenderer)
-			{
-				renderer.CurrentViewMatrix = Matrix4D.Identity;
-				renderer.DefaultShader.SetCurrentViewMatrix(renderer.CurrentViewMatrix);
-			}
+			renderer.CurrentViewMatrix = Matrix4D.Identity;
+			renderer.DefaultShader.SetCurrentViewMatrix(renderer.CurrentViewMatrix);
 
 			renderUiAction?.Invoke(context);
 		}

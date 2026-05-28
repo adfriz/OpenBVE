@@ -64,7 +64,7 @@ namespace LibRenderNext.RDI
 		{
 			if (activeTextureUnit != unit)
 			{
-				RDI.RDIStateCache.SetActiveTexture(unit);
+				GL.ActiveTexture(unit);
 				activeTextureUnit = unit;
 			}
 		}
@@ -77,13 +77,13 @@ namespace LibRenderNext.RDI
 			{
 				if (boundTextures[unitIndex] != textureId)
 				{
-					RDI.RDIStateCache.BindTexture( textureId);
+					GL.BindTexture(TextureTarget.Texture2D, textureId);
 					boundTextures[unitIndex] = textureId;
 				}
 			}
 			else
 			{
-				RDI.RDIStateCache.BindTexture( textureId);
+				GL.BindTexture(TextureTarget.Texture2D, textureId);
 			}
 		}
 

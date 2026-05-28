@@ -112,7 +112,7 @@ namespace LibRenderNext.Smoke
 
 		public void Update(double timeElapsed, bool currentlyVisible)
 		{
-			if (!Renderer.AvailableNewRenderer || Controller == null)
+			if (Controller == null)
 			{
 				return;
 			}
