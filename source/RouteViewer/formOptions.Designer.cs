@@ -695,7 +695,7 @@ namespace RouteViewer
             this.labelShadowNormalBias.Name = "labelShadowNormalBias";
             this.labelShadowNormalBias.Size = new System.Drawing.Size(66, 13);
             this.labelShadowNormalBias.TabIndex = 45;
-            this.labelShadowNormalBias.Text = "Normal Bias:";
+            this.labelShadowNormalBias.Text = "Slope-Scaled Bias:";
             // 
             // numericUpDownShadowNormalBias
             // 

@@ -756,7 +756,7 @@ namespace OpenBve {
 			{
 				labelShadowBias.Text = "Shadow Bias:";
 			}
-			labelShadowNormalBias.Text = "Normal Bias:";
+			labelShadowNormalBias.Text = "SlopeScaled Bias:";
 
 
 			// Combobox items (shadow resolution)

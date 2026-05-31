@@ -84,7 +84,8 @@ uniform bool uFogIsLinear;
 out vec4 fragColor;
 
 /// Samples a single cascade using hardware PCF.
-float GetCascadeShadowFactor(sampler2DShadow shadowMap, vec4 posLightSpace, float bias, float normalBias)
+/// Note: slopeScaleBias was historically named normalBias to reflect what it do technically (corresponds to uShadowNormalBias in uniforms / C#)
+float GetCascadeShadowFactor(sampler2DShadow shadowMap, vec4 posLightSpace, float bias, float slopeScaleBias)
 {
     vec3 projCoords = posLightSpace.xyz / posLightSpace.w;
     projCoords = projCoords * 0.5 + 0.5;
@@ -102,7 +103,7 @@ float GetCascadeShadowFactor(sampler2DShadow shadowMap, vec4 posLightSpace, floa
     vec3 lightDir = normalize(uLight.position);
     float biasScale = clamp(1.0 - dot(normal, lightDir), 0.0, 1.0);
     // Multiply the base Z-bias by a slope factor to perfectly cure acne on thin meshes
-    float activeBias = bias * (1.0 + biasScale * normalBias); 
+    float activeBias = bias * (1.0 + biasScale * slopeScaleBias); 
 
     float currentDepth = projCoords.z - activeBias;
 

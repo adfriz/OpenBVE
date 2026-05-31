@@ -2874,7 +2874,7 @@ namespace OpenBve {
             this.labelShadowNormalBias.Name = "labelShadowNormalBias";
             this.labelShadowNormalBias.Size = new System.Drawing.Size(66, 13);
             this.labelShadowNormalBias.TabIndex = 10;
-            this.labelShadowNormalBias.Text = "Normal Bias:";
+            this.labelShadowNormalBias.Text = "Slope-Scaled Bias:";
             // 
             // updownShadowNormalBias
             // 
