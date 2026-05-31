@@ -81,6 +81,13 @@ uniform float uFogEnd;
 uniform vec3  uFogColor;
 uniform float uFogDensity;
 uniform bool uFogIsLinear;
+// Reflection Mapping (Dual-Paraboloid)
+uniform bool      uReflectionEnabled;
+uniform sampler2D uReflectionFront;    // front hemisphere (+Z)
+uniform sampler2D uReflectionBack;     // back hemisphere (-Z)
+uniform float     uReflectionIntensity; // 0..1 per-material
+uniform float     uReflectionRoughness; // 0..1 per-material, drives mip bias
+
 out vec4 fragColor;
 
 /// Samples a single cascade using hardware PCF.
@@ -190,6 +197,31 @@ float CalculateShadowFactor()
     return mix(1.0, shadow, uShadowStrength);
 }
 
+// Samples the dual-paraboloid probe for a reflected ray in view space.
+// r: normalized view-space reflected ray.
+// roughness: 0=mirror, 1=very rough (uses texture LOD bias).
+vec3 SampleDPM(vec3 r, float roughness)
+{
+    float mipBias = roughness * 4.0; // max 4 mip levels of blur
+    if (r.z >= 0.0)
+    {
+        // Front hemisphere (+Z): standard paraboloid UV.
+        float d = r.z + 1.0;
+        if (d < 1e-5) d = 1e-5;
+        vec2 uv = vec2(r.x / d, r.y / d) * 0.5 + 0.5;
+        return texture(uReflectionFront, uv, mipBias).rgb;
+    }
+    else
+    {
+        // Back hemisphere (-Z): flip Z, then paraboloid UV.
+        vec3 rb = vec3(r.x, r.y, -r.z);
+        float d = rb.z + 1.0;
+        if (d < 1e-5) d = 1e-5;
+        vec2 uv = vec2(rb.x / d, rb.y / d) * 0.5 + 0.5;
+        return texture(uReflectionBack, uv, mipBias).rgb;
+    }
+}
+
 void main(void)
 {
 	vec4 finalColor;
@@ -276,6 +308,22 @@ void main(void)
 		{
 			fogFactor = exp(-pow(uFogDensity * (gl_FragCoord.z / gl_FragCoord.w), 2.0));
 		}
+	}
+
+	// Dual-Paraboloid Reflection
+	if (uReflectionEnabled && uReflectionIntensity > 0.0)
+	{
+		// Compute view-space reflected direction.
+		// oViewPos.xyz is the fragment position in view space (from vertex shader).
+		// vNormal is already in view space.
+		vec3 viewDir  = normalize(oViewPos.xyz);
+		vec3 N        = normalize(vNormal);
+		vec3 reflDir  = reflect(viewDir, N);
+
+		vec3 reflColor = SampleDPM(reflDir, uReflectionRoughness);
+
+		// Additive blend scaled by intensity and fog (reflection fades with fog).
+		finalColor.rgb = mix(finalColor.rgb, mix(finalColor.rgb, reflColor, uReflectionIntensity), fogFactor);
 	}
 
 	fragColor = vec4(mix(uFogColor, finalColor.rgb, fogFactor), finalColor.a);

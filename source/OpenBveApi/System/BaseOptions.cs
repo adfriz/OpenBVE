@@ -96,6 +96,10 @@ namespace OpenBveApi
 		public double ShadowNormalBias = 2.0;
 		/// <summary>Whether to filter shadow casters per cascade to improve performance.</summary>
 		public bool ShadowFilterCascades = true;
+		/// <summary>Whether reflections are enabled.</summary>
+		public bool ReflectionsEnabled = false;
+		/// <summary>Resolution of the dynamic reflection maps.</summary>
+		public ReflectionResolution ReflectionResolution = ReflectionResolution.Medium;
 
 
 		/// <summary>The sun azimuth in degrees</summary>

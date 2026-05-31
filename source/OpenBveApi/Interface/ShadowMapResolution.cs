@@ -40,4 +40,14 @@ namespace OpenBveApi.Interface
         /// <summary>4 cascades — best quality gradient.</summary>
         Four = 4
     }
+    /// <summary>Available reflection map resolution presets.</summary>
+    public enum ReflectionResolution
+    {
+        /// <summary>128x128 resolution — best performance.</summary>
+        Low = 128,
+        /// <summary>256x256 resolution — balanced.</summary>
+        Medium = 256,
+        /// <summary>512x512 resolution — high quality.</summary>
+        High = 512
+    }
 }

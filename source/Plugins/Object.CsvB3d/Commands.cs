@@ -1,4 +1,4 @@
-﻿namespace Object.CsvB3d
+namespace Object.CsvB3d
 {
 	/// <summary>The commands found in a B3D / CSV file</summary>
 	internal enum B3DCsvCommands
@@ -28,6 +28,7 @@
 		Coordinates,
 		CrossFading,
 		DisableShadowCasting,
+		Reflection,
 
 		// CSV COMMANDS
 		CreateMeshBuilder = 100,
@@ -52,6 +53,7 @@
 		SetFont,
 		SetTextureCoordinates,
 		EnableCrossFading,
+		SetReflection,
 
 		// COMMON COMMANDS
 		Cube = 200,

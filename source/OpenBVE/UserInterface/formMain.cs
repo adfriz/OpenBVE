@@ -66,6 +66,10 @@ namespace OpenBve {
 		private Image GamepadImage;
 		private Image XboxImage;
 		private Image ZukiImage;
+		private GroupBox groupBoxReflections;
+		private CheckBox checkBoxReflections;
+		private ComboBox comboBoxReflectionResolution;
+		private Label labelReflectionResolution;
 
 		// ====
 		// form
@@ -84,6 +88,55 @@ namespace OpenBve {
 				Size = new Size(Interface.CurrentOptions.MainMenuWidth, Interface.CurrentOptions.MainMenuHeight);
 				CenterToScreen();
 			}
+
+			// Create Reflections GroupBox
+			groupBoxReflections = new GroupBox();
+			groupBoxReflections.Text = "Reflections";
+			groupBoxReflections.Location = new Point(330, 245);
+			groupBoxReflections.Size = new Size(321, 100);
+			groupBoxReflections.ForeColor = Color.Black;
+
+			checkBoxReflections = new CheckBox();
+			checkBoxReflections.Text = "Enable Reflections";
+			checkBoxReflections.Location = new Point(8, 20);
+			checkBoxReflections.AutoSize = true;
+			checkBoxReflections.Checked = Interface.CurrentOptions.ReflectionsEnabled;
+			checkBoxReflections.CheckedChanged += (s, ev) => {
+				Interface.CurrentOptions.ReflectionsEnabled = checkBoxReflections.Checked;
+				comboBoxReflectionResolution.Enabled = checkBoxReflections.Checked;
+			};
+			groupBoxReflections.Controls.Add(checkBoxReflections);
+
+			labelReflectionResolution = new Label();
+			labelReflectionResolution.Text = "Resolution:";
+			labelReflectionResolution.Location = new Point(8, 50);
+			labelReflectionResolution.AutoSize = true;
+			groupBoxReflections.Controls.Add(labelReflectionResolution);
+
+			comboBoxReflectionResolution = new ComboBox();
+			comboBoxReflectionResolution.DropDownStyle = ComboBoxStyle.DropDownList;
+			comboBoxReflectionResolution.Items.AddRange(new object[] { "Low (128x128)", "Medium (256x256)", "High (512x512)" });
+			comboBoxReflectionResolution.Location = new Point(120, 47);
+			comboBoxReflectionResolution.Size = new Size(168, 21);
+			switch (Interface.CurrentOptions.ReflectionResolution)
+			{
+				case ReflectionResolution.Low: comboBoxReflectionResolution.SelectedIndex = 0; break;
+				case ReflectionResolution.Medium: comboBoxReflectionResolution.SelectedIndex = 1; break;
+				case ReflectionResolution.High: comboBoxReflectionResolution.SelectedIndex = 2; break;
+				default: comboBoxReflectionResolution.SelectedIndex = 1; break;
+			}
+			comboBoxReflectionResolution.Enabled = Interface.CurrentOptions.ReflectionsEnabled;
+			comboBoxReflectionResolution.SelectedIndexChanged += (s, ev) => {
+				switch (comboBoxReflectionResolution.SelectedIndex)
+				{
+					case 0: Interface.CurrentOptions.ReflectionResolution = ReflectionResolution.Low; break;
+					case 1: Interface.CurrentOptions.ReflectionResolution = ReflectionResolution.Medium; break;
+					case 2: Interface.CurrentOptions.ReflectionResolution = ReflectionResolution.High; break;
+				}
+			};
+			groupBoxReflections.Controls.Add(comboBoxReflectionResolution);
+
+			groupBoxAdvancedOptions.Parent.Controls.Add(groupBoxReflections);
 			labelVersion.Text = @"v" + Application.ProductVersion + Program.VersionSuffix;
 			if (IntPtr.Size != 4)
 			{
@@ -1264,6 +1317,13 @@ namespace OpenBve {
 			Interface.CurrentOptions.ShadowBias = (double)updownShadowBias.Value;
 			Interface.CurrentOptions.ShadowNormalBias = (double)updownShadowNormalBias.Value;
 			Interface.CurrentOptions.ShadowFilterCascades = checkboxShadowFilterCascades.Checked;
+			Interface.CurrentOptions.ReflectionsEnabled = checkBoxReflections.Checked;
+			switch (comboBoxReflectionResolution.SelectedIndex)
+			{
+				case 0: Interface.CurrentOptions.ReflectionResolution = ReflectionResolution.Low; break;
+				case 1: Interface.CurrentOptions.ReflectionResolution = ReflectionResolution.Medium; break;
+				case 2: Interface.CurrentOptions.ReflectionResolution = ReflectionResolution.High; break;
+			}
 			Interface.CurrentOptions.GameMode = (GameMode)comboboxMode.SelectedIndex;
 			Interface.CurrentOptions.BlackBox = checkboxBlackBox.Checked;
 			Interface.CurrentOptions.LoadingSway = checkBoxLoadingSway.Checked;

@@ -56,7 +56,8 @@ namespace Object.CsvB3d
 			"setemissivecolor",
 			"setdecaltransparentcolor",
 			"enablecrossfading",
-			"loadlightmap"
+			"loadlightmap",
+			"setreflection"
 		};
 
 		private static int SecondIndexOfAny(string testString, string[] values)
@@ -899,6 +900,49 @@ namespace Object.CsvB3d
 									Builder.Faces[j] = f;
 								}
 						} break;
+						case B3DCsvCommands.SetReflection:
+						case B3DCsvCommands.Reflection:
+							{
+								if (cmd == B3DCsvCommands.SetReflection & IsB3D) {
+									currentHost.AddMessage(MessageType.Warning, false, "SetReflection is not a supported command - did you mean Reflection? - at line " + (i + 1).ToString(Culture) + " in file " + FileName);
+								} else if (cmd == B3DCsvCommands.Reflection & !IsB3D) {
+									currentHost.AddMessage(MessageType.Warning, false, "Reflection is not a supported command - did you mean SetReflection? - at line " + (i + 1).ToString(Culture) + " in file " + FileName);
+								}
+								if (Arguments.Length > 2) {
+									currentHost.AddMessage(MessageType.Warning, false, "At most 2 arguments are expected in " + cmd + " at line " + (i + 1).ToString(Culture) + " in file " + FileName);
+								}
+								double intensity = 0.5;
+								double roughness = 0.1;
+								if (Arguments.Length >= 1 && Arguments[0].Length > 0 && !NumberFormats.TryParseDoubleVb6(Arguments[0], out intensity)) {
+									currentHost.AddMessage(MessageType.Error, false, "Invalid value for Intensity in " + cmd + " at line " + (i + 1).ToString(Culture) + " in file " + FileName);
+								}
+								if (Arguments.Length >= 2 && Arguments[1].Length > 0 && !NumberFormats.TryParseDoubleVb6(Arguments[1], out roughness)) {
+									currentHost.AddMessage(MessageType.Error, false, "Invalid value for Roughness in " + cmd + " at line " + (i + 1).ToString(Culture) + " in file " + FileName);
+								}
+								int m = Builder.Materials.Length;
+								Array.Resize(ref Builder.Materials, m << 1);
+								for (int j = m; j < Builder.Materials.Length; j++) {
+									Builder.Materials[j] = new Material(Builder.Materials[j - m])
+									{
+										ReflectionIntensity = (float)intensity,
+										ReflectionRoughness = (float)roughness,
+										Color = Builder.Materials[j - m].Color,
+										BlendMode = Builder.Materials[j - m].BlendMode,
+										GlowAttenuationData = Builder.Materials[j - m].GlowAttenuationData,
+										DaytimeTexture = Builder.Materials[j - m].DaytimeTexture,
+										NighttimeTexture = Builder.Materials[j - m].NighttimeTexture,
+										TransparentColor = Builder.Materials[j - m].TransparentColor,
+										Flags = Builder.Materials[j - m].Flags,
+										WrapMode = Builder.Materials[j - m].WrapMode
+									};
+								}
+								for (int j = 0; j < Builder.Faces.Count; j++)
+								{
+									MeshFace f = Builder.Faces[j];
+									f.Material += (ushort) m;
+									Builder.Faces[j] = f;
+								}
+							} break;
 						case B3DCsvCommands.ColorAll:
 						case B3DCsvCommands.SetColorAll:
 						{

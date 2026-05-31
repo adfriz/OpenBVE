@@ -42,6 +42,10 @@ namespace OpenBveApi.Objects
 		public string Font;
 		/// <summary>The text padding to apply</summary>
 		public Vector2 TextPadding;
+		/// <summary>The reflection intensity (0.0 = none, 1.0 = mirror)</summary>
+		public float ReflectionIntensity;
+		/// <summary>The reflection roughness (0.0 = smooth/sharp, 1.0 = blurry/rough)</summary>
+		public float ReflectionRoughness;
 
 		/// <summary>Creates a new Material with default properties</summary>
 		public Material() {
@@ -59,6 +63,8 @@ namespace OpenBveApi.Objects
 			this.TextPadding = new Vector2(0, 0);
 			this.Font = "Arial";
 			this.WrapMode = null;
+			this.ReflectionIntensity = 0.0f;
+			this.ReflectionRoughness = 0.0f;
 		}
 
 		/// <summary>Creates a new material from the specified texture file with default properties</summary>
@@ -79,6 +85,8 @@ namespace OpenBveApi.Objects
 			this.Font = "Arial";
 			this.WrapMode = null;
 			this.DaytimeTexture = textureFile;
+			this.ReflectionIntensity = 0.0f;
+			this.ReflectionRoughness = 0.0f;
 		}
 
 		/// <summary>Clones an existing material</summary>
@@ -97,6 +105,8 @@ namespace OpenBveApi.Objects
 			this.TextPadding = prototypeMaterial.TextPadding;
 			this.Font = prototypeMaterial.Font;
 			this.WrapMode = prototypeMaterial.WrapMode;
+			this.ReflectionIntensity = prototypeMaterial.ReflectionIntensity;
+			this.ReflectionRoughness = prototypeMaterial.ReflectionRoughness;
 		}
 	}
 }

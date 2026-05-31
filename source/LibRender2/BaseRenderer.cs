@@ -18,6 +18,7 @@ using LibRender2.Overlays;
 using LibRender2.Primitives;
 using LibRender2.Screens;
 using LibRender2.Shaders;
+using LibRender2.Reflections;
 using LibRender2.ShadowMapping;
 using LibRender2.Text;
 using LibRender2.Textures;
@@ -160,11 +161,17 @@ namespace LibRender2
 		/// <summary>Manages the Cascaded Shadow Mapping (CSM) system.</summary>
 		public Shadows Shadows;
 
+		/// <summary>Manages the Dual-Paraboloid Reflection (DPM) system.</summary>
+		public Reflections Reflections;
+
 		/// <summary>Whether shadows are enabled.</summary>
 		public bool ShadowsEnabled => Shadows?.Enabled ?? false;
 
 		/// <summary>Shadow strength: 0=invisible, 1=full darkness.</summary>
 		public float ShadowStrength => Shadows?.Strength ?? 0.7f;
+
+		/// <summary>Whether reflections are enabled.</summary>
+		public bool ReflectionsEnabled => Reflections?.Enabled ?? false;
 
 		/// <summary>Whether lighting is enabled in the debug options</summary>
 		public bool OptionLighting = true;
@@ -330,6 +337,7 @@ namespace LibRender2
 			Lighting = new Lighting(this);
 			Marker = new Marker(this);
 			Shadows = new Shadows(this);
+			Reflections = new Reflections(this);
 
 			projectionMatrixList = new List<Matrix4D>();
 			viewMatrixList = new List<Matrix4D>();
@@ -474,6 +482,7 @@ namespace LibRender2
 			if (AvailableNewRenderer)
 			{
 				Shadows.Initialize();
+				Reflections.Initialize();
 			}
 		}
 
@@ -526,8 +535,23 @@ namespace LibRender2
 		/// <summary>Performs the CSM shadow depth rendering pass for all geometry.</summary>
 		protected void PerformCSMShadowPass() => Shadows.RenderPass();
 
+		/// <summary>Performs the DPM reflection capture pass (time-sliced, one hemisphere per frame).</summary>
+		protected void PerformReflectionPass() => Reflections.RenderPass();
+
 		/// <summary>Binds cascading shadow data to the default shader.</summary>
 		protected void BindCSMToDefaultShader() => Shadows.Bind(DefaultShader);
+
+		/// <summary>Binds the DPM probe hemisphere textures to the default shader (units 8 and 9).</summary>
+		protected void BindReflectionsToDefaultShader()
+		{
+			if (Reflections == null || DefaultShader == null) return;
+			DefaultShader.SetReflectionEnabled(Reflections.Enabled);
+			if (Reflections.Enabled)
+			{
+				Reflections.BindProbeTextures(8, 9);
+				DefaultShader.SetReflectionTextures(8, 9);
+			}
+		}
 
 		internal PrimitiveType GetPrimitiveType(FaceFlags flags)
 		{
@@ -1372,6 +1396,9 @@ namespace LibRender2
 			
 			// lighting
 			shader.SetMaterialFlags(material.Flags);
+			// Per-material reflection parameters (no-op when intensity is 0 or reflections disabled)
+			shader.SetReflectionIntensity(material.ReflectionIntensity);
+			shader.SetReflectionRoughness(material.ReflectionRoughness);
 			if (OptionLighting)
 			{
 				if (material.Color != lastColor)

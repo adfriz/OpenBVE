@@ -33,6 +33,10 @@ namespace OpenBveApi.Objects
 		public ushort GlowAttenuationData;
 		/// <summary>The wrap mode, or null to allow the renderer to decide</summary>
 		public OpenGlTextureWrapMode? WrapMode;
+		/// <summary>The reflection intensity (0.0 = none, 1.0 = mirror)</summary>
+		public float ReflectionIntensity;
+		/// <summary>The reflection roughness (0.0 = smooth/sharp, 1.0 = blurry/rough)</summary>
+		public float ReflectionRoughness;
 
 		/// <summary>Returns whether two MeshMaterial structs are equal</summary>
 		public static bool operator ==(MeshMaterial A, MeshMaterial B)
@@ -48,6 +52,8 @@ namespace OpenBveApi.Objects
 			if (A.BlendMode != B.BlendMode) return false;
 			if (A.GlowAttenuationData != B.GlowAttenuationData) return false;
 			if (A.WrapMode != B.WrapMode) return false;
+			if (A.ReflectionIntensity != B.ReflectionIntensity) return false;
+			if (A.ReflectionRoughness != B.ReflectionRoughness) return false;
 			return true;
 		}
 
@@ -65,6 +71,8 @@ namespace OpenBveApi.Objects
 			if (A.BlendMode != B.BlendMode) return true;
 			if (A.GlowAttenuationData != B.GlowAttenuationData) return true;
 			if (A.WrapMode != B.WrapMode) return true;
+			if (A.ReflectionIntensity != B.ReflectionIntensity) return true;
+			if (A.ReflectionRoughness != B.ReflectionRoughness) return true;
 			return false;
 		}
 	}

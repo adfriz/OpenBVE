@@ -326,6 +326,8 @@ namespace OpenBve
 				Builder.AppendLine("shadowbias = " + ShadowBias.ToString(Culture));
 				Builder.AppendLine("shadownormalbias = " + ShadowNormalBias.ToString(Culture));
 				Builder.AppendLine("shadowfiltercascades = " + (ShadowFilterCascades ? "true" : "false"));
+				Builder.AppendLine("reflectionsenabled = " + (ReflectionsEnabled ? "true" : "false"));
+				Builder.AppendLine("reflectionresolution = " + ReflectionResolution);
 				Builder.AppendLine("fpslimit = " + FPSLimit.ToString(Culture));
 				Builder.AppendLine();
 				Builder.AppendLine("[objectOptimization]");
@@ -540,6 +542,8 @@ namespace OpenBve
 							block.TryGetValue(OptionsKey.ShadowNormalBias, ref CurrentOptions.ShadowNormalBias);
 							if (CurrentOptions.ShadowNormalBias < 0.0) CurrentOptions.ShadowNormalBias = 0.0;
 							block.GetValue(OptionsKey.ShadowFilterCascades, out Interface.CurrentOptions.ShadowFilterCascades);
+							block.GetValue(OptionsKey.ReflectionsEnabled, out Interface.CurrentOptions.ReflectionsEnabled);
+							block.TryGetEnumValue(OptionsKey.ReflectionResolution, ref Interface.CurrentOptions.ReflectionResolution);
 							block.GetValue(OptionsKey.FPSLimit, out CurrentOptions.FPSLimit);
 							if (CurrentOptions.FPSLimit < 0)
 							{

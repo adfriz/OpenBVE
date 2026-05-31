@@ -68,6 +68,13 @@ namespace LibRender2.Shaders
 		private readonly int uModelMatrixLocation;
 		private readonly int uCurrentViewMatrixLocation;
 
+		// Reflection uniforms
+		private readonly int uReflectionEnabledLocation;
+		private readonly int uReflectionFrontLocation;
+		private readonly int uReflectionBackLocation;
+		private readonly int uReflectionIntensityLocation;
+		private readonly int uReflectionRoughnessLocation;
+
 
 		/// <summary>
 		/// Constructor
@@ -104,6 +111,13 @@ namespace LibRender2.Shaders
 			uModelMatrixLocation = GL.GetUniformLocation(Handle, "uModelMatrix");
 			uCurrentViewMatrixLocation = GL.GetUniformLocation(Handle, "uCurrentViewMatrix");
 
+			// Reflection uniforms
+			uReflectionEnabledLocation    = GL.GetUniformLocation(Handle, "uReflectionEnabled");
+			uReflectionFrontLocation      = GL.GetUniformLocation(Handle, "uReflectionFront");
+			uReflectionBackLocation       = GL.GetUniformLocation(Handle, "uReflectionBack");
+			uReflectionIntensityLocation  = GL.GetUniformLocation(Handle, "uReflectionIntensity");
+			uReflectionRoughnessLocation  = GL.GetUniformLocation(Handle, "uReflectionRoughness");
+
 			VertexLayout = GetVertexLayout();
 			UniformLayout = GetUniformLayout();
 
@@ -117,6 +131,12 @@ namespace LibRender2.Shaders
 			GL.ProgramUniform1(Handle, uShadowEnabledLocation, 0);
 			GL.ProgramUniform1(Handle, uShadowCascadeCountLocation, 0);
 			GL.ProgramUniform1(Handle, uShadowStrengthLocation, 1.0f);
+			// Reflection: bind to safe texture units (8 = front, 9 = back) and disable by default
+			GL.ProgramUniform1(Handle, uReflectionFrontLocation, 8);
+			GL.ProgramUniform1(Handle, uReflectionBackLocation, 9);
+			GL.ProgramUniform1(Handle, uReflectionEnabledLocation, 0);
+			GL.ProgramUniform1(Handle, uReflectionIntensityLocation, 0.0f);
+			GL.ProgramUniform1(Handle, uReflectionRoughnessLocation, 0.0f);
 		}
 		
 		public VertexLayout GetVertexLayout()
@@ -512,6 +532,28 @@ namespace LibRender2.Shaders
 		public void SetShadowStrength(float strength)
 		{
 			GL.ProgramUniform1(Handle, uShadowStrengthLocation, strength);
+		}
+
+		public void SetReflectionEnabled(bool enabled)
+		{
+			GL.ProgramUniform1(Handle, uReflectionEnabledLocation, enabled ? 1 : 0);
+		}
+
+		public void SetReflectionIntensity(float intensity)
+		{
+			GL.ProgramUniform1(Handle, uReflectionIntensityLocation, intensity);
+		}
+
+		public void SetReflectionRoughness(float roughness)
+		{
+			GL.ProgramUniform1(Handle, uReflectionRoughnessLocation, roughness);
+		}
+
+		/// <summary>Binds probe hemisphere textures to units 8 and 9.</summary>
+		public void SetReflectionTextures(int frontUnit = 8, int backUnit = 9)
+		{
+			GL.ProgramUniform1(Handle, uReflectionFrontLocation, frontUnit);
+			GL.ProgramUniform1(Handle, uReflectionBackLocation, backUnit);
 		}
 
 		public void SetCurrentViewMatrix(OpenBveApi.Math.Matrix4D viewMatrix)

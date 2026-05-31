@@ -153,6 +153,8 @@ namespace OpenBveApi.Objects
 					Object.Mesh.Materials[mm + i].BlendMode = Materials[i].BlendMode;
 					Object.Mesh.Materials[mm + i].GlowAttenuationData = Materials[i].GlowAttenuationData;
 					Object.Mesh.Materials[mm + i].WrapMode = Materials[i].WrapMode;
+					Object.Mesh.Materials[mm + i].ReflectionIntensity = Materials[i].ReflectionIntensity;
+					Object.Mesh.Materials[mm + i].ReflectionRoughness = Materials[i].ReflectionRoughness;
 				}
 			}
 		}
