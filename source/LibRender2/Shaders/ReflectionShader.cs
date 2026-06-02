@@ -43,6 +43,7 @@ namespace LibRender2.Shaders
         private readonly int uTexture;
         private readonly int uHasTexture;
         private readonly int uTextureMatrix;
+        private readonly int uModelMatrix;
 
         // Uniform block binding for animation matrices (same as shadow_depth).
         private const int MatrixBlockBinding = 0;
@@ -65,6 +66,7 @@ namespace LibRender2.Shaders
             uTexture       = GL.GetUniformLocation(Handle, "uTexture");
             uHasTexture    = GL.GetUniformLocation(Handle, "uHasTexture");
             uTextureMatrix = GL.GetUniformLocation(Handle, "uTextureMatrix");
+            uModelMatrix   = GL.GetUniformLocation(Handle, "uModelMatrix");
 
             // Safe defaults.
             GL.ProgramUniform1(Handle, uFace, 0);
@@ -112,6 +114,13 @@ namespace LibRender2.Shaders
         {
             OpenTK.Matrix4 matrix = ConvertToMatrix4(m);
             GL.UniformMatrix4(uTextureMatrix, false, ref matrix);
+        }
+
+        /// <summary>Sets the model transformation matrix.</summary>
+        public void SetModelMatrix(Matrix4D m)
+        {
+            OpenTK.Matrix4 matrix = ConvertToMatrix4(m);
+            GL.UniformMatrix4(uModelMatrix, false, ref matrix);
         }
 
         /// <summary>Uploads and binds animation matrices for animated objects.</summary>

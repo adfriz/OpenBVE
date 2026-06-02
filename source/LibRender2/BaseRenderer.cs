@@ -162,7 +162,7 @@ namespace LibRender2
 		public Shadows Shadows;
 
 		/// <summary>Manages the Dual-Paraboloid Reflection (DPM) system.</summary>
-		public Reflections Reflections;
+		public Reflections.Reflections Reflections;
 
 		/// <summary>Whether shadows are enabled.</summary>
 		public bool ShadowsEnabled => Shadows?.Enabled ?? false;
@@ -337,7 +337,7 @@ namespace LibRender2
 			Lighting = new Lighting(this);
 			Marker = new Marker(this);
 			Shadows = new Shadows(this);
-			Reflections = new Reflections(this);
+			Reflections = new Reflections.Reflections(this);
 
 			projectionMatrixList = new List<Matrix4D>();
 			viewMatrixList = new List<Matrix4D>();

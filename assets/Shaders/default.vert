@@ -79,6 +79,7 @@ out vec4 vPosLightSpace0;
 out vec4 vPosLightSpace1;
 out vec4 vPosLightSpace2;
 out vec4 vPosLightSpace3;
+out vec3 oReflDir;
 out vec3 vNormal;
 
 vec4 getLightResult()
@@ -210,6 +211,10 @@ void main()
 	
 	// Pass normal to fragment shader (un-negated Z to match lighting expected convention)
 	vNormal = normalize(mat3(transpose(inverse(uCurrentModelViewMatrix))) * vec3(iNormal.x, iNormal.y, -iNormal.z));
+
+	// Compute camera-relative world-space reflection direction.
+	vec3 viewDir = normalize(oViewPos.xyz);
+	oReflDir = mat3(inverse(uCurrentViewMatrix)) * reflect(viewDir, vNormal);
 
 	if (uShadowEnabled)
 	{

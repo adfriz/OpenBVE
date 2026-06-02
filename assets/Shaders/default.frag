@@ -72,6 +72,7 @@ in vec4  vPosLightSpace0;
 in vec4  vPosLightSpace1;
 in vec4  vPosLightSpace2;
 in vec4  vPosLightSpace3;
+in vec3  oReflDir;
 uniform int uMaterialFlags;
 uniform float uBrightness;
 uniform float uOpacity;
@@ -313,12 +314,8 @@ void main(void)
 	// Dual-Paraboloid Reflection
 	if (uReflectionEnabled && uReflectionIntensity > 0.0)
 	{
-		// Compute view-space reflected direction.
-		// oViewPos.xyz is the fragment position in view space (from vertex shader).
-		// vNormal is already in view space.
-		vec3 viewDir  = normalize(oViewPos.xyz);
-		vec3 N        = normalize(vNormal);
-		vec3 reflDir  = reflect(viewDir, N);
+		// Use camera-relative world-space reflection direction.
+		vec3 reflDir  = normalize(oReflDir);
 
 		vec3 reflColor = SampleDPM(reflDir, uReflectionRoughness);
 

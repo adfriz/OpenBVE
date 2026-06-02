@@ -92,8 +92,8 @@ namespace OpenBve {
 			// Create Reflections GroupBox
 			groupBoxReflections = new GroupBox();
 			groupBoxReflections.Text = "Reflections";
-			groupBoxReflections.Location = new Point(330, 245);
-			groupBoxReflections.Size = new Size(321, 100);
+			groupBoxReflections.Location = new Point(0, 385);
+			groupBoxReflections.Size = new Size(316, 100);
 			groupBoxReflections.ForeColor = Color.Black;
 
 			checkBoxReflections = new CheckBox();
@@ -136,7 +136,7 @@ namespace OpenBve {
 			};
 			groupBoxReflections.Controls.Add(comboBoxReflectionResolution);
 
-			groupBoxAdvancedOptions.Parent.Controls.Add(groupBoxReflections);
+			panelOptionsLeft.Controls.Add(groupBoxReflections);
 			labelVersion.Text = @"v" + Application.ProductVersion + Program.VersionSuffix;
 			if (IntPtr.Size != 4)
 			{

@@ -282,6 +282,7 @@ namespace LibRender2.Reflections
                 }
 
                 CaptureShader.SetTextureMatrix(state.TextureTranslation);
+                CaptureShader.SetModelMatrix(state.ModelMatrix * renderer.Camera.TranslationMatrix);
 
                 // Draw.
                 VertexArrayObject vao = (VertexArrayObject)state.Prototype.Mesh.VAO;

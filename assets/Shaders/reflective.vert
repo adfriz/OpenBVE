@@ -18,6 +18,7 @@ uniform float uNear;
 uniform float uFar;
 // Texture matrix for animated UV scrolling.
 uniform mat4  uTextureMatrix;
+uniform mat4  uModelMatrix;
 
 // Animation matrix UBO (shared layout with shadow_depth and default shaders).
 layout(std140) uniform matrices
@@ -68,43 +69,43 @@ void main()
     // Apply animation matrix chain (same logic as default.vert and shadow_depth.vert).
     if (iMatrixChain.x != 0)
     {
-        int m0 = (iMatrixChain.x & (0xff << 24)) >> 24;
-        int m1 = (iMatrixChain.x >> 16) & 0xff;
-        int m2 = (iMatrixChain.x & 0xff00) >> 8;
-        int m3 = (iMatrixChain.x & 0xff);
-        if (m0 >= 0 && m0 < 255) pos = transformVector(pos, m0);
-        if (m1 >= 0 && m1 < 255) pos = transformVector(pos, m1);
-        if (m2 >= 0 && m2 < 255) pos = transformVector(pos, m2);
-        if (m3 >= 0 && m3 < 255) pos = transformVector(pos, m3);
+        int matIdx0 = (iMatrixChain.x & (0xff << 24)) >> 24;
+        int matIdx1 = (iMatrixChain.x >> 16) & 0xff;
+        int matIdx2 = (iMatrixChain.x & 0xff00) >> 8;
+        int matIdx3 = (iMatrixChain.x & 0xff);
+        if (matIdx0 >= 0 && matIdx0 < 255) pos = transformVector(pos, matIdx0);
+        if (matIdx1 >= 0 && matIdx1 < 255) pos = transformVector(pos, matIdx1);
+        if (matIdx2 >= 0 && matIdx2 < 255) pos = transformVector(pos, matIdx2);
+        if (matIdx3 >= 0 && matIdx3 < 255) pos = transformVector(pos, matIdx3);
     }
     if (iMatrixChain.y != 0)
     {
-        int m0 = (iMatrixChain.y & (0xff << 24)) >> 24;
-        int m1 = (iMatrixChain.y >> 16) & 0xff;
-        int m2 = (iMatrixChain.y & 0xff00) >> 8;
-        int m3 = (iMatrixChain.y & 0xff);
-        if (m0 >= 0 && m0 < 255) pos = transformVector(pos, m0);
-        if (m1 >= 0 && m1 < 255) pos = transformVector(pos, m1);
-        if (m2 >= 0 && m2 < 255) pos = transformVector(pos, m2);
-        if (m3 >= 0 && m3 < 255) pos = transformVector(pos, m3);
+        int matIdx0 = (iMatrixChain.y & (0xff << 24)) >> 24;
+        int matIdx1 = (iMatrixChain.y >> 16) & 0xff;
+        int matIdx2 = (iMatrixChain.y & 0xff00) >> 8;
+        int matIdx3 = (iMatrixChain.y & 0xff);
+        if (matIdx0 >= 0 && matIdx0 < 255) pos = transformVector(pos, matIdx0);
+        if (matIdx1 >= 0 && matIdx1 < 255) pos = transformVector(pos, matIdx1);
+        if (matIdx2 >= 0 && matIdx2 < 255) pos = transformVector(pos, matIdx2);
+        if (matIdx3 >= 0 && matIdx3 < 255) pos = transformVector(pos, matIdx3);
     }
     if (iMatrixChain.z != 0)
     {
-        int m0 = (iMatrixChain.z & (0xff << 24)) >> 24;
-        int m1 = (iMatrixChain.z >> 16) & 0xff;
-        int m2 = (iMatrixChain.z & 0xff00) >> 8;
-        int m3 = (iMatrixChain.z & 0xff);
-        if (m0 >= 0 && m0 < 255) pos = transformVector(pos, m0);
-        if (m1 >= 0 && m1 < 255) pos = transformVector(pos, m1);
-        if (m2 >= 0 && m2 < 255) pos = transformVector(pos, m2);
-        if (m3 >= 0 && m3 < 255) pos = transformVector(pos, m3);
+        int matIdx0 = (iMatrixChain.z & (0xff << 24)) >> 24;
+        int matIdx1 = (iMatrixChain.z >> 16) & 0xff;
+        int matIdx2 = (iMatrixChain.z & 0xff00) >> 8;
+        int matIdx3 = (iMatrixChain.z & 0xff);
+        if (matIdx0 >= 0 && matIdx0 < 255) pos = transformVector(pos, matIdx0);
+        if (matIdx1 >= 0 && matIdx1 < 255) pos = transformVector(pos, matIdx1);
+        if (matIdx2 >= 0 && matIdx2 < 255) pos = transformVector(pos, matIdx2);
+        if (matIdx3 >= 0 && matIdx3 < 255) pos = transformVector(pos, matIdx3);
     }
 
     // OpenBVE convention: negate Z.
     pos.z = -pos.z;
 
-    // Vector from probe to vertex (world-space ray to capture).
-    vec3 dir = pos - uProbePosition;
+    // Vector from probe to vertex (camera-relative coordinate).
+    vec3 dir = (uModelMatrix * vec4(pos, 1.0)).xyz;
 
     float len = length(dir);
     vDepth = clamp((len - uNear) / (uFar - uNear), 0.0, 1.0);
