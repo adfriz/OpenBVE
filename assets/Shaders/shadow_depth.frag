@@ -36,13 +36,8 @@ out vec4 fragColor;
 
 void main()
 {
-    // Start with the base material alpha
-    float alpha = uMaterialAlpha;
-
-    if (uHasTexture)
-    {
-        alpha *= texture(uTexture, vUv).a;
-    }
+    // Start with the base material alpha, conditionally query texture branchlessly without unbound sampler access errors
+    float alpha = uMaterialAlpha * (uHasTexture ? texture(uTexture, vUv).a : 1.0);
 
     // Discard fragments whose effective alpha is below the cutoff
     // This prevents semi-transparent glass meshes from casting full opaque shadows
