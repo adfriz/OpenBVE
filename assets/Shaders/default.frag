@@ -66,6 +66,24 @@ struct Light
 };
 uniform Light uLight;
 
+struct DynamicLight {
+	int type;
+	vec3 position;
+	vec3 direction;
+	vec4 color;
+	float range;
+	float rangeSquared;
+	float spotCutoff;
+	float power;
+	float exposure;
+	int isNormalize;
+	float radius;
+	int softFalloff;
+	float softness;
+};
+uniform int uDynamicLightCount;
+uniform DynamicLight uDynamicLights[16];
+
 // Inputs from vertex shader
 in vec3  vNormal;
 in vec4  vPosLightSpace0;
@@ -252,10 +270,62 @@ void main(void)
 	 */
 	float shadow = CalculateShadowFactor();
 	
+	vec3 dynamicLightSum = vec3(0.0);
+	if ((uMaterialFlags & 1) == 0 && (uMaterialFlags & 4) == 0 && uDynamicLightCount > 0)
+	{
+		// Precalculated constants for faster lighting calculations
+		const float ONE_OVER_FOUR_PI = 0.0795774715; // 1.0 / (4.0 * PI)
+		const float TWO_PI = 6.283185307;           // 2.0 * PI
+		vec3 N = normalize(vNormal);
+		for (int i = 0; i < uDynamicLightCount; i++)
+		{
+			vec3 toLight = uDynamicLights[i].position - oViewPos.xyz;
+			float d2 = dot(toLight, toLight);
+			if (d2 <= uDynamicLights[i].rangeSquared)
+			{
+				float d = sqrt(d2);
+				vec3 L = toLight / d;
+				
+				// 1. Calculate Intensity: Power in Watts, Exposure, Normalize
+				float intensity = uDynamicLights[i].power * exp2(uDynamicLights[i].exposure);
+				float solidAngle = TWO_PI * (1.0 - uDynamicLights[i].spotCutoff);
+				bool normalizeSpot = (uDynamicLights[i].type == 1 && uDynamicLights[i].isNormalize != 0);
+				intensity /= normalizeSpot ? max(solidAngle, 0.0001) : 12.566370614;
+				
+				vec3 lightColor = uDynamicLights[i].color.rgb * intensity;
+
+				// 2. Attenuation: SoftFalloff, Radius
+				float denom = d2 + uDynamicLights[i].radius * uDynamicLights[i].radius;
+				float att = 1.0 / max(denom, 0.0001);
+				if (uDynamicLights[i].softFalloff != 0)
+				{
+					att *= clamp((uDynamicLights[i].range - d) / max(0.001, uDynamicLights[i].range * 0.2), 0.0, 1.0);
+				}
+
+				// 3. Spot Cone Attenuation (Branchless)
+				vec3 lightToFrag = -L;
+				float spotDot = dot(lightToFrag, uDynamicLights[i].direction);
+				float outerCutoff = uDynamicLights[i].spotCutoff;
+				
+				float softnessFactor = clamp(uDynamicLights[i].softness, 0.0, 1.0);
+				float innerCutoff = mix(1.0, outerCutoff, 1.0 - softnessFactor);
+				
+				float intensityFactor = clamp((spotDot - outerCutoff) / max(innerCutoff - outerCutoff, 0.0001), 0.0, 1.0);
+				float spotAtt = smoothstep(0.0, 1.0, intensityFactor) * step(outerCutoff, spotDot);
+				
+				att *= mix(1.0, spotAtt, float(uDynamicLights[i].type == 1));
+
+				float nDotL = abs(dot(N, L));
+				dynamicLightSum += lightColor * nDotL * att;
+			}
+		}
+	}
+
 	if ((uMaterialFlags & 1) == 0 && (uMaterialFlags & 4) == 0)
 	{
-		// Material is not emissive, apply shadow to the light factor
-		finalColor.rgb *= (oLightResult.rgb * shadow);
+		// Material is not emissive, apply shadow to the light factor and add dynamic lights
+		vec3 totalLight = oLightResult.rgb * shadow + dynamicLightSum;
+		finalColor.rgb *= totalLight;
 		finalColor.a *= oLightResult.a;
 	}
 	else
