@@ -83,6 +83,15 @@ namespace LibRender2.Shaders
 		private readonly int[] uDynamicLightSoftFalloffLocation = new int[16];
 		private readonly int[] uDynamicLightSoftnessLocation = new int[16];
 
+		// Clustering uniforms
+		private readonly int uClusteringEnabledLocation;
+		private readonly int uClusterNearLocation;
+		private readonly int uClusterFarLocation;
+		private readonly int uClusterScreenWidthLocation;
+		private readonly int uClusterScreenHeightLocation;
+		private readonly int uClusterNumXLocation;
+		private readonly int uClusterNumYLocation;
+		private readonly int uClusterNumZLocation;
 
 		/// <summary>
 		/// Constructor
@@ -149,6 +158,18 @@ namespace LibRender2.Shaders
 			GL.ProgramUniform1(Handle, uShadowEnabledLocation, 0);
 			GL.ProgramUniform1(Handle, uShadowCascadeCountLocation, 0);
 			GL.ProgramUniform1(Handle, uShadowStrengthLocation, 1.0f);
+
+			// Clustering uniform locations
+			uClusteringEnabledLocation  = GL.GetUniformLocation(Handle, "uClusteringEnabled");
+			uClusterNearLocation        = GL.GetUniformLocation(Handle, "uClusterNear");
+			uClusterFarLocation         = GL.GetUniformLocation(Handle, "uClusterFar");
+			uClusterScreenWidthLocation = GL.GetUniformLocation(Handle, "uClusterScreenWidth");
+			uClusterScreenHeightLocation= GL.GetUniformLocation(Handle, "uClusterScreenHeight");
+			uClusterNumXLocation        = GL.GetUniformLocation(Handle, "uClusterNumX");
+			uClusterNumYLocation        = GL.GetUniformLocation(Handle, "uClusterNumY");
+			uClusterNumZLocation        = GL.GetUniformLocation(Handle, "uClusterNumZ");
+			// Default: clustering disabled
+			GL.ProgramUniform1(Handle, uClusteringEnabledLocation, 0);
 		}
 		
 		public VertexLayout GetVertexLayout()
@@ -628,6 +649,29 @@ namespace LibRender2.Shaders
 				GL.ProgramUniform1(Handle, uDynamicLightSoftFalloffLocation[i], light.SoftFalloff ? 1 : 0);
 				GL.ProgramUniform1(Handle, uDynamicLightSoftnessLocation[i], light.Softness);
 			}
+		}
+
+		/// <summary>
+		/// Enables or disables the clustered forward rendering light loop in the fragment shader.
+		/// When false, the shader falls back to existing directional-only behavior.
+		/// </summary>
+		public void SetClusteringEnabled(bool enabled)
+		{
+			GL.ProgramUniform1(Handle, uClusteringEnabledLocation, enabled ? 1 : 0);
+		}
+
+		/// <summary>
+		/// Sets the cluster grid parameters needed by the fragment shader for cluster index calculation.
+		/// </summary>
+		public void SetClusteringParams(float near, float far, int screenW, int screenH, int numX, int numY, int numZ)
+		{
+			GL.ProgramUniform1(Handle, uClusterNearLocation,         near);
+			GL.ProgramUniform1(Handle, uClusterFarLocation,          far);
+			GL.ProgramUniform1(Handle, uClusterScreenWidthLocation,  (float)screenW);
+			GL.ProgramUniform1(Handle, uClusterScreenHeightLocation, (float)screenH);
+			GL.ProgramUniform1(Handle, uClusterNumXLocation,         numX);
+			GL.ProgramUniform1(Handle, uClusterNumYLocation,         numY);
+			GL.ProgramUniform1(Handle, uClusterNumZLocation,         numZ);
 		}
 
 		#endregion

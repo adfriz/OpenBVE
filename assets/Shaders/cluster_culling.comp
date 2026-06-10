@@ -1,0 +1,137 @@
+// Cluster Forward Rendering — Light Culling Compute Shader
+// Assigns lights to clusters via sphere-AABB intersection.
+// Dispatch: (NumX=16, NumY=8, NumZ=24) = 3072 work groups, one per cluster.
+//
+// Required: GL 4.3+ or GL_ARB_compute_shader + GL_ARB_shader_storage_buffer_object
+
+#version 430 core
+// Fallback for GL 3.3 hardware with ARB extensions:
+// #version 330 core
+// #extension GL_ARB_compute_shader               : require
+// #extension GL_ARB_shader_storage_buffer_object : require
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+// -------------------------------------------------------------------------
+// Grid dimensions (must match ClusterGrid constants)
+// -------------------------------------------------------------------------
+const uint NUM_X = 16u;
+const uint NUM_Y = 8u;
+const uint NUM_Z = 24u;
+const uint MAX_LIGHTS_PER_CLUSTER = 64u;
+const uint TOTAL_CLUSTERS = NUM_X * NUM_Y * NUM_Z; // 3072
+
+// -------------------------------------------------------------------------
+// Structs (must match C# GpuLight / GpuCluster / GpuClusterAABB layout)
+// -------------------------------------------------------------------------
+
+struct GpuLight {
+    vec4 positionAndRange;    // xyz=viewPos, w=range
+    vec4 colorAndIntensity;   // rgb=color, w=intensity
+    vec4 directionAndCutoff;  // xyz=spotDir, w=spotCutoff
+    vec4 params;              // x=type(0=point,1=spot), y=softFalloff, z=softness, w=rangeSquared
+};
+
+struct GpuCluster {
+    uint lightOffset;
+    uint lightCount;
+};
+
+struct GpuClusterAABB {
+    vec4 aabbMin;   // xyz=min, w=unused
+    vec4 aabbMax;   // xyz=max, w=unused
+};
+
+// -------------------------------------------------------------------------
+// SSBO Bindings (match ClusterEngine binding points)
+// -------------------------------------------------------------------------
+
+// binding 0: per-cluster offset + count (written by this shader)
+layout(std430, binding = 0) buffer ClusterGrid {
+    GpuCluster clusters[];
+};
+
+// binding 1: global flat light index list (written by this shader)
+layout(std430, binding = 1) buffer LightIndices {
+    uint lightIndices[];
+};
+
+// binding 2: all lights this frame (read-only)
+layout(std430, binding = 2) readonly buffer Lights {
+    GpuLight lights[];
+};
+
+// binding 3: precomputed view-space AABBs for all clusters (read-only)
+layout(std430, binding = 3) readonly buffer ClusterAABBs {
+    GpuClusterAABB clusterAABBs[];
+};
+
+// -------------------------------------------------------------------------
+// Uniforms
+// -------------------------------------------------------------------------
+uniform int uLightCount;
+
+// Atomic counter for next available slot in lightIndices[]
+// Shared across the entire dispatch via atomicAdd on global counter.
+// We use the first element of a scratch region — see globalIndexCounter below.
+
+// Global index counter stored at start of lightIndices buffer (index 0 reserved).
+// Actual light indices start at index 1 (offset by 1 to avoid collision).
+// Alternative: use a separate atomic counter buffer.
+// Here we use atomicAdd directly into a dedicated region.
+
+// -------------------------------------------------------------------------
+// Sphere–AABB intersection test
+// -------------------------------------------------------------------------
+bool sphereIntersectsAABB(vec3 center, float radius, vec3 aabbMin, vec3 aabbMax) {
+    vec3 closest = clamp(center, aabbMin, aabbMax);
+    vec3 diff    = closest - center;
+    float distSq = dot(diff, diff);
+    return distSq <= (radius * radius);
+}
+
+// -------------------------------------------------------------------------
+// Main
+// -------------------------------------------------------------------------
+void main() {
+    // One invocation per cluster
+    uint clusterX   = gl_GlobalInvocationID.x;
+    uint clusterY   = gl_GlobalInvocationID.y;
+    uint clusterZ   = gl_GlobalInvocationID.z;
+    uint clusterIdx = clusterX + clusterY * NUM_X + clusterZ * NUM_X * NUM_Y;
+
+    if (clusterIdx >= TOTAL_CLUSTERS) return;
+
+    vec3 aabbMin = clusterAABBs[clusterIdx].aabbMin.xyz;
+    vec3 aabbMax = clusterAABBs[clusterIdx].aabbMax.xyz;
+
+    // Collect lights that intersect this cluster
+    uint localLightCount  = 0u;
+    uint localLightList[64]; // MAX_LIGHTS_PER_CLUSTER
+
+    for (int i = 0; i < uLightCount; i++) {
+        vec3  lightPos    = lights[i].positionAndRange.xyz;
+        float lightRange  = lights[i].positionAndRange.w;
+
+        if (sphereIntersectsAABB(lightPos, lightRange, aabbMin, aabbMax)) {
+            if (localLightCount < MAX_LIGHTS_PER_CLUSTER) {
+                localLightList[localLightCount] = uint(i);
+                localLightCount++;
+            }
+        }
+    }
+
+    // Claim a contiguous slot in the global lightIndices[] buffer
+    // Using atomicAdd on lightIndices[0] as a global counter.
+    uint offset = 0u;
+    if (localLightCount > 0u) {
+        offset = atomicAdd(lightIndices[0], localLightCount) + 1u; // +1: skip counter slot
+        for (uint j = 0u; j < localLightCount; j++) {
+            lightIndices[offset + j] = localLightList[j];
+        }
+    }
+
+    // Write cluster header
+    clusters[clusterIdx].lightOffset = offset;
+    clusters[clusterIdx].lightCount  = localLightCount;
+}
