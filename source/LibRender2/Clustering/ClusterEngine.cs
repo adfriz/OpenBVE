@@ -233,6 +233,7 @@ namespace LibRender2.Clustering
 				lightDataSSBO.Upload(slice);
 
 				// Dispatch compute shader to fill lightGridSSBO + lightIndexSSBO
+				lightIndexSSBO.Clear(1);
 				lightDataSSBO.Bind();
 				lightGridSSBO.Bind();
 				lightIndexSSBO.Bind();

@@ -138,6 +138,7 @@ namespace OpenBve.Graphics
 			if (AvailableNewRenderer)
 			{
 				PerformCSMShadowPass();
+				PerformCFRCullAndUpload();
 			}
 
 			if (Lighting.ShouldInitialize)
@@ -183,6 +184,7 @@ namespace OpenBve.Graphics
 			{
 				DefaultShader.Activate();
 				BindCSMToDefaultShader();
+				BindCFRToDefaultShader();
 			}
 
 			// render background

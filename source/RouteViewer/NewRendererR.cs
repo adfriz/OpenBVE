@@ -150,8 +150,10 @@ namespace RouteViewer
 			if (AvailableNewRenderer)
 			{
 				PerformCSMShadowPass();
+				PerformCFRCullAndUpload();
 				DefaultShader.Activate();
 				BindCSMToDefaultShader();
+				BindCFRToDefaultShader();
 			}
 			
 
