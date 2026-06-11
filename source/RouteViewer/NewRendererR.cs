@@ -143,8 +143,10 @@ namespace RouteViewer
 			}
 
 			PerformCSMShadowPass();
+			PerformCFRCullAndUpload();
 			DefaultShader.Activate();
 			BindCSMToDefaultShader();
+			BindCFRToDefaultShader();
 
             // render background
             GL.Disable(EnableCap.DepthTest);
