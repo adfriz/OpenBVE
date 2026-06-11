@@ -88,10 +88,12 @@ namespace ObjectViewer.Graphics
             }
             // opaque face
             PerformCSMShadowPass();
+            PerformCFRCullAndUpload();
 
             //Setup the shader for rendering the scene
             DefaultShader.Activate();
             BindCSMToDefaultShader();
+            BindCFRToDefaultShader();
             if (OptionLighting)
             {
 	            DefaultShader.SetIsLight(true);

@@ -1142,6 +1142,11 @@ namespace LibRender2
 			}
 
 			UpdateViewport(Screen.Width, Screen.Height);
+
+			if (CurrentViewportMode == ViewportMode.Scenery)
+			{
+				ClusterEngine?.RebuildClusters();
+			}
 		}
 
 		protected virtual void UpdateViewport(int Width, int Height)
