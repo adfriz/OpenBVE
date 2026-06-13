@@ -27,6 +27,20 @@ namespace ObjectViewer
             }
         }
 
+        public ObjectViewer(int width, int height, GraphicsMode currentGraphicsMode, string windowTitle,
+            GameWindowFlags @default, GraphicsContextFlags flags) : base(width, height, currentGraphicsMode, windowTitle, @default, DisplayDevice.Default, 3, 3, flags)
+        {
+            try
+            {
+                System.Drawing.Icon ico = new System.Drawing.Icon("data\\icon.ico");
+                Icon = ico;
+            }
+            catch
+            {
+	            //Ignored
+            }
+        }
+
 		private double RenderRealTimeElapsed;
 		private double TotalTimeElapsedForInfo;
         

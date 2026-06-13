@@ -161,13 +161,33 @@ namespace OpenBveApi.Objects
 							string dir = System.IO.Path.GetDirectoryName(Materials[i].DaytimeTexture);
 							string name = System.IO.Path.GetFileNameWithoutExtension(Materials[i].DaytimeTexture);
 							string[] exts = { ".png", ".jpg", ".jpeg" };
-							foreach (var ext in exts)
+
+							// Case: daytime texture IS the arm/orm map (e.g. B3D Load textures\glass_arm.jpg)
+							bool daytimeIsArmMap = name.EndsWith("_arm", System.StringComparison.OrdinalIgnoreCase) ||
+							                      name.EndsWith("_orm", System.StringComparison.OrdinalIgnoreCase);
+							if (daytimeIsArmMap)
 							{
-								string testPath = System.IO.Path.Combine(dir, name + "_orm" + ext);
-								if (System.IO.File.Exists(testPath))
+								// Daytime texture IS the arm/orm map — promote it, no diffuse
+								ormPath = Materials[i].DaytimeTexture;
+								Object.Mesh.Materials[mm + i].DaytimeTexture = null;
+							}
+							else
+							{
+								// Normal case: look for sidecar _orm / _arm file
+								foreach (var ext in exts)
 								{
-									ormPath = testPath;
-									break;
+									string testPath = System.IO.Path.Combine(dir, name + "_orm" + ext);
+									if (System.IO.File.Exists(testPath))
+									{
+										ormPath = testPath;
+										break;
+									}
+									testPath = System.IO.Path.Combine(dir, name + "_arm" + ext);
+									if (System.IO.File.Exists(testPath))
+									{
+										ormPath = testPath;
+										break;
+									}
 								}
 							}
 						}

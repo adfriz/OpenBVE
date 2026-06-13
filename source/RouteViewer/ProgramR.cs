@@ -187,7 +187,14 @@ namespace RouteViewer
 				Renderer.Screen.Height = 768;
 			}
 			Renderer.CameraTrackFollower = new TrackFollower(Program.CurrentHost);
-			Renderer.GameWindow = new RouteViewer(Renderer.Screen.Width, Renderer.Screen.Height, Renderer.GraphicsMode, "Route Viewer", GameWindowFlags.Default);
+			if (Interface.CurrentOptions.IsUseNewRenderer)
+			{
+				Renderer.GameWindow = new RouteViewer(Renderer.Screen.Width, Renderer.Screen.Height, Renderer.GraphicsMode, "Route Viewer", GameWindowFlags.Default, GraphicsContextFlags.ForwardCompatible);
+			}
+			else
+			{
+				Renderer.GameWindow = new RouteViewer(Renderer.Screen.Width, Renderer.Screen.Height, Renderer.GraphicsMode, "Route Viewer", GameWindowFlags.Default);
+			}
 			Renderer.GameWindow.Visible = true;
 			Renderer.GameWindow.TargetUpdateFrequency = 0;
 			Renderer.GameWindow.TargetRenderFrequency = 0;

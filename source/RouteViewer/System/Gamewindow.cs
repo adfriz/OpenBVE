@@ -36,6 +36,26 @@ namespace RouteViewer
 			
         }
 
+        public RouteViewer(int width, int height, GraphicsMode currentGraphicsMode, string windowTitle, GameWindowFlags @default, GraphicsContextFlags flags): base (width, height, currentGraphicsMode, windowTitle, @default, DisplayDevice.Default, 3, 3, flags)
+        {
+            try
+            {
+                System.Drawing.Icon ico = new System.Drawing.Icon("data\\icon.ico");
+                Icon = ico;
+            }
+            catch
+            {
+				// Ignored- Just an icon
+            }
+
+            if (Program.CurrentHost.Platform == HostPlatform.AppleOSX && IntPtr.Size != 4)
+            {
+	            // attempted workaround for massive CPU usage when idle
+	            TargetRenderFrequency = 5.0;
+			}
+			
+        }
+
         //Default Properties
         private static bool currentlyLoading;
 

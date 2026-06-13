@@ -380,6 +380,11 @@ namespace AssimpNET.Obj
 				clampIndex = (int)Material.TextureType.TextureOrmType;
 				GetTextureOptionAndName(clampIndex, ref Model.CurrentMaterial.TextureOrm);
 			}
+			else if (string.Compare(Buffer, DataIt, "map_arm", 0, 7, StringComparison.OrdinalIgnoreCase) == 0)
+			{
+				clampIndex = (int)Material.TextureType.TextureOrmType;
+				GetTextureOptionAndName(clampIndex, ref Model.CurrentMaterial.TextureOrm);
+			}
 			else
 			{
 				Debug.WriteLine("OBJ/MTL: Encountered unknown texture type");
