@@ -56,6 +56,34 @@ uniform float             uShadowNormalBias3;
 uniform vec2              uAlphaTest;
 uniform sampler2D uTexture;
 
+uniform bool uIsPbr;
+uniform sampler2D uNormalMap;
+uniform sampler2D uOrmMap;
+uniform float uMetallicConstant;
+uniform float uRoughnessConstant;
+uniform bool uHasNormalMap;
+uniform bool uHasOrmMap;
+
+const float PI = 3.14159265359;
+
+// Screen-space TBN matrix generation for normal maps
+vec3 getNormalFromMap()
+{
+    vec3 tangentNormal = texture(uNormalMap, oUv).xyz * 2.0 - 1.0;
+
+    vec3 Q1  = dFdx(oViewPos.xyz);
+    vec3 Q2  = dFdy(oViewPos.xyz);
+    vec2 st1 = dFdx(oUv);
+    vec2 st2 = dFdy(oUv);
+
+    vec3 N   = normalize(vNormal);
+    vec3 T  = normalize(Q1*st2.t - Q2*st1.t);
+    vec3 B  = -normalize(cross(N, T));
+    mat3 TBN = mat3(T, B, N);
+
+    return normalize(TBN * tangentNormal);
+}
+
 struct Light
 {
 	vec3 position;
@@ -190,6 +218,64 @@ float CalculateShadowFactor()
     return mix(1.0, shadow, uShadowStrength);
 }
 
+float DistributionGGX(vec3 N, vec3 H, float roughness) {
+    float a = roughness*roughness;
+    float a2 = a*a;
+    float NdotH = max(dot(N, H), 0.0);
+    float NdotH2 = NdotH * NdotH;
+    
+    float num = a2;
+    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    return num / (PI * denom * denom);
+}
+
+float GeometrySchlickGGX(float NdotV, float roughness) {
+    float r = (roughness + 1.0);
+    float k = (r * r) / 8.0;
+    return NdotV / (NdotV * (1.0 - k) + k);
+}
+
+float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness) {
+    float NdotV = max(dot(N, V), 0.0);
+    float NdotL = max(dot(N, L), 0.0);
+    float ggx2 = GeometrySchlickGGX(NdotV, roughness);
+    float ggx1 = GeometrySchlickGGX(NdotL, roughness);
+    return ggx1 * ggx2;
+}
+
+vec3 fresnelSchlick(float cosTheta, vec3 F0) {
+    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
+vec3 calculatePBR(vec3 albedo, vec3 N, vec3 V, vec3 L, float roughness, float metallic, float ao, float shadow)
+{
+    vec3 F0 = vec3(0.04); 
+    F0 = mix(F0, albedo, metallic);
+
+    vec3 H = normalize(V + L);
+
+    float NDF = DistributionGGX(N, H, roughness);   
+    float G   = GeometrySmith(N, V, L, roughness);      
+    vec3 F    = fresnelSchlick(max(dot(H, V), 0.0), F0);
+           
+    vec3 numerator    = NDF * G * F; 
+    float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001;
+    vec3 specular = numerator / denominator;
+    
+    vec3 kS = F;
+    vec3 kD = vec3(1.0) - kS;
+    kD *= 1.0 - metallic;	  
+
+    float NdotL = max(dot(N, L), 0.0);
+    vec3 radiance = uLight.diffuse;
+
+    vec3 Lo = (kD * albedo / PI + specular) * radiance * NdotL * shadow;
+    vec3 ambient = uLight.ambient * albedo * ao;
+
+    vec3 color = ambient + Lo;
+    return color;
+}
+
 void main(void)
 {
 	vec4 finalColor;
@@ -252,15 +338,39 @@ void main(void)
 	 */
 	float shadow = CalculateShadowFactor();
 	
-	if ((uMaterialFlags & 1) == 0 && (uMaterialFlags & 4) == 0)
+	if (uIsPbr)
 	{
-		// Material is not emissive, apply shadow to the light factor
-		finalColor.rgb *= (oLightResult.rgb * shadow);
-		finalColor.a *= oLightResult.a;
+		vec3 albedo = finalColor.rgb;
+		vec3 N = uHasNormalMap ? getNormalFromMap() : normalize(vNormal);
+		vec3 V = normalize(-oViewPos.xyz);
+		vec3 L = normalize(uLight.position);
+		
+		float roughness = uRoughnessConstant;
+		float metallic = uMetallicConstant;
+		float ao = 1.0;
+		if (uHasOrmMap)
+		{
+			vec3 orm = texture(uOrmMap, oUv).rgb;
+			ao = orm.r;
+			roughness = orm.g;
+			metallic = orm.b;
+		}
+		
+		vec3 pbrColor = calculatePBR(albedo, N, V, L, roughness, metallic, ao, shadow);
+		finalColor.rgb = pbrColor;
 	}
 	else
 	{
-		finalColor *= oLightResult;
+		if ((uMaterialFlags & 1) == 0 && (uMaterialFlags & 4) == 0)
+		{
+			// Material is not emissive, apply shadow to the light factor
+			finalColor.rgb *= (oLightResult.rgb * shadow);
+			finalColor.a *= oLightResult.a;
+		}
+		else
+		{
+			finalColor *= oLightResult;
+		}
 	}
 	
 	// Fog

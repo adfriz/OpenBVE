@@ -24,6 +24,14 @@ namespace OpenBveApi.Objects
 		public string TransparencyTexture;
 		/// <summary>The absolute on-disk path to the light map texture</summary>
 		public string LightMap;
+		/// <summary>The absolute on-disk path to the normal map texture</summary>
+		public string NormalMap;
+		/// <summary>The absolute on-disk path to the ORM (Occlusion, Roughness, Metallic) map texture</summary>
+		public string OrmMap;
+		/// <summary>The metallic constant value if ORM map is not defined</summary>
+		public float MetallicConstant;
+		/// <summary>The roughness constant value if ORM map is not defined</summary>
+		public float RoughnessConstant;
 		/// <summary>The blend mode to be used</summary>
 		public MeshMaterialBlendMode BlendMode;
 		/// <summary>The wrap mode, or a null reference if not in use</summary>
@@ -59,6 +67,10 @@ namespace OpenBveApi.Objects
 			this.TextPadding = new Vector2(0, 0);
 			this.Font = "Arial";
 			this.WrapMode = null;
+			this.NormalMap = null;
+			this.OrmMap = null;
+			this.MetallicConstant = 0.0f;
+			this.RoughnessConstant = 0.5f;
 		}
 
 		/// <summary>Creates a new material from the specified texture file with default properties</summary>
@@ -79,6 +91,10 @@ namespace OpenBveApi.Objects
 			this.Font = "Arial";
 			this.WrapMode = null;
 			this.DaytimeTexture = textureFile;
+			this.NormalMap = null;
+			this.OrmMap = null;
+			this.MetallicConstant = 0.0f;
+			this.RoughnessConstant = 0.5f;
 		}
 
 		/// <summary>Clones an existing material</summary>
@@ -97,6 +113,10 @@ namespace OpenBveApi.Objects
 			this.TextPadding = prototypeMaterial.TextPadding;
 			this.Font = prototypeMaterial.Font;
 			this.WrapMode = prototypeMaterial.WrapMode;
+			this.NormalMap = prototypeMaterial.NormalMap;
+			this.OrmMap = prototypeMaterial.OrmMap;
+			this.MetallicConstant = prototypeMaterial.MetallicConstant;
+			this.RoughnessConstant = prototypeMaterial.RoughnessConstant;
 		}
 	}
 }

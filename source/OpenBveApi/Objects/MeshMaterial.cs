@@ -26,6 +26,14 @@ namespace OpenBveApi.Objects
 		public Texture NighttimeTexture;
 		/// <summary>The lightmap texture</summary>
 		public Texture LightMapTexture;
+		/// <summary>The normal map texture</summary>
+		public Texture NormalMapTexture;
+		/// <summary>The ORM map texture</summary>
+		public Texture OrmMapTexture;
+		/// <summary>The metallic constant value</summary>
+		public float MetallicConstant;
+		/// <summary>The roughness constant value</summary>
+		public float RoughnessConstant;
 		/// <summary>The blend mode for this material</summary>
 		public MeshMaterialBlendMode BlendMode;
 		/// <summary>A bit mask specifying the glow properties. Use GetGlowAttenuationData to create valid data for this field.</summary>
@@ -45,6 +53,10 @@ namespace OpenBveApi.Objects
 			if (A.DaytimeTexture != B.DaytimeTexture) return false;
 			if (A.NighttimeTexture != B.NighttimeTexture) return false;
 			if (A.LightMapTexture != B.LightMapTexture) return false;
+			if (A.NormalMapTexture != B.NormalMapTexture) return false;
+			if (A.OrmMapTexture != B.OrmMapTexture) return false;
+			if (A.MetallicConstant != B.MetallicConstant) return false;
+			if (A.RoughnessConstant != B.RoughnessConstant) return false;
 			if (A.BlendMode != B.BlendMode) return false;
 			if (A.GlowAttenuationData != B.GlowAttenuationData) return false;
 			if (A.WrapMode != B.WrapMode) return false;
@@ -62,6 +74,10 @@ namespace OpenBveApi.Objects
 			if (A.DaytimeTexture != B.DaytimeTexture) return true;
 			if (A.NighttimeTexture != B.NighttimeTexture) return true;
 			if (A.LightMapTexture != B.LightMapTexture) return true;
+			if (A.NormalMapTexture != B.NormalMapTexture) return true;
+			if (A.OrmMapTexture != B.OrmMapTexture) return true;
+			if (A.MetallicConstant != B.MetallicConstant) return true;
+			if (A.RoughnessConstant != B.RoughnessConstant) return true;
 			if (A.BlendMode != B.BlendMode) return true;
 			if (A.GlowAttenuationData != B.GlowAttenuationData) return true;
 			if (A.WrapMode != B.WrapMode) return true;

@@ -82,6 +82,8 @@ namespace OpenBveApi
 		public int SoundNumber;
 		/// <summary>Whether to use the new rendering method.</summary>
 		public bool IsUseNewRenderer;
+		/// <summary>Whether to enable Physically Based Rendering (PBR) dynamic loading and shaders.</summary>
+		public bool PbrRendering;
 		/// <summary>Shadow map resolution per cascade. Off disables shadows.</summary>
 		public ShadowMapResolution ShadowResolution = ShadowMapResolution.Off;
 		/// <summary>Maximum distance from the camera at which shadows appear.</summary>

@@ -127,13 +127,70 @@ namespace OpenBveApi.Objects
 						}
 
 						Object.Mesh.Materials[mm + i].DaytimeTexture = tday;
+
+						// PBR textures check (explicit or auto-detected)
+						string normalPath = Materials[i].NormalMap;
+						if (string.IsNullOrEmpty(normalPath) && Materials[i].DaytimeTexture != null && System.IO.File.Exists(Materials[i].DaytimeTexture))
+						{
+							string dir = System.IO.Path.GetDirectoryName(Materials[i].DaytimeTexture);
+							string name = System.IO.Path.GetFileNameWithoutExtension(Materials[i].DaytimeTexture);
+							string[] exts = { ".png", ".jpg", ".jpeg" };
+							foreach (var ext in exts)
+							{
+								string testPath = System.IO.Path.Combine(dir, name + "_normal" + ext);
+								if (System.IO.File.Exists(testPath))
+								{
+									normalPath = testPath;
+									break;
+								}
+							}
+						}
+						if (!string.IsNullOrEmpty(normalPath) && System.IO.File.Exists(normalPath))
+						{
+							currentHost.RegisterTexture(normalPath, new TextureParameters(null, null), out Texture tnormal);
+							Object.Mesh.Materials[mm + i].NormalMapTexture = tnormal;
+						}
+						else
+						{
+							Object.Mesh.Materials[mm + i].NormalMapTexture = null;
+						}
+
+						string ormPath = Materials[i].OrmMap;
+						if (string.IsNullOrEmpty(ormPath) && Materials[i].DaytimeTexture != null && System.IO.File.Exists(Materials[i].DaytimeTexture))
+						{
+							string dir = System.IO.Path.GetDirectoryName(Materials[i].DaytimeTexture);
+							string name = System.IO.Path.GetFileNameWithoutExtension(Materials[i].DaytimeTexture);
+							string[] exts = { ".png", ".jpg", ".jpeg" };
+							foreach (var ext in exts)
+							{
+								string testPath = System.IO.Path.Combine(dir, name + "_orm" + ext);
+								if (System.IO.File.Exists(testPath))
+								{
+									ormPath = testPath;
+									break;
+								}
+							}
+						}
+						if (!string.IsNullOrEmpty(ormPath) && System.IO.File.Exists(ormPath))
+						{
+							currentHost.RegisterTexture(ormPath, new TextureParameters(null, null), out Texture torm);
+							Object.Mesh.Materials[mm + i].OrmMapTexture = torm;
+						}
+						else
+						{
+							Object.Mesh.Materials[mm + i].OrmMapTexture = null;
+						}
 					}
 					else
 					{
 						Object.Mesh.Materials[mm + i].DaytimeTexture = null;
+						Object.Mesh.Materials[mm + i].NormalMapTexture = null;
+						Object.Mesh.Materials[mm + i].OrmMapTexture = null;
 					}
 
 					Object.Mesh.Materials[mm + i].EmissiveColor = Materials[i].EmissiveColor;
+					Object.Mesh.Materials[mm + i].MetallicConstant = Materials[i].MetallicConstant;
+					Object.Mesh.Materials[mm + i].RoughnessConstant = Materials[i].RoughnessConstant;
 					if (Materials[i].NighttimeTexture != null)
 					{
 						currentHost.RegisterTexture(Materials[i].NighttimeTexture, parameters, out Texture tnight);

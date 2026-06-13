@@ -1170,6 +1170,13 @@ namespace LibRender2
 			shader.SetOpacity(1.0f);
 			shader.SetObjectIndex(0);
 			shader.SetAlphaTest(false);
+			shader.SetIsPbr(false);
+			shader.SetHasNormalMap(false);
+			shader.SetHasOrmMap(false);
+			shader.SetNormalMap(0);
+			shader.SetOrmMap(0);
+			shader.SetMetallicConstant(0.0f);
+			shader.SetRoughnessConstant(0.5f);
 		}
 
 		public void SetBlendFunc()
@@ -1436,6 +1443,39 @@ namespace LibRender2
 
 			// daytime polygon
 			{
+				bool usePbr = currentOptions.PbrRendering && (material.NormalMapTexture != null || material.OrmMapTexture != null);
+				shader.SetIsPbr(usePbr);
+				if (usePbr)
+				{
+					if (material.NormalMapTexture != null && currentHost.LoadTexture(ref material.NormalMapTexture, (OpenGlTextureWrapMode)material.WrapMode))
+					{
+						GL.ActiveTexture(TextureUnit.Texture1);
+						GL.BindTexture(TextureTarget.Texture2D, material.NormalMapTexture.OpenGlTextures[(int)material.WrapMode].Name);
+						shader.SetNormalMap(1);
+						shader.SetHasNormalMap(true);
+					}
+					else
+					{
+						shader.SetHasNormalMap(false);
+					}
+
+					if (material.OrmMapTexture != null && currentHost.LoadTexture(ref material.OrmMapTexture, (OpenGlTextureWrapMode)material.WrapMode))
+					{
+						GL.ActiveTexture(TextureUnit.Texture2);
+						GL.BindTexture(TextureTarget.Texture2D, material.OrmMapTexture.OpenGlTextures[(int)material.WrapMode].Name);
+						shader.SetOrmMap(2);
+						shader.SetHasOrmMap(true);
+					}
+					else
+					{
+						shader.SetHasOrmMap(false);
+					}
+
+					shader.SetMetallicConstant(material.MetallicConstant);
+					shader.SetRoughnessConstant(material.RoughnessConstant);
+					GL.ActiveTexture(TextureUnit.Texture0);
+				}
+
 				// texture
 				// ReSharper disable once PossibleInvalidOperationException
 				if (material.DaytimeTexture != null && currentHost.LoadTexture(ref material.DaytimeTexture, (OpenGlTextureWrapMode)material.WrapMode))

@@ -157,6 +157,7 @@ namespace AssimpNET.Obj
 		public string TextureSpecularity;
 		public string TextureOpacity;
 		public string TextureDisp;
+		public string TextureOrm;
 
 		public enum TextureType
 		{
@@ -176,6 +177,7 @@ namespace AssimpNET.Obj
 			TextureSpecularityType,
 			TextureOpacityType,
 			TextureDispType,
+			TextureOrmType,
 			TextureTypeCount
 		};
 		public bool[] Clamp = Enumerable.Repeat(false, (int)TextureType.TextureTypeCount).ToArray();

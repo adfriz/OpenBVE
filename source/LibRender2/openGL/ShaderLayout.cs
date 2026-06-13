@@ -232,5 +232,26 @@ namespace LibRender2
 		/// The handle of "uCurrentViewMatrix" within the shader
 		/// </summary>
 		public short CurrentViewMatrix = -1;
+
+		/// <summary>The handle of "uIsPbr" within the shader</summary>
+		public short IsPbr = -1;
+
+		/// <summary>The handle of "uNormalMap" within the shader</summary>
+		public short NormalMap = -1;
+
+		/// <summary>The handle of "uOrmMap" within the shader</summary>
+		public short OrmMap = -1;
+
+		/// <summary>The handle of "uMetallicConstant" within the shader</summary>
+		public short MetallicConstant = -1;
+
+		/// <summary>The handle of "uRoughnessConstant" within the shader</summary>
+		public short RoughnessConstant = -1;
+
+		/// <summary>The handle of "uHasNormalMap" within the shader</summary>
+		public short HasNormalMap = -1;
+
+		/// <summary>The handle of "uHasOrmMap" within the shader</summary>
+		public short HasOrmMap = -1;
 	}
 }

@@ -88,6 +88,32 @@ namespace Plugin
 										builder.Materials[0].DaytimeTexture = null;
 									}
 								}
+
+								if (material.TextureNormal != null)
+								{
+									builder.Materials[0].NormalMap = Path.CombineFile(currentFolder, material.TextureNormal);
+									if (!System.IO.File.Exists(builder.Materials[0].NormalMap))
+									{
+										builder.Materials[0].NormalMap = null;
+									}
+								}
+								else if (material.TextureBump != null)
+								{
+									builder.Materials[0].NormalMap = Path.CombineFile(currentFolder, material.TextureBump);
+									if (!System.IO.File.Exists(builder.Materials[0].NormalMap))
+									{
+										builder.Materials[0].NormalMap = null;
+									}
+								}
+
+								if (material.TextureOrm != null)
+								{
+									builder.Materials[0].OrmMap = Path.CombineFile(currentFolder, material.TextureOrm);
+									if (!System.IO.File.Exists(builder.Materials[0].OrmMap))
+									{
+										builder.Materials[0].OrmMap = null;
+									}
+								}
 							}
 						}
 						

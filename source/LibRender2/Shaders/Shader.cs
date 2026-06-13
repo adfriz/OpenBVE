@@ -176,6 +176,13 @@ namespace LibRender2.Shaders
 				ShadowMap1 = (short)GL.GetUniformLocation(Handle, "uShadowMap1"),
 				ShadowMap2 = (short)GL.GetUniformLocation(Handle, "uShadowMap2"),
 				CurrentViewMatrix = (short)GL.GetUniformLocation(Handle, "uCurrentViewMatrix"),
+				IsPbr = (short)GL.GetUniformLocation(Handle, "uIsPbr"),
+				NormalMap = (short)GL.GetUniformLocation(Handle, "uNormalMap"),
+				OrmMap = (short)GL.GetUniformLocation(Handle, "uOrmMap"),
+				MetallicConstant = (short)GL.GetUniformLocation(Handle, "uMetallicConstant"),
+				RoughnessConstant = (short)GL.GetUniformLocation(Handle, "uRoughnessConstant"),
+				HasNormalMap = (short)GL.GetUniformLocation(Handle, "uHasNormalMap"),
+				HasOrmMap = (short)GL.GetUniformLocation(Handle, "uHasOrmMap"),
 			};
 		}
 
@@ -535,6 +542,41 @@ namespace LibRender2.Shaders
 				(float)m.Row2.X, (float)m.Row2.Y, (float)m.Row2.Z, (float)m.Row2.W,
 				(float)m.Row3.X, (float)m.Row3.Y, (float)m.Row3.Z, (float)m.Row3.W
 			};
+		}
+
+		public void SetIsPbr(bool isPbr)
+		{
+			GL.ProgramUniform1(Handle, UniformLayout.IsPbr, isPbr ? 1 : 0);
+		}
+
+		public void SetNormalMap(int textureUnit)
+		{
+			GL.ProgramUniform1(Handle, UniformLayout.NormalMap, textureUnit);
+		}
+
+		public void SetOrmMap(int textureUnit)
+		{
+			GL.ProgramUniform1(Handle, UniformLayout.OrmMap, textureUnit);
+		}
+
+		public void SetMetallicConstant(float val)
+		{
+			GL.ProgramUniform1(Handle, UniformLayout.MetallicConstant, val);
+		}
+
+		public void SetRoughnessConstant(float val)
+		{
+			GL.ProgramUniform1(Handle, UniformLayout.RoughnessConstant, val);
+		}
+
+		public void SetHasNormalMap(bool val)
+		{
+			GL.ProgramUniform1(Handle, UniformLayout.HasNormalMap, val ? 1 : 0);
+		}
+
+		public void SetHasOrmMap(bool val)
+		{
+			GL.ProgramUniform1(Handle, UniformLayout.HasOrmMap, val ? 1 : 0);
 		}
 
 		#endregion
