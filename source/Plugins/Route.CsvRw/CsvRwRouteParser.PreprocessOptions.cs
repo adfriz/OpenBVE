@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using OpenBveApi.Math;
 using OpenBveApi.Interface;
 using OpenBveApi.Routes;
@@ -14,12 +15,12 @@ namespace CsvRwRouteParser
 		/// <param name="Data">The finalized route data</param>
 		/// <param name="UnitOfLength">The units of length conversion factor to be applied</param>
 		/// <param name="PreviewOnly">Whether this is a preview only</param>
-		private void PreprocessOptions(Expression[] Expressions, ref RouteData Data, ref double[] UnitOfLength, bool PreviewOnly)
+		private void PreprocessOptions(IList<Expression> Expressions, ref RouteData Data, ref double[] UnitOfLength, bool PreviewOnly)
 		{
 			string Section = "";
 			bool SectionAlwaysPrefix = false;
 			// process expressions
-			for (int j = 0; j < Expressions.Length; j++)
+			for (int j = 0; j < Expressions.Count; j++)
 			{
 				if (IsRW && Expressions[j].Text.StartsWith("[") && Expressions[j].Text.EndsWith("]"))
 				{
@@ -279,6 +280,30 @@ namespace CsvRwRouteParser
 										Plugin.CurrentOptions.EnableBveTsHacks = mode == 1;
 									}
 								}
+									break;
+								case "options.startingdirection":
+									if (Arguments.Length != 2)
+									{
+										Plugin.CurrentHost.AddMessage(MessageType.Error, false, "Exactly 2 arguments are expected in " + Command + " at line " + Expressions[j].Line.ToString(Culture) + ", column " + Expressions[j].Column.ToString(Culture) + " in file " + Expressions[j].File);
+										break;
+									}
+
+									if (!NumberFormats.TryParseDoubleVb6(Arguments[0], out Data.StartingDirection.X))
+									{
+										Plugin.CurrentHost.AddMessage(MessageType.Error, false, "X is invalid in " + Command + " at line " + Expressions[j].Line.ToString(Culture) + ", column " + Expressions[j].Column.ToString(Culture) + " in file " + Expressions[j].File);
+										Data.StartingDirection.X = 0;
+									}
+									if (!NumberFormats.TryParseDoubleVb6(Arguments[1], out Data.StartingDirection.Y))
+									{
+										Plugin.CurrentHost.AddMessage(MessageType.Error, false, "Y is invalid in " + Command + " at line " + Expressions[j].Line.ToString(Culture) + ", column " + Expressions[j].Column.ToString(Culture) + " in file " + Expressions[j].File);
+										Data.StartingDirection.Y = 0;
+									}
+
+									if (Data.StartingDirection == Vector2.Null)
+									{
+										Plugin.CurrentHost.AddMessage(MessageType.Error, false, "Direction must not be zero in " + Command + " at line " + Expressions[j].Line.ToString(Culture) + ", column " + Expressions[j].Column.ToString(Culture) + " in file " + Expressions[j].File);
+										Data.StartingDirection = Vector2.Down;
+									}
 									break;
 							}
 						}

@@ -47,6 +47,9 @@ namespace RouteViewer
 				Builder.AppendLine("anisotropicfilteringlevel = " + AnisotropicFilteringLevel.ToString(Culture));
 				Builder.AppendLine("antialiasinglevel = " + AntiAliasingLevel.ToString(Culture));
 				Builder.AppendLine("transparencyMode = " + ((int)TransparencyMode).ToString(Culture));
+				Builder.AppendLine("viewingdistance = " + ViewingDistance);
+				Builder.AppendLine("nearclipbase = " + NearClipBase.ToString(Culture));
+				Builder.AppendLine("quadleafsize = " + QuadTreeLeafSize);
 				Builder.AppendLine("shadowresolution = " + (int)ShadowResolution);
 				Builder.AppendLine("shadowdrawdistance = " + ShadowDrawDistance);
 				Builder.AppendLine("shadowcascades = " + (int)ShadowCascades);
@@ -127,6 +130,15 @@ namespace RouteViewer
 							block.TryGetValue(OptionsKey.AnisotropicFilteringLevel, ref Interface.CurrentOptions.AnisotropicFilteringLevel);
 							block.TryGetValue(OptionsKey.AntiAliasingLevel, ref Interface.CurrentOptions.AntiAliasingLevel);
 							block.GetEnumValue(OptionsKey.TransparencyMode, out Interface.CurrentOptions.TransparencyMode);
+							block.TryGetValue(OptionsKey.ViewingDistance, ref Interface.CurrentOptions.ViewingDistance, NumberRange.Positive);
+							block.TryGetValue(OptionsKey.QuadLeafSize, ref Interface.CurrentOptions.QuadTreeLeafSize, NumberRange.Positive);
+							block.TryGetValue(OptionsKey.NearClipBase, ref Interface.CurrentOptions.NearClipBase, NumberRange.Positive);
+							// ensure viewing distance is greater than the near clipping plane to avoid rendering issues
+							if (Interface.CurrentOptions.ViewingDistance <= Interface.CurrentOptions.NearClipBase)
+
+							{
+								Interface.CurrentOptions.ViewingDistance = (int)Math.Ceiling(Interface.CurrentOptions.NearClipBase) + 1;
+							}
 							block.TryGetEnumValue(OptionsKey.ShadowResolution, ref Interface.CurrentOptions.ShadowResolution);
 							block.TryGetEnumValue(OptionsKey.ShadowDrawDistance, ref Interface.CurrentOptions.ShadowDrawDistance);
 							block.TryGetEnumValue(OptionsKey.ShadowCascades, ref Interface.CurrentOptions.ShadowCascades);

@@ -12,6 +12,7 @@ namespace CsvRwRouteParser
 		internal int Line;
 		internal int Column;
 		internal double TrackPositionOffset;
+		internal bool Skip;
 
 		internal Expression(string file, string text, int line, int column, double trackPositionOffset)
 		{
@@ -20,6 +21,7 @@ namespace CsvRwRouteParser
 			Line = line;
 			Column = column;
 			TrackPositionOffset = trackPositionOffset;
+			Skip = false;
 		}
 
 		/// <summary>Converts a RW formatted expression to CSV format</summary>
@@ -96,7 +98,6 @@ namespace CsvRwRouteParser
 				{
 					// East Linconshire Railway bridges
 					Text = ".freeobj(9" + Text.Substring(11);
-					int n = 0;
 				}
 
 				if (IsRw && CurrentSection.ToLowerInvariant() == "track")
