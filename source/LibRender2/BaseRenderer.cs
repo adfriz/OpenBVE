@@ -45,6 +45,7 @@ namespace LibRender2
 {
 	public abstract class BaseRenderer
 	{
+		public bool AvailableNewRenderer => true;
 		// constants
 		protected const float inv255 = 1.0f / 255.0f;
 
