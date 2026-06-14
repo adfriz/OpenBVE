@@ -183,6 +183,11 @@ namespace RouteViewer
 	            DefaultShader.SetLightDiffuse(Lighting.OptionDiffuseColor);
 	            DefaultShader.SetLightSpecular(Lighting.OptionSpecularColor);
 	            DefaultShader.SetLightModel(Lighting.LightModel);
+	            UpdateActiveLights(DefaultShader);
+            }
+            else
+            {
+	            DefaultShader.SetDynamicLights(new List<SceneLight>(), CurrentViewMatrix, 0);
             }
 
             Fog.Set();
@@ -326,10 +331,10 @@ namespace RouteViewer
 
 			}
 
-            // render overlays
-            DefaultShader.Deactivate();
-
-            ResetOpenGlState();
+			// render overlays
+			DrawLightVisuals();
+			DefaultShader.Deactivate();
+			ResetOpenGlState();
 			OptionLighting = false;
 			Fog.Enabled = false;
 			UnsetAlphaFunc();

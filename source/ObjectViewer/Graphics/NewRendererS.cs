@@ -134,6 +134,11 @@ namespace ObjectViewer.Graphics
 	            DefaultShader.SetLightDiffuse(Lighting.OptionDiffuseColor);
 	            DefaultShader.SetLightSpecular(Lighting.OptionSpecularColor);
 	            DefaultShader.SetLightModel(Lighting.LightModel);
+	            UpdateActiveLights(DefaultShader);
+            }
+            else
+            {
+	            DefaultShader.SetDynamicLights(new List<SceneLight>(), CurrentViewMatrix, 0);
             }
             DefaultShader.SetTexture(0);
             DefaultShader.SetCurrentProjectionMatrix(CurrentProjectionMatrix);
@@ -211,8 +216,9 @@ namespace ObjectViewer.Graphics
 			DefaultShader.Deactivate();
 			lastVAO = -1;
 
-            // render overlays
-            ResetOpenGlState();
+			DrawLightVisuals();
+			// render overlays
+			ResetOpenGlState();
 			OptionLighting = false;
 			UnsetAlphaFunc();
 			GL.Disable(EnableCap.DepthTest);
