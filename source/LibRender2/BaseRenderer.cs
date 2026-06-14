@@ -19,6 +19,7 @@ using LibRender2.Primitives;
 using LibRender2.Screens;
 using LibRender2.Shaders;
 using LibRender2.ShadowMapping;
+using LibRender2.Clustering;
 using LibRender2.Text;
 using LibRender2.Textures;
 using LibRender2.Viewports;
@@ -162,6 +163,9 @@ namespace LibRender2
 		
 		/// <summary>Manages the Cascaded Shadow Mapping (CSM) system.</summary>
 		public Shadows Shadows;
+
+		/// <summary>Manages Clustered Forward Rendering (CFR). Null until Initialize() completes.</summary>
+		public ClusterEngine ClusterEngine;
 
 		/// <summary>Whether shadows are enabled.</summary>
 		public bool ShadowsEnabled => Shadows?.Enabled ?? false;
@@ -446,7 +450,10 @@ namespace LibRender2
 
 			Lighting.Initialize();
 			Shadows.Initialize();
-        }
+			// Initialize Clustered Forward Rendering after shadows (GL context fully ready)
+			ClusterEngine = new ClusterEngine(this);
+			ClusterEngine.Initialize();
+		}
 
 		/// <summary>Initializes (or reinitializes) shadow mapping from current options.</summary>
 		public void InitializeShadows() => Shadows.Initialize();
@@ -476,6 +483,9 @@ namespace LibRender2
 			GameWindow?.Dispose();
 			// terminate spinning thread
 			VisibilityThreadShouldRun = false;
+			// Dispose CFR resources before GL context teardown
+			ClusterEngine?.Dispose();
+			ClusterEngine = null;
 		}
 		
 		/// <summary>Performs the CSM shadow depth rendering pass for all geometry.</summary>
@@ -483,6 +493,22 @@ namespace LibRender2
 
 		/// <summary>Binds cascading shadow data to the default shader.</summary>
 		protected void BindCSMToDefaultShader() => Shadows.Bind(DefaultShader);
+
+		/// <summary>
+		/// Performs CFR light culling and uploads to GPU. Call once per frame before BindCFRToDefaultShader().
+		/// Safe to call even if ClusterEngine is null or disabled.
+		/// </summary>
+		protected void PerformCFRCullAndUpload()
+		{
+			ClusterEngine?.CullAndUpload(CurrentViewMatrix);
+		}
+
+		/// <summary>Binds CFR cluster SSBOs to the default shader for the current frame.</summary>
+		protected void BindCFRToDefaultShader()
+		{
+			if (ClusterEngine != null && DefaultShader != null)
+				ClusterEngine.BindToShader(DefaultShader);
+		}
 
 		internal PrimitiveType GetPrimitiveType(FaceFlags flags)
 		{
@@ -1065,6 +1091,11 @@ namespace LibRender2
 			}
 
 			UpdateViewport(Screen.Width, Screen.Height);
+
+			if (CurrentViewportMode == ViewportMode.Scenery)
+			{
+				ClusterEngine?.RebuildClusters();
+			}
 		}
 
 		protected virtual void UpdateViewport(int Width, int Height)

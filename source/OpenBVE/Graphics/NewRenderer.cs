@@ -132,6 +132,7 @@ namespace OpenBve.Graphics
 			UpdateViewport(ViewportChangeMode.ChangeToScenery);
 
 			PerformCSMShadowPass();
+			PerformCFRCullAndUpload();
 
             if (Lighting.ShouldInitialize)
 			{
@@ -169,6 +170,7 @@ namespace OpenBve.Graphics
 
 			DefaultShader.Activate();
 			BindCSMToDefaultShader();
+			BindCFRToDefaultShader();
 
             // render background
             // n.b. must disable shadows
