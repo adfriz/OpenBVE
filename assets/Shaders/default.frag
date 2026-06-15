@@ -295,8 +295,9 @@ void main(void)
 		{
 			reflectivity = 0.4;
 		}
-		finalColor.rgb = mix(finalColor.rgb, reflectColor.rgb, reflectivity * 0.6);
-		finalColor.a = max(finalColor.a, reflectColor.a * reflectivity * 0.6);
+		float F = 0.25 + 0.75 * pow(max(1.0 - abs(dot(viewDir, normal)), 0.0), 3.0);
+		finalColor.rgb = mix(finalColor.rgb, reflectColor.rgb, reflectivity * F * 0.85);
+		finalColor.a = max(finalColor.a, reflectColor.a * reflectivity * F * 0.85);
 	}
 
 	// Fog

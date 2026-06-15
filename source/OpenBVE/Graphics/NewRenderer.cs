@@ -181,10 +181,8 @@ namespace OpenBve.Graphics
 
 			if (AvailableNewRenderer)
 			{
-				if (CameraTrackFollower != null && Math.Abs(CameraTrackFollower.TrackPosition - lastCubeMapPosition) > 50.0)
-				{
-					GenerateEnvironmentCubeMap();
-				}
+				GenerateEnvironmentCubeMap(currentCubeMapFace);
+				currentCubeMapFace = (currentCubeMapFace + 1) % 6;
 
 				DefaultShader.Activate();
 				BindCSMToDefaultShader();
@@ -563,16 +561,18 @@ namespace OpenBve.Graphics
 		}
 
 		internal int EnvironmentCubeMapTexture = -1;
+		internal int WorkingCubeMapTexture = -1;
+		internal int currentCubeMapFace = 0;
 		internal bool CubeMapGenerated = false;
 		private double lastCubeMapPosition = -1000.0;
 
-		internal void GenerateEnvironmentCubeMap()
+		internal void GenerateEnvironmentCubeMap(int faceIndex)
 		{
 			if (!AvailableNewRenderer) return;
 
 			HideTrainsForCubeMap = true;
 
-			int size = 512;
+			int size = 256;
 			TextureTarget[] targets = {
 				TextureTarget.TextureCubeMapPositiveX,
 				TextureTarget.TextureCubeMapNegativeX,
@@ -582,10 +582,10 @@ namespace OpenBve.Graphics
 				TextureTarget.TextureCubeMapNegativeZ
 			};
 
-			if (EnvironmentCubeMapTexture == -1)
+			if (WorkingCubeMapTexture == -1)
 			{
-				GL.GenTextures(1, out EnvironmentCubeMapTexture);
-				GL.BindTexture(TextureTarget.TextureCubeMap, EnvironmentCubeMapTexture);
+				GL.GenTextures(1, out WorkingCubeMapTexture);
+				GL.BindTexture(TextureTarget.TextureCubeMap, WorkingCubeMapTexture);
 
 				GL.TexParameter(TextureTarget.TextureCubeMap, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
 				GL.TexParameter(TextureTarget.TextureCubeMap, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
@@ -600,7 +600,7 @@ namespace OpenBve.Graphics
 			}
 			else
 			{
-				GL.BindTexture(TextureTarget.TextureCubeMap, EnvironmentCubeMapTexture);
+				GL.BindTexture(TextureTarget.TextureCubeMap, WorkingCubeMapTexture);
 			}
 
 			int fbo;
@@ -619,6 +619,7 @@ namespace OpenBve.Graphics
 			Matrix4D origProjection = CurrentProjectionMatrix;
 			Matrix4D origView = CurrentViewMatrix;
 			ViewportMode origViewport = CurrentViewportMode;
+			Vector3 origTransformedLightPosition = TransformedLightPosition;
 
 			Screen.Width = size;
 			Screen.Height = size;
@@ -648,45 +649,42 @@ namespace OpenBve.Graphics
 				new Vector3(0, -1, 0)
 			};
 
-			for (int i = 0; i < 6; i++)
+			GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, targets[faceIndex], WorkingCubeMapTexture, 0);
+			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+			CurrentViewMatrix = Matrix4D.LookAt(Vector3.Zero, directions[faceIndex], ups[faceIndex]);
+			TransformedLightPosition = new Vector3(Lighting.OptionLightPosition.X, Lighting.OptionLightPosition.Y, -Lighting.OptionLightPosition.Z);
+			TransformedLightPosition.Transform(CurrentViewMatrix);
+
+			GL.Disable(EnableCap.DepthTest);
+			DefaultShader.Activate();
+			DefaultShader.SetShadowEnabled(false);
+			Program.CurrentRoute.UpdateBackground(0.0, false);
+
+			GL.Enable(EnableCap.DepthTest);
+			GL.DepthMask(true);
+			
+			DefaultShader.SetIsLight(OptionLighting);
+			if (OptionLighting)
 			{
-				GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, targets[i], EnvironmentCubeMapTexture, 0);
-				GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+				DefaultShader.SetLightPosition(TransformedLightPosition);
+				DefaultShader.SetLightAmbient(Lighting.OptionAmbientColor);
+				DefaultShader.SetLightDiffuse(Lighting.OptionDiffuseColor);
+				DefaultShader.SetLightSpecular(Lighting.OptionSpecularColor);
+				DefaultShader.SetLightModel(Lighting.LightModel);
+			}
+			Fog.Set();
+			DefaultShader.SetTexture(0);
+			DefaultShader.SetCurrentProjectionMatrix(CurrentProjectionMatrix);
 
-				CurrentViewMatrix = Matrix4D.LookAt(Vector3.Zero, directions[i], ups[i]);
-				TransformedLightPosition = new Vector3(Lighting.OptionLightPosition.X, Lighting.OptionLightPosition.Y, -Lighting.OptionLightPosition.Z);
-				TransformedLightPosition.Transform(CurrentViewMatrix);
-
-				GL.Disable(EnableCap.DepthTest);
-				DefaultShader.Activate();
-				DefaultShader.SetShadowEnabled(false);
-				Program.CurrentRoute.UpdateBackground(0.0, false);
-
-				GL.Enable(EnableCap.DepthTest);
-				GL.DepthMask(true);
-				
-				DefaultShader.SetIsLight(OptionLighting);
-				if (OptionLighting)
-				{
-					DefaultShader.SetLightPosition(TransformedLightPosition);
-					DefaultShader.SetLightAmbient(Lighting.OptionAmbientColor);
-					DefaultShader.SetLightDiffuse(Lighting.OptionDiffuseColor);
-					DefaultShader.SetLightSpecular(Lighting.OptionSpecularColor);
-					DefaultShader.SetLightModel(Lighting.LightModel);
-				}
-				Fog.Set();
-				DefaultShader.SetTexture(0);
-				DefaultShader.SetCurrentProjectionMatrix(CurrentProjectionMatrix);
-
-				List<FaceState> opaqueFaces;
-				lock (VisibleObjects.LockObject)
-				{
-					opaqueFaces = VisibleObjects.OpaqueFaces.ToList();
-				}
-				foreach (FaceState face in opaqueFaces)
-				{
-					face.Draw();
-				}
+			List<FaceState> opaqueFaces;
+			lock (VisibleObjects.LockObject)
+			{
+				opaqueFaces = VisibleObjects.OpaqueFaces.ToList();
+			}
+			foreach (FaceState face in opaqueFaces)
+			{
+				face.Draw();
 			}
 
 			GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
@@ -700,13 +698,36 @@ namespace OpenBve.Graphics
 			CurrentViewMatrix = origView;
 			CurrentViewportMode = origViewport;
 			GL.Viewport(0, 0, Screen.Width, Screen.Height);
+			TransformedLightPosition = origTransformedLightPosition;
 
 			HideTrainsForCubeMap = false;
-			CubeMapGenerated = true;
+
+			if (faceIndex == 5)
+			{
+				int temp = EnvironmentCubeMapTexture;
+				EnvironmentCubeMapTexture = WorkingCubeMapTexture;
+				WorkingCubeMapTexture = temp;
+
+				if (WorkingCubeMapTexture != -1)
+				{
+					GL.DeleteTextures(1, ref WorkingCubeMapTexture);
+					WorkingCubeMapTexture = -1;
+				}
+				CubeMapGenerated = true;
+			}
+
 			GL.BindTexture(TextureTarget.TextureCubeMap, 0);
 			if (CameraTrackFollower != null)
 			{
 				lastCubeMapPosition = CameraTrackFollower.TrackPosition;
+			}
+		}
+
+		internal void GenerateEnvironmentCubeMap()
+		{
+			for (int i = 0; i < 6; i++)
+			{
+				GenerateEnvironmentCubeMap(i);
 			}
 		}
 
