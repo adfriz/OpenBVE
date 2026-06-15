@@ -206,7 +206,7 @@ namespace LibRender2.Textures
 			
 			if (handle.MultipleFrames)
 			{
-				if (!animatedTextures.ContainsKey(handle.Origin))
+				if (!animatedTextures.TryGetValue(handle.Origin, out texture))
 				{
 					if (!handle.Origin.GetTexture(out texture))
 					{
@@ -215,10 +215,7 @@ namespace LibRender2.Textures
 					}
 					animatedTextures.Add(handle.Origin, texture);
 				}
-				else
-				{
-					texture = animatedTextures[handle.Origin];
-				}
+				
 				double elapsedTime = CPreciseTimer.GetElapsedTime(handle.LastAccess, currentTicks);
 				int elapsedFrames = (int)(elapsedTime / texture.FrameInterval);
 				if (elapsedFrames > 0)
@@ -334,7 +331,7 @@ namespace LibRender2.Textures
 						GL.TexParameter(TextureTarget.Texture2D, (TextureParameterName)ExtTextureFilterAnisotropic.TextureMaxAnisotropyExt, AnisotropicFilteringLevel);
 					}
 					
-					bool noLuminanceChannel = currentHost.Platform == HostPlatform.AppleOSX | renderer.currentOptions.ForceForwardsCompatibleContext;
+					bool noLuminanceChannel = currentHost.Platform == HostPlatform.AppleOSX || renderer.currentOptions.ForceForwardsCompatibleContext;
 					
 					if (handle.Transparency == TextureTransparencyType.Opaque)
 					{

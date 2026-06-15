@@ -16,7 +16,6 @@ using OpenBveApi.Math;
 using OpenBveApi.Objects;
 using OpenBveApi.Routes;
 using OpenBveApi.Textures;
-using OpenBveApi.World;
 using OpenTK.Graphics.OpenGL;
 using System;
 using System.Collections.Generic;
@@ -76,16 +75,6 @@ namespace OpenBve.Graphics
 			Program.FileSystem.AppendToLogFile("Renderer initialised successfully.");
 		}
 		
-		internal int CreateStaticObject(UnifiedObject Prototype, Vector3 Position, Transformation WorldTransformation, Transformation LocalTransformation, ObjectDisposalMode AccurateObjectDisposal, double AccurateObjectDisposalZOffset, double StartingDistance, double EndingDistance, double BlockLength, double TrackPosition)
-		{
-			if (!(Prototype is StaticObject obj))
-			{
-				Interface.AddMessage(MessageType.Error, false, "Attempted to use an animated object where only static objects are allowed.");
-				return -1;
-			}
-			return base.CreateStaticObject(obj, Position, WorldTransformation, LocalTransformation, AccurateObjectDisposal, AccurateObjectDisposalZOffset, StartingDistance, EndingDistance, BlockLength, TrackPosition, false);
-		}
-
 		protected override void UpdateViewport(int width, int height)
 		{
 			_programLogo = null;
@@ -100,10 +89,12 @@ namespace OpenBve.Graphics
 			{
 				case ViewportMode.Scenery:
 					double cd = Program.CurrentRoute.CurrentBackground is BackgroundObject b ? Math.Max(Program.CurrentRoute.CurrentBackground.BackgroundImageDistance, b.ClipDistance) : Program.CurrentRoute.CurrentBackground.BackgroundImageDistance;
-					CurrentProjectionMatrix = Matrix4D.CreatePerspectiveFieldOfView(Camera.VerticalViewingAngle, Screen.AspectRatio, 0.5, cd);
+					double nearClipScenery = Math.Max(0.01, Interface.CurrentOptions.NearClipScenery);
+					CurrentProjectionMatrix = Matrix4D.CreatePerspectiveFieldOfView(Camera.VerticalViewingAngle, Screen.AspectRatio, nearClipScenery, cd);
 					break;
 				case ViewportMode.Cab:
-					CurrentProjectionMatrix = Matrix4D.CreatePerspectiveFieldOfView(Camera.VerticalViewingAngle, Screen.AspectRatio, 0.025, 50.0);
+					double nearClipCab = Math.Max(0.01, Interface.CurrentOptions.NearClipCab);
+					CurrentProjectionMatrix = Matrix4D.CreatePerspectiveFieldOfView(Camera.VerticalViewingAngle, Screen.AspectRatio, nearClipCab, 50.0);
 					break;
 			}
 
@@ -134,7 +125,7 @@ namespace OpenBve.Graphics
 			}
 			else
 			{
-				GL.ClearColor(0.67f, 0.67f, 0.67f, 1.0f);
+				GL.ClearColor(Interface.CurrentOptions.ClearColor.R * inv255, Interface.CurrentOptions.ClearColor.G * inv255, Interface.CurrentOptions.ClearColor.B * inv255, 1.0f);
 			}
 
 			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
@@ -199,9 +190,11 @@ namespace OpenBve.Graphics
 			// render background
 			// n.b. must disable shadows
 			GL.Disable(EnableCap.DepthTest);
-			DefaultShader.SetShadowEnabled(false);
-			Program.CurrentRoute.UpdateBackground(TimeElapsed, Program.Renderer.CurrentInterface != InterfaceType.Normal);
-
+			if (AvailableNewRenderer)
+			{
+				DefaultShader.SetShadowEnabled(false);
+			}
+			
 			// RealSky
 			totalTime += TimeElapsed;
 			if (Interface.CurrentOptions.RealSkyEnabled || Program.CurrentRoute.Atmosphere.RealSkyOverride)
@@ -223,7 +216,10 @@ namespace OpenBve.Graphics
 				}
 			}
 
-			DefaultShader.SetShadowEnabled(ShadowsEnabled);
+			if (AvailableNewRenderer)
+			{
+				DefaultShader.SetShadowEnabled(ShadowsEnabled);
+			}
 
 			// fog
 			float aa = Program.CurrentRoute.CurrentFog.Start;
@@ -546,7 +542,7 @@ namespace OpenBve.Graphics
 			OptionLighting = true;
 		}
 
-		public NewRenderer(HostInterface currentHost, BaseOptions currentOptions, FileSystem fileSystem) : base(currentHost, currentOptions, fileSystem)
+		public NewRenderer(HostInterface currentHost, BaseOptions CurrentOptions, FileSystem fileSystem) : base(currentHost, CurrentOptions, fileSystem)
 		{
 		}
 	}

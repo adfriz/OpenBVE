@@ -1443,6 +1443,22 @@
 						<source>m</source>
 						<target>m</target>
 					</trans-unit>
+					<trans-unit id="quality_distance_nearclip">
+						<source>Near clip:</source>
+						<target>Near clip:</target>
+					</trans-unit>
+					<trans-unit id="quality_distance_nearclip_scenery">
+						<source>Near clip (scenery):</source>
+						<target>Near clip (scenery):</target>
+					</trans-unit>
+					<trans-unit id="quality_distance_nearclip_cab">
+						<source>Near clip (cab):</source>
+						<target>Near clip (cab):</target>
+					</trans-unit>
+					<trans-unit id="quality_distance_nearclip_base">
+						<source>Near clip (base):</source>
+						<target>Near clip (base):</target>
+					</trans-unit>
 					<trans-unit id="quality_distance_motionblur">
 						<source>Motion blur:</source>
 						<target>Motion blur:</target>
@@ -1619,11 +1635,11 @@
 					</trans-unit>
 					<trans-unit id="page_previous">
 						<source>Previous Page...</source>
-						<target>Berikutnya...</target>
+						<target>Sebelumnya...</target>
 					</trans-unit>
 					<trans-unit id="page_next">
 						<source>Next Page...</source>
-						<target>Sebelumnya..</target>
+						<target>Berikutnya...</target>
 					</trans-unit>
 					<trans-unit id="kiosk_mode">
 						<source>Kiosk Mode</source>
@@ -1794,6 +1810,36 @@
 					<trans-unit id="shadows_strength">
 						<source>Shadow Strength:</source>
 						<target>Intensitas Bayangan:</target>
+					</trans-unit>
+				</group>
+				<group id="tooltips">
+					<trans-unit id="interpolation">
+						<source>The texture filtering mode used to smooth textures.</source>
+						<target>Mode pemfilteran tekstur yang digunakan untuk menghaluskan tekstur.</target>
+					</trans-unit>
+					<trans-unit id="anisotropic">
+						<source>Higher levels of anisotropic filtering improve texture quality when viewed at an angle.</source>
+						<target>Level pemfilteran anisotropik yang lebih tinggi meningkatkan kualitas tekstur saat dilihat dari sudut miring.</target>
+					</trans-unit>
+					<trans-unit id="antialiasing">
+						<source>Reduces jagged edges on polygons.</source>
+						<target>Mengurangi tepi bergerigi pada poligon.</target>
+					</trans-unit>
+					<trans-unit id="transparency">
+						<source>Sets the quality of transparency rendering.</source>
+						<target>Mengatur kualitas rendering transparansi.</target>
+					</trans-unit>
+					<trans-unit id="viewingdistance">
+						<source>The maximum distance at which objects are rendered.</source>
+						<target>Jarak maksimum di mana objek akan ditampilkan.</target>
+					</trans-unit>
+					<trans-unit id="motionblur">
+						<source>Enables motion blur effects when moving at speed.</source>
+						<target>Mengaktifkan efek motion blur saat bergerak dengan kecepatan tinggi.</target>
+					</trans-unit>
+					<trans-unit id="new_renderer">
+						<source>Enable the modern shader-based renderer. Recommended for better visuals and performance on modern hardware.</source>
+						<target>Aktifkan renderer berbasis shader modern. Direkomasikan untuk visual dan performa yang lebih baik pada perangkat keras modern.</target>
 					</trans-unit>
 				</group>
 				<group id="dialog">

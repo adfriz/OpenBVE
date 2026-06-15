@@ -222,8 +222,6 @@ namespace ObjectViewer.Graphics
 							UnsetAlphaFunc();
 							additive = true;
 						}
-
-						face.Draw();
 					}
 					else
 					{
@@ -232,9 +230,8 @@ namespace ObjectViewer.Graphics
 							SetAlphaFunc();
 							additive = false;
 						}
-
-						face.Draw();
 					}
+					face.Draw();
 				}
 			}
 

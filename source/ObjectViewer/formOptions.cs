@@ -4,8 +4,8 @@ using LibRender2.Viewports;
 using ObjectViewer.Graphics;
 using OpenBveApi;
 using OpenBveApi.Graphics;
-using OpenBveApi.Input;
 using OpenBveApi.Interface;
+using OpenBveApi.Input;
 using OpenBveApi.Math;
 using OpenBveApi.Objects;
 using OpenTK.Graphics;
@@ -20,6 +20,11 @@ namespace ObjectViewer
 			InterpolationMode.SelectedIndex = (int) Interface.CurrentOptions.Interpolation;
 			AnsiotropicLevel.Value = Interface.CurrentOptions.AnisotropicFilteringLevel;
 			AntialiasingLevel.Value = Interface.CurrentOptions.AntiAliasingLevel;
+			nearClip.Value = (decimal)Interface.CurrentOptions.NearClipBase;
+			if (Translations.CurrentLanguageCode != "en-US")
+			{
+				labelNearClip.Text = Translations.GetInterfaceString(OpenBveApi.Hosts.HostApplication.OpenBve, new[] { "options", "quality_distance_nearclip" });
+			}
 			TransparencyQuality.SelectedIndex = Interface.CurrentOptions.TransparencyMode == TransparencyMode.Performance ? 0 : 2;
 			width.Value = Program.Renderer.Screen.Width;
 			height.Value = Program.Renderer.Screen.Height;
@@ -59,10 +64,6 @@ namespace ObjectViewer
 			numericUpDownShadowStrength.Value = (decimal)(Interface.CurrentOptions.ShadowStrength * 100.0);
 			numericUpDownShadowBias.Value = (decimal)Interface.CurrentOptions.ShadowBias;
 			numericUpDownShadowNormalBias.Value = (decimal)Interface.CurrentOptions.ShadowNormalBias;
-			if (numericUpDownShadowBias.Value == 0)
-			{
-				numericUpDownShadowBias.Value = 0.000050m;
-			}
 
 
 			// Initialize sun direction sliders from current light position
@@ -85,12 +86,13 @@ namespace ObjectViewer
 			comboBoxBackwards.DataSource = Enum.GetValues(typeof(Key));
 			comboBoxBackwards.SelectedItem = Interface.CurrentOptions.CameraMoveBackward;
 			checkBoxAutoReload.Checked = Interface.CurrentOptions.AutoReloadObjects;
+			checkBoxShadowFilterCascades.Checked = Interface.CurrentOptions.ShadowFilterCascades;
 		}
 
 		private void InitializeSunSliders()
 		{
-			trackBarSunElevation.Value = (int)Interface.CurrentOptions.LightElevation;
-			trackBarSunAzimuth.Value = (int)Interface.CurrentOptions.LightAzimuth;
+			trackBarSunElevation.Value = Math.Max(trackBarSunElevation.Minimum, Math.Min((int)Interface.CurrentOptions.LightElevation, trackBarSunElevation.Maximum));
+			trackBarSunAzimuth.Value = Math.Max(trackBarSunAzimuth.Minimum, Math.Min((int)Interface.CurrentOptions.LightAzimuth, trackBarSunAzimuth.Maximum));
 			labelSunAzimuthValue.Text = trackBarSunAzimuth.Value + "\u00b0";
 			labelSunElevationValue.Text = trackBarSunElevation.Value + "\u00b0";
 		}
@@ -108,6 +110,7 @@ namespace ObjectViewer
 			trackBarSunAzimuth.Enabled = enabled;
 
 			trackBarSunElevation.Enabled = enabled;
+			checkBoxShadowFilterCascades.Enabled = enabled;
 		}
 
 		private void comboBoxShadowResolution_SelectedIndexChanged(object sender, EventArgs e)
@@ -123,10 +126,10 @@ namespace ObjectViewer
 			double azimuthRad = Interface.CurrentOptions.LightAzimuth * Math.PI / 180.0;
 			double elevationRad = Interface.CurrentOptions.LightElevation * Math.PI / 180.0;
 
-			// Convert spherical to direction vector
-			float x = (float)(Math.Sin(azimuthRad) * Math.Cos(elevationRad));
+			// Convert spherical to direction vector (matching DirectionalLight docs)
+			float x = (float)(-Math.Cos(elevationRad) * Math.Sin(azimuthRad));
 			float y = (float)(Math.Sin(elevationRad));
-			float z = (float)(Math.Cos(azimuthRad) * Math.Cos(elevationRad));
+			float z = (float)(-Math.Cos(elevationRad) * Math.Cos(azimuthRad));
 
 			Program.Renderer.Lighting.OptionLightPosition = new Vector3(x, y, z);
 		}
@@ -184,7 +187,7 @@ namespace ObjectViewer
 				Program.Renderer.TextureManager.UnloadAllTextures(false);
 			}
 
-			//Ansiotropic filtering level
+			//Anisotropic filtering level
 			Interface.CurrentOptions.AnisotropicFilteringLevel = (int) AnsiotropicLevel.Value;
 			//Antialiasing level
 			Interface.CurrentOptions.AntiAliasingLevel = (int) AntialiasingLevel.Value;
@@ -240,6 +243,12 @@ namespace ObjectViewer
 			Interface.CurrentOptions.CameraMoveDown = (Key)comboBoxDown.SelectedItem;
 			Interface.CurrentOptions.CameraMoveForward = (Key)comboBoxForwards.SelectedItem;
 			Interface.CurrentOptions.CameraMoveBackward = (Key)comboBoxBackwards.SelectedItem;
+			Interface.CurrentOptions.NearClipBase = (double)nearClip.Value;
+			// ensure viewing distance is greater than the near clipping plane to avoid rendering issues
+			if (Interface.CurrentOptions.ViewingDistance <= Interface.CurrentOptions.NearClipBase)
+			{
+				Interface.CurrentOptions.ViewingDistance = (int)Math.Ceiling(Interface.CurrentOptions.NearClipBase) + 1;
+			}
 			Interface.CurrentOptions.AutoReloadObjects = checkBoxAutoReload.Checked;
 
 			// Saving shadow settings
@@ -271,10 +280,11 @@ namespace ObjectViewer
 			Interface.CurrentOptions.ShadowStrength = (double)numericUpDownShadowStrength.Value / 100.0;
 			Interface.CurrentOptions.ShadowBias = (double)numericUpDownShadowBias.Value;
 			Interface.CurrentOptions.ShadowNormalBias = (double)numericUpDownShadowNormalBias.Value;
+			Interface.CurrentOptions.ShadowFilterCascades = checkBoxShadowFilterCascades.Checked;
 			
 			Interface.CurrentOptions.Save(Path.CombineFile(Program.FileSystem.SettingsFolder, "1.5.0/options_ov.cfg"));
 			Program.RefreshObjects();
-			this.DialogResult = DialogResult.OK;
+			DialogResult = DialogResult.OK;
 			Close();
 		}
 	}

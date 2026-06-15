@@ -34,7 +34,7 @@
 		AddVertex,
 		AddFace,
 		AddFace2,
-		// no equivilant of the [Texture] section in csv format
+		// no equivalent of the [Texture] section in csv format
 		SetColor,
 		SetColorAll,
 		SetEmissiveColor,

@@ -32,6 +32,7 @@ namespace TrainEditor2.Systems
 					builder.AppendLine("[language]");
 					builder.AppendLine("code = " + LanguageCode);
 					File.WriteAllText(fileName, builder.ToString(), new UTF8Encoding(true));
+
 				}
 				catch
 				{

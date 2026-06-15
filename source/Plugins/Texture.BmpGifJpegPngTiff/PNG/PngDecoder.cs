@@ -1,4 +1,4 @@
-//Simplified BSD License (BSD-2-Clause)
+﻿//Simplified BSD License (BSD-2-Clause)
 //
 //Copyright (c) 2023- 2025, Christopher Lees, The OpenBVE Project
 //
@@ -148,7 +148,7 @@ namespace Plugin.PNG
 
 								switch (ColorType)
 								{
-									case ColorType.Palleted: // each filtered byte becomes a pallete index
+									case ColorType.Paletted: // each filtered byte becomes a palette index
 									case ColorType.Grayscale:
 										BytesPerPixel = 1;
 										break;
@@ -166,21 +166,31 @@ namespace Plugin.PNG
 										return false;
 								}
 
-								ScanlineLength = Math.Max(1, (int)Math.Ceiling((Width * BytesPerPixel) / (double)ScanlineLength)); // scanline must be a minumum of 1 byte in length. Always round up
+								ScanlineLength = Math.Max(1, (int)Math.Ceiling((Width * BytesPerPixel) / (double)ScanlineLength)); // scanline must be a minimum of 1 byte in length. Always round up
 
-								pixelBuffer = ColorType != ColorType.Palleted && ColorType != ColorType.GrayscaleAlpha && BytesPerPixel != 8 ? new byte[Width * Height * BytesPerPixel] : new byte[Width * Height * 4];
+								pixelBuffer = ColorType != ColorType.Paletted && ColorType != ColorType.GrayscaleAlpha && BytesPerPixel != 8 ? new byte[Width * Height * BytesPerPixel] : new byte[Width * Height * 4];
 								break;
 							case ChunkType.PLTE:
 								colorPalette = new Palette(chunkBuffer);
 								break;
 							case ChunkType.tRNS:
-								if (colorPalette == null)
+								if (colorPalette != null)
 								{
-									Plugin.CurrentHost.ReportProblem(ProblemType.InvalidData, "The tRNS chunk must be preceeded by a PLTE chunk in PNG file " + fileName);
-									return false;
+									colorPalette.SetAlphaValues(chunkBuffer);
+									break;
 								}
-								colorPalette.SetAlphaValues(chunkBuffer);
-								return false;
+
+								for (int i = 0; i < chunkBuffer.Length; i++)
+								{
+									if (chunkBuffer[i] != 0)
+									{
+										// if tRNS chunk actually contains no alpha, ignore it silently with no errors
+										// e.g. Estobr\Scenarios\瀬戸大橋・予讃・土讃線\Structures\gojikisha\ship\tag\Tag_A03.png
+										Plugin.CurrentHost.ReportProblem(ProblemType.InvalidData, "The tRNS chunk must be preceded by a PLTE chunk in PNG file " + fileName);
+										return false;
+									}
+								}
+								break;
 							case ChunkType.IDAT:
 								// IDAT chunks contain image data
 								// Data may be split over one or more chunks
@@ -276,7 +286,7 @@ namespace Plugin.PNG
 
                                         switch (ColorType)
                                         {
-                                            case ColorType.Palleted:
+                                            case ColorType.Paletted:
                                                 {
                                                     int pixelIndex = 0;
                                                     switch (BitDepth)
@@ -505,7 +515,7 @@ namespace Plugin.PNG
 													Adam7.GetPixelIndexForScanlineInPass(currentPass, currentScanline, j, out pixelX, out pixelY);
                                                 switch (ColorType)
                                                 {
-                                                    case ColorType.Palleted:
+                                                    case ColorType.Paletted:
                                                         {
                                                             // we're always converting to 4bpp in the output, but need the native bpp to find our position in the array, so don't actually set it
                                                             int start = Width * 4 * pixelY + pixelX * 4;
@@ -590,7 +600,7 @@ namespace Plugin.PNG
 						}
 					}
 
-					if (ColorType == ColorType.Palleted || ColorType == ColorType.GrayscaleAlpha || BytesPerPixel == 8)
+					if (ColorType == ColorType.Paletted || ColorType == ColorType.GrayscaleAlpha || BytesPerPixel == 8)
 					{
 						// need the final bpp to reflect what we've converted the image to, not the bpp in the file used whilst loading
 						BytesPerPixel = 4;

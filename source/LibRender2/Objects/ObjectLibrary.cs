@@ -51,12 +51,7 @@ namespace LibRender2.Objects
 
 		private bool AddObject(ObjectState state)
 		{
-			if (state.Prototype != null && Objects.TryAdd(state, 0))
-			{
-				return true;
-			}
-
-			return false;
+			return state.Prototype != null && Objects.TryAdd(state, 0);
 		}
 
 		private void RemoveObject(ObjectState state)
@@ -112,15 +107,16 @@ namespace LibRender2.Objects
 						 * Unfortunately, there appear to be X objects in the wild which expect a non-default wrapping mode
 						 * which means the best fast exit we can do is to check for RepeatRepeat....
 						 *
-						 */ 
-						foreach (VertexTemplate vertex in State.Prototype.Mesh.Vertices)
+						 */
+						for (int i = 0; i < face.Vertices.Length; i++)
 						{
-							if (vertex.TextureCoordinates.X < 0.0f || vertex.TextureCoordinates.X > 1.0f)
+							int v = face.Vertices[i].Index;
+							if (State.Prototype.Mesh.Vertices[v].TextureCoordinates.X < 0.0f || State.Prototype.Mesh.Vertices[v].TextureCoordinates.X > 1.0f)
 							{
 								wrap |= OpenGlTextureWrapMode.RepeatClamp;
 							}
 
-							if (vertex.TextureCoordinates.Y < 0.0f || vertex.TextureCoordinates.Y > 1.0f)
+							if (State.Prototype.Mesh.Vertices[v].TextureCoordinates.Y < 0.0f || State.Prototype.Mesh.Vertices[v].TextureCoordinates.Y > 1.0f)
 							{
 								wrap |= OpenGlTextureWrapMode.ClampRepeat;
 							}
