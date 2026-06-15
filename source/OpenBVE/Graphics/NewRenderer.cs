@@ -620,6 +620,7 @@ namespace OpenBve.Graphics
 			Matrix4D origView = CurrentViewMatrix;
 			ViewportMode origViewport = CurrentViewportMode;
 			Vector3 origTransformedLightPosition = TransformedLightPosition;
+			Vector3 targetPos = Camera.AbsolutePosition;
 
 			Screen.Width = size;
 			Screen.Height = size;
@@ -658,6 +659,8 @@ namespace OpenBve.Graphics
 
 			GL.Disable(EnableCap.DepthTest);
 			DefaultShader.Activate();
+			DefaultShader.SetCurrentViewMatrix(CurrentViewMatrix);
+			DefaultShader.SetCameraWorldPosition(targetPos);
 			DefaultShader.SetShadowEnabled(false);
 			Program.CurrentRoute.UpdateBackground(0.0, false);
 

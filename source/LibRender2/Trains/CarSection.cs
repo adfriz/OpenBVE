@@ -45,7 +45,9 @@ namespace LibRender2.Trains
 					CurrentState = 0,
 					IsPartOfTrain = true
 				};
+				Groups[0].Elements[0].States[0].IsPartOfTrain = true;
 				currentHost.CreateDynamicObject(ref Groups[0].Elements[0].internalObject);
+				Groups[0].Elements[0].internalObject.IsPartOfTrain = true;
 			}
 			else if (Object is AnimatedObjectCollection a)
 			{
@@ -55,6 +57,7 @@ namespace LibRender2.Trains
 					Groups[0].Elements[h] = a.Objects[h].Clone();
 					Groups[0].Elements[h].IsPartOfTrain = true;
 					currentHost.CreateDynamicObject(ref Groups[0].Elements[h].internalObject);
+					Groups[0].Elements[h].internalObject.IsPartOfTrain = true;
 				}
 			}
 			else if (Object is KeyframeAnimatedObject k)
@@ -64,6 +67,7 @@ namespace LibRender2.Trains
 				for (int h = 0; h < Groups[0].Keyframes.Objects.Length; h++)
 				{
 					currentHost.CreateDynamicObject(ref Groups[0].Keyframes.Objects[h]);
+					Groups[0].Keyframes.Objects[h].IsPartOfTrain = true;
 				}
 			}
 			Type = ObjectType;
@@ -99,7 +103,9 @@ namespace LibRender2.Trains
 					CurrentState = 0,
 					IsPartOfTrain = true
 				};
+				Groups[gl].Elements[0].States[0].IsPartOfTrain = true;
 				currentHost.CreateDynamicObject(ref Groups[gl].Elements[0].internalObject);
+				Groups[gl].Elements[0].internalObject.IsPartOfTrain = true;
 			}
 			else if (Object is AnimatedObjectCollection a)
 			{
@@ -109,6 +115,7 @@ namespace LibRender2.Trains
 					Groups[gl].Elements[h] = a.Objects[h].Clone();
 					Groups[gl].Elements[h].IsPartOfTrain = true;
 					currentHost.CreateDynamicObject(ref Groups[gl].Elements[h].internalObject);
+					Groups[gl].Elements[h].internalObject.IsPartOfTrain = true;
 				}
 			}
 			else if (Object is KeyframeAnimatedObject k)
@@ -123,6 +130,7 @@ namespace LibRender2.Trains
 				for (int h = 0; h < Groups[gl].Keyframes.Objects.Length; h++)
 				{
 					currentHost.CreateDynamicObject(ref Groups[gl].Keyframes.Objects[h]);
+					Groups[gl].Keyframes.Objects[h].IsPartOfTrain = true;
 				}
 			}
 

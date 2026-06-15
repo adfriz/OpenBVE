@@ -228,6 +228,7 @@ namespace OpenBveApi.Objects
 			CurrentState = StateIndex;
 			if (Show && StateIndex != -1)
 			{
+				internalObject.IsPartOfTrain = this.IsPartOfTrain;
 				currentHost.ShowObject(internalObject, Type);
 			}
 		}
@@ -746,6 +747,7 @@ namespace OpenBveApi.Objects
 			{
 				if (Show)
 				{
+					internalObject.IsPartOfTrain = this.IsPartOfTrain;
 					currentHost.ShowObject(internalObject, Camera != null ? ObjectType.Overlay : ObjectType.Dynamic);
 				}
 				else
