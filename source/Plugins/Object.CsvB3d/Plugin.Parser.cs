@@ -56,7 +56,8 @@ namespace Object.CsvB3d
 			"setemissivecolor",
 			"setdecaltransparentcolor",
 			"enablecrossfading",
-			"loadlightmap"
+			"loadlightmap",
+			"setreflection"
 		};
 
 		private static int SecondIndexOfAny(string testString, string[] values)
@@ -1105,6 +1106,26 @@ namespace Object.CsvB3d
 									Builder.Materials[j].GlowAttenuationData = Glow.GetAttenuationData(glowhalfdistance, glowmode);
 								}
 						} break;
+						case B3DCsvCommands.SetReflection:
+						case B3DCsvCommands.Reflection:
+							{
+								if (cmd == B3DCsvCommands.SetReflection & IsB3D) {
+									currentHost.AddMessage(MessageType.Warning, false, "SetReflection is not a supported command - did you mean Reflection? - at line " + (i + 1).ToString(Culture) + " in file " + FileName);
+								} else if (cmd == B3DCsvCommands.Reflection & !IsB3D) {
+									currentHost.AddMessage(MessageType.Warning, false, "Reflection is not a supported command - did you mean SetReflection? - at line " + (i + 1).ToString(Culture) + " in file " + FileName);
+								}
+								bool reflective = true;
+								if (Arguments.Length >= 1 && Arguments[0].Length > 0) {
+									reflective = Arguments[0].ToLowerInvariant() == "true" || Arguments[0] == "1";
+								}
+								for (int j = 0; j < Builder.Materials.Length; j++) {
+									if (reflective) {
+										Builder.Materials[j].Flags |= MaterialFlags.Reflective;
+									} else {
+										Builder.Materials[j].Flags &= ~MaterialFlags.Reflective;
+									}
+								}
+							} break;
 						case B3DCsvCommands.SetWrapMode:
 						case B3DCsvCommands.WrapMode:
 							{

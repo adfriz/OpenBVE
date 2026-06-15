@@ -508,6 +508,10 @@ namespace OpenBve {
 
 		public override void ShowObject(ObjectState objectToShow, ObjectType objectType)
 		{
+			if (Program.Renderer.HideTrainsForCubeMap && (objectType == ObjectType.Dynamic || objectType == ObjectType.Overlay))
+			{
+				return;
+			}
 			Program.Renderer.VisibleObjects.ShowObject(objectToShow, objectType);
 		}
 

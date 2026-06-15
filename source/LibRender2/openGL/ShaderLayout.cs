@@ -232,5 +232,30 @@ namespace LibRender2
 		/// The handle of "uCurrentViewMatrix" within the shader
 		/// </summary>
 		public short CurrentViewMatrix = -1;
+
+		/// <summary>
+		/// The handle of "uCubeMap" within the shader
+		/// </summary>
+		public short CubeMap = -1;
+
+		/// <summary>
+		/// The handle of "uCubeMapEnabled" within the shader
+		/// </summary>
+		public short CubeMapEnabled = -1;
+
+		/// <summary>
+		/// The handle of "uCameraWorldPosition" within the shader
+		/// </summary>
+		public short CameraWorldPosition = -1;
+
+		/// <summary>
+		/// The handle of "uReflectionMap2D" within the shader
+		/// </summary>
+		public short ReflectionMap2D = -1;
+
+		/// <summary>
+		/// The handle of "uReflectionMap2DEnabled" within the shader
+		/// </summary>
+		public short ReflectionMap2DEnabled = -1;
 	}
 }

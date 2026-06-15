@@ -181,8 +181,49 @@ namespace OpenBve.Graphics
 
 			if (AvailableNewRenderer)
 			{
+				if (CameraTrackFollower != null && Math.Abs(CameraTrackFollower.TrackPosition - lastCubeMapPosition) > 50.0)
+				{
+					GenerateEnvironmentCubeMap();
+				}
+
 				DefaultShader.Activate();
 				BindCSMToDefaultShader();
+				DefaultShader.SetCameraWorldPosition(Camera.AbsolutePosition);
+				DefaultShader.SetCurrentViewMatrix(CurrentViewMatrix);
+
+				if (CubeMapGenerated && EnvironmentCubeMapTexture != -1)
+				{
+					GL.ActiveTexture(TextureUnit.Texture8);
+					GL.BindTexture(TextureTarget.TextureCubeMap, EnvironmentCubeMapTexture);
+					GL.ActiveTexture(TextureUnit.Texture0);
+					DefaultShader.SetCubeMap(8);
+					DefaultShader.SetCubeMapEnabled(true);
+					DefaultShader.SetReflectionMap2DEnabled(false);
+				}
+				else
+				{
+					DefaultShader.SetCubeMapEnabled(false);
+					if (FallbackReflectionTexture != null)
+					{
+						currentHost.LoadTexture(ref FallbackReflectionTexture, OpenGlTextureWrapMode.ClampClamp);
+						if (FallbackReflectionTexture.OpenGlTextures != null && FallbackReflectionTexture.OpenGlTextures[(int)OpenGlTextureWrapMode.ClampClamp] != null)
+						{
+							GL.ActiveTexture(TextureUnit.Texture9);
+							GL.BindTexture(TextureTarget.Texture2D, FallbackReflectionTexture.OpenGlTextures[(int)OpenGlTextureWrapMode.ClampClamp].Name);
+							GL.ActiveTexture(TextureUnit.Texture0);
+							DefaultShader.SetReflectionMap2D(9);
+							DefaultShader.SetReflectionMap2DEnabled(true);
+						}
+						else
+						{
+							DefaultShader.SetReflectionMap2DEnabled(false);
+						}
+					}
+					else
+					{
+						DefaultShader.SetReflectionMap2DEnabled(false);
+					}
+				}
 			}
 
 			// render background
@@ -519,6 +560,154 @@ namespace OpenBve.Graphics
 					break;
 			}
 			OptionLighting = true;
+		}
+
+		internal int EnvironmentCubeMapTexture = -1;
+		internal bool CubeMapGenerated = false;
+		private double lastCubeMapPosition = -1000.0;
+
+		internal void GenerateEnvironmentCubeMap()
+		{
+			if (!AvailableNewRenderer) return;
+
+			HideTrainsForCubeMap = true;
+
+			int size = 512;
+			TextureTarget[] targets = {
+				TextureTarget.TextureCubeMapPositiveX,
+				TextureTarget.TextureCubeMapNegativeX,
+				TextureTarget.TextureCubeMapPositiveY,
+				TextureTarget.TextureCubeMapNegativeY,
+				TextureTarget.TextureCubeMapPositiveZ,
+				TextureTarget.TextureCubeMapNegativeZ
+			};
+
+			if (EnvironmentCubeMapTexture == -1)
+			{
+				GL.GenTextures(1, out EnvironmentCubeMapTexture);
+				GL.BindTexture(TextureTarget.TextureCubeMap, EnvironmentCubeMapTexture);
+
+				GL.TexParameter(TextureTarget.TextureCubeMap, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
+				GL.TexParameter(TextureTarget.TextureCubeMap, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+				GL.TexParameter(TextureTarget.TextureCubeMap, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
+				GL.TexParameter(TextureTarget.TextureCubeMap, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
+				GL.TexParameter(TextureTarget.TextureCubeMap, TextureParameterName.TextureWrapR, (int)TextureWrapMode.ClampToEdge);
+
+				for (int i = 0; i < 6; i++)
+				{
+					GL.TexImage2D(targets[i], 0, PixelInternalFormat.Rgba8, size, size, 0, OpenTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, IntPtr.Zero);
+				}
+			}
+			else
+			{
+				GL.BindTexture(TextureTarget.TextureCubeMap, EnvironmentCubeMapTexture);
+			}
+
+			int fbo;
+			GL.GenFramebuffers(1, out fbo);
+			GL.BindFramebuffer(FramebufferTarget.Framebuffer, fbo);
+
+			int rbo;
+			GL.GenRenderbuffers(1, out rbo);
+			GL.BindRenderbuffer(RenderbufferTarget.Renderbuffer, rbo);
+			GL.RenderbufferStorage(RenderbufferTarget.Renderbuffer, RenderbufferStorage.DepthComponent24, size, size);
+			GL.FramebufferRenderbuffer(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment, RenderbufferTarget.Renderbuffer, rbo);
+
+			int origWidth = Screen.Width;
+			int origHeight = Screen.Height;
+			double origAspect = Screen.AspectRatio;
+			Matrix4D origProjection = CurrentProjectionMatrix;
+			Matrix4D origView = CurrentViewMatrix;
+			ViewportMode origViewport = CurrentViewportMode;
+
+			Screen.Width = size;
+			Screen.Height = size;
+			Screen.AspectRatio = 1.0;
+			GL.Viewport(0, 0, size, size);
+
+			CurrentViewportMode = ViewportMode.Scenery;
+			double cd = Program.CurrentRoute.CurrentBackground is BackgroundObject b ? Math.Max(Program.CurrentRoute.CurrentBackground.BackgroundImageDistance, b.ClipDistance) : Program.CurrentRoute.CurrentBackground.BackgroundImageDistance;
+			double nearClipScenery = Math.Max(0.01, Interface.CurrentOptions.NearClipScenery);
+			CurrentProjectionMatrix = Matrix4D.CreatePerspectiveFieldOfView(90.0.ToRadians(), 1.0, nearClipScenery, cd);
+
+			Vector3[] directions = {
+				new Vector3(1, 0, 0),
+				new Vector3(-1, 0, 0),
+				new Vector3(0, 1, 0),
+				new Vector3(0, -1, 0),
+				new Vector3(0, 0, 1),
+				new Vector3(0, 0, -1)
+			};
+
+			Vector3[] ups = {
+				new Vector3(0, -1, 0),
+				new Vector3(0, -1, 0),
+				new Vector3(0, 0, 1),
+				new Vector3(0, 0, -1),
+				new Vector3(0, -1, 0),
+				new Vector3(0, -1, 0)
+			};
+
+			for (int i = 0; i < 6; i++)
+			{
+				GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, targets[i], EnvironmentCubeMapTexture, 0);
+				GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+				CurrentViewMatrix = Matrix4D.LookAt(Vector3.Zero, directions[i], ups[i]);
+				TransformedLightPosition = new Vector3(Lighting.OptionLightPosition.X, Lighting.OptionLightPosition.Y, -Lighting.OptionLightPosition.Z);
+				TransformedLightPosition.Transform(CurrentViewMatrix);
+
+				GL.Disable(EnableCap.DepthTest);
+				DefaultShader.Activate();
+				DefaultShader.SetShadowEnabled(false);
+				Program.CurrentRoute.UpdateBackground(0.0, false);
+
+				GL.Enable(EnableCap.DepthTest);
+				GL.DepthMask(true);
+				
+				DefaultShader.SetIsLight(OptionLighting);
+				if (OptionLighting)
+				{
+					DefaultShader.SetLightPosition(TransformedLightPosition);
+					DefaultShader.SetLightAmbient(Lighting.OptionAmbientColor);
+					DefaultShader.SetLightDiffuse(Lighting.OptionDiffuseColor);
+					DefaultShader.SetLightSpecular(Lighting.OptionSpecularColor);
+					DefaultShader.SetLightModel(Lighting.LightModel);
+				}
+				Fog.Set();
+				DefaultShader.SetTexture(0);
+				DefaultShader.SetCurrentProjectionMatrix(CurrentProjectionMatrix);
+
+				List<FaceState> opaqueFaces;
+				lock (VisibleObjects.LockObject)
+				{
+					opaqueFaces = VisibleObjects.OpaqueFaces.ToList();
+				}
+				foreach (FaceState face in opaqueFaces)
+				{
+					face.Draw();
+				}
+			}
+
+			GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+			GL.DeleteFramebuffer(fbo);
+			GL.DeleteRenderbuffer(rbo);
+
+			Screen.Width = origWidth;
+			Screen.Height = origHeight;
+			Screen.AspectRatio = origAspect;
+			CurrentProjectionMatrix = origProjection;
+			CurrentViewMatrix = origView;
+			CurrentViewportMode = origViewport;
+			GL.Viewport(0, 0, Screen.Width, Screen.Height);
+
+			HideTrainsForCubeMap = false;
+			CubeMapGenerated = true;
+			GL.BindTexture(TextureTarget.TextureCubeMap, 0);
+			if (CameraTrackFollower != null)
+			{
+				lastCubeMapPosition = CameraTrackFollower.TrackPosition;
+			}
 		}
 
 		public NewRenderer(HostInterface currentHost, BaseOptions CurrentOptions, FileSystem fileSystem) : base(currentHost, CurrentOptions, fileSystem)

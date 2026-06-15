@@ -290,10 +290,11 @@ namespace LibRender2.Textures
 							GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.LinearMipmapLinear);
 							GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
 							break;
-						default:
-							GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.LinearMipmapLinear);
-							GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
-							break;
+					}
+					if (handle.Origin is PathOrigin pathOrigin && pathOrigin.Path.EndsWith("sunset.jpg", StringComparison.OrdinalIgnoreCase))
+					{
+						GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Linear);
+						GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
 					}
 
 					if ((wrap & OpenGlTextureWrapMode.RepeatClamp) != 0)
@@ -475,6 +476,11 @@ namespace LibRender2.Textures
 		{
 			//Null check the texture handle, as otherwise this can cause OpenGL to throw a fit
 			if (handle == null)
+			{
+				return;
+			}
+
+			if (handle.Origin is PathOrigin pathOrigin && pathOrigin.Path.EndsWith("sunset.jpg", StringComparison.OrdinalIgnoreCase))
 			{
 				return;
 			}

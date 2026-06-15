@@ -895,6 +895,10 @@ namespace OpenBve
 			TrainManager.PlayerTrain.Cars[TrainManager.PlayerTrain.DriverCar].UpdateCamera();
 			Program.Renderer.CameraTrackFollower.UpdateAbsolute(-1.0, true, false);
 			Program.Renderer.UpdateVisibility(true);
+			if (Program.Renderer is NewRenderer newRenderer)
+			{
+				newRenderer.GenerateEnvironmentCubeMap();
+			}
 			if (TrainManager.PlayerTrain.CurrentDirection == TrackDirection.Reverse)
 			{
 				double reverse = 180 / 57.2957795130824;

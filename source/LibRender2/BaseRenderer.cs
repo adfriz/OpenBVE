@@ -51,12 +51,15 @@ namespace LibRender2
 		public static readonly object GdiPlusLock = new object();
 
 		/// <summary>The callback to the host application</summary>
-		internal HostInterface currentHost;
+		public HostInterface currentHost;
 		/// <summary>The host filesystem</summary>
 		internal FileSystem fileSystem;
 
 		/// <summary>Holds a reference to the current options</summary>
 		internal BaseOptions currentOptions;
+
+		/// <summary>Whether to hide trains and overlays when generating the cubemap</summary>
+		public bool HideTrainsForCubeMap = false;
 
 		public List<ObjectState> StaticObjectStates;
 		public List<ObjectState> DynamicObjectStates;
@@ -241,6 +244,7 @@ namespace LibRender2
 		protected internal Texture _programLogo;
 
 		protected internal Texture whitePixel;
+		public Texture FallbackReflectionTexture = null;
 		/// <summary>A dummy 1x1 depth texture with comparison enabled, used when shadows are disabled to satisfy driver requirements.</summary>
 		internal int nullDepthMap; 
 
@@ -412,6 +416,18 @@ namespace LibRender2
 			DynamicObjectStates = new List<ObjectState>();
 			VisibleObjects = new VisibleObjectLibrary(this);
 			whitePixel = new Texture(new Texture(1, 1, PixelFormat.RGBAlpha, new byte[] {255, 255, 255, 255}, null));
+
+			// Load fallback reflection map
+			string assemblyFolder = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
+			string fallbackPath = OpenBveApi.Path.CombineFile(assemblyFolder, "Data/Textures/sunset.jpg");
+			if (System.IO.File.Exists(fallbackPath))
+			{
+				if (currentHost.RegisterTexture(fallbackPath, new TextureParameters(null, null), out Texture handle, true))
+				{
+					FallbackReflectionTexture = handle;
+				}
+			}
+
 			if (AvailableNewRenderer)
 			{
 				nullDepthMap = GL.GenTexture();
@@ -1170,6 +1186,7 @@ namespace LibRender2
 			shader.SetOpacity(1.0f);
 			shader.SetObjectIndex(0);
 			shader.SetAlphaTest(false);
+			shader.SetMaterialFlags(MaterialFlags.None);
 		}
 
 		public void SetBlendFunc()

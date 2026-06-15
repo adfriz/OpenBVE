@@ -81,6 +81,12 @@ uniform float uFogEnd;
 uniform vec3  uFogColor;
 uniform float uFogDensity;
 uniform bool uFogIsLinear;
+uniform mat4 uCurrentViewMatrix;
+uniform samplerCube uCubeMap;
+uniform bool uCubeMapEnabled;
+uniform sampler2D uReflectionMap2D;
+uniform bool uReflectionMap2DEnabled;
+uniform vec3 uCameraWorldPosition;
 out vec4 fragColor;
 
 /// Samples a single cascade using hardware PCF.
@@ -263,6 +269,36 @@ void main(void)
 		finalColor *= oLightResult;
 	}
 	
+	if ((uMaterialFlags & 128) != 0 && (uCubeMapEnabled || uReflectionMap2DEnabled))
+	{
+		vec3 viewDir = normalize(oViewPos.xyz);
+		vec3 normal = gl_FrontFacing ? normalize(vNormal) : -normalize(vNormal);
+		vec3 R_view = reflect(viewDir, normal);
+		vec3 R_world = mat3(inverse(uCurrentViewMatrix)) * R_view;
+		R_world = normalize(R_world);
+		
+		vec4 reflectColor;
+		if (uCubeMapEnabled)
+		{
+			reflectColor = texture(uCubeMap, R_world);
+		}
+		else
+		{
+			float phi = acos(clamp(R_world.y, -1.0, 1.0));
+			float theta = atan(R_world.z, R_world.x);
+			vec2 uv = vec2(theta / (2.0 * 3.14159265) + 0.5, phi / 3.14159265);
+			reflectColor = texture(uReflectionMap2D, uv);
+		}
+		
+		float reflectivity = 1.0 - finalColor.a;
+		if (reflectivity < 0.01)
+		{
+			reflectivity = 0.4;
+		}
+		finalColor.rgb = mix(finalColor.rgb, reflectColor.rgb, reflectivity * 0.6);
+		finalColor.a = max(finalColor.a, reflectColor.a * reflectivity * 0.6);
+	}
+
 	// Fog
 	float fogFactor = 1.0;
 

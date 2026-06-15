@@ -17,6 +17,7 @@ using OpenBveApi.Interface;
 using OpenBveApi.Math;
 using OpenBveApi.Objects;
 using OpenBveApi.Routes;
+using OpenBveApi.Textures;
 using OpenTK.Graphics.OpenGL;
 using Vector2 = OpenBveApi.Math.Vector2;
 using Vector3 = OpenBveApi.Math.Vector3;
@@ -163,6 +164,29 @@ namespace ObjectViewer.Graphics
 				}
 				DefaultShader.SetTexture(0);
 				DefaultShader.SetCurrentProjectionMatrix(CurrentProjectionMatrix);
+				DefaultShader.SetCurrentViewMatrix(CurrentViewMatrix);
+				DefaultShader.SetCameraWorldPosition(Camera.AbsolutePosition);
+				DefaultShader.SetCubeMapEnabled(false);
+				if (FallbackReflectionTexture != null)
+				{
+					currentHost.LoadTexture(ref FallbackReflectionTexture, OpenGlTextureWrapMode.ClampClamp);
+					if (FallbackReflectionTexture.OpenGlTextures != null && FallbackReflectionTexture.OpenGlTextures[(int)OpenGlTextureWrapMode.ClampClamp] != null)
+					{
+						GL.ActiveTexture(TextureUnit.Texture9);
+						GL.BindTexture(TextureTarget.Texture2D, FallbackReflectionTexture.OpenGlTextures[(int)OpenGlTextureWrapMode.ClampClamp].Name);
+						GL.ActiveTexture(TextureUnit.Texture0);
+						DefaultShader.SetReflectionMap2D(9);
+						DefaultShader.SetReflectionMap2DEnabled(true);
+					}
+					else
+					{
+						DefaultShader.SetReflectionMap2DEnabled(false);
+					}
+				}
+				else
+				{
+					DefaultShader.SetReflectionMap2DEnabled(false);
+				}
 			}
 			ResetOpenGlState();
 			List<FaceState> opaqueFaces, alphaFaces;

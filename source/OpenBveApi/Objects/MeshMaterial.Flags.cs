@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace OpenBveApi.Objects
 {
@@ -22,6 +22,8 @@ namespace OpenBveApi.Objects
 		/// <summary>The material casts no shadows</summary>
 		NoShadow = 32,
 		/// <summary>The material has a separate specular light color</summary>
-		Specular = 64
+		Specular = 64,
+		/// <summary>The material has environment mapping reflection</summary>
+		Reflective = 128
 	}
 }

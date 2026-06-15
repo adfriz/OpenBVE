@@ -117,6 +117,10 @@ namespace LibRender2.Shaders
 			GL.ProgramUniform1(Handle, uShadowEnabledLocation, 0);
 			GL.ProgramUniform1(Handle, uShadowCascadeCountLocation, 0);
 			GL.ProgramUniform1(Handle, uShadowStrengthLocation, 1.0f);
+			GL.ProgramUniform1(Handle, UniformLayout.CubeMap, 8);
+			GL.ProgramUniform1(Handle, UniformLayout.CubeMapEnabled, 0);
+			GL.ProgramUniform1(Handle, UniformLayout.ReflectionMap2D, 9);
+			GL.ProgramUniform1(Handle, UniformLayout.ReflectionMap2DEnabled, 0);
 		}
 		
 		public VertexLayout GetVertexLayout()
@@ -176,6 +180,11 @@ namespace LibRender2.Shaders
 				ShadowMap1 = (short)GL.GetUniformLocation(Handle, "uShadowMap1"),
 				ShadowMap2 = (short)GL.GetUniformLocation(Handle, "uShadowMap2"),
 				CurrentViewMatrix = (short)GL.GetUniformLocation(Handle, "uCurrentViewMatrix"),
+				CubeMap = (short)GL.GetUniformLocation(Handle, "uCubeMap"),
+				CubeMapEnabled = (short)GL.GetUniformLocation(Handle, "uCubeMapEnabled"),
+				CameraWorldPosition = (short)GL.GetUniformLocation(Handle, "uCameraWorldPosition"),
+				ReflectionMap2D = (short)GL.GetUniformLocation(Handle, "uReflectionMap2D"),
+				ReflectionMap2DEnabled = (short)GL.GetUniformLocation(Handle, "uReflectionMap2DEnabled"),
 			};
 		}
 
@@ -365,6 +374,31 @@ namespace LibRender2.Shaders
 		public void SetTexture(int textureUnit)
 		{
 			GL.ProgramUniform1(Handle, UniformLayout.Texture, textureUnit);
+		}
+
+		public void SetCubeMap(int textureUnit)
+		{
+			GL.ProgramUniform1(Handle, UniformLayout.CubeMap, textureUnit);
+		}
+
+		public void SetCubeMapEnabled(bool enabled)
+		{
+			GL.ProgramUniform1(Handle, UniformLayout.CubeMapEnabled, enabled ? 1 : 0);
+		}
+
+		public void SetCameraWorldPosition(OpenBveApi.Math.Vector3 position)
+		{
+			GL.ProgramUniform3(Handle, UniformLayout.CameraWorldPosition, (float)position.X, (float)position.Y, (float)position.Z);
+		}
+
+		public void SetReflectionMap2D(int textureUnit)
+		{
+			GL.ProgramUniform1(Handle, UniformLayout.ReflectionMap2D, textureUnit);
+		}
+
+		public void SetReflectionMap2DEnabled(bool enabled)
+		{
+			GL.ProgramUniform1(Handle, UniformLayout.ReflectionMap2DEnabled, enabled ? 1 : 0);
 		}
 
 		private float lastBrightness;
