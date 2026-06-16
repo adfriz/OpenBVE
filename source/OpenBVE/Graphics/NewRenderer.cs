@@ -39,6 +39,7 @@ namespace OpenBve.Graphics
 		private Events events;
 		private Overlays overlays;
 		internal Touch Touch;
+		public LibRender2.PostProcessing.PostProcessRenderer PostProcess;
 
 		public override void Initialize()
 		{
@@ -71,6 +72,11 @@ namespace OpenBve.Graphics
 			
 			
 			Program.FileSystem.AppendToLogFile("Renderer initialised successfully.");
+
+			if (AvailableNewRenderer)
+			{
+				PostProcess = new LibRender2.PostProcessing.PostProcessRenderer(this, Screen.Width, Screen.Height);
+			}
 		}
 		
 		protected override void UpdateViewport(int width, int height)
@@ -97,6 +103,12 @@ namespace OpenBve.Graphics
 			}
 
 			Touch.UpdateViewport();
+
+			if (AvailableNewRenderer)
+			{
+				PostProcess?.Dispose();
+				PostProcess = new LibRender2.PostProcessing.PostProcessRenderer(this, Screen.Width, Screen.Height);
+			}
 		}
 		
 		internal void RenderScene(double TimeElapsed, double RealTimeElapsed)
@@ -183,6 +195,10 @@ namespace OpenBve.Graphics
 			{
 				DefaultShader.Activate();
 				BindCSMToDefaultShader();
+				if (PostProcess != null)
+				{
+					PostProcess.BeginSceneCapture();
+				}
 			}
 
 			// render background
@@ -252,8 +268,19 @@ namespace OpenBve.Graphics
 				face.Draw();
 			}
 
+			if (AvailableNewRenderer && PostProcess != null)
+			{
+				PostProcess.EndSceneCapture();
+				PostProcess.ApplySSAO();
+				PostProcess.CombineToScreen();
+			}
+
 			// alpha face
 			ResetOpenGlState();
+			if (AvailableNewRenderer)
+			{
+				DefaultShader.Activate();
+			}
 			
 			if (Interface.CurrentOptions.TransparencyMode == TransparencyMode.Performance)
 			{

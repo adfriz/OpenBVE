@@ -31,6 +31,7 @@ namespace ObjectViewer.Graphics
 		// options
 		internal bool OptionCoordinateSystem = false;
 		internal bool OptionInterface = true;
+		public LibRender2.PostProcessing.PostProcessRenderer PostProcess;
 
 		// background color
 		internal int BackgroundColor = 0;
@@ -124,6 +125,19 @@ namespace ObjectViewer.Graphics
 
 			Fog.Enabled = false;
 
+			if (AvailableNewRenderer)
+			{
+				if (PostProcess == null || PostProcess.Width != Screen.Width || PostProcess.Height != Screen.Height)
+				{
+					PostProcess?.Dispose();
+					PostProcess = new LibRender2.PostProcessing.PostProcessRenderer(this, Screen.Width, Screen.Height);
+				}
+				if (PostProcess != null)
+				{
+					PostProcess.BeginSceneCapture();
+				}
+			}
+
 			if (OptionCoordinateSystem)
 			{
 				UnsetAlphaFunc();
@@ -177,8 +191,19 @@ namespace ObjectViewer.Graphics
 				face.Draw();
 			}
 
+			if (AvailableNewRenderer && PostProcess != null)
+			{
+				PostProcess.EndSceneCapture();
+				PostProcess.ApplySSAO();
+				PostProcess.CombineToScreen();
+			}
+
 			// alpha face
 			ResetOpenGlState();
+			if (AvailableNewRenderer)
+			{
+				DefaultShader.Activate();
+			}
 
 			if (Interface.CurrentOptions.TransparencyMode == TransparencyMode.Performance)
 			{

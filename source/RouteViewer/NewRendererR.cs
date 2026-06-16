@@ -34,6 +34,7 @@ namespace RouteViewer
 		internal bool OptionInterface = true;
 		internal bool OptionEvents = false;
 		internal bool OptionPaths = false;
+		public LibRender2.PostProcessing.PostProcessRenderer PostProcess;
 
 		// textures
 		private Texture BrightnessChangeTexture;
@@ -149,9 +150,19 @@ namespace RouteViewer
 
 			if (AvailableNewRenderer)
 			{
+				if (PostProcess == null || PostProcess.Width != Screen.Width || PostProcess.Height != Screen.Height)
+				{
+					PostProcess?.Dispose();
+					PostProcess = new LibRender2.PostProcessing.PostProcessRenderer(this, Screen.Width, Screen.Height);
+				}
+
 				PerformCSMShadowPass();
 				DefaultShader.Activate();
 				BindCSMToDefaultShader();
+				if (PostProcess != null)
+				{
+					PostProcess.BeginSceneCapture();
+				}
 			}
 			
 
@@ -213,8 +224,19 @@ namespace RouteViewer
 				face.Draw();
 			}
 
+			if (AvailableNewRenderer && PostProcess != null)
+			{
+				PostProcess.EndSceneCapture();
+				PostProcess.ApplySSAO();
+				PostProcess.CombineToScreen();
+			}
+
 			// alpha face
 			ResetOpenGlState();
+			if (AvailableNewRenderer)
+			{
+				DefaultShader.Activate();
+			}
 
 			if (Interface.CurrentOptions.TransparencyMode == TransparencyMode.Performance)
 			{
