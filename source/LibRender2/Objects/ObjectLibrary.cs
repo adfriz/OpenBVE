@@ -297,32 +297,25 @@ namespace LibRender2.Objects
 
 			Parallel.For(0, faces.Count, i =>
 			{
-				if (faces[i].Face.Vertices.Length >= 3)
+				if (faces[i].Face.Vertices.Length >= 1)
 				{
-					Vector4 v0 = new Vector4(faces[i].Object.Prototype.Mesh.Vertices[faces[i].Face.Vertices[0].Index].Coordinates, 1.0);
-					Vector4 v1 = new Vector4(faces[i].Object.Prototype.Mesh.Vertices[faces[i].Face.Vertices[1].Index].Coordinates, 1.0);
-					Vector4 v2 = new Vector4(faces[i].Object.Prototype.Mesh.Vertices[faces[i].Face.Vertices[2].Index].Coordinates, 1.0);
-					Vector4 w1 = v1 - v0;
-					Vector4 w2 = v2 - v0;
-					v0.Z *= -1.0;
-					w1.Z *= -1.0;
-					w2.Z *= -1.0;
-					v0 = Vector4.Transform(v0, faces[i].Object.ModelMatrix);
-					w1 = Vector4.Transform(w1, faces[i].Object.ModelMatrix);
-					w2 = Vector4.Transform(w2, faces[i].Object.ModelMatrix);
-					v0.Z *= -1.0;
-					w1.Z *= -1.0;
-					w2.Z *= -1.0;
-					Vector3 d = Vector3.Cross(w1.Xyz, w2.Xyz);
-					double t = d.Norm();
-
-					if (t != 0.0)
+					Vector3 centroid = Vector3.Zero;
+					for (int j = 0; j < faces[i].Face.Vertices.Length; j++)
 					{
-						d /= t;
-						Vector3 w0 = v0.Xyz - renderer.Camera.AbsolutePosition;
-						t = Vector3.Dot(d, w0);
-						distances[i] = -t * t;
+						centroid += faces[i].Object.Prototype.Mesh.Vertices[faces[i].Face.Vertices[j].Index].Coordinates;
 					}
+					centroid /= faces[i].Face.Vertices.Length;
+
+					// Transform local centroid to absolute world coordinates
+					Vector4 v0 = new Vector4(centroid.X, centroid.Y, -centroid.Z, 1.0);
+					v0 = Vector4.Transform(v0, faces[i].Object.ModelMatrix);
+					v0.Z *= -1.0;
+
+					// Project the relative position onto the camera's absolute viewing direction.
+					// This gives the exact depth along the camera's view axis (z-depth),
+					// ensuring correct back-to-front sorting (larger depth = more negative = drawn first).
+					Vector3 w0 = v0.Xyz - renderer.Camera.AbsolutePosition;
+					distances[i] = -Vector3.Dot(w0, renderer.Camera.AbsoluteDirection);
 				}
 			});
 			// sort
