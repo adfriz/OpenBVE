@@ -359,38 +359,44 @@ namespace OpenBveApi.Textures {
 					transparencyType = TextureTransparencyType.Opaque;
 					break;
 				case PixelFormat.RGBAlpha:
-					transparencyType = TextureTransparencyType.Opaque;
+					// Count pixel transparency types
+					int transparentCount = 0;
+					int semiTransparentCount = 0;
+					int opaqueCount = 0;
 					for (int i = 3; i < this.MyBytes[CurrentFrame].Length; i += 4)
 					{
-
-						switch (MyBytes[CurrentFrame][i])
+						byte alphaValue = MyBytes[CurrentFrame][i];
+						if (alphaValue == 0)
 						{
-							case 0:
-								if (i == 3)
-								{
-									transparencyType = TextureTransparencyType.Transparent;
-								}
-								else
-								{
-									if (transparencyType == TextureTransparencyType.Opaque)
-									{
-										transparencyType = TextureTransparencyType.Partial;
-									}
-								}
-								break;
-							case 255:
-								if (transparencyType != TextureTransparencyType.Opaque)
-								{
-									transparencyType = TextureTransparencyType.Partial;
-								}
-								// nothing
-								break;
-							default:
-								transparencyType = TextureTransparencyType.Alpha;
-								return transparencyType;
+							transparentCount++;
+						}
+						else if (alphaValue == 255)
+						{
+							opaqueCount++;
+						}
+						else
+						{
+							semiTransparentCount++;
 						}
 					}
 
+					// Categorize texture transparency based on pixel counts
+					if (semiTransparentCount > 0)
+					{
+						transparencyType = semiTransparentCount < opaqueCount ? TextureTransparencyType.Partial : TextureTransparencyType.Alpha;
+					}
+					else if (transparentCount == 0)
+					{
+						transparencyType = TextureTransparencyType.Opaque;
+					}
+					else if (opaqueCount == 0)
+					{
+						transparencyType = TextureTransparencyType.Transparent;
+					}
+					else
+					{
+						transparencyType = TextureTransparencyType.Partial;
+					}
 					return transparencyType;
 				
 			}

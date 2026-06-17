@@ -700,5 +700,29 @@ namespace LibRender2.Textures
 
 			return value + 1;
 		}
+
+		/// <summary>Gets a texture from the cache, or loads it if not present.</summary>
+		public static Texture GetTextureFromCache(TextureOrigin origin)
+		{
+			lock (textureCache)
+			{
+				if (textureCache.TryGetValue(origin, out Texture cachedTexture))
+				{
+					return cachedTexture;
+				}
+			}
+
+			// Load from origin outside lock to prevent blocking other threads during IO
+			origin.GetTexture(out Texture newTexture);
+
+			lock (textureCache)
+			{
+				if (!textureCache.ContainsKey(origin))
+				{
+					textureCache.Add(origin, newTexture);
+				}
+				return textureCache[origin];
+			}
+		}
 	}
 }

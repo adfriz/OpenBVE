@@ -31,6 +31,9 @@ namespace LibRender2.Objects
 
 		public readonly object LockObject = new object();
 
+		private double[] distanceBuffer = new double[1024];
+		private FaceState[] sortedFacesBuffer = new FaceState[1024];
+
 		internal VisibleObjectLibrary(BaseRenderer Renderer)
 		{
 			renderer = Renderer;
@@ -152,34 +155,7 @@ namespace LibRender2.Objects
 				{
 					if (State.Prototype.Mesh.Materials[face.Material].DaytimeTexture != null)
 					{
-						// Have to load the texture bytes in order to determine transparency type
-						Texture daytimeTexture; 
-						if (TextureManager.textureCache.ContainsKey(State.Prototype.Mesh.Materials[face.Material].DaytimeTexture.Origin))
-						{
-							daytimeTexture = TextureManager.textureCache[State.Prototype.Mesh.Materials[face.Material].DaytimeTexture.Origin];
-						}
-						else
-						{
-							State.Prototype.Mesh.Materials[face.Material].DaytimeTexture.Origin.GetTexture(out daytimeTexture);
-							if (!TextureManager.textureCache.ContainsKey(State.Prototype.Mesh.Materials[face.Material].DaytimeTexture.Origin)) // because getting the Origin may change the ref
-							{
-								TextureManager.textureCache.Add(State.Prototype.Mesh.Materials[face.Material].DaytimeTexture.Origin, daytimeTexture);
-							}
-							
-						}
-
-						TextureTransparencyType transparencyType = TextureTransparencyType.Opaque;
-						if (daytimeTexture != null)
-						{
-							// as loading the cached texture may have failed, e.g. corrupt file etc
-							transparencyType = daytimeTexture.GetTransparencyType();
-						}
-						
-						if (transparencyType == TextureTransparencyType.Alpha)
-						{
-							alpha = true;
-						}
-						else if (transparencyType == TextureTransparencyType.Partial && renderer.currentOptions.TransparencyMode == TransparencyMode.Quality)
+						if (CheckTextureTransparency(State.Prototype.Mesh.Materials[face.Material].DaytimeTexture.Origin))
 						{
 							alpha = true;
 						}
@@ -187,27 +163,7 @@ namespace LibRender2.Objects
 
 					if (State.Prototype.Mesh.Materials[face.Material].NighttimeTexture != null)
 					{
-						Texture nighttimeTexture; 
-						if (TextureManager.textureCache.ContainsKey(State.Prototype.Mesh.Materials[face.Material].NighttimeTexture.Origin))
-						{
-							nighttimeTexture = TextureManager.textureCache[State.Prototype.Mesh.Materials[face.Material].NighttimeTexture.Origin];
-						}
-						else
-						{
-							State.Prototype.Mesh.Materials[face.Material].NighttimeTexture.Origin.GetTexture(out nighttimeTexture);
-							TextureManager.textureCache.Add(State.Prototype.Mesh.Materials[face.Material].NighttimeTexture.Origin, nighttimeTexture);
-						}
-						TextureTransparencyType transparencyType = TextureTransparencyType.Opaque;
-						if (nighttimeTexture != null)
-						{
-							// as loading the cached texture may have failed, e.g. corrupt file etc
-							transparencyType = nighttimeTexture.GetTransparencyType();
-						}
-						if (transparencyType == TextureTransparencyType.Alpha)
-						{
-							alpha = true;
-						}
-						else if (transparencyType == TextureTransparencyType.Partial && renderer.currentOptions.TransparencyMode == TransparencyMode.Quality)
+						if (CheckTextureTransparency(State.Prototype.Mesh.Materials[face.Material].NighttimeTexture.Origin))
 						{
 							alpha = true;
 						}
@@ -279,6 +235,16 @@ namespace LibRender2.Objects
 			RemoveObject(State);
 		}
 
+		private bool CheckTextureTransparency(TextureOrigin origin)
+		{
+			if (origin == null)
+			{
+				return false;
+			}
+			Texture texture = TextureManager.GetTextureFromCache(origin);
+			return texture != null && texture.GetTransparencyType() == TextureTransparencyType.Alpha;
+		}
+
 		public List<FaceState> GetSortedPolygons(bool overlay = false)
 		{
 			if (overlay)
@@ -292,34 +258,81 @@ namespace LibRender2.Objects
 
 		private List<FaceState> GetSortedPolygons(ReadOnlyCollection<FaceState> faces)
 		{
-			// calculate distance
-			double[] distances = new double[faces.Count];
-
-			Parallel.For(0, faces.Count, i =>
+			int count = faces.Count;
+			if (count == 0)
 			{
-				if (faces[i].Face.Vertices.Length >= 1)
+				return new List<FaceState>();
+			}
+
+			// Ensure reusable buffers are large enough
+			if (count > distanceBuffer.Length)
+			{
+				int newSize = Math.Max(distanceBuffer.Length * 2, count);
+				Array.Resize(ref distanceBuffer, newSize);
+				Array.Resize(ref sortedFacesBuffer, newSize);
+			}
+
+			for (int i = 0; i < count; i++)
+			{
+				sortedFacesBuffer[i] = faces[i];
+			}
+
+			// Cache camera variables to avoid repeating property lookup overhead
+			Vector3 camPos = renderer.Camera.AbsolutePosition;
+			Vector3 camDir = renderer.Camera.AbsoluteDirection;
+
+			// Use parallel sorting only for large face sets due to task scheduling overhead
+			if (count > 1000)
+			{
+				Parallel.For(0, count, i =>
 				{
-					Vector3 centroid = Vector3.Zero;
-					for (int j = 0; j < faces[i].Face.Vertices.Length; j++)
-					{
-						centroid += faces[i].Object.Prototype.Mesh.Vertices[faces[i].Face.Vertices[j].Index].Coordinates;
-					}
-					centroid /= faces[i].Face.Vertices.Length;
-
-					// Transform local centroid to absolute world coordinates
-					Vector4 v0 = new Vector4(centroid.X, centroid.Y, -centroid.Z, 1.0);
-					v0 = Vector4.Transform(v0, faces[i].Object.ModelMatrix);
-					v0.Z *= -1.0;
-
-					// Project the relative position onto the camera's absolute viewing direction.
-					// This gives the exact depth along the camera's view axis (z-depth),
-					// ensuring correct back-to-front sorting (larger depth = more negative = drawn first).
-					Vector3 w0 = v0.Xyz - renderer.Camera.AbsolutePosition;
-					distances[i] = -Vector3.Dot(w0, renderer.Camera.AbsoluteDirection);
+					distanceBuffer[i] = CalculateFaceDistance(sortedFacesBuffer[i], camPos, camDir);
+				});
+			}
+			else
+			{
+				for (int i = 0; i < count; i++)
+				{
+					distanceBuffer[i] = CalculateFaceDistance(sortedFacesBuffer[i], camPos, camDir);
 				}
-			});
-			// sort
-			return faces.Select((face, index) => new { Face = face, Distance = distances[index] }).OrderBy(list => list.Distance).Select(list => list.Face).ToList();
+			}
+
+			// Sort only the active range
+			Array.Sort(distanceBuffer, sortedFacesBuffer, 0, count);
+
+			List<FaceState> result = new List<FaceState>(count);
+			for (int i = 0; i < count; i++)
+			{
+				result.Add(sortedFacesBuffer[i]);
+				sortedFacesBuffer[i] = null; // Prevent memory leaks/rooting objects
+			}
+			return result;
+		}
+
+		// Calculate face depth using cached camera info and fast inverse multiplication centroid logic
+		private double CalculateFaceDistance(FaceState faceState, Vector3 camPos, Vector3 camDir)
+		{
+			var vertices = faceState.Face.Vertices;
+			int vertCount = vertices.Length;
+			if (vertCount < 1)
+			{
+				return 0.0;
+			}
+
+			Vector3 centroid = Vector3.Zero;
+			var meshVerts = faceState.Object.Prototype.Mesh.Vertices;
+			for (int j = 0; j < vertCount; j++)
+			{
+				centroid += meshVerts[vertices[j].Index].Coordinates;
+			}
+
+			centroid *= (1.0 / vertCount);
+			centroid.Z = -centroid.Z;
+
+			centroid.Transform(faceState.Object.ModelMatrix, false);
+			centroid.Z = -centroid.Z;
+
+			return -Vector3.Dot(centroid - camPos, camDir);
 		}
 	}
 }
