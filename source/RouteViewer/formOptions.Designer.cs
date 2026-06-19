@@ -59,7 +59,7 @@ namespace RouteViewer
             this.label15 = new System.Windows.Forms.Label();
             this.numericUpDownViewingDistance = new System.Windows.Forms.NumericUpDown();
             this.labelRealSky = new System.Windows.Forms.Label();
-            this.checkBoxRealSky = new System.Windows.Forms.CheckBox();
+            this.comboBoxRealSkyMode = new System.Windows.Forms.ComboBox();
             this.labelAzimuth = new System.Windows.Forms.Label();
             this.numericUpDownAzimuth = new System.Windows.Forms.NumericUpDown();
             this.labelElevation = new System.Windows.Forms.Label();
@@ -154,7 +154,7 @@ namespace RouteViewer
             this.tabPageOptions.Controls.Add(this.label15);
             this.tabPageOptions.Controls.Add(this.numericUpDownViewingDistance);
             this.tabPageOptions.Controls.Add(this.labelRealSky);
-            this.tabPageOptions.Controls.Add(this.checkBoxRealSky);
+            this.tabPageOptions.Controls.Add(this.comboBoxRealSkyMode);
             this.tabPageOptions.Controls.Add(this.labelAzimuth);
             this.tabPageOptions.Controls.Add(this.numericUpDownAzimuth);
             this.tabPageOptions.Controls.Add(this.labelElevation);
@@ -493,15 +493,19 @@ namespace RouteViewer
             this.labelRealSky.TabIndex = 35;
             this.labelRealSky.Text = "RealSky";
             // 
-            // checkBoxRealSky
+            // comboBoxRealSkyMode
             // 
-            this.checkBoxRealSky.AutoSize = true;
-            this.checkBoxRealSky.Location = new System.Drawing.Point(6, 444);
-            this.checkBoxRealSky.Name = "checkBoxRealSky";
-            this.checkBoxRealSky.Size = new System.Drawing.Size(150, 17);
-            this.checkBoxRealSky.TabIndex = 36;
-            this.checkBoxRealSky.Text = "Enable RealSky Atmosphere";
-            this.checkBoxRealSky.UseVisualStyleBackColor = true;
+            this.comboBoxRealSkyMode.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboBoxRealSkyMode.FormattingEnabled = true;
+            this.comboBoxRealSkyMode.Items.AddRange(new object[] {
+            "Off",
+            "Low",
+            "Medium",
+            "High"});
+            this.comboBoxRealSkyMode.Location = new System.Drawing.Point(6, 442);
+            this.comboBoxRealSkyMode.Name = "comboBoxRealSkyMode";
+            this.comboBoxRealSkyMode.Size = new System.Drawing.Size(121, 21);
+            this.comboBoxRealSkyMode.TabIndex = 36;
             // 
             // labelAzimuth
             // 
@@ -949,7 +953,7 @@ namespace RouteViewer
         private System.Windows.Forms.Label labelShadowNormalBias;
         private System.Windows.Forms.NumericUpDown numericUpDownShadowNormalBias;
         private System.Windows.Forms.Label labelRealSky;
-        private System.Windows.Forms.CheckBox checkBoxRealSky;
+        private System.Windows.Forms.ComboBox comboBoxRealSkyMode;
         private System.Windows.Forms.Label labelAzimuth;
         private System.Windows.Forms.NumericUpDown numericUpDownAzimuth;
         private System.Windows.Forms.Label labelElevation;

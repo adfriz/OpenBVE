@@ -7,9 +7,19 @@ using OpenBveApi.Interface;
 
 namespace OpenBveApi
 {
+	public enum RealSkyQuality
+	{
+		Off = 0,
+		Low = 1,
+		Medium = 2,
+		High = 3
+	}
+
 	/// <summary>Defines the base shared options to be passed to the Renderer etc.</summary>
 	public abstract class BaseOptions
 	{
+		/// <summary>Whether RealSky atmospheric quality level</summary>
+		public RealSkyQuality RealSkyMode = RealSkyQuality.High;
 		/// <summary>The ISO 639-1 code for the current user interface language</summary>
 		public string LanguageCode;
 		/// <summary>Whether the program is to be run in full-screen mode</summary>

@@ -28,7 +28,7 @@ namespace RouteViewer
 			comboBoxNewXParser.SelectedIndex = (int) Interface.CurrentOptions.CurrentXParser;
 			comboBoxNewObjParser.SelectedIndex = (int) Interface.CurrentOptions.CurrentObjParser;
 			numericUpDownViewingDistance.Value = Math.Min(Interface.CurrentOptions.ViewingDistance, numericUpDownViewingDistance.Maximum);
-			checkBoxRealSky.Checked = Interface.CurrentOptions.RealSkyEnabled;
+			comboBoxRealSkyMode.SelectedIndex = (int)Interface.CurrentOptions.RealSkyMode;
 			numericUpDownAzimuth.Value = (decimal)Interface.CurrentOptions.RealSkyAzimuth;
 			numericUpDownElevation.Value = (decimal)Interface.CurrentOptions.RealSkyElevation;
 
@@ -265,7 +265,8 @@ namespace RouteViewer
 				Interface.CurrentOptions.ViewingDistance = (int)Math.Ceiling(Interface.CurrentOptions.NearClipBase) + 1;
 			}
 			Interface.CurrentOptions.QuadTreeLeafSize = Math.Max(50, (int)Math.Ceiling(Interface.CurrentOptions.ViewingDistance / 10.0d) * 10); // quad tree size set to 10% of viewing distance to the nearest 10
-			Interface.CurrentOptions.RealSkyEnabled = checkBoxRealSky.Checked;
+			Interface.CurrentOptions.RealSkyMode = (RealSkyQuality)comboBoxRealSkyMode.SelectedIndex;
+			Interface.CurrentOptions.RealSkyEnabled = Interface.CurrentOptions.RealSkyMode != RealSkyQuality.Off;
 			Interface.CurrentOptions.RealSkyAzimuth = (double)numericUpDownAzimuth.Value;
 			Interface.CurrentOptions.RealSkyElevation = (double)numericUpDownElevation.Value;
 
@@ -310,7 +311,7 @@ namespace RouteViewer
 				}
 			}
 			//Check if interpolation mode or anisotropic filtering level has changed, and trigger a reload
-			if (previousInterpolationMode != Interface.CurrentOptions.Interpolation || previousAnisotropicLevel != Interface.CurrentOptions.AnisotropicFilteringLevel || GraphicsModeChanged || Interface.CurrentOptions.ViewingDistance != previousViewingDistance || Interface.CurrentOptions.RealSkyEnabled != checkBoxRealSky.Checked ||
+			if (previousInterpolationMode != Interface.CurrentOptions.Interpolation || previousAnisotropicLevel != Interface.CurrentOptions.AnisotropicFilteringLevel || GraphicsModeChanged || Interface.CurrentOptions.ViewingDistance != previousViewingDistance || Interface.CurrentOptions.RealSkyEnabled != (comboBoxRealSkyMode.SelectedIndex != 0) ||
 			    previousShadowResolution != Interface.CurrentOptions.ShadowResolution || previousShadowDistance != Interface.CurrentOptions.ShadowDrawDistance || previousShadowCascades != Interface.CurrentOptions.ShadowCascades ||
 			    previousShadowStrength != Interface.CurrentOptions.ShadowStrength || previousShadowBias != Interface.CurrentOptions.ShadowBias || previousShadowNormalBias != Interface.CurrentOptions.ShadowNormalBias || 
 			    Interface.CurrentOptions.NearClipBase != previousNearClipBase || previousShadowFilterCascades != Interface.CurrentOptions.ShadowFilterCascades)

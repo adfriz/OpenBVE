@@ -170,6 +170,13 @@ namespace LibRender2
 		/// <summary>The shader used for the RealSky atmospheric system</summary>
 		public Shader RealSkyShader;
 
+		/// <summary>The compute shader program for the RealSky system</summary>
+		public RealSkyComputeShader RealSkyComputeShader;
+		/// <summary>Whether OpenGL 4.3 compute shaders are supported and available</summary>
+		public bool RealSkyComputeAvailable;
+		/// <summary>Whether compute shader support has been probed</summary>
+		private bool realSkyComputeProbed;
+
 		/// <summary>VAO used for the RealSky skybox</summary>
 		protected VertexArrayObject skyboxVao;
 
@@ -1885,6 +1892,34 @@ namespace LibRender2
 
 		private bool hasLoggedRealSkyCall = false;
 
+		/// <summary>
+		/// Probes the OpenGL context for compute-shader support (GL 4.3+).
+		/// Stores the result in <see cref="RealSkyComputeAvailable"/> and
+		/// loads the compute program if support is detected.
+		/// </summary>
+		public void ProbeOpenGL43Support()
+		{
+			if (realSkyComputeProbed)
+			{
+				return;
+			}
+			realSkyComputeProbed = true;
+			try
+			{
+				// GL_MAJOR_VERSION / GL_MINOR_VERSION were introduced in GL 3.0,
+				// so this works on any context that supports 3.0+ (which is the
+				// minimum the new renderer requires anyway).
+				GL.GetInteger(GetPName.MajorVersion, out int major);
+				GL.GetInteger(GetPName.MinorVersion, out int minor);
+				// 4.3 → major=4, minor>=3
+				RealSkyComputeAvailable = (major > 4) || (major == 4 && minor >= 3);
+			}
+			catch
+			{
+				RealSkyComputeAvailable = false;
+			}
+		}
+
 		/// <summary>Renders the RealSky atmospheric system</summary>
 		/// <param name="Time">The current time in seconds</param>
 		/// <param name="SunDirection">The direction of the sun</param>
@@ -1898,7 +1933,118 @@ namespace LibRender2
 			{
 				return;
 			}
-			
+
+			// Probe GL 4.3 support lazily on the first call.
+			ProbeOpenGL43Support();
+
+			Vector3 sunDir = SunDirection;
+			sunDir.Normalize();
+
+			// -------------------------------------------------------------
+			// OpenGL 4.3 path: dispatch the compute shader to fill the
+			// sky/cloud texture, then draw the skybox sampling that texture.
+			// -------------------------------------------------------------
+			if (RealSkyComputeAvailable && RealSkyComputeShader != null)
+			{
+				RenderRealSkyCompute(Time, sunDir);
+				return;
+			}
+
+			// -------------------------------------------------------------
+			// Legacy path (GL 3.3): everything happens in the fragment shader.
+			// -------------------------------------------------------------
+			RenderRealSkyLegacy(Time, sunDir);
+		}
+
+		/// <summary>
+		/// OpenGL 4.3 path: dispatches <see cref="RealSkyComputeShader"/> to
+		/// render atmosphere + volumetric clouds into an RGBA16F image, then
+		/// draws the skybox cube sampling that image in the fragment shader.
+		/// </summary>
+		private void RenderRealSkyCompute(double Time, Vector3 sunDir)
+		{
+			switch (currentOptions.RealSkyMode)
+			{
+				case RealSkyQuality.Low:
+					RealSkyComputeShader.Parameters.Steps = 16f;
+					RealSkyComputeShader.Parameters.LightSteps = 0f;
+					break;
+				case RealSkyQuality.Medium:
+					RealSkyComputeShader.Parameters.Steps = 24f;
+					RealSkyComputeShader.Parameters.LightSteps = 4f;
+					break;
+				case RealSkyQuality.High:
+				default:
+					RealSkyComputeShader.Parameters.Steps = 32f;
+					RealSkyComputeShader.Parameters.LightSteps = 6f;
+					break;
+			}
+
+			// Make sure the compute output texture matches half the screen size (upscaled bilinearly in fragment shader).
+			RealSkyComputeShader.SetScreenSize(Screen.Width / 2, Screen.Height / 2);
+
+			// Compute inverse(view * projection) so the compute shader can
+			// reconstruct world-space view rays per pixel without depending
+			// on the skybox-cube geometry.
+			Matrix4D viewMatrix = CurrentViewMatrix;
+			viewMatrix.Row3 = new Vector4(0, 0, 0, 1); // strip translation - skybox follows camera
+			Matrix4D viewProj = viewMatrix * CurrentProjectionMatrix;
+			Matrix4D invViewProjD = Matrix4D.Inverse(viewProj);
+			Matrix4 invViewProj = new Matrix4(
+				(float)invViewProjD.Row0.X, (float)invViewProjD.Row0.Y, (float)invViewProjD.Row0.Z, (float)invViewProjD.Row0.W,
+				(float)invViewProjD.Row1.X, (float)invViewProjD.Row1.Y, (float)invViewProjD.Row1.Z, (float)invViewProjD.Row1.W,
+				(float)invViewProjD.Row2.X, (float)invViewProjD.Row2.Y, (float)invViewProjD.Row2.Z, (float)invViewProjD.Row2.W,
+				(float)invViewProjD.Row3.X, (float)invViewProjD.Row3.Y, (float)invViewProjD.Row3.Z, (float)invViewProjD.Row3.W);
+
+			// Dispatch the compute shader. The compute pass writes to
+			// RealSkyComputeShader.OutputTexture via imageStore.
+			RealSkyComputeShader.Dispatch(
+				ref invViewProj,
+				sunDir,
+				Camera.AbsolutePosition,
+				(float)Time);
+
+			// Now draw the skybox cube. The fragment shader simply samples
+			// the compute output texture at the screen-space UV.
+			RealSkyShader.Activate();
+
+			// Skybox transformation (same as the legacy path).
+			RealSkyShader.SetCurrentModelViewMatrix(viewMatrix);
+			RealSkyShader.SetCurrentProjectionMatrix(CurrentProjectionMatrix);
+
+			// Bind the compute output texture to texture unit 0.
+			GL.ActiveTexture(TextureUnit.Texture0);
+			GL.BindTexture(TextureTarget.Texture2D, RealSkyComputeShader.OutputTexture);
+			RealSkyShader.SetTexture(0);
+
+			GL.ProgramUniform2(RealSkyShader.Handle, RealSkyShader.UniformLayout.RealSkyResolution, (float)Screen.Width, (float)Screen.Height);
+
+			GL.Disable(EnableCap.DepthTest);
+			GL.DepthMask(false);
+			GL.Disable(EnableCap.CullFace);
+
+			skyboxVao.Bind();
+			GL.DrawArrays(PrimitiveType.Triangles, 0, 36);
+			skyboxVao.UnBind();
+
+			GL.Enable(EnableCap.CullFace);
+			GL.DepthMask(true);
+			GL.Enable(EnableCap.DepthTest);
+
+			// Unbind the compute output texture so it is not accidentally
+			// sampled by subsequent draw calls.
+			GL.BindTexture(TextureTarget.Texture2D, 0);
+
+			RealSkyShader.Deactivate();
+			RealSkyComputeShader.Deactivate();
+		}
+
+		/// <summary>
+		/// Legacy GL 3.3 path: single-pass fragment shader that raymarches
+		/// clouds inline. Used when OpenGL 4.3 is not available.
+		/// </summary>
+		private void RenderRealSkyLegacy(double Time, Vector3 sunDir)
+		{
 			RealSkyShader.Activate();
 			// Skybox is always centered around camera but follows rotation
 			Matrix4D viewMatrix = CurrentViewMatrix;
@@ -1906,8 +2052,6 @@ namespace LibRender2
 			RealSkyShader.SetCurrentModelViewMatrix(viewMatrix);
 			RealSkyShader.SetCurrentProjectionMatrix(CurrentProjectionMatrix);
 
-			Vector3 sunDir = SunDirection;
-			sunDir.Normalize();
 			GL.ProgramUniform3(RealSkyShader.Handle, RealSkyShader.UniformLayout.RealSkySunDirection, (float)sunDir.X, (float)sunDir.Y, (float)sunDir.Z);
 			GL.ProgramUniform1(RealSkyShader.Handle, RealSkyShader.UniformLayout.RealSkyTime, (float)Time);
 			GL.ProgramUniform2(RealSkyShader.Handle, RealSkyShader.UniformLayout.RealSkyResolution, (float)Screen.Width, (float)Screen.Height);
@@ -1916,7 +2060,7 @@ namespace LibRender2
 			GL.Disable(EnableCap.DepthTest);
 			GL.DepthMask(false);
 			GL.Disable(EnableCap.CullFace);
-			
+
 			skyboxVao.Bind();
 			GL.DrawArrays(PrimitiveType.Triangles, 0, 36);
 			skyboxVao.UnBind();
@@ -1924,7 +2068,7 @@ namespace LibRender2
 			GL.Enable(EnableCap.CullFace);
 			GL.DepthMask(true);
 			GL.Enable(EnableCap.DepthTest);
-			
+
 			RealSkyShader.Deactivate();
 		}
 
@@ -1932,11 +2076,48 @@ namespace LibRender2
 		{
 			try
 			{
+				string shaderPath = fileSystem.GetDataFolder("Shaders", "Atmosphere");
+
 				if (RealSkyShader == null)
 				{
-					string shaderPath = fileSystem.GetDataFolder("Shaders", "Atmosphere");
-					RealSkyShader = new Shader(this, Path.CombineFile(shaderPath, "RealSky.vert"), Path.CombineFile(shaderPath, "RealSky.frag"));
+					// Probe GL 4.3 support. If available, load the GLSL 430
+					// shaders (RealSky.vert/.frag) which sample the compute
+					// output texture. Otherwise load the legacy single-pass
+					// fragment shader.
+					ProbeOpenGL43Support();
+					string vertPath = Path.CombineFile(shaderPath, "RealSky.vert");
+					string fragPath = Path.CombineFile(shaderPath, "RealSky.frag");
+					if (!RealSkyComputeAvailable)
+					{
+						// Fall back to the legacy single-pass fragment shader.
+						fragPath = Path.CombineFile(shaderPath, "RealSky_legacy.frag");
+					}
+					RealSkyShader = new Shader(this, vertPath, fragPath);
 				}
+
+				// If GL 4.3 is available, also load the compute shader.
+				if (RealSkyComputeAvailable && RealSkyComputeShader == null)
+				{
+					string compPath = Path.CombineFile(shaderPath, "RealSky.comp");
+					if (File.Exists(compPath))
+					{
+						try
+						{
+							RealSkyComputeShader = new RealSkyComputeShader(compPath);
+						}
+						catch (Exception ex)
+						{
+							currentHost.AddMessage(MessageType.Warning, false, "RealSky: OpenGL 4.3 detected, but compute shader failed to load. Falling back to legacy path. " + ex.Message);
+							RealSkyComputeAvailable = false;
+						}
+					}
+					else
+					{
+						currentHost.AddMessage(MessageType.Warning, false, "RealSky: OpenGL 4.3 detected, but RealSky.comp was not found. Falling back to legacy path.");
+						RealSkyComputeAvailable = false;
+					}
+				}
+
 				if (skyboxVao == null)
 				{
 					// Create a large skybox cube

@@ -117,6 +117,7 @@ namespace OpenBveApi
 		Backward,
 		// RealSky
 		RealSkyEnabled,
+		RealSkyMode,
 		RealSkyAzimuth,
 		RealSkyElevation
     }

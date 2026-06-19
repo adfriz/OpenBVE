@@ -22,6 +22,7 @@ namespace RouteViewer
 			ViewingDistance = 600;
 			SoundNumber = 16;
 			RealSkyEnabled = false;
+			RealSkyMode = RealSkyQuality.High;
 			RealSkyAzimuth = 180.0;
 			RealSkyElevation = 45.0;
 		}
@@ -73,6 +74,7 @@ namespace RouteViewer
 				Builder.AppendLine();
 				Builder.AppendLine("[RealSky]");
 				Builder.AppendLine("RealSkyEnabled = " + (RealSkyEnabled ? "true" : "false"));
+				Builder.AppendLine("RealSkyMode = " + ((int)RealSkyMode).ToString(Culture));
 				Builder.AppendLine("RealSkyAzimuth = " + RealSkyAzimuth.ToString(Culture));
 				Builder.AppendLine("RealSkyElevation = " + RealSkyElevation.ToString(Culture));
 				File.WriteAllText(fileName, Builder.ToString(), new System.Text.UTF8Encoding(true));
@@ -174,6 +176,14 @@ namespace RouteViewer
 							break;
 						case OptionsSection.RealSky:
 							block.GetValue(OptionsKey.RealSkyEnabled, out Interface.CurrentOptions.RealSkyEnabled);
+							if (block.TryGetEnumValue(OptionsKey.RealSkyMode, ref Interface.CurrentOptions.RealSkyMode))
+							{
+								Interface.CurrentOptions.RealSkyEnabled = Interface.CurrentOptions.RealSkyMode != RealSkyQuality.Off;
+							}
+							else
+							{
+								Interface.CurrentOptions.RealSkyMode = Interface.CurrentOptions.RealSkyEnabled ? RealSkyQuality.High : RealSkyQuality.Off;
+							}
 							block.TryGetValue(OptionsKey.RealSkyAzimuth, ref Interface.CurrentOptions.RealSkyAzimuth);
 							block.TryGetValue(OptionsKey.RealSkyElevation, ref Interface.CurrentOptions.RealSkyElevation);
 							break;
