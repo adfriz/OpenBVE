@@ -232,5 +232,24 @@ namespace LibRender2
 		/// The handle of "uCurrentViewMatrix" within the shader
 		/// </summary>
 		public short CurrentViewMatrix = -1;
+
+		// --- RealSky atmospheric system ---
+		/// <summary>The handle of "uSkyEnabled" within the shader (1 = sample sky texture, 0 = ignore).</summary>
+		public short SkyEnabled = -1;
+
+		/// <summary>The handle of "uSkyTexture" within the shader (sampler2D unit that holds the RealSky image).</summary>
+		public short SkyTexture = -1;
+
+		/// <summary>The handle of "uRealSkySunDirection" within the shader (fallback path only; compute path uses image uniforms).</summary>
+		public short RealSkySunDirection = -1;
+
+		/// <summary>The handle of "uRealSkyTime" within the shader (fallback path only).</summary>
+		public short RealSkyTime = -1;
+
+		/// <summary>The handle of "uRealSkyResolution" within the shader (fallback path only).</summary>
+		public short RealSkyResolution = -1;
+
+		/// <summary>The handle of "uRealSkyCameraPos" within the shader (fallback path only).</summary>
+		public short RealSkyCameraPos = -1;
 	}
 }

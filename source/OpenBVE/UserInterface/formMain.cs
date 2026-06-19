@@ -1,3 +1,5 @@
+extern alias RealOpenTK;
+using OpenTK = RealOpenTK::OpenTK;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -17,8 +19,10 @@ using OpenBveApi.Hosts;
 using OpenBveApi.Packages;
 using OpenBveApi.Interface;
 using OpenBveApi.Objects;
-using OpenTK.Input;
-using ButtonState = OpenTK.Input.ButtonState;
+using ButtonState = RealOpenTK::OpenTK.Input.ButtonState;
+using JoystickState = RealOpenTK::OpenTK.Input.JoystickState;
+using JoystickHatState = RealOpenTK::OpenTK.Input.JoystickHatState;
+using HatPosition = RealOpenTK::OpenTK.Input.HatPosition;
 using ContentAlignment = System.Drawing.ContentAlignment;
 using Control = System.Windows.Forms.Control;
 using Path = OpenBveApi.Path;

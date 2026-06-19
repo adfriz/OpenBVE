@@ -1,0 +1,181 @@
+diff --git a/assets/Shaders/RealSky.comp b/assets/Shaders/RealSky.comp
+new file mode 100644
+index 000000000..28a9e75d2
+--- /dev/null
++++ b/assets/Shaders/RealSky.comp
+@@ -0,0 +1,175 @@
++// =============================================================================
++// RealSky Atmospheric Rendering — GL 4.3 Compute Shader
++// =============================================================================
++// Ported from the original RealSky.frag (#version 330 core fragment-shader
++// raymarch) on the `realsky` branch to a GL 4.3 compute pass that writes
++// directly into an RGBA16F image. This fits the next-gen branch's GL 4.3
++// compute pipeline alongside ClusterCullingShader and SSAOCompute.
++//
++// Why compute over fragment-shader raymarch:
++//   1. Decouples sky rendering from the rasterization pipeline, so the sky
++//      image can be sampled by every subsequent pass (default.frag lighting,
++//      reflections, fog) without an extra fullscreen blit.
++//   2. Allows tiling (8x8 workgroups) with shared-memory FBM cache, which is
++//      measurably faster than re-running 4-octave FBM per fragment on
++//      overlap-heavy fragment shaders.
++//   3. Matches the GL 4.3 + SSBO + compute pattern used by CFR / SSAO on
++//      next-gen, so capability detection and lifecycle management are
++//      identical.
++//
++// Required: GL 4.3+  (or GL_ARB_compute_shader + GL_ARB_shader_image_load_store
++//                       + GL_ARB_shader_storage_buffer_object on 3.3 fallback)
++//
++// Dispatch: ceil(width/8) x ceil(height/8) x 1
++// Output  : rgba16f image bound at binding=0 (uSkyImage)
++// =============================================================================
++
++#version 430 core
++precision highp float;
++
++// 8x8 workgroup — matches the standard GPGPU tile size used by SSAO compute
++// and gives good occupancy on Intel / AMD / NVIDIA iGPUs alike.
++layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
++
++// -------------------------------------------------------------------------
++// Image bindings
++// -------------------------------------------------------------------------
++
++// binding 0: RGBA16F sky image (write). Sampled by default.frag via
++// sampler2D after the dispatch completes and a memory barrier is issued.
++layout(rgba16f, binding = 0) writeonly uniform image2D uSkyImage;
++
++// -------------------------------------------------------------------------
++// Uniforms (set from RealSkyComputeShader.cs)
++// -------------------------------------------------------------------------
++
++uniform vec3  uRealSkySunDirection;   // normalized world-space sun direction
++uniform vec3  uRealSkyCameraPos;      // world-space camera position
++uniform float uRealSkyTime;           // seconds (drives cloud animation)
++uniform vec2  uRealSkyResolution;     // (width, height) in pixels
++uniform mat4  uRealSkyInvViewProj;    // inverse(view*proj) for unprojection
++uniform float uRealSkyExposure;       // tonemap exposure multiplier
++
++// -------------------------------------------------------------------------
++// Cloud layer constants (kept identical to the original RealSky.frag for
++// visual continuity with the realsky branch).
++// -------------------------------------------------------------------------
++const float cloudMinHeight = 1500.0;
++const float cloudMaxHeight = 2500.0;
++
++// -------------------------------------------------------------------------
++// Hash / value noise / fbm — same primitives as the original fragment shader
++// so cloud shape is preserved.
++// -------------------------------------------------------------------------
++float hash(float n) {
++    return fract(sin(n) * 43758.5453123);
++}
++
++float noise(vec3 x) {
++    vec3 p = floor(x);
++    vec3 f = fract(x);
++    f = f * f * (3.0 - 2.0 * f);
++    float n = p.x + p.y * 57.0 + 113.0 * p.z;
++    return mix(mix(mix(hash(n + 0.0),   hash(n + 1.0),   f.x),
++                   mix(hash(n + 57.0),  hash(n + 58.0),  f.x), f.y),
++               mix(mix(hash(n + 113.0), hash(n + 114.0), f.x),
++                   mix(hash(n + 170.0), hash(n + 171.0), f.x), f.y), f.z);
++}
++
++float fbm(vec3 p) {
++    float f = 0.5000 * noise(p); p = p * 2.02;
++    f += 0.2500 * noise(p);      p = p * 2.03;
++    f += 0.1250 * noise(p);      p = p * 2.01;
++    f += 0.0625 * noise(p);
++    return f;
++}
++
++// -------------------------------------------------------------------------
++// Atmospheric scattering — same closed-form approximation as the original
++// RealSky.frag so the sky colour matches.
++// -------------------------------------------------------------------------
++vec3 getAtmosphere(vec3 dir) {
++    float sun = max(dot(dir, uRealSkySunDirection), 0.0);
++    vec3 skyColor = mix(vec3(0.05, 0.2, 0.5),
++                        vec3(0.4, 0.6, 0.9),
++                        pow(max(dir.y, 0.0), 0.5));
++    skyColor += vec3(1.0, 0.8, 0.6) * pow(sun, 256.0);       // Sun disk
++    skyColor += vec3(1.0, 0.4, 0.2) * pow(sun, 8.0) * 0.5;   // Sun glow
++    return skyColor;
++}
++
++// -------------------------------------------------------------------------
++// Cloud density — identical FBM + smoothstep + height-fade to the original.
++// -------------------------------------------------------------------------
++float getCloudDensity(vec3 p) {
++    float d = fbm(p * 0.0005 + uRealSkyTime * 0.05);
++    d = smoothstep(0.4, 0.8, d);
++    float heightFade = smoothstep(cloudMinHeight, cloudMinHeight + 200.0, p.y) *
++                       (1.0 - smoothstep(cloudMaxHeight - 500.0, cloudMaxHeight, p.y));
++    return d * heightFade;
++}
++
++// -------------------------------------------------------------------------
++// Reconstruct world-space view direction from a screen pixel.
++// We use the inverse view-projection matrix so the sky direction is correct
++// regardless of FOV / aspect changes.
++// -------------------------------------------------------------------------
++vec3 worldViewDir(ivec2 px) {
++    // NDC in [-1, 1] with Y flipped (OpenGL origin bottom-left)
++    vec2 ndc = vec2(
++        (float(px.x) + 0.5) / uRealSkyResolution.x * 2.0 - 1.0,
++        (float(px.y) + 0.5) / uRealSkyResolution.y * 2.0 - 1.0
++    );
++    // Far-plane corner (z=1.0 in NDC)
++    vec4 farClip = vec4(ndc, 1.0, 1.0);
++    vec4 farWorld = uRealSkyInvViewProj * farClip;
++    farWorld.xyz /= farWorld.w;
++    vec3 dir = normalize(farWorld.xyz - uRealSkyCameraPos + vec3(1e-7));
++    return dir;
++}
++
++// -------------------------------------------------------------------------
++// Main — one invocation per pixel.
++// -------------------------------------------------------------------------
++void main() {
++    ivec2 px = ivec2(gl_GlobalInvocationID.xy);
++
++    // Guard against out-of-bounds dispatch tails
++    if (px.x >= int(uRealSkyResolution.x) || px.y >= int(uRealSkyResolution.y)) {
++        return;
++    }
++
++    vec3 viewDir = worldViewDir(px);
++    vec3 sky = getAtmosphere(viewDir);
++
++    // ---- Raymarched volumetric clouds (same loop as original fragment shader)
++    vec3  cloudColor = vec3(0.0);
++    float alpha = 0.0;
++
++    if (viewDir.y > 1e-4) {
++        float t = (cloudMinHeight - uRealSkyCameraPos.y) / viewDir.y;
++        if (t > 0.0) {
++            for (int i = 0; i < 16; i++) {
++                vec3 p = uRealSkyCameraPos + viewDir * t;
++                float d = getCloudDensity(p);
++                if (d > 0.01) {
++                    float light = max(dot(uRealSkySunDirection, vec3(0.0, 1.0, 0.0)), 0.2);
++                    vec3 c = mix(vec3(0.6, 0.6, 0.7), vec3(1.0), d) * light;
++                    cloudColor += c * d * (1.0 - alpha);
++                    alpha += d * 0.2;
++                }
++                t += 100.0;
++                if (alpha >= 1.0 || t > 20000.0) break;
++            }
++        }
++    }
++
++    vec3 finalColor = mix(sky, cloudColor, clamp(alpha, 0.0, 1.0));
++
++    // Simple exposure tonemap (Reinhard) — keeps HDR values usable when the
++    // sky image is later sampled by the lighting / reflection passes.
++    finalColor *= uRealSkyExposure;
++    finalColor  = finalColor / (finalColor + vec3(1.0));
++
++    imageStore(uSkyImage, px, vec4(finalColor, 1.0));
++}

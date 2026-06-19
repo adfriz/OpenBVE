@@ -1,6 +1,8 @@
-﻿using System;
+extern alias RealOpenTK;
+using System;
 using System.Collections.Generic;
-using OpenTK.Input;
+using ButtonState = RealOpenTK::OpenTK.Input.ButtonState;
+using JoystickHatState = RealOpenTK::OpenTK.Input.JoystickHatState;
 
 namespace OpenBve.Input
 {

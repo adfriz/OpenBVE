@@ -1,7 +1,8 @@
-﻿using System.Linq;
+extern alias RealOpenTK;
+using System.Linq;
 using OpenBveApi.Hosts;
 using OpenBveApi.Sounds;
-using OpenTK.Audio.OpenAL;
+using RealOpenTK::OpenTK.Audio.OpenAL;
 using SoundManager;
 using TrainManager.Trains;
 

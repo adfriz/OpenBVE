@@ -1,4 +1,5 @@
-﻿using System;
+extern alias RealOpenTK;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Windows.Forms;
@@ -6,8 +7,8 @@ using System.Xml;
 using OpenBveApi.Hosts;
 using OpenBveApi.Math;
 using OpenBveApi.Interface;
-using OpenTK.Input;
-using ButtonState = OpenTK.Input.ButtonState;
+using ButtonState = RealOpenTK::OpenTK.Input.ButtonState;
+using JoystickHatState = RealOpenTK::OpenTK.Input.JoystickHatState;
 
 namespace OpenBve.Input
 {

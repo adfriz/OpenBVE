@@ -139,7 +139,17 @@ namespace OpenBveApi
 		public int UserInterfaceScaleFactor;
 		/// <summary>Whether loaded objects are automatically reloaded on change</summary>
 		public bool AutoReloadObjects;
-		
+
+		// --- RealSky atmospheric system ---
+		/// <summary>Whether RealSky atmospheric clouds are enabled (requires New Renderer)</summary>
+		public bool RealSkyEnabled;
+
+		/// <summary>The azimuth of the RealSky sun in degrees (0 = North, 180 = South)</summary>
+		public double RealSkyAzimuth = 180.0;
+
+		/// <summary>The elevation of the RealSky sun in degrees (0 = Horizon, 90 = Zenith)</summary>
+		public double RealSkyElevation = 45.0;
+
 		/// <summary>The near clipping plane for scenery</summary>
 		public double NearClipScenery = 0.5;
 		/// <summary>The near clipping plane for the cab</summary>

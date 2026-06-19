@@ -51,11 +51,7 @@
     <PackageReference Include="Silk.NET.Windowing" Version="2.20.0" />
     <PackageReference Include="Silk.NET.Input" Version="2.20.0" />
     <PackageReference Include="Silk.NET.Maths" Version="2.20.0" />
+    <PackageReference Include="OpenTK-OpenBVE" Version="1.0.4" Aliases="RealOpenTK" />
   </ItemGroup>
-
-  <PropertyGroup>
-    <PreBuildEvent Condition=" '$(OS)' != 'Unix' ">"$(ProjectDir)..\DevTools\TextTransform\TextTransform.exe" "$(ProjectDir)Properties\AssemblyInfo.tt"</PreBuildEvent>
-    <PreBuildEvent Condition=" '$(OS)' == 'Unix' ">mono $(ProjectDir)../DevTools/TextTransform/TextTransform.exe $(ProjectDir)Properties/AssemblyInfo.tt</PreBuildEvent>
-  </PropertyGroup>
 
 </Project>

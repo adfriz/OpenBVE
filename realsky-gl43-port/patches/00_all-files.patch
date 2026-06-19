@@ -1,0 +1,1495 @@
+diff --git a/assets/Shaders/Atmosphere/RealSky.frag b/assets/Shaders/Atmosphere/RealSky.frag
+new file mode 100644
+index 000000000..7e1d6fd1d
+--- /dev/null
++++ b/assets/Shaders/Atmosphere/RealSky.frag
+@@ -0,0 +1,87 @@
++#version 330 core
++precision highp float;
++
++in vec3 vWorldPos;
++out vec4 fragColor;
++
++uniform vec3 uRealSkySunDirection;
++uniform vec3 uRealSkyCameraPos;
++uniform float uRealSkyTime;
++uniform vec2 uRealSkyResolution;
++
++// Atmospheric Scattering & Volumetric Clouds
++// (Optimized Raymarching with AMD/NaN safeguards)
++
++const float cloudMinHeight = 1500.0;
++const float cloudMaxHeight = 2500.0;
++
++float hash(float n) {
++    return fract(sin(n) * 43758.5453123);
++}
++
++float noise(vec3 x) {
++    vec3 p = floor(x);
++    vec3 f = fract(x);
++    f = f * f * (3.0 - 2.0 * f);
++    float n = p.x + p.y * 57.0 + 113.0 * p.z;
++    return mix(mix(mix(hash(n + 0.0), hash(n + 1.0), f.x),
++                   mix(hash(n + 57.0), hash(n + 58.0), f.x), f.y),
++               mix(mix(hash(n + 113.0), hash(n + 114.0), f.x),
++                   mix(hash(n + 170.0), hash(n + 171.0), f.x), f.y), f.z);
++}
++
++float fbm(vec3 p) {
++    float f = 0.5000 * noise(p); p = p * 2.02;
++    f += 0.2500 * noise(p); p = p * 2.03;
++    f += 0.1250 * noise(p); p = p * 2.01;
++    f += 0.0625 * noise(p);
++    return f;
++}
++
++vec3 getAtmosphere(vec3 dir) {
++    float sun = max(dot(dir, uRealSkySunDirection), 0.0);
++    vec3 skyColor = mix(vec3(0.05, 0.2, 0.5), vec3(0.4, 0.6, 0.9), pow(max(dir.y, 0.0), 0.5));
++    skyColor += vec3(1.0, 0.8, 0.6) * pow(sun, 256.0); // Sun disk
++    skyColor += vec3(1.0, 0.4, 0.2) * pow(sun, 8.0) * 0.5; // Glow
++    return skyColor;
++}
++
++float getCloudDensity(vec3 p) {
++    float d = fbm(p * 0.0005 + uRealSkyTime * 0.05);
++    d = smoothstep(0.4, 0.8, d);
++    float heightFade = smoothstep(cloudMinHeight, cloudMinHeight + 200.0, p.y) * 
++                      (1.0 - smoothstep(cloudMaxHeight - 500.0, cloudMaxHeight, p.y));
++    return d * heightFade;
++}
++
++void main() {
++    // NaN safeguard for normalization
++    vec3 viewDir = normalize(vWorldPos + vec3(1e-7));
++    vec3 sky = getAtmosphere(viewDir);
++    
++    // Raymarching clouds
++    vec3 cloudColor = vec3(0.0);
++    float alpha = 0.0;
++    
++    // Division-by-zero safeguard for horizon
++    if (viewDir.y > 1e-4) {
++        float t = (cloudMinHeight - uRealSkyCameraPos.y) / viewDir.y;
++        if (t > 0.0) {
++            for(int i = 0; i < 16; i++) {
++                vec3 p = uRealSkyCameraPos + viewDir * t;
++                float d = getCloudDensity(p);
++                if (d > 0.01) {
++                    float light = max(dot(uRealSkySunDirection, vec3(0,1,0)), 0.2);
++                    vec3 c = mix(vec3(0.6, 0.6, 0.7), vec3(1.0), d) * light;
++                    cloudColor += c * d * (1.0 - alpha);
++                    alpha += d * 0.2;
++                }
++                t += 100.0;
++                if (alpha >= 1.0 || t > 20000.0) break;
++            }
++        }
++    }
++    
++    vec3 finalColor = mix(sky, cloudColor, clamp(alpha, 0.0, 1.0));
++    fragColor = vec4(finalColor, 1.0);
++}
+
+diff --git a/assets/Shaders/Atmosphere/RealSky.vert b/assets/Shaders/Atmosphere/RealSky.vert
+new file mode 100644
+index 000000000..1c30fd7ae
+--- /dev/null
++++ b/assets/Shaders/Atmosphere/RealSky.vert
+@@ -0,0 +1,14 @@
++#version 330 core
++layout(location = 0) in vec3 iPosition;
++out vec3 vWorldPos;
++
++uniform mat4 uCurrentProjectionMatrix;
++uniform mat4 uCurrentModelViewMatrix;
++
++void main() {
++    vWorldPos = iPosition;
++    // Standard skybox transformation (centered around camera)
++    vec4 pos = uCurrentProjectionMatrix * uCurrentModelViewMatrix * vec4(iPosition, 1.0);
++    // Force to background (z=1)
++    gl_Position = pos.xyww;
++}
+
+diff --git a/assets/Shaders/RealSky.comp b/assets/Shaders/RealSky.comp
+new file mode 100644
+index 000000000..28a9e75d2
+--- /dev/null
++++ b/assets/Shaders/RealSky.comp
+@@ -0,0 +1,175 @@
++// =============================================================================
++// RealSky Atmospheric Rendering — GL 4.3 Compute Shader
++// =============================================================================
++// Ported from the original RealSky.frag (#version 330 core fragment-shader
++// raymarch) on the `realsky` branch to a GL 4.3 compute pass that writes
++// directly into an RGBA16F image. This fits the next-gen branch's GL 4.3
++// compute pipeline alongside ClusterCullingShader and SSAOCompute.
++//
++// Why compute over fragment-shader raymarch:
++//   1. Decouples sky rendering from the rasterization pipeline, so the sky
++//      image can be sampled by every subsequent pass (default.frag lighting,
++//      reflections, fog) without an extra fullscreen blit.
++//   2. Allows tiling (8x8 workgroups) with shared-memory FBM cache, which is
++//      measurably faster than re-running 4-octave FBM per fragment on
++//      overlap-heavy fragment shaders.
++//   3. Matches the GL 4.3 + SSBO + compute pattern used by CFR / SSAO on
++//      next-gen, so capability detection and lifecycle management are
++//      identical.
++//
++// Required: GL 4.3+  (or GL_ARB_compute_shader + GL_ARB_shader_image_load_store
++//                       + GL_ARB_shader_storage_buffer_object on 3.3 fallback)
++//
++// Dispatch: ceil(width/8) x ceil(height/8) x 1
++// Output  : rgba16f image bound at binding=0 (uSkyImage)
++// =============================================================================
++
++#version 430 core
++precision highp float;
++
++// 8x8 workgroup — matches the standard GPGPU tile size used by SSAO compute
++// and gives good occupancy on Intel / AMD / NVIDIA iGPUs alike.
++layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
++
++// -------------------------------------------------------------------------
++// Image bindings
++// -------------------------------------------------------------------------
++
++// binding 0: RGBA16F sky image (write). Sampled by default.frag via
++// sampler2D after the dispatch completes and a memory barrier is issued.
++layout(rgba16f, binding = 0) writeonly uniform image2D uSkyImage;
++
++// -------------------------------------------------------------------------
++// Uniforms (set from RealSkyComputeShader.cs)
++// -------------------------------------------------------------------------
++
++uniform vec3  uRealSkySunDirection;   // normalized world-space sun direction
++uniform vec3  uRealSkyCameraPos;      // world-space camera position
++uniform float uRealSkyTime;           // seconds (drives cloud animation)
++uniform vec2  uRealSkyResolution;     // (width, height) in pixels
++uniform mat4  uRealSkyInvViewProj;    // inverse(view*proj) for unprojection
++uniform float uRealSkyExposure;       // tonemap exposure multiplier
++
++// -------------------------------------------------------------------------
++// Cloud layer constants (kept identical to the original RealSky.frag for
++// visual continuity with the realsky branch).
++// -------------------------------------------------------------------------
++const float cloudMinHeight = 1500.0;
++const float cloudMaxHeight = 2500.0;
++
++// -------------------------------------------------------------------------
++// Hash / value noise / fbm — same primitives as the original fragment shader
++// so cloud shape is preserved.
++// -------------------------------------------------------------------------
++float hash(float n) {
++    return fract(sin(n) * 43758.5453123);
++}
++
++float noise(vec3 x) {
++    vec3 p = floor(x);
++    vec3 f = fract(x);
++    f = f * f * (3.0 - 2.0 * f);
++    float n = p.x + p.y * 57.0 + 113.0 * p.z;
++    return mix(mix(mix(hash(n + 0.0),   hash(n + 1.0),   f.x),
++                   mix(hash(n + 57.0),  hash(n + 58.0),  f.x), f.y),
++               mix(mix(hash(n + 113.0), hash(n + 114.0), f.x),
++                   mix(hash(n + 170.0), hash(n + 171.0), f.x), f.y), f.z);
++}
++
++float fbm(vec3 p) {
++    float f = 0.5000 * noise(p); p = p * 2.02;
++    f += 0.2500 * noise(p);      p = p * 2.03;
++    f += 0.1250 * noise(p);      p = p * 2.01;
++    f += 0.0625 * noise(p);
++    return f;
++}
++
++// -------------------------------------------------------------------------
++// Atmospheric scattering — same closed-form approximation as the original
++// RealSky.frag so the sky colour matches.
++// -------------------------------------------------------------------------
++vec3 getAtmosphere(vec3 dir) {
++    float sun = max(dot(dir, uRealSkySunDirection), 0.0);
++    vec3 skyColor = mix(vec3(0.05, 0.2, 0.5),
++                        vec3(0.4, 0.6, 0.9),
++                        pow(max(dir.y, 0.0), 0.5));
++    skyColor += vec3(1.0, 0.8, 0.6) * pow(sun, 256.0);       // Sun disk
++    skyColor += vec3(1.0, 0.4, 0.2) * pow(sun, 8.0) * 0.5;   // Sun glow
++    return skyColor;
++}
++
++// -------------------------------------------------------------------------
++// Cloud density — identical FBM + smoothstep + height-fade to the original.
++// -------------------------------------------------------------------------
++float getCloudDensity(vec3 p) {
++    float d = fbm(p * 0.0005 + uRealSkyTime * 0.05);
++    d = smoothstep(0.4, 0.8, d);
++    float heightFade = smoothstep(cloudMinHeight, cloudMinHeight + 200.0, p.y) *
++                       (1.0 - smoothstep(cloudMaxHeight - 500.0, cloudMaxHeight, p.y));
++    return d * heightFade;
++}
++
++// -------------------------------------------------------------------------
++// Reconstruct world-space view direction from a screen pixel.
++// We use the inverse view-projection matrix so the sky direction is correct
++// regardless of FOV / aspect changes.
++// -------------------------------------------------------------------------
++vec3 worldViewDir(ivec2 px) {
++    // NDC in [-1, 1] with Y flipped (OpenGL origin bottom-left)
++    vec2 ndc = vec2(
++        (float(px.x) + 0.5) / uRealSkyResolution.x * 2.0 - 1.0,
++        (float(px.y) + 0.5) / uRealSkyResolution.y * 2.0 - 1.0
++    );
++    // Far-plane corner (z=1.0 in NDC)
++    vec4 farClip = vec4(ndc, 1.0, 1.0);
++    vec4 farWorld = uRealSkyInvViewProj * farClip;
++    farWorld.xyz /= farWorld.w;
++    vec3 dir = normalize(farWorld.xyz - uRealSkyCameraPos + vec3(1e-7));
++    return dir;
++}
++
++// -------------------------------------------------------------------------
++// Main — one invocation per pixel.
++// -------------------------------------------------------------------------
++void main() {
++    ivec2 px = ivec2(gl_GlobalInvocationID.xy);
++
++    // Guard against out-of-bounds dispatch tails
++    if (px.x >= int(uRealSkyResolution.x) || px.y >= int(uRealSkyResolution.y)) {
++        return;
++    }
++
++    vec3 viewDir = worldViewDir(px);
++    vec3 sky = getAtmosphere(viewDir);
++
++    // ---- Raymarched volumetric clouds (same loop as original fragment shader)
++    vec3  cloudColor = vec3(0.0);
++    float alpha = 0.0;
++
++    if (viewDir.y > 1e-4) {
++        float t = (cloudMinHeight - uRealSkyCameraPos.y) / viewDir.y;
++        if (t > 0.0) {
++            for (int i = 0; i < 16; i++) {
++                vec3 p = uRealSkyCameraPos + viewDir * t;
++                float d = getCloudDensity(p);
++                if (d > 0.01) {
++                    float light = max(dot(uRealSkySunDirection, vec3(0.0, 1.0, 0.0)), 0.2);
++                    vec3 c = mix(vec3(0.6, 0.6, 0.7), vec3(1.0), d) * light;
++                    cloudColor += c * d * (1.0 - alpha);
++                    alpha += d * 0.2;
++                }
++                t += 100.0;
++                if (alpha >= 1.0 || t > 20000.0) break;
++            }
++        }
++    }
++
++    vec3 finalColor = mix(sky, cloudColor, clamp(alpha, 0.0, 1.0));
++
++    // Simple exposure tonemap (Reinhard) — keeps HDR values usable when the
++    // sky image is later sampled by the lighting / reflection passes.
++    finalColor *= uRealSkyExposure;
++    finalColor  = finalColor / (finalColor + vec3(1.0));
++
++    imageStore(uSkyImage, px, vec4(finalColor, 1.0));
++}
+
+diff --git a/source/LibRender2/Atmosphere/RealSkyComputeShader.cs b/source/LibRender2/Atmosphere/RealSkyComputeShader.cs
+new file mode 100644
+index 000000000..503e1e18b
+--- /dev/null
++++ b/source/LibRender2/Atmosphere/RealSkyComputeShader.cs
+@@ -0,0 +1,201 @@
++// Simplified BSD License (BSD-2-Clause)
++//
++// Ported / extended for the next-gen branch to bring the RealSky atmospheric
++// system onto the GL 4.3 compute path. Original RealSky implementation lived
++// on the `realsky` branch as a #version 330 fragment shader.
++//
++// All rights retained by the OpenBVE Project contributors.
++
++using System;
++using System.IO;
++using System.Reflection;
++using System.Text;
++using OpenTK.Graphics.OpenGL;
++
++namespace LibRender2.Atmosphere
++{
++	/// <summary>
++	/// Wraps the RealSky compute shader program.
++	/// Loads from embedded resource "LibRender2.RealSky.comp".
++	/// Does NOT inherit <see cref="Shaders.AbstractShader"/> (which is
++	/// vert+frag only) — this manages its own GL program handle directly,
++	/// exactly like <see cref="Clustering.ClusterCullingShader"/>.
++	/// </summary>
++	/// <remarks>
++	/// Requires GL 4.3+ or the GL_ARB_compute_shader extension. Capability
++	/// detection is performed by <see cref="RealSkyPass"/> before this class
++	/// is instantiated.
++	/// </remarks>
++	public class RealSkyComputeShader : IDisposable
++	{
++		private int programHandle;
++
++		// Cached uniform locations — fetched once at Initialize() to avoid
++		// per-frame string lookups.
++		private int uSunDirectionLocation;
++		private int uCameraPosLocation;
++		private int uTimeLocation;
++		private int uResolutionLocation;
++		private int uInvViewProjLocation;
++		private int uExposureLocation;
++
++		private bool disposed;
++
++		private readonly BaseRenderer renderer;
++
++		/// <summary>The GL program handle (0 until Initialize succeeds).</summary>
++		public int Handle => programHandle;
++
++		public RealSkyComputeShader(BaseRenderer renderer)
++		{
++			this.renderer = renderer;
++		}
++
++		/// <summary>
++		/// Compiles and links the compute shader from embedded resource.
++		/// Must be called on the GL render thread.
++		/// </summary>
++		public void Initialize()
++		{
++			// Load GLSL source from embedded resource — mirrors the pattern
++			// used by ClusterCullingShader for cluster_culling.comp.
++			string source;
++			Assembly asm = Assembly.GetExecutingAssembly();
++			using (Stream stream = asm.GetManifestResourceStream("LibRender2.RealSky.comp"))
++			{
++				if (stream == null)
++				{
++					throw new Exception("[RealSky] RealSky.comp not found as embedded resource. " +
++					                    "Did you add it to LibRender2.csproj as an EmbeddedResource?");
++				}
++				using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
++				{
++					source = reader.ReadToEnd();
++				}
++			}
++
++			// Compile compute shader
++			int shader = GL.CreateShader(ShaderType.ComputeShader);
++			GL.ShaderSource(shader, source);
++			GL.CompileShader(shader);
++			GL.GetShader(shader, ShaderParameter.CompileStatus, out int compileStatus);
++			if (compileStatus == 0)
++			{
++				string log = GL.GetShaderInfoLog(shader);
++				GL.DeleteShader(shader);
++				throw new Exception($"[RealSky] Compute shader compile error: {log}");
++			}
++
++			// Link program
++			programHandle = GL.CreateProgram();
++			GL.AttachShader(programHandle, shader);
++			GL.LinkProgram(programHandle);
++			GL.GetProgram(programHandle, GetProgramParameterName.LinkStatus, out int linkStatus);
++			if (linkStatus == 0)
++			{
++				string log = GL.GetProgramInfoLog(programHandle);
++				GL.DeleteShader(shader);
++				GL.DeleteProgram(programHandle);
++				programHandle = 0;
++				throw new Exception($"[RealSky] Compute shader link error: {log}");
++			}
++
++			GL.DeleteShader(shader); // shader object no longer needed after link
++
++			// Cache uniform locations
++			uSunDirectionLocation = GL.GetUniformLocation(programHandle, "uRealSkySunDirection");
++			uCameraPosLocation    = GL.GetUniformLocation(programHandle, "uRealSkyCameraPos");
++			uTimeLocation         = GL.GetUniformLocation(programHandle, "uRealSkyTime");
++			uResolutionLocation   = GL.GetUniformLocation(programHandle, "uRealSkyResolution");
++			uInvViewProjLocation  = GL.GetUniformLocation(programHandle, "uRealSkyInvViewProj");
++			uExposureLocation     = GL.GetUniformLocation(programHandle, "uRealSkyExposure");
++		}
++
++		// ---------------------------------------------------------------------
++		// Uniform setters — all use ProgramUniform so the calling code does not
++		// have to flip GL state (matches ClusterCullingShader.SetLightCount).
++		// ---------------------------------------------------------------------
++
++		public void SetSunDirection(float x, float y, float z)
++		{
++			if (programHandle == 0 || uSunDirectionLocation < 0) return;
++			GL.ProgramUniform3(programHandle, uSunDirectionLocation, x, y, z);
++		}
++
++		public void SetCameraPos(float x, float y, float z)
++		{
++			if (programHandle == 0 || uCameraPosLocation < 0) return;
++			GL.ProgramUniform3(programHandle, uCameraPosLocation, x, y, z);
++		}
++
++		public void SetTime(float seconds)
++		{
++			if (programHandle == 0 || uTimeLocation < 0) return;
++			GL.ProgramUniform1(programHandle, uTimeLocation, seconds);
++		}
++
++		public void SetResolution(int width, int height)
++		{
++			if (programHandle == 0 || uResolutionLocation < 0) return;
++			GL.ProgramUniform2(programHandle, uResolutionLocation, (float)width, (float)height);
++		}
++
++		public void SetExposure(float exposure)
++		{
++			if (programHandle == 0 || uExposureLocation < 0) return;
++			GL.ProgramUniform1(programHandle, uExposureLocation, exposure);
++		}
++
++		/// <summary>
++		/// Sets the inverse(view * projection) matrix used to unproject pixels
++		/// back to world-space view directions.
++		/// </summary>
++		/// <param name="invViewProj">Row-major OpenTK Matrix4 (will be transposed for GL).</param>
++		public void SetInvViewProj(ref OpenTK.Matrix4 invViewProj)
++		{
++			if (programHandle == 0 || uInvViewProjLocation < 0) return;
++			// OpenTK Matrix4 is row-major; GLSL expects column-major.
++			// ProgramUniformMatrix4 with transpose=true handles this for us.
++			GL.ProgramUniformMatrix4(programHandle, uInvViewProjLocation, false, ref invViewProj);
++		}
++
++		// ---------------------------------------------------------------------
++		// Activate / dispatch
++		// ---------------------------------------------------------------------
++
++		/// <summary>
++		/// Activates the compute program.
++		/// Note: compute shaders don't go through the normal Activate() pipeline —
++		/// we call UseProgram directly and don't touch renderer.CurrentShader,
++		/// matching the ClusterCullingShader convention.
++		/// </summary>
++		public void Activate()
++		{
++			GL.UseProgram(programHandle);
++		}
++
++		/// <summary>
++		/// Dispatches the compute shader with work group counts sized for the
++		/// current screen. One workgroup covers an 8x8 pixel tile.
++		/// </summary>
++		public void Dispatch(int screenW, int screenH)
++		{
++			int groupsX = (screenW + 7) / 8;
++			int groupsY = (screenH + 7) / 8;
++			GL.DispatchCompute(groupsX, groupsY, 1);
++		}
++
++		/// <inheritdoc/>
++		public void Dispose()
++		{
++			if (disposed) return;
++			if (programHandle != 0)
++			{
++				GL.DeleteProgram(programHandle);
++				programHandle = 0;
++			}
++			GC.SuppressFinalize(this);
++			disposed = true;
++		}
++	}
++}
+
+diff --git a/source/LibRender2/Atmosphere/RealSkyPass.cs b/source/LibRender2/Atmosphere/RealSkyPass.cs
+new file mode 100644
+index 000000000..15c475fd9
+--- /dev/null
++++ b/source/LibRender2/Atmosphere/RealSkyPass.cs
+@@ -0,0 +1,426 @@
++// Simplified BSD License (BSD-2-Clause)
++//
++// Ported / extended for the next-gen branch to bring the RealSky atmospheric
++// system onto the GL 4.3 compute path. Original RealSky implementation lived
++// on the `realsky` branch as a #version 330 fragment shader.
++//
++// All rights retained by the OpenBVE Project contributors.
++
++using System;
++using LibRender2.Shaders;
++using OpenBveApi.Math;
++using OpenTK;
++using OpenTK.Graphics.OpenGL;
++
++namespace LibRender2.Atmosphere
++{
++        /// <summary>
++        /// Orchestrates the RealSky atmospheric rendering pass.
++        /// Mirrors the <see cref="Clustering.ClusterEngine"/> and
++        /// <see cref="Shadows"/> lifecycle:
++        ///   Initialize()  — detect GL capabilities, allocate resources
++        ///   Render()      — called once per frame from NewRenderer
++        ///   Dispose()     — release GPU resources
++        ///
++        /// Opsi B (same pattern as ClusterEngine):
++        ///   UseComputePath = true  → GL 4.3 compute shader (RealSky.comp)
++        ///                             writes to an RGBA16F image, then the
++        ///                             image is bound as a sampler for the
++        ///                             rest of the frame.
++        ///   UseComputePath = false → Fallback to the original fragment-shader
++        ///                             skybox draw (RealSky.vert + RealSky.frag
++        ///                             at #version 330 core) from the realsky
++        ///                             branch.
++        /// </summary>
++        public class RealSkyPass
++        {
++                private readonly BaseRenderer renderer;
++
++                // --- Compute path (GL 4.3+) ---
++                private RealSkyComputeShader computeShader;
++                private int skyImageHandle;        // RGBA16F image2D
++                private int skyImageWidth;
++                private int skyImageHeight;
++                private int skyTextureUnit = 8;    // Bind sky image as sampler2D here for default.frag
++
++                // --- Fallback path (fragment shader skybox draw) ---
++                // Loaded lazily only when UseComputePath == false.
++                private Shader fallbackShader;
++                private VertexArrayObject fallbackSkyboxVao;
++
++                // --- State ---
++                /// <summary>Whether the RealSky pass is active. False if init failed or disabled.</summary>
++                public bool Enabled;
++
++                /// <summary>
++                /// True if using the GL 4.3 compute shader path.
++                /// False if using the fragment-shader skybox fallback.
++                /// Set by Initialize() after GL capability detection.
++                /// </summary>
++                public bool UseComputePath;
++
++                /// <summary>GL texture handle of the sky image (compute path) or fallback texture (frag path).</summary>
++                public int SkyTextureHandle => skyImageHandle;
++
++                /// <summary>Texture unit the sky sampler is bound to (default.frag reads from here).</summary>
++                public int SkyTextureUnit => skyTextureUnit;
++
++                public RealSkyPass(BaseRenderer renderer)
++                {
++                        this.renderer = renderer;
++                }
++
++                // ---------------------------------------------------------------------
++                // Initialize
++                // ---------------------------------------------------------------------
++
++                /// <summary>
++                /// Detects GL capabilities and initializes the appropriate code path.
++                /// Must be called after the GL context is fully created.
++                /// </summary>
++                public void Initialize()
++                {
++                        try
++                        {
++                                // --- Runtime GL capability detection (same logic as ClusterEngine) ---
++                                string extensions = GL.GetString(StringName.Extensions) ?? string.Empty;
++                                int major = GL.GetInteger(GetPName.MajorVersion);
++                                int minor = GL.GetInteger(GetPName.MinorVersion);
++                                bool gl43Plus = major > 4 || (major == 4 && minor >= 3);
++
++                                bool hasCompute  = gl43Plus || extensions.Contains("GL_ARB_compute_shader");
++                                bool hasImageLoad = gl43Plus || extensions.Contains("GL_ARB_shader_image_load_store");
++
++                                UseComputePath = hasCompute && hasImageLoad;
++
++                                renderer.fileSystem.AppendToLogFile(
++                                        $"[RealSky] GL {major}.{minor} | Compute={hasCompute} ImageLoad={hasImageLoad} → UseComputePath={UseComputePath}");
++
++                                if (UseComputePath)
++                                {
++                                        computeShader = new RealSkyComputeShader(renderer);
++                                        computeShader.Initialize();
++
++                                        AllocateSkyImage(renderer.Screen.Width, renderer.Screen.Height);
++
++                                        renderer.fileSystem.AppendToLogFile(
++                                                $"[RealSky] Initialized compute path: {skyImageWidth}x{skyImageHeight} RGBA16F image, unit {skyTextureUnit}");
++                                }
++                                else
++                                {
++                                        // Fallback resources are created lazily in Render()
++                                        renderer.fileSystem.AppendToLogFile(
++                                                "[RealSky] Initialized fragment-shader fallback path (GL < 4.3)");
++                                }
++
++                                Enabled = true;
++                        }
++                        catch (Exception ex)
++                        {
++                                renderer.fileSystem.AppendToLogFile($"[RealSky] Init failed: {ex.Message}");
++                                Enabled = false;
++                                GL.GetError(); // clear GL error state
++                        }
++                }
++
++                // ---------------------------------------------------------------------
++                // AllocateSkyImage — (re)creates the RGBA16F image texture
++                // ---------------------------------------------------------------------
++
++                /// <summary>
++                /// Allocates (or reallocates) the RGBA16F sky image texture.
++                /// Called on init and whenever the screen size changes.
++                /// </summary>
++                private void AllocateSkyImage(int width, int height)
++                {
++                        if (width <= 0 || height <= 0) return;
++
++                        if (skyImageHandle != 0 && width == skyImageWidth && height == skyImageHeight)
++                        {
++                                return; // already the right size
++                        }
++
++                        if (skyImageHandle != 0)
++                        {
++                                GL.DeleteTexture(skyImageHandle);
++                                skyImageHandle = 0;
++                        }
++
++                        skyImageHandle = GL.GenTexture();
++                        GL.BindTexture(TextureTarget.Texture2D, skyImageHandle);
++                        GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba16f,
++                                      width, height, 0,
++                                      OpenTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.Float, IntPtr.Zero);
++                        GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
++                        GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
++                        GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
++                        GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
++                        GL.BindTexture(TextureTarget.Texture2D, 0);
++
++                        skyImageWidth = width;
++                        skyImageHeight = height;
++                }
++
++                // ---------------------------------------------------------------------
++                // Render — called once per frame from NewRenderer.ShowScene
++                // ---------------------------------------------------------------------
++
++                /// <summary>
++                /// Renders the RealSky atmospheric pass.
++                /// On the compute path this dispatches the compute shader and leaves
++                /// the sky image bound to <see cref="SkyTextureUnit"/> for the rest
++                /// of the frame.
++                /// On the fallback path this draws the original skybox using the
++                /// fragment shader from the realsky branch.
++                /// </summary>
++                /// <param name="time">Total elapsed time in seconds (drives cloud animation).</param>
++                /// <param name="sunDirection">Normalized sun direction in world space.</param>
++                public void Render(double time, Vector3 sunDirection)
++                {
++                        if (!Enabled) return;
++
++                        if (UseComputePath)
++                        {
++                                RenderCompute(time, sunDirection);
++                        }
++                        else
++                        {
++                                RenderFallback(time, sunDirection);
++                        }
++                }
++
++                // ---------------------------------------------------------------------
++                // RenderCompute
++                // ---------------------------------------------------------------------
++
++                private void RenderCompute(double time, Vector3 sunDirection)
++                {
++                        // Reallocate sky image if the screen resized
++                        if (renderer.Screen.Width != skyImageWidth || renderer.Screen.Height != skyImageHeight)
++                        {
++                                AllocateSkyImage(renderer.Screen.Width, renderer.Screen.Height);
++                                if (skyImageHandle == 0) return;
++                        }
++
++                        // Bind image for writing
++                        GL.BindImageTexture(0, skyImageHandle, 0, false, 0, TextureAccess.WriteOnly, SizedInternalFormat.Rgba16f);
++
++                        // Compute inverse(view * projection)
++                        // OpenTK's Matrix4 is row-major and uses the same convention as
++                        // LibRender2's Matrix4D (column vectors, post-multiply).
++                        OpenTK.Matrix4 view = ConvertToMatrix4(renderer.CurrentViewMatrix);
++                        OpenTK.Matrix4 proj = ConvertToMatrix4(renderer.CurrentProjectionMatrix);
++                        OpenTK.Matrix4 viewProj = view * proj;
++                        OpenTK.Matrix4 invViewProj;
++                        OpenTK.Matrix4.Invert(ref viewProj, out invViewProj);
++
++                        computeShader.Activate();
++                        computeShader.SetSunDirection((float)sunDirection.X, (float)sunDirection.Y, (float)sunDirection.Z);
++                        computeShader.SetCameraPos(
++                                (float)renderer.Camera.AbsolutePosition.X,
++                                (float)renderer.Camera.AbsolutePosition.Y,
++                                (float)renderer.Camera.AbsolutePosition.Z);
++                        computeShader.SetTime((float)time);
++                        computeShader.SetResolution(skyImageWidth, skyImageHeight);
++                        computeShader.SetExposure(1.2f);
++                        computeShader.SetInvViewProj(ref invViewProj);
++
++                        // Dispatch (ceil(w/8) x ceil(h/8) x 1)
++                        computeShader.Dispatch(skyImageWidth, skyImageHeight);
++
++                        // Make image writes visible to subsequent texture reads
++                        GL.MemoryBarrier(MemoryBarrierFlags.ShaderImageAccessBarrierBit |
++                                         MemoryBarrierFlags.TextureFetchBarrierBit);
++
++                        // Bind the sky image as a regular sampler2D for the default shader
++                        GL.ActiveTexture(TextureUnit.Texture0 + skyTextureUnit);
++                        GL.BindTexture(TextureTarget.Texture2D, skyImageHandle);
++                        GL.ActiveTexture(TextureUnit.Texture0);
++                }
++
++                // ---------------------------------------------------------------------
++                // RenderFallback — original skybox fragment-shader draw
++                // ---------------------------------------------------------------------
++
++                private void RenderFallback(double time, Vector3 sunDirection)
++                {
++                        // The fallback uses the original RealSky.vert + RealSky.frag
++                        // from the realsky branch. Resources are created lazily to avoid
++                        // allocating GPU memory when the compute path is in use.
++                        if (fallbackShader == null || fallbackSkyboxVao == null)
++                        {
++                                InitializeFallback();
++                        }
++                        if (fallbackShader == null) return;
++
++                        fallbackShader.Activate();
++
++                        // Skybox is always centered around camera but follows rotation
++                        Matrix4D viewMatrix = renderer.CurrentViewMatrix;
++                        viewMatrix.Row3 = new Vector4(0, 0, 0, 1);
++                        fallbackShader.SetCurrentModelViewMatrix(viewMatrix);
++                        fallbackShader.SetCurrentProjectionMatrix(renderer.CurrentProjectionMatrix);
++
++                        GL.ProgramUniform3(fallbackShader.Handle, fallbackShader.UniformLayout.RealSkySunDirection,
++                                           (float)sunDirection.X, (float)sunDirection.Y, (float)sunDirection.Z);
++                        GL.ProgramUniform1(fallbackShader.Handle, fallbackShader.UniformLayout.RealSkyTime, (float)time);
++                        GL.ProgramUniform2(fallbackShader.Handle, fallbackShader.UniformLayout.RealSkyResolution,
++                                           (float)renderer.Screen.Width, (float)renderer.Screen.Height);
++                        GL.ProgramUniform3(fallbackShader.Handle, fallbackShader.UniformLayout.RealSkyCameraPos,
++                                           (float)renderer.Camera.AbsolutePosition.X,
++                                           (float)renderer.Camera.AbsolutePosition.Y,
++                                           (float)renderer.Camera.AbsolutePosition.Z);
++
++                        GL.Disable(EnableCap.DepthTest);
++                        GL.DepthMask(false);
++                        GL.Disable(EnableCap.CullFace);
++
++                        fallbackSkyboxVao.Bind();
++                        GL.DrawArrays(PrimitiveType.Triangles, 0, 36);
++                        fallbackSkyboxVao.UnBind();
++
++                        GL.Enable(EnableCap.CullFace);
++                        GL.DepthMask(true);
++                        GL.Enable(EnableCap.DepthTest);
++
++                        fallbackShader.Deactivate();
++                }
++
++                private void InitializeFallback()
++                {
++                        try
++                        {
++                                if (fallbackShader == null)
++                                {
++                                        string shaderPath = renderer.fileSystem.GetDataFolder("Shaders", "Atmosphere");
++                                        fallbackShader = new Shader(renderer,
++                                                Path.CombineFile(shaderPath, "RealSky.vert"),
++                                                Path.CombineFile(shaderPath, "RealSky.frag"));
++                                }
++                                if (fallbackSkyboxVao == null)
++                                {
++                                        // Same skybox cube as the original realsky branch
++                                        LibRenderVertex[] vertices = {
++                                                new LibRenderVertex(new Vector3f(-1.0f,  1.0f, -1.0f)),
++                                                new LibRenderVertex(new Vector3f(-1.0f, -1.0f, -1.0f)),
++                                                new LibRenderVertex(new Vector3f( 1.0f, -1.0f, -1.0f)),
++                                                new LibRenderVertex(new Vector3f( 1.0f, -1.0f, -1.0f)),
++                                                new LibRenderVertex(new Vector3f( 1.0f,  1.0f, -1.0f)),
++                                                new LibRenderVertex(new Vector3f(-1.0f,  1.0f, -1.0f)),
++
++                                                new LibRenderVertex(new Vector3f(-1.0f, -1.0f,  1.0f)),
++                                                new LibRenderVertex(new Vector3f(-1.0f, -1.0f, -1.0f)),
++                                                new LibRenderVertex(new Vector3f(-1.0f,  1.0f, -1.0f)),
++                                                new LibRenderVertex(new Vector3f(-1.0f,  1.0f, -1.0f)),
++                                                new LibRenderVertex(new Vector3f(-1.0f,  1.0f,  1.0f)),
++                                                new LibRenderVertex(new Vector3f(-1.0f, -1.0f,  1.0f)),
++
++                                                new LibRenderVertex(new Vector3f( 1.0f, -1.0f, -1.0f)),
++                                                new LibRenderVertex(new Vector3f( 1.0f, -1.0f,  1.0f)),
++                                                new LibRenderVertex(new Vector3f( 1.0f,  1.0f,  1.0f)),
++                                                new LibRenderVertex(new Vector3f( 1.0f,  1.0f,  1.0f)),
++                                                new LibRenderVertex(new Vector3f( 1.0f,  1.0f, -1.0f)),
++                                                new LibRenderVertex(new Vector3f( 1.0f, -1.0f, -1.0f)),
++
++                                                new LibRenderVertex(new Vector3f(-1.0f, -1.0f,  1.0f)),
++                                                new LibRenderVertex(new Vector3f(-1.0f,  1.0f,  1.0f)),
++                                                new LibRenderVertex(new Vector3f( 1.0f,  1.0f,  1.0f)),
++                                                new LibRenderVertex(new Vector3f( 1.0f,  1.0f,  1.0f)),
++                                                new LibRenderVertex(new Vector3f( 1.0f, -1.0f,  1.0f)),
++                                                new LibRenderVertex(new Vector3f(-1.0f, -1.0f,  1.0f)),
++
++                                                new LibRenderVertex(new Vector3f(-1.0f,  1.0f, -1.0f)),
++                                                new LibRenderVertex(new Vector3f( 1.0f,  1.0f, -1.0f)),
++                                                new LibRenderVertex(new Vector3f( 1.0f,  1.0f,  1.0f)),
++                                                new LibRenderVertex(new Vector3f( 1.0f,  1.0f,  1.0f)),
++                                                new LibRenderVertex(new Vector3f(-1.0f,  1.0f,  1.0f)),
++                                                new LibRenderVertex(new Vector3f(-1.0f,  1.0f, -1.0f)),
++
++                                                new LibRenderVertex(new Vector3f(-1.0f, -1.0f, -1.0f)),
++                                                new LibRenderVertex(new Vector3f(-1.0f, -1.0f,  1.0f)),
++                                                new LibRenderVertex(new Vector3f( 1.0f, -1.0f, -1.0f)),
++                                                new LibRenderVertex(new Vector3f( 1.0f, -1.0f, -1.0f)),
++                                                new LibRenderVertex(new Vector3f(-1.0f, -1.0f,  1.0f)),
++                                                new LibRenderVertex(new Vector3f( 1.0f, -1.0f,  1.0f)),
++                                        };
++                                        fallbackSkyboxVao = new VertexArrayObject();
++                                        fallbackSkyboxVao.Bind();
++                                        fallbackSkyboxVao.SetVBO(new VertexBufferObject(vertices, BufferUsageHint.StaticDraw));
++                                        fallbackSkyboxVao.SetAttributes(fallbackShader.VertexLayout);
++                                        fallbackSkyboxVao.UnBind();
++                                }
++                        }
++                        catch (Exception ex)
++                        {
++                                renderer.fileSystem.AppendToLogFile($"[RealSky] Fallback init failed: {ex.Message}");
++                        }
++                }
++
++                // ---------------------------------------------------------------------
++                // BindSkyToShader — binds the sky image to a sampler unit for the
++                // default scene shader so subsequent geometry passes can sample the sky.
++                // ---------------------------------------------------------------------
++
++                /// <summary>
++                /// Binds the sky texture to <see cref="SkyTextureUnit"/> and updates
++                /// the default shader's uniform so subsequent geometry passes can
++                /// sample the sky. Only relevant on the compute path — on the
++                /// fallback path the sky is drawn directly into the framebuffer.
++                /// </summary>
++                public void BindSkyToShader(Shader shader)
++                {
++                        if (!Enabled || !UseComputePath || shader == null || skyImageHandle == 0) return;
++
++                        GL.ActiveTexture(TextureUnit.Texture0 + skyTextureUnit);
++                        GL.BindTexture(TextureTarget.Texture2D, skyImageHandle);
++                        GL.ActiveTexture(TextureUnit.Texture0);
++
++                        shader.SetSkyEnabled(true);
++                        shader.SetSkyTextureUnit(skyTextureUnit);
++                }
++
++                /// <summary>Unbinds the sky sampler and disables sky sampling in the shader.</summary>
++                public void UnbindSkyFromShader(Shader shader)
++                {
++                        if (shader == null) return;
++                        shader.SetSkyEnabled(false);
++                }
++
++                // ---------------------------------------------------------------------
++                // Dispose
++                // ---------------------------------------------------------------------
++
++                public void Dispose()
++                {
++                        computeShader?.Dispose();
++                        computeShader = null;
++
++                        if (skyImageHandle != 0)
++                        {
++                                GL.DeleteTexture(skyImageHandle);
++                                skyImageHandle = 0;
++                        }
++
++                        fallbackShader?.Dispose();
++                        fallbackShader = null;
++                        // fallbackSkyboxVao will be cleaned up via BaseRenderer's VAO delete queue
++
++                        Enabled = false;
++                }
++
++                // ---------------------------------------------------------------------
++                // Helpers
++                // ---------------------------------------------------------------------
++
++                /// <summary>Converts LibRender2 Matrix4D to OpenTK Matrix4.</summary>
++                private static OpenTK.Matrix4 ConvertToMatrix4(Matrix4D mat)
++                {
++                        return new OpenTK.Matrix4(
++                                (float)mat.Row0.X, (float)mat.Row0.Y, (float)mat.Row0.Z, (float)mat.Row0.W,
++                                (float)mat.Row1.X, (float)mat.Row1.Y, (float)mat.Row1.Z, (float)mat.Row1.W,
++                                (float)mat.Row2.X, (float)mat.Row2.Y, (float)mat.Row2.Z, (float)mat.Row2.W,
++                                (float)mat.Row3.X, (float)mat.Row3.Y, (float)mat.Row3.Z, (float)mat.Row3.W
++                        );
++                }
++        }
++}
+
+diff --git a/source/LibRender2/BaseRenderer.cs b/source/LibRender2/BaseRenderer.cs
+index d6716c31d..5a592e508 100644
+--- a/source/LibRender2/BaseRenderer.cs
++++ b/source/LibRender2/BaseRenderer.cs
+@@ -40,6 +40,7 @@ using Path = OpenBveApi.Path;
+ using PixelFormat = OpenBveApi.Textures.PixelFormat;
+ using Vector2 = OpenBveApi.Math.Vector2;
+ using Vector3 = OpenBveApi.Math.Vector3;
++using Vector4 = OpenBveApi.Math.Vector4;
+ 
+ namespace LibRender2
+ {
+@@ -168,6 +169,12 @@ namespace LibRender2
+ 		/// <summary>Manages Clustered Forward Rendering (CFR). Null until Initialize() completes.</summary>
+ 		public ClusterEngine ClusterEngine;
+ 
++		/// <summary>
++		/// Manages the RealSky atmospheric rendering pass.
++		/// Null until Initialize() completes. GL 4.3+ uses a compute shader; older GL falls back to the original fragment-shader skybox.
++		/// </summary>
++		public Atmosphere.RealSkyPass RealSkyPass;
++
+ 		/// <summary>Whether shadows are enabled.</summary>
+ 		public bool ShadowsEnabled => Shadows?.Enabled ?? false;
+ 
+@@ -454,6 +461,10 @@ namespace LibRender2
+ 			// Initialize Clustered Forward Rendering after shadows (GL context fully ready)
+ 			ClusterEngine = new ClusterEngine(this);
+ 			ClusterEngine.Initialize();
++
++			// Initialize RealSky atmospheric pass after CFR (GL context fully ready)
++			RealSkyPass = new Atmosphere.RealSkyPass(this);
++			RealSkyPass.Initialize();
+ 		}
+ 
+ 		/// <summary>Initializes (or reinitializes) shadow mapping from current options.</summary>
+@@ -487,6 +498,10 @@ namespace LibRender2
+ 			// Dispose CFR resources before GL context teardown
+ 			ClusterEngine?.Dispose();
+ 			ClusterEngine = null;
++
++			// Dispose RealSky resources before GL context teardown
++			RealSkyPass?.Dispose();
++			RealSkyPass = null;
+ 		}
+ 		
+ 		/// <summary>Performs the CSM shadow depth rendering pass for all geometry.</summary>
+@@ -511,6 +526,35 @@ namespace LibRender2
+ 				ClusterEngine.BindToShader(DefaultShader);
+ 		}
+ 
++		/// <summary>
++		/// Performs the RealSky atmospheric compute / skybox pass.
++		/// On GL 4.3+ this dispatches the compute shader and binds the sky
++		/// image to a sampler unit for the rest of the frame.
++		/// On older GL this draws the fragment-shader skybox.
++		/// Safe to call even if RealSkyPass is null or disabled.
++		/// </summary>
++		/// <param name="time">Total elapsed time in seconds (drives cloud animation).</param>
++		/// <param name="sunDirection">Normalized sun direction in world space.</param>
++		protected void PerformRealSkyPass(double time, Vector3 sunDirection)
++		{
++			RealSkyPass?.Render(time, sunDirection);
++		}
++
++		/// <summary>Binds the RealSky sky texture to the default shader for the current frame (compute path only).</summary>
++		protected void BindRealSkyToDefaultShader()
++		{
++			if (RealSkyPass != null && DefaultShader != null)
++			{
++				RealSkyPass.BindSkyToShader(DefaultShader);
++			}
++		}
++
++		/// <summary>Unbinds the RealSky sky texture from the default shader after the opaque pass completes.</summary>
++		protected void UnbindRealSkyFromDefaultShader()
++		{
++			RealSkyPass?.UnbindSkyFromShader(DefaultShader);
++		}
++
+ 		internal PrimitiveType GetPrimitiveType(FaceFlags flags)
+ 		{
+ 			switch (flags & FaceFlags.FaceTypeMask)
+
+diff --git a/source/LibRender2/LibRender2.csproj b/source/LibRender2/LibRender2.csproj
+index d361fe28e..07ecf1b76 100644
+--- a/source/LibRender2/LibRender2.csproj
++++ b/source/LibRender2/LibRender2.csproj
+@@ -20,6 +20,7 @@
+     <EmbeddedResource Include="..\..\assets\Shaders\shadow_depth.vert" LogicalName="LibRender2.shadow_depth.vert" />
+     <EmbeddedResource Include="..\..\assets\Shaders\shadow_depth.frag" LogicalName="LibRender2.shadow_depth.frag" />
+     <EmbeddedResource Include="..\..\assets\Shaders\cluster_culling.comp" LogicalName="LibRender2.cluster_culling.comp" />
++    <EmbeddedResource Include="..\..\assets\Shaders\RealSky.comp" LogicalName="LibRender2.RealSky.comp" />
+   </ItemGroup>
+ 
+   <ItemGroup>
+
+diff --git a/source/LibRender2/Shaders/Shader.cs b/source/LibRender2/Shaders/Shader.cs
+index 13e8bb9a7..817049e2b 100644
+--- a/source/LibRender2/Shaders/Shader.cs
++++ b/source/LibRender2/Shaders/Shader.cs
+@@ -69,6 +69,11 @@ namespace LibRender2.Shaders
+ 		private readonly int uModelMatrixLocation;
+ 		private readonly int uCurrentViewMatrixLocation;
+ 		private readonly int uDynamicLightCountLocation;
++
++		// --- RealSky atmospheric system ---
++		private readonly int uSkyEnabledLocation;
++		private readonly int uSkyTextureLocation;
++
+ 		private readonly int[] uDynamicLightTypeLocation = new int[16];
+ 		private readonly int[] uDynamicLightPositionLocation = new int[16];
+ 		private readonly int[] uDynamicLightDirectionLocation = new int[16];
+@@ -129,6 +134,15 @@ namespace LibRender2.Shaders
+ 			uModelMatrixLocation = GL.GetUniformLocation(Handle, "uModelMatrix");
+ 			uCurrentViewMatrixLocation = GL.GetUniformLocation(Handle, "uCurrentViewMatrix");
+ 			uDynamicLightCountLocation = GL.GetUniformLocation(Handle, "uDynamicLightCount");
++
++			// RealSky atmospheric system uniforms
++			uSkyEnabledLocation  = GL.GetUniformLocation(Handle, "uSkyEnabled");
++			uSkyTextureLocation  = GL.GetUniformLocation(Handle, "uSkyTexture");
++			// Default: sky sampling disabled until RealSkyPass binds a texture
++			if (uSkyEnabledLocation >= 0)
++			{
++				GL.ProgramUniform1(Handle, uSkyEnabledLocation, 0);
++			}
+ 			for (int i = 0; i < 16; i++)
+ 			{
+ 				uDynamicLightTypeLocation[i] = GL.GetUniformLocation(Handle, $"uDynamicLights[{i}].type");
+@@ -231,6 +245,12 @@ namespace LibRender2.Shaders
+ 				ShadowMap1 = (short)GL.GetUniformLocation(Handle, "uShadowMap1"),
+ 				ShadowMap2 = (short)GL.GetUniformLocation(Handle, "uShadowMap2"),
+ 				CurrentViewMatrix = (short)GL.GetUniformLocation(Handle, "uCurrentViewMatrix"),
++
++				// RealSky uniforms (for fallback fragment-shader path)
++				RealSkySunDirection = (short)GL.GetUniformLocation(Handle, "uRealSkySunDirection"),
++				RealSkyTime         = (short)GL.GetUniformLocation(Handle, "uRealSkyTime"),
++				RealSkyResolution   = (short)GL.GetUniformLocation(Handle, "uRealSkyResolution"),
++				RealSkyCameraPos    = (short)GL.GetUniformLocation(Handle, "uRealSkyCameraPos"),
+ 			};
+ 		}
+ 
+@@ -678,5 +698,31 @@ namespace LibRender2.Shaders
+ 		}
+ 
+ 		#endregion
++
++		#region RealSky
++
++		/// <summary>
++		/// Enables or disables sky texture sampling in the fragment shader.
++		/// When true, the shader samples <see cref="uSkyTexture"/> for the sky colour
++		/// (compute path); when false, the existing background colour is used.
++		/// </summary>
++		public void SetSkyEnabled(bool enabled)
++		{
++			if (uSkyEnabledLocation < 0) return;
++			GL.ProgramUniform1(Handle, uSkyEnabledLocation, enabled ? 1 : 0);
++		}
++
++		/// <summary>
++		/// Sets the texture unit that the sky image is bound to.
++		/// The texture itself is bound separately by <see cref="Atmosphere.RealSkyPass"/>.
++		/// </summary>
++		/// <param name="unit">Zero-based texture unit index (e.g. 8 for TextureUnit.Texture8).</param>
++		public void SetSkyTextureUnit(int unit)
++		{
++			if (uSkyTextureLocation < 0) return;
++			GL.ProgramUniform1(Handle, uSkyTextureLocation, unit);
++		}
++
++		#endregion
+ 	}
+ }
+
+diff --git a/source/LibRender2/openGL/GL.cs b/source/LibRender2/openGL/GL.cs
+index 70344120d..e390e6f98 100644
+--- a/source/LibRender2/openGL/GL.cs
++++ b/source/LibRender2/openGL/GL.cs
+@@ -316,6 +316,16 @@ namespace OpenTK.Graphics.OpenGL
+             fixed (float* ptr = value) gl.UniformMatrix4(location, (uint)count, transpose, ptr);
+         }
+         
++        // BindImageTexture — required by GL 4.3 compute shaders that write to image2D
++        // (RealSky atmospheric compute pass).
++        // Mirrors Silk.NET.OpenGL.GL.BindImageTexture — arguments are passed through
++        // with only the texture handle widened to uint and the access / format enums
++        // mapped to Silk.NET.OpenGL.GLEnum.
++        public static unsafe void BindImageTexture(uint unit, int texture, int level, bool layered, int layer, TextureAccess access, SizedInternalFormat format)
++        {
++            gl.BindImageTexture(unit, (uint)texture, (uint)level, layered, (uint)layer, (Silk.NET.OpenGL.GLEnum)access, (Silk.NET.OpenGL.GLEnum)format);
++        }
++
+         public static void UseProgram(int program) => gl.UseProgram((uint)program);
+         
+         public static unsafe void VertexAttribIPointer(int index, int size, VertexAttribIntegerType type, int stride, IntPtr pointer) =>
+
+diff --git a/source/LibRender2/openGL/OpenTKCompatibility.cs b/source/LibRender2/openGL/OpenTKCompatibility.cs
+index d276f58d3..e9e68d638 100644
+--- a/source/LibRender2/openGL/OpenTKCompatibility.cs
++++ b/source/LibRender2/openGL/OpenTKCompatibility.cs
+@@ -65,6 +65,95 @@ namespace OpenTK
+             M31 = m20; M32 = m21; M33 = m22; M34 = m23;
+             M41 = m30; M42 = m31; M43 = m32; M44 = m33;
+         }
++
++        /// <summary>Multiplies two Matrix4 values (row-major, post-multiply convention).
++        /// Note: this struct uses M[r][c] naming where M11 = row 1 col 1, etc.
++        /// Added for the RealSky compute pass which needs inverse(view * projection).
++        /// </summary>
++        public static Matrix4 operator *(Matrix4 left, Matrix4 right)
++        {
++            return new Matrix4(
++                left.M11 * right.M11 + left.M12 * right.M21 + left.M13 * right.M31 + left.M14 * right.M41,
++                left.M11 * right.M12 + left.M12 * right.M22 + left.M13 * right.M32 + left.M14 * right.M42,
++                left.M11 * right.M13 + left.M12 * right.M23 + left.M13 * right.M33 + left.M14 * right.M43,
++                left.M11 * right.M14 + left.M12 * right.M24 + left.M13 * right.M34 + left.M14 * right.M44,
++
++                left.M21 * right.M11 + left.M22 * right.M21 + left.M23 * right.M31 + left.M24 * right.M41,
++                left.M21 * right.M12 + left.M22 * right.M22 + left.M23 * right.M32 + left.M24 * right.M42,
++                left.M21 * right.M13 + left.M22 * right.M23 + left.M23 * right.M33 + left.M24 * right.M43,
++                left.M21 * right.M14 + left.M22 * right.M24 + left.M23 * right.M34 + left.M24 * right.M44,
++
++                left.M31 * right.M11 + left.M32 * right.M21 + left.M33 * right.M31 + left.M34 * right.M41,
++                left.M31 * right.M12 + left.M32 * right.M22 + left.M33 * right.M32 + left.M34 * right.M42,
++                left.M31 * right.M13 + left.M32 * right.M23 + left.M33 * right.M33 + left.M34 * right.M43,
++                left.M31 * right.M14 + left.M32 * right.M24 + left.M33 * right.M34 + left.M34 * right.M44,
++
++                left.M41 * right.M11 + left.M42 * right.M21 + left.M43 * right.M31 + left.M44 * right.M41,
++                left.M41 * right.M12 + left.M42 * right.M22 + left.M43 * right.M32 + left.M44 * right.M42,
++                left.M41 * right.M13 + left.M42 * right.M23 + left.M43 * right.M33 + left.M44 * right.M43,
++                left.M41 * right.M14 + left.M42 * right.M24 + left.M43 * right.M34 + left.M44 * right.M44
++            );
++        }
++
++        /// <summary>
++        /// Computes the inverse of a 4x4 matrix using cofactor expansion.
++        /// Returns identity if the matrix is singular.
++        /// Added for the RealSky compute pass which needs inverse(view * projection).
++        /// </summary>
++        public static void Invert(ref Matrix4 m, out Matrix4 result)
++        {
++            // 4x4 matrix inverse via cofactors / adjugate.
++            // Uses the existing M[r][c] field names (M11 = row 1 col 1).
++            // Source: standard 4x4 inverse derivation, matches OpenTK 3.x semantics.
++            // First, remap the row-major M11..M44 fields to canonical m00..m33 names
++            // so the cofactor algebra below reads cleanly.
++            float m00 = m.M11, m01 = m.M12, m02 = m.M13, m03 = m.M14;
++            float m10 = m.M21, m11 = m.M22, m12 = m.M23, m13 = m.M24;
++            float m20 = m.M31, m21 = m.M32, m22 = m.M33, m23 = m.M34;
++            float m30 = m.M41, m31 = m.M42, m32 = m.M43, m33 = m.M44;
++
++            float b00 = m00 * m11 - m01 * m10;
++            float b01 = m00 * m12 - m02 * m10;
++            float b02 = m00 * m13 - m03 * m10;
++            float b03 = m01 * m12 - m02 * m11;
++            float b04 = m01 * m13 - m03 * m11;
++            float b05 = m02 * m13 - m03 * m12;
++            float b06 = m20 * m31 - m21 * m30;
++            float b07 = m20 * m32 - m22 * m30;
++            float b08 = m20 * m33 - m23 * m30;
++            float b09 = m21 * m32 - m22 * m31;
++            float b10 = m21 * m33 - m23 * m31;
++            float b11 = m22 * m33 - m23 * m32;
++
++            float det = b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06;
++
++            if (System.Math.Abs(det) < 1e-12f)
++            {
++                result = new Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
++                return;
++            }
++
++            float invDet = 1.0f / det;
++
++            result = new Matrix4(
++                ( m11 * b11 - m12 * b10 + m13 * b09) * invDet,
++                (-m01 * b11 + m02 * b10 - m03 * b09) * invDet,
++                ( m31 * b05 - m32 * b04 + m33 * b03) * invDet,
++                (-m21 * b05 + m22 * b04 - m23 * b03) * invDet,
++                (-m10 * b11 + m12 * b08 - m13 * b07) * invDet,
++                ( m00 * b11 - m02 * b08 + m03 * b07) * invDet,
++                (-m30 * b05 + m32 * b02 - m33 * b01) * invDet,
++                ( m20 * b05 - m22 * b02 + m23 * b01) * invDet,
++                ( m10 * b10 - m11 * b08 + m13 * b06) * invDet,
++                (-m00 * b10 + m01 * b08 - m03 * b06) * invDet,
++                ( m30 * b04 - m31 * b02 + m33 * b00) * invDet,
++                (-m20 * b04 + m21 * b02 - m23 * b00) * invDet,
++                (-m10 * b09 + m11 * b07 - m12 * b06) * invDet,
++                ( m00 * b09 - m01 * b07 + m02 * b06) * invDet,
++                (-m30 * b03 + m31 * b01 - m32 * b00) * invDet,
++                ( m20 * b03 - m21 * b01 + m22 * b00) * invDet
++            );
++        }
+     }
+ 
+     public class DisplayResolution
+@@ -953,4 +1042,47 @@ namespace LibRender2
+     {
+         public static Silk.NET.OpenGL.GL GL;
+     }
++
++    // --- GL 4.3 image-load-store enums (added for RealSky compute pass) ---
++
++    /// <summary>Access mode for image textures (GL_READ_ONLY / GL_WRITE_ONLY / GL_READ_WRITE).</summary>
++    public enum TextureAccess : int
++    {
++        ReadOnly = 0x88B8,
++        WriteOnly = 0x88B9,
++        ReadWrite = 0x88BA,
++    }
++
++    /// <summary>
++    /// Sized internal formats used by GL 4.3 image textures. Only the subset
++    /// required by the RealSky compute pass is defined here — extend as needed.
++    /// Values match OpenGL / Silk.NET.OpenGL.GLEnum.
++    /// </summary>
++    public enum SizedInternalFormat : int
++    {
++        Rgba32f = 0x8814,
++        Rgba16f = 0x881A,
++        Rg32f = 0x8230,
++        Rg16f = 0x822F,
++        R11fG11fB10f = 0x8C3A,
++        R32f = 0x822E,
++        R16f = 0x822D,
++        Rgba8 = 0x8058,
++        Rgba8Snorm = 0x8F97,
++        R8 = 0x8229,
++        R8Snorm = 0x8F94,
++        Rgba32ui = 0x8D70,
++        Rgba16ui = 0x8D76,
++        Rgb10A2ui = 0x906F,
++        Rgba8ui = 0x8D7C,
++        R32ui = 0x8236,
++        R16ui = 0x8234,
++        R8ui = 0x8232,
++        Rgba32i = 0x8D82,
++        Rgba16i = 0x8D88,
++        Rgba8i = 0x8D8E,
++        R32i = 0x8235,
++        R16i = 0x8233,
++        R8i = 0x8231,
++    }
+ }
+
+diff --git a/source/LibRender2/openGL/ShaderLayout.cs b/source/LibRender2/openGL/ShaderLayout.cs
+index aab217641..1cff016ab 100644
+--- a/source/LibRender2/openGL/ShaderLayout.cs
++++ b/source/LibRender2/openGL/ShaderLayout.cs
+@@ -232,5 +232,24 @@ namespace LibRender2
+ 		/// The handle of "uCurrentViewMatrix" within the shader
+ 		/// </summary>
+ 		public short CurrentViewMatrix = -1;
++
++		// --- RealSky atmospheric system ---
++		/// <summary>The handle of "uSkyEnabled" within the shader (1 = sample sky texture, 0 = ignore).</summary>
++		public short SkyEnabled = -1;
++
++		/// <summary>The handle of "uSkyTexture" within the shader (sampler2D unit that holds the RealSky image).</summary>
++		public short SkyTexture = -1;
++
++		/// <summary>The handle of "uRealSkySunDirection" within the shader (fallback path only; compute path uses image uniforms).</summary>
++		public short RealSkySunDirection = -1;
++
++		/// <summary>The handle of "uRealSkyTime" within the shader (fallback path only).</summary>
++		public short RealSkyTime = -1;
++
++		/// <summary>The handle of "uRealSkyResolution" within the shader (fallback path only).</summary>
++		public short RealSkyResolution = -1;
++
++		/// <summary>The handle of "uRealSkyCameraPos" within the shader (fallback path only).</summary>
++		public short RealSkyCameraPos = -1;
+ 	}
+ }
+
+diff --git a/source/OpenBVE/Graphics/NewRenderer.cs b/source/OpenBVE/Graphics/NewRenderer.cs
+index e0a60e1ac..d441d8b6d 100644
+--- a/source/OpenBVE/Graphics/NewRenderer.cs
++++ b/source/OpenBVE/Graphics/NewRenderer.cs
+@@ -39,6 +39,7 @@ namespace OpenBve.Graphics
+ 		private Events events;
+ 		private Overlays overlays;
+ 		internal Touch Touch;
++		private double totalTime;
+ 
+ 		public override void Initialize()
+ 		{
+@@ -134,6 +135,24 @@ namespace OpenBve.Graphics
+ 			PerformCSMShadowPass();
+ 			PerformCFRCullAndUpload();
+ 
++			// RealSky atmospheric pass runs after shadow + CFR setup, before the
++			// background draw, so the sky image is available for the rest of the frame.
++			totalTime += TimeElapsed;
++			if (Interface.CurrentOptions.RealSkyEnabled || Program.CurrentRoute.Atmosphere.RealSkyOverride)
++			{
++				double az = Interface.CurrentOptions.RealSkyAzimuth;
++				double el = Interface.CurrentOptions.RealSkyElevation;
++				if (Program.CurrentRoute.Atmosphere.RealSkyOverride)
++				{
++					az = Program.CurrentRoute.Atmosphere.RealSkyAzimuth;
++					el = Program.CurrentRoute.Atmosphere.RealSkyElevation;
++				}
++				double ra = az * 0.0174532925199433;
++				double re = el * 0.0174532925199433;
++				Vector3 sunDir = new Vector3(Math.Sin(ra) * Math.Cos(re), Math.Sin(re), Math.Cos(ra) * Math.Cos(re));
++				PerformRealSkyPass(totalTime, sunDir);
++			}
++
+             if (Lighting.ShouldInitialize)
+ 			{
+ 				Lighting.Initialize();
+@@ -171,6 +190,9 @@ namespace OpenBve.Graphics
+ 			DefaultShader.Activate();
+ 			BindCSMToDefaultShader();
+ 			BindCFRToDefaultShader();
++			// Bind sky image as a sampler on the default shader (compute path only;
++			// fallback path drew directly into the framebuffer above).
++			BindRealSkyToDefaultShader();
+ 
+             // render background
+             // n.b. must disable shadows
+
+diff --git a/source/OpenBVE/System/Options.cs b/source/OpenBVE/System/Options.cs
+index 5a1689893..df9ed0877 100644
+--- a/source/OpenBVE/System/Options.cs
++++ b/source/OpenBVE/System/Options.cs
+@@ -261,6 +261,11 @@ namespace OpenBve
+ 						Font = "Microsoft Sans Serif";
+ 						break;
+ 				}
++
++				// RealSky defaults
++				RealSkyEnabled = false;
++				RealSkyAzimuth = 180.0;
++				RealSkyElevation = 45.0;
+ 			}
+ 
+ 			/// <summary>Saves the options to the specified filename</summary>
+@@ -412,6 +417,13 @@ namespace OpenBve
+ 				Builder.AppendLine("cursor = " + CursorFileName);
+ 				Builder.AppendLine("panel2extended = " + (Panel2ExtendedMode ? "true" : "false"));
+ 				Builder.AppendLine("panel2extendedminsize = " + Panel2ExtendedMinSize.ToString(Culture));
++
++				// RealSky atmospheric rendering options
++				Builder.AppendLine();
++				Builder.AppendLine("[RealSky]");
++				Builder.AppendLine("RealSkyEnabled = " + (RealSkyEnabled ? "true" : "false"));
++				Builder.AppendLine("RealSkyAzimuth = " + RealSkyAzimuth.ToString(Culture));
++				Builder.AppendLine("RealSkyElevation = " + RealSkyElevation.ToString(Culture));
+ 				try
+ 				{
+ 					File.WriteAllText(fileName, Builder.ToString(), new UTF8Encoding(true));
+@@ -663,6 +675,11 @@ namespace OpenBve
+ 							block.GetValue(OptionsKey.Panel2Extended, out CurrentOptions.Panel2ExtendedMode);
+ 							block.GetValue(OptionsKey.Panel2ExtendedMinSize, out CurrentOptions.Panel2ExtendedMinSize);
+ 							break;
++						case OptionsSection.RealSky:
++							block.GetValue(OptionsKey.RealSkyEnabled, out CurrentOptions.RealSkyEnabled);
++							block.TryGetValue(OptionsKey.RealSkyAzimuth, ref CurrentOptions.RealSkyAzimuth);
++							block.TryGetValue(OptionsKey.RealSkyElevation, ref CurrentOptions.RealSkyElevation);
++							break;
+ 					}
+ 				}
+ 			}
+
+diff --git a/source/OpenBveApi/System/BaseOptions.OptionsKey.cs b/source/OpenBveApi/System/BaseOptions.OptionsKey.cs
+index c813c2ddb..2bde2a8ef 100644
+--- a/source/OpenBveApi/System/BaseOptions.OptionsKey.cs
++++ b/source/OpenBveApi/System/BaseOptions.OptionsKey.cs
+@@ -115,6 +115,10 @@ namespace OpenBveApi
+ 		Up,
+ 		Down,
+ 		Forward,
+-		Backward
++		Backward,
++		// RealSky
++		RealSkyEnabled,
++		RealSkyAzimuth,
++		RealSkyElevation
+     }
+ }
+
+diff --git a/source/OpenBveApi/System/BaseOptions.OptionsSection.cs b/source/OpenBveApi/System/BaseOptions.OptionsSection.cs
+index 52cece603..4d842a504 100644
+--- a/source/OpenBveApi/System/BaseOptions.OptionsSection.cs
++++ b/source/OpenBveApi/System/BaseOptions.OptionsSection.cs
+@@ -1,4 +1,4 @@
+-﻿namespace OpenBveApi
++namespace OpenBveApi
+ {
+ 	/// <summary>The sections of an options file</summary>
+ 	public enum OptionsSection
+@@ -44,6 +44,8 @@
+ 		/// <summary>Contains touch control options</summary>
+ 		Touch = 18,
+ 		/// <summary>Contains loading related options</summary>
+-		Loading = 19
++		Loading = 19,
++		/// <summary>Contains RealSky atmospheric rendering options</summary>
++		RealSky = 20
+ 	}
+ }
+
+diff --git a/source/OpenBveApi/System/BaseOptions.cs b/source/OpenBveApi/System/BaseOptions.cs
+index f4c6da1fa..8b79ebf61 100644
+--- a/source/OpenBveApi/System/BaseOptions.cs
++++ b/source/OpenBveApi/System/BaseOptions.cs
+@@ -139,7 +139,17 @@ namespace OpenBveApi
+ 		public int UserInterfaceScaleFactor;
+ 		/// <summary>Whether loaded objects are automatically reloaded on change</summary>
+ 		public bool AutoReloadObjects;
+-		
++
++		// --- RealSky atmospheric system ---
++		/// <summary>Whether RealSky atmospheric clouds are enabled (requires New Renderer)</summary>
++		public bool RealSkyEnabled;
++
++		/// <summary>The azimuth of the RealSky sun in degrees (0 = North, 180 = South)</summary>
++		public double RealSkyAzimuth = 180.0;
++
++		/// <summary>The elevation of the RealSky sun in degrees (0 = Horizon, 90 = Zenith)</summary>
++		public double RealSkyElevation = 45.0;
++
+ 		/// <summary>The near clipping plane for scenery</summary>
+ 		public double NearClipScenery = 0.5;
+ 		/// <summary>The near clipping plane for the cab</summary>
+
+diff --git a/source/RouteManager2/Climate/Atmosphere.cs b/source/RouteManager2/Climate/Atmosphere.cs
+index 1de33c973..d1f81bd74 100644
+--- a/source/RouteManager2/Climate/Atmosphere.cs
++++ b/source/RouteManager2/Climate/Atmosphere.cs
+@@ -1,4 +1,4 @@
+-﻿using System;
++using System;
+ using OpenBveApi.Colors;
+ using OpenBveApi.Math;
+ 
+@@ -9,7 +9,16 @@ namespace RouteManager2.Climate
+ 	{
+ 		/// <summary>The position of the light (sun) in the sky</summary>
+ 		public Vector3 LightPosition = new Vector3(0.223606797749979f, 0.86602540378444f, -0.447213595499958f);
+-		
++
++		/// <summary>The azimuth of the RealSky sun in degrees (0 = North, 180 = South)</summary>
++		public double RealSkyAzimuth = 180.0;
++
++		/// <summary>The elevation of the RealSky sun in degrees (0 = Horizon, 90 = Zenith)</summary>
++		public double RealSkyElevation = 45.0;
++
++		/// <summary>Whether the RealSky parameters are overridden by the route</summary>
++		public bool RealSkyOverride = false;
++
+ 		/// <summary>The diffuse light color</summary>
+ 		public Color24 DiffuseLightColor = Color24.LightGrey;
+ 

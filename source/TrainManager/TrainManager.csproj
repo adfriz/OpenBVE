@@ -12,6 +12,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="System.ServiceModel.NetNamedPipe" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../LibRender2/LibRender2.csproj" />
     <ProjectReference Include="../OpenBveApi/OpenBveApi.csproj" />
     <ProjectReference Include="../Plugins/Formats.Msts/Formats.Msts.csproj" />

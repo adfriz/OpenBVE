@@ -1,6 +1,8 @@
+extern alias RealOpenTK;
 using System;
 using OpenBveApi.Hosts;
 using PIEHid64Net;
+using Joystick = RealOpenTK::OpenTK.Input.Joystick;
 
 namespace OpenBve.Input
 {
@@ -25,9 +27,9 @@ namespace OpenBve.Input
 				try
 				{
 					//Load the list of attached openTK joysticks
-					var state = OpenTK.Input.Joystick.GetState(i);
-					Guid foundGuid = OpenTK.Input.Joystick.GetGuid(i);
-					var description = OpenTK.Input.Joystick.GetCapabilities(i);
+					var state = Joystick.GetState(i);
+					Guid foundGuid = Joystick.GetGuid(i);
+					var description = Joystick.GetCapabilities(i);
 					if (description.ButtonCount == 0 && description.HatCount == 0 && description.AxisCount == 0 && description.IsConnected)
 					{
 						// Broken joystick drivers- pointless attempting to go any further

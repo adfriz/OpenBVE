@@ -1,0 +1,16 @@
+diff --git a/source/OpenBveApi/System/BaseOptions.OptionsKey.cs b/source/OpenBveApi/System/BaseOptions.OptionsKey.cs
+index c813c2ddb..2bde2a8ef 100644
+--- a/source/OpenBveApi/System/BaseOptions.OptionsKey.cs
++++ b/source/OpenBveApi/System/BaseOptions.OptionsKey.cs
+@@ -115,6 +115,10 @@ namespace OpenBveApi
+ 		Up,
+ 		Down,
+ 		Forward,
+-		Backward
++		Backward,
++		// RealSky
++		RealSkyEnabled,
++		RealSkyAzimuth,
++		RealSkyElevation
+     }
+ }

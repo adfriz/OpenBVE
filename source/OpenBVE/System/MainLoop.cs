@@ -1,3 +1,4 @@
+extern alias RealOpenTK;
 using System;
 using System.ComponentModel;
 using System.Globalization;
@@ -13,7 +14,9 @@ using OpenTK;
 using OpenTK.Input;
 using OpenTK.Graphics.OpenGL;
 using TrainManager;
-using ButtonState = OpenTK.Input.ButtonState;
+using ButtonState = RealOpenTK::OpenTK.Input.ButtonState;
+using JoystickHatState = RealOpenTK::OpenTK.Input.JoystickHatState;
+using HatPosition = RealOpenTK::OpenTK.Input.HatPosition;
 
 namespace OpenBve
 {

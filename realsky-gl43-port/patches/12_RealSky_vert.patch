@@ -1,0 +1,20 @@
+diff --git a/assets/Shaders/Atmosphere/RealSky.vert b/assets/Shaders/Atmosphere/RealSky.vert
+new file mode 100644
+index 000000000..1c30fd7ae
+--- /dev/null
++++ b/assets/Shaders/Atmosphere/RealSky.vert
+@@ -0,0 +1,14 @@
++#version 330 core
++layout(location = 0) in vec3 iPosition;
++out vec3 vWorldPos;
++
++uniform mat4 uCurrentProjectionMatrix;
++uniform mat4 uCurrentModelViewMatrix;
++
++void main() {
++    vWorldPos = iPosition;
++    // Standard skybox transformation (centered around camera)
++    vec4 pos = uCurrentProjectionMatrix * uCurrentModelViewMatrix * vec4(iPosition, 1.0);
++    // Force to background (z=1)
++    gl_Position = pos.xyww;
++}

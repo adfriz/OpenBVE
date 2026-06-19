@@ -40,6 +40,7 @@ using Path = OpenBveApi.Path;
 using PixelFormat = OpenBveApi.Textures.PixelFormat;
 using Vector2 = OpenBveApi.Math.Vector2;
 using Vector3 = OpenBveApi.Math.Vector3;
+using Vector4 = OpenBveApi.Math.Vector4;
 
 namespace LibRender2
 {
@@ -167,6 +168,12 @@ namespace LibRender2
 
 		/// <summary>Manages Clustered Forward Rendering (CFR). Null until Initialize() completes.</summary>
 		public ClusterEngine ClusterEngine;
+
+		/// <summary>
+		/// Manages the RealSky atmospheric rendering pass.
+		/// Null until Initialize() completes. GL 4.3+ uses a compute shader; older GL falls back to the original fragment-shader skybox.
+		/// </summary>
+		public Atmosphere.RealSkyPass RealSkyPass;
 
 		/// <summary>Whether shadows are enabled.</summary>
 		public bool ShadowsEnabled => Shadows?.Enabled ?? false;
@@ -454,6 +461,10 @@ namespace LibRender2
 			// Initialize Clustered Forward Rendering after shadows (GL context fully ready)
 			ClusterEngine = new ClusterEngine(this);
 			ClusterEngine.Initialize();
+
+			// Initialize RealSky atmospheric pass after CFR (GL context fully ready)
+			RealSkyPass = new Atmosphere.RealSkyPass(this);
+			RealSkyPass.Initialize();
 		}
 
 		/// <summary>Initializes (or reinitializes) shadow mapping from current options.</summary>
@@ -487,6 +498,10 @@ namespace LibRender2
 			// Dispose CFR resources before GL context teardown
 			ClusterEngine?.Dispose();
 			ClusterEngine = null;
+
+			// Dispose RealSky resources before GL context teardown
+			RealSkyPass?.Dispose();
+			RealSkyPass = null;
 		}
 		
 		/// <summary>Performs the CSM shadow depth rendering pass for all geometry.</summary>
@@ -509,6 +524,35 @@ namespace LibRender2
 		{
 			if (ClusterEngine != null && DefaultShader != null)
 				ClusterEngine.BindToShader(DefaultShader);
+		}
+
+		/// <summary>
+		/// Performs the RealSky atmospheric compute / skybox pass.
+		/// On GL 4.3+ this dispatches the compute shader and binds the sky
+		/// image to a sampler unit for the rest of the frame.
+		/// On older GL this draws the fragment-shader skybox.
+		/// Safe to call even if RealSkyPass is null or disabled.
+		/// </summary>
+		/// <param name="time">Total elapsed time in seconds (drives cloud animation).</param>
+		/// <param name="sunDirection">Normalized sun direction in world space.</param>
+		protected void PerformRealSkyPass(double time, Vector3 sunDirection)
+		{
+			RealSkyPass?.Render(time, sunDirection);
+		}
+
+		/// <summary>Binds the RealSky sky texture to the default shader for the current frame (compute path only).</summary>
+		protected void BindRealSkyToDefaultShader()
+		{
+			if (RealSkyPass != null && DefaultShader != null)
+			{
+				RealSkyPass.BindSkyToShader(DefaultShader);
+			}
+		}
+
+		/// <summary>Unbinds the RealSky sky texture from the default shader after the opaque pass completes.</summary>
+		protected void UnbindRealSkyFromDefaultShader()
+		{
+			RealSkyPass?.UnbindSkyFromShader(DefaultShader);
 		}
 
 		internal PrimitiveType GetPrimitiveType(FaceFlags flags)

@@ -69,6 +69,11 @@ namespace LibRender2.Shaders
 		private readonly int uModelMatrixLocation;
 		private readonly int uCurrentViewMatrixLocation;
 		private readonly int uDynamicLightCountLocation;
+
+		// --- RealSky atmospheric system ---
+		private readonly int uSkyEnabledLocation;
+		private readonly int uSkyTextureLocation;
+
 		private readonly int[] uDynamicLightTypeLocation = new int[16];
 		private readonly int[] uDynamicLightPositionLocation = new int[16];
 		private readonly int[] uDynamicLightDirectionLocation = new int[16];
@@ -129,6 +134,15 @@ namespace LibRender2.Shaders
 			uModelMatrixLocation = GL.GetUniformLocation(Handle, "uModelMatrix");
 			uCurrentViewMatrixLocation = GL.GetUniformLocation(Handle, "uCurrentViewMatrix");
 			uDynamicLightCountLocation = GL.GetUniformLocation(Handle, "uDynamicLightCount");
+
+			// RealSky atmospheric system uniforms
+			uSkyEnabledLocation  = GL.GetUniformLocation(Handle, "uSkyEnabled");
+			uSkyTextureLocation  = GL.GetUniformLocation(Handle, "uSkyTexture");
+			// Default: sky sampling disabled until RealSkyPass binds a texture
+			if (uSkyEnabledLocation >= 0)
+			{
+				GL.ProgramUniform1(Handle, uSkyEnabledLocation, 0);
+			}
 			for (int i = 0; i < 16; i++)
 			{
 				uDynamicLightTypeLocation[i] = GL.GetUniformLocation(Handle, $"uDynamicLights[{i}].type");
@@ -231,6 +245,12 @@ namespace LibRender2.Shaders
 				ShadowMap1 = (short)GL.GetUniformLocation(Handle, "uShadowMap1"),
 				ShadowMap2 = (short)GL.GetUniformLocation(Handle, "uShadowMap2"),
 				CurrentViewMatrix = (short)GL.GetUniformLocation(Handle, "uCurrentViewMatrix"),
+
+				// RealSky uniforms (for fallback fragment-shader path)
+				RealSkySunDirection = (short)GL.GetUniformLocation(Handle, "uRealSkySunDirection"),
+				RealSkyTime         = (short)GL.GetUniformLocation(Handle, "uRealSkyTime"),
+				RealSkyResolution   = (short)GL.GetUniformLocation(Handle, "uRealSkyResolution"),
+				RealSkyCameraPos    = (short)GL.GetUniformLocation(Handle, "uRealSkyCameraPos"),
 			};
 		}
 
@@ -675,6 +695,32 @@ namespace LibRender2.Shaders
 			GL.ProgramUniform1(Handle, uClusterNumXLocation,         numX);
 			GL.ProgramUniform1(Handle, uClusterNumYLocation,         numY);
 			GL.ProgramUniform1(Handle, uClusterNumZLocation,         numZ);
+		}
+
+		#endregion
+
+		#region RealSky
+
+		/// <summary>
+		/// Enables or disables sky texture sampling in the fragment shader.
+		/// When true, the shader samples <see cref="uSkyTexture"/> for the sky colour
+		/// (compute path); when false, the existing background colour is used.
+		/// </summary>
+		public void SetSkyEnabled(bool enabled)
+		{
+			if (uSkyEnabledLocation < 0) return;
+			GL.ProgramUniform1(Handle, uSkyEnabledLocation, enabled ? 1 : 0);
+		}
+
+		/// <summary>
+		/// Sets the texture unit that the sky image is bound to.
+		/// The texture itself is bound separately by <see cref="Atmosphere.RealSkyPass"/>.
+		/// </summary>
+		/// <param name="unit">Zero-based texture unit index (e.g. 8 for TextureUnit.Texture8).</param>
+		public void SetSkyTextureUnit(int unit)
+		{
+			if (uSkyTextureLocation < 0) return;
+			GL.ProgramUniform1(Handle, uSkyTextureLocation, unit);
 		}
 
 		#endregion

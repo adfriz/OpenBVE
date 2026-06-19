@@ -65,6 +65,95 @@ namespace OpenTK
             M31 = m20; M32 = m21; M33 = m22; M34 = m23;
             M41 = m30; M42 = m31; M43 = m32; M44 = m33;
         }
+
+        /// <summary>Multiplies two Matrix4 values (row-major, post-multiply convention).
+        /// Note: this struct uses M[r][c] naming where M11 = row 1 col 1, etc.
+        /// Added for the RealSky compute pass which needs inverse(view * projection).
+        /// </summary>
+        public static Matrix4 operator *(Matrix4 left, Matrix4 right)
+        {
+            return new Matrix4(
+                left.M11 * right.M11 + left.M12 * right.M21 + left.M13 * right.M31 + left.M14 * right.M41,
+                left.M11 * right.M12 + left.M12 * right.M22 + left.M13 * right.M32 + left.M14 * right.M42,
+                left.M11 * right.M13 + left.M12 * right.M23 + left.M13 * right.M33 + left.M14 * right.M43,
+                left.M11 * right.M14 + left.M12 * right.M24 + left.M13 * right.M34 + left.M14 * right.M44,
+
+                left.M21 * right.M11 + left.M22 * right.M21 + left.M23 * right.M31 + left.M24 * right.M41,
+                left.M21 * right.M12 + left.M22 * right.M22 + left.M23 * right.M32 + left.M24 * right.M42,
+                left.M21 * right.M13 + left.M22 * right.M23 + left.M23 * right.M33 + left.M24 * right.M43,
+                left.M21 * right.M14 + left.M22 * right.M24 + left.M23 * right.M34 + left.M24 * right.M44,
+
+                left.M31 * right.M11 + left.M32 * right.M21 + left.M33 * right.M31 + left.M34 * right.M41,
+                left.M31 * right.M12 + left.M32 * right.M22 + left.M33 * right.M32 + left.M34 * right.M42,
+                left.M31 * right.M13 + left.M32 * right.M23 + left.M33 * right.M33 + left.M34 * right.M43,
+                left.M31 * right.M14 + left.M32 * right.M24 + left.M33 * right.M34 + left.M34 * right.M44,
+
+                left.M41 * right.M11 + left.M42 * right.M21 + left.M43 * right.M31 + left.M44 * right.M41,
+                left.M41 * right.M12 + left.M42 * right.M22 + left.M43 * right.M32 + left.M44 * right.M42,
+                left.M41 * right.M13 + left.M42 * right.M23 + left.M43 * right.M33 + left.M44 * right.M43,
+                left.M41 * right.M14 + left.M42 * right.M24 + left.M43 * right.M34 + left.M44 * right.M44
+            );
+        }
+
+        /// <summary>
+        /// Computes the inverse of a 4x4 matrix using cofactor expansion.
+        /// Returns identity if the matrix is singular.
+        /// Added for the RealSky compute pass which needs inverse(view * projection).
+        /// </summary>
+        public static void Invert(ref Matrix4 m, out Matrix4 result)
+        {
+            // 4x4 matrix inverse via cofactors / adjugate.
+            // Uses the existing M[r][c] field names (M11 = row 1 col 1).
+            // Source: standard 4x4 inverse derivation, matches OpenTK 3.x semantics.
+            // First, remap the row-major M11..M44 fields to canonical m00..m33 names
+            // so the cofactor algebra below reads cleanly.
+            float m00 = m.M11, m01 = m.M12, m02 = m.M13, m03 = m.M14;
+            float m10 = m.M21, m11 = m.M22, m12 = m.M23, m13 = m.M24;
+            float m20 = m.M31, m21 = m.M32, m22 = m.M33, m23 = m.M34;
+            float m30 = m.M41, m31 = m.M42, m32 = m.M43, m33 = m.M44;
+
+            float b00 = m00 * m11 - m01 * m10;
+            float b01 = m00 * m12 - m02 * m10;
+            float b02 = m00 * m13 - m03 * m10;
+            float b03 = m01 * m12 - m02 * m11;
+            float b04 = m01 * m13 - m03 * m11;
+            float b05 = m02 * m13 - m03 * m12;
+            float b06 = m20 * m31 - m21 * m30;
+            float b07 = m20 * m32 - m22 * m30;
+            float b08 = m20 * m33 - m23 * m30;
+            float b09 = m21 * m32 - m22 * m31;
+            float b10 = m21 * m33 - m23 * m31;
+            float b11 = m22 * m33 - m23 * m32;
+
+            float det = b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06;
+
+            if (System.Math.Abs(det) < 1e-12f)
+            {
+                result = new Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+                return;
+            }
+
+            float invDet = 1.0f / det;
+
+            result = new Matrix4(
+                ( m11 * b11 - m12 * b10 + m13 * b09) * invDet,
+                (-m01 * b11 + m02 * b10 - m03 * b09) * invDet,
+                ( m31 * b05 - m32 * b04 + m33 * b03) * invDet,
+                (-m21 * b05 + m22 * b04 - m23 * b03) * invDet,
+                (-m10 * b11 + m12 * b08 - m13 * b07) * invDet,
+                ( m00 * b11 - m02 * b08 + m03 * b07) * invDet,
+                (-m30 * b05 + m32 * b02 - m33 * b01) * invDet,
+                ( m20 * b05 - m22 * b02 + m23 * b01) * invDet,
+                ( m10 * b10 - m11 * b08 + m13 * b06) * invDet,
+                (-m00 * b10 + m01 * b08 - m03 * b06) * invDet,
+                ( m30 * b04 - m31 * b02 + m33 * b00) * invDet,
+                (-m20 * b04 + m21 * b02 - m23 * b00) * invDet,
+                (-m10 * b09 + m11 * b07 - m12 * b06) * invDet,
+                ( m00 * b09 - m01 * b07 + m02 * b06) * invDet,
+                (-m30 * b03 + m31 * b01 - m32 * b00) * invDet,
+                ( m20 * b03 - m21 * b01 + m22 * b00) * invDet
+            );
+        }
     }
 
     public class DisplayResolution
@@ -147,8 +236,11 @@ namespace OpenTK
         public Icon Icon { get; set; }
         public string Title { get => window.Title; set => window.Title = value; }
         public bool Visible { get => window.IsVisible; set => window.IsVisible = value; }
-        public double TargetUpdateFrequency { get => window.UpdatePeriod; set => window.UpdatePeriod = value; }
-        public double TargetRenderFrequency { get => window.RenderPeriod; set => window.RenderPeriod = value; }
+        public double TargetUpdateFrequency { get => window.UpdatesPerSecond; set => window.UpdatesPerSecond = value; }
+        public double TargetRenderFrequency { get => window.FramesPerSecond; set => window.FramesPerSecond = value; }
+        public bool CursorVisible { get; set; } = true;
+        public bool IsExiting => false;
+        public void ProcessEvents() { }
 
         public WindowState WindowState
         {
@@ -175,6 +267,7 @@ namespace OpenTK
         public double RenderFrequency => 60.0; // fallback
 
         // Input Events
+        public event EventHandler<CancelEventArgs> Closing;
         public event EventHandler<OpenTK.Input.KeyboardKeyEventArgs> KeyDown;
         public event EventHandler<OpenTK.Input.KeyboardKeyEventArgs> KeyUp;
         public event EventHandler<OpenTK.Input.MouseButtonEventArgs> MouseDown;
@@ -207,7 +300,7 @@ namespace OpenTK
         {
             window.Load += () =>
             {
-                LibRender2.OpenGLBind.GL = Silk.NET.OpenGL.GL.GetApi(window);
+                LibRender2.OpenGLBind.GL = global::Silk.NET.OpenGL.Legacy.GL.GetApi(window);
                 inputContext = window.CreateInput();
                 SetupInput();
                 OnLoad(EventArgs.Empty);
@@ -231,6 +324,7 @@ namespace OpenTK
             window.Closing += () =>
             {
                 var cancelArgs = new CancelEventArgs();
+                Closing?.Invoke(this, cancelArgs);
                 OnClosing(cancelArgs);
                 if (!cancelArgs.Cancel)
                 {
@@ -246,12 +340,18 @@ namespace OpenTK
                 keyboard.KeyDown += (kb, key, code) =>
                 {
                     var tkKey = MapKey(key);
-                    KeyDown?.Invoke(this, new OpenTK.Input.KeyboardKeyEventArgs { Key = tkKey });
+                    bool shift = kb.IsKeyPressed(Silk.NET.Input.Key.LShift) || kb.IsKeyPressed(Silk.NET.Input.Key.RShift);
+                    bool control = kb.IsKeyPressed(Silk.NET.Input.Key.LControl) || kb.IsKeyPressed(Silk.NET.Input.Key.RControl);
+                    bool alt = kb.IsKeyPressed(Silk.NET.Input.Key.LAlt) || kb.IsKeyPressed(Silk.NET.Input.Key.RAlt);
+                    KeyDown?.Invoke(this, new OpenTK.Input.KeyboardKeyEventArgs { Key = tkKey, Shift = shift, Control = control, Alt = alt });
                 };
                 keyboard.KeyUp += (kb, key, code) =>
                 {
                     var tkKey = MapKey(key);
-                    KeyUp?.Invoke(this, new OpenTK.Input.KeyboardKeyEventArgs { Key = tkKey });
+                    bool shift = kb.IsKeyPressed(Silk.NET.Input.Key.LShift) || kb.IsKeyPressed(Silk.NET.Input.Key.RShift);
+                    bool control = kb.IsKeyPressed(Silk.NET.Input.Key.LControl) || kb.IsKeyPressed(Silk.NET.Input.Key.RControl);
+                    bool alt = kb.IsKeyPressed(Silk.NET.Input.Key.LAlt) || kb.IsKeyPressed(Silk.NET.Input.Key.RAlt);
+                    KeyUp?.Invoke(this, new OpenTK.Input.KeyboardKeyEventArgs { Key = tkKey, Shift = shift, Control = control, Alt = alt });
                 };
             }
 
@@ -368,6 +468,10 @@ namespace OpenTK.Input
         public int Y { get; set; }
         public ButtonState LeftButton { get; set; }
         public ButtonState RightButton { get; set; }
+        public static bool operator ==(MouseState left, MouseState right) => left.X == right.X && left.Y == right.Y && left.LeftButton == right.LeftButton && left.RightButton == right.RightButton;
+        public static bool operator !=(MouseState left, MouseState right) => !(left == right);
+        public override bool Equals(object obj) => obj is MouseState other && this == other;
+        public override int GetHashCode() => HashCode.Combine(X, Y, LeftButton, RightButton);
     }
 
     public static class Mouse
@@ -408,6 +512,9 @@ namespace OpenTK.Input
     public class KeyboardKeyEventArgs : EventArgs
     {
         public Key Key { get; set; }
+        public bool Shift { get; set; }
+        public bool Control { get; set; }
+        public bool Alt { get; set; }
     }
 
     public class FileDropEventArgs : EventArgs
@@ -446,6 +553,8 @@ namespace OpenTK.Input
         Space = 163,
         BackSpace = 168,
         Delete = 173,
+        PageUp = 175,
+        PageDown = 176,
         Keypad0 = 233,
         Keypad1 = 234,
         Keypad2 = 235,
@@ -487,7 +596,27 @@ namespace OpenTK.Input
         W = 295,
         X = 296,
         Y = 297,
-        Z = 298
+        Z = 298,
+        ShiftLeft = LShift,
+        ShiftRight = RShift,
+        ControlLeft = LControl,
+        ControlRight = RControl,
+        KeypadPeriod = KeypadDecimal,
+        Plus = 356,
+        Minus = 353,
+        KeypadPlus = KeypadAdd,
+        KeypadMinus = KeypadSubtract,
+        Number0 = 327,
+        Number1 = 328,
+        Number2 = 329,
+        Number3 = 330,
+        Number4 = 331,
+        Number5 = 332,
+        Number6 = 333,
+        Number7 = 334,
+        Number8 = 335,
+        Number9 = 336,
+        Period = 371
     }
 }
 
@@ -530,7 +659,13 @@ namespace OpenTK.Graphics.OpenGL
     public enum ErrorCode : int
     {
         NoError = 0,
-        InvalidEnum = 0x0500
+        InvalidEnum = 0x0500,
+        InvalidValue = 0x0501,
+        InvalidOperation = 0x0502,
+        StackOverflow = 0x0503,
+        StackUnderflow = 0x0504,
+        OutOfMemory = 0x0505,
+        TableTooLargeExt = 0x8031
     }
 
     public enum PixelInternalFormat : int
@@ -544,7 +679,8 @@ namespace OpenTK.Graphics.OpenGL
         LuminanceAlpha = 0x190A,
         DepthComponent24 = 0x81A6,
         R32ui = 0x8236,
-        Rgb = 0x1907
+        Rgb = 0x1907,
+        Rgba16f = 0x881A
     }
 
     public enum PixelFormat : int
@@ -767,6 +903,8 @@ namespace OpenTK.Graphics.OpenGL
     public enum MemoryBarrierFlags : int
     {
         ShaderStorageBarrierBit = 0x2000,
+        ShaderImageAccessBarrierBit = 0x00000020,
+        TextureFetchBarrierBit = 0x00000008,
         AllBarrierBits = unchecked((int)0xFFFFFFFF)
     }
 
@@ -865,7 +1003,12 @@ namespace OpenTK.Graphics.OpenGL
 
     public enum HintTarget : int
     {
-        GenerateMipmapHint = 0x84E3
+        GenerateMipmapHint = 0x84E3,
+        PerspectiveCorrectionHint = 0x0C50,
+        PointSmoothHint = 0x0C51,
+        LineSmoothHint = 0x0C52,
+        PolygonSmoothHint = 0x0C53,
+        FogHint = 0x0C54
     }
 
     public enum HintMode : int
@@ -908,7 +1051,10 @@ namespace OpenTK.Graphics.OpenGL
         Rgba8 = 0x8058,
         DepthComponent24 = 0x81A6,
         R32f = 0x822E,
-        Rgba16f = 0x881A
+        Rgba16f = 0x881A,
+        Rgb = 0x1907,
+        Rgb8 = 0x8051,
+        R32ui = 0x8236
     }
 
     public enum BlendEquationMode : int
@@ -951,6 +1097,49 @@ namespace LibRender2
 {
     public static class OpenGLBind
     {
-        public static Silk.NET.OpenGL.GL GL;
+        public static global::Silk.NET.OpenGL.Legacy.GL GL;
+    }
+
+    // --- GL 4.3 image-load-store enums (added for RealSky compute pass) ---
+
+    /// <summary>Access mode for image textures (GL_READ_ONLY / GL_WRITE_ONLY / GL_READ_WRITE).</summary>
+    public enum TextureAccess : int
+    {
+        ReadOnly = 0x88B8,
+        WriteOnly = 0x88B9,
+        ReadWrite = 0x88BA,
+    }
+
+    /// <summary>
+    /// Sized internal formats used by GL 4.3 image textures. Only the subset
+    /// required by the RealSky compute pass is defined here — extend as needed.
+    /// Values match OpenGL / Silk.NET.OpenGL.GLEnum.
+    /// </summary>
+    public enum SizedInternalFormat : int
+    {
+        Rgba32f = 0x8814,
+        Rgba16f = 0x881A,
+        Rg32f = 0x8230,
+        Rg16f = 0x822F,
+        R11fG11fB10f = 0x8C3A,
+        R32f = 0x822E,
+        R16f = 0x822D,
+        Rgba8 = 0x8058,
+        Rgba8Snorm = 0x8F97,
+        R8 = 0x8229,
+        R8Snorm = 0x8F94,
+        Rgba32ui = 0x8D70,
+        Rgba16ui = 0x8D76,
+        Rgb10A2ui = 0x906F,
+        Rgba8ui = 0x8D7C,
+        R32ui = 0x8236,
+        R16ui = 0x8234,
+        R8ui = 0x8232,
+        Rgba32i = 0x8D82,
+        Rgba16i = 0x8D88,
+        Rgba8i = 0x8D8E,
+        R32i = 0x8235,
+        R16i = 0x8233,
+        R8i = 0x8231,
     }
 }

@@ -1,3 +1,4 @@
+extern alias RealOpenTK;
 using System;
 using System.Collections.Generic;
 using OpenBveApi.Hosts;
@@ -6,7 +7,7 @@ using OpenBveApi.Objects;
 using OpenBveApi.Runtime;
 using OpenBveApi.Sounds;
 using OpenBveApi.Trains;
-using OpenTK.Audio.OpenAL;
+using RealOpenTK::OpenTK.Audio.OpenAL;
 using SoundManager;
 using TrainManager.Car;
 

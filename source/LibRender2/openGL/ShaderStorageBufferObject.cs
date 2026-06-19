@@ -91,7 +91,7 @@ namespace LibRender2.openGL
 			int sizeBytes = elementCount * elementSize;
 			GL.BindBuffer(BufferTarget.ShaderStorageBuffer, Handle);
 			GL.ClearBufferSubData(BufferTarget.ShaderStorageBuffer,
-				PixelInternalFormat.R32ui,
+				InternalFormat.R32ui,
 				IntPtr.Zero, new IntPtr(sizeBytes),
 				PixelFormat.RedInteger, PixelType.UnsignedInt,
 				IntPtr.Zero);

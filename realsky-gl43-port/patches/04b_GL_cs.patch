@@ -1,0 +1,21 @@
+diff --git a/source/LibRender2/openGL/GL.cs b/source/LibRender2/openGL/GL.cs
+index 70344120d..e390e6f98 100644
+--- a/source/LibRender2/openGL/GL.cs
++++ b/source/LibRender2/openGL/GL.cs
+@@ -316,6 +316,16 @@ namespace OpenTK.Graphics.OpenGL
+             fixed (float* ptr = value) gl.UniformMatrix4(location, (uint)count, transpose, ptr);
+         }
+         
++        // BindImageTexture — required by GL 4.3 compute shaders that write to image2D
++        // (RealSky atmospheric compute pass).
++        // Mirrors Silk.NET.OpenGL.GL.BindImageTexture — arguments are passed through
++        // with only the texture handle widened to uint and the access / format enums
++        // mapped to Silk.NET.OpenGL.GLEnum.
++        public static unsafe void BindImageTexture(uint unit, int texture, int level, bool layered, int layer, TextureAccess access, SizedInternalFormat format)
++        {
++            gl.BindImageTexture(unit, (uint)texture, (uint)level, layered, (uint)layer, (Silk.NET.OpenGL.GLEnum)access, (Silk.NET.OpenGL.GLEnum)format);
++        }
++
+         public static void UseProgram(int program) => gl.UseProgram((uint)program);
+         
+         public static unsafe void VertexAttribIPointer(int index, int size, VertexAttribIntegerType type, int stride, IntPtr pointer) =>

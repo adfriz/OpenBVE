@@ -880,7 +880,7 @@ namespace OpenBve
 				if (!Program.CurrentHost.MonoRuntime)
 				{
 					//Mono doesn't support System.Security.AccessControl, so this doesn't work....
-					Directory.GetAccessControl(directory);
+					new System.IO.DirectoryInfo(directory).GetAccessControl();
 				}
 				// ReSharper disable once UnusedVariable
 				using (FileStream fs = File.OpenWrite(currentPackage.FileName))
@@ -1412,7 +1412,7 @@ namespace OpenBve
 			string[] files = null;
 			string folder = string.Empty;
 			string folderDisplay = string.Empty;
-			if (OpenTK.Configuration.RunningOnMacOS || OpenTK.Configuration.RunningOnLinux)
+			if (Program.CurrentHost.Platform == HostPlatform.AppleOSX || Program.CurrentHost.Platform == HostPlatform.Linux)
 			{
 				//Mono doesn't like our fancy folder selector
 				//Some versions of OS-X crash, and Linux just falls back- Safer to specifically use the old version on these...
