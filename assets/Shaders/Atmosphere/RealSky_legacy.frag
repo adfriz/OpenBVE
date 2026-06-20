@@ -65,9 +65,13 @@ vec3 getAtmosphere(vec3 dir) {
     vec3 sunCol = mix(vec3(1.0, 0.95, 0.80), vec3(1.0, 0.55, 0.15), sunsetF);
     col += sunCol * disk;
 
-    // Fade to black only BELOW horizon (not above)
-    float belowHorizon = 1.0 - smoothstep(-0.06, 0.0, dir.y);
-    col = mix(col, vec3(0.0), belowHorizon);
+    // Dim below the horizon (gentle extension)
+    col *= smoothstep(-0.12, 0.03, dir.y);
+
+    // Fade to black at night
+    float daylight = smoothstep(-0.20, 0.08, sunElev);
+    col *= daylight;
+
     return max(col, vec3(0.0));
 }
 
@@ -93,10 +97,11 @@ void main() {
 
     vec3  sunDir  = normalize(uRealSkySunDirection);
     float sunElev = sunDir.y;
+    float daylight = smoothstep(-0.20, 0.08, sunElev);
     vec3 sunColor = mix(vec3(1.0, 0.90, 0.75), vec3(1.0, 0.50, 0.15),
-                        clamp(1.0 - sunElev * 2.5, 0.0, 1.0));
+                        clamp(1.0 - sunElev * 2.5, 0.0, 1.0)) * daylight;
     vec3 ambColor = mix(vec3(0.38, 0.52, 0.80), vec3(0.60, 0.72, 0.88),
-                        clamp(sunElev + 0.2, 0.0, 1.0));
+                        clamp(sunElev + 0.2, 0.0, 1.0)) * daylight;
 
     // Beer-Lambert cloud integration
     vec3  cloudAccum = vec3(0.0);
