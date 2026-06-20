@@ -57,11 +57,11 @@ vec3 getAtmosphere(vec3 dir) {
     col = mix(col, col * sunsetTint, horizF * sunsetF * 0.8);
 
     // Mie glow
-    float mie = pow(max(cosTheta, 0.0), 6.0) * 0.6;
+    float mie = pow(max(cosTheta, 0.0), 120.0) * 0.4;
     col += sunsetTint * mie * horizF;
 
     // Sun disk
-    float disk = pow(max(cosTheta, 0.0), 1024.0) * 8.0;
+    float disk = smoothstep(0.9995, 0.9998, cosTheta) * 15.0;
     vec3 sunCol = mix(vec3(1.0, 0.95, 0.80), vec3(1.0, 0.55, 0.15), sunsetF);
     col += sunCol * disk;
 

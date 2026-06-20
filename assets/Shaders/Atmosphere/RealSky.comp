@@ -47,11 +47,11 @@ vec3 getAtmosphere(vec3 dir) {
     skyColor = mix(skyColor, skyColor * sunsetTint, horizFactor * sunsetFactor * 0.8);
 
     // Mie forward scatter glow around sun
-    float mieGlow = pow(max(cosTheta, 0.0), 6.0) * 0.6;
+    float mieGlow = pow(max(cosTheta, 0.0), 120.0) * 0.4;
     skyColor += sunsetTint * mieGlow * horizFactor;
 
     // Sun disk
-    float sunDisk = pow(max(cosTheta, 0.0), 1024.0) * 8.0;
+    float sunDisk = smoothstep(0.9995, 0.9998, cosTheta) * 15.0;
     vec3 sunColor = mix(vec3(1.0, 0.95, 0.80), vec3(1.0, 0.55, 0.15), sunsetFactor);
     skyColor += sunColor * sunDisk;
 
