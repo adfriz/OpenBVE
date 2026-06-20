@@ -29,8 +29,6 @@ namespace RouteViewer
 			comboBoxNewObjParser.SelectedIndex = (int) Interface.CurrentOptions.CurrentObjParser;
 			numericUpDownViewingDistance.Value = Math.Min(Interface.CurrentOptions.ViewingDistance, numericUpDownViewingDistance.Maximum);
 			comboBoxRealSkyMode.SelectedIndex = (int)Interface.CurrentOptions.RealSkyMode;
-			numericUpDownAzimuth.Value = (decimal)Interface.CurrentOptions.RealSkyAzimuth;
-			numericUpDownElevation.Value = (decimal)Interface.CurrentOptions.RealSkyElevation;
 
             // Shadows
             switch (Interface.CurrentOptions.ShadowResolution)
@@ -267,8 +265,8 @@ namespace RouteViewer
 			Interface.CurrentOptions.QuadTreeLeafSize = Math.Max(50, (int)Math.Ceiling(Interface.CurrentOptions.ViewingDistance / 10.0d) * 10); // quad tree size set to 10% of viewing distance to the nearest 10
 			Interface.CurrentOptions.RealSkyMode = (RealSkyQuality)comboBoxRealSkyMode.SelectedIndex;
 			Interface.CurrentOptions.RealSkyEnabled = Interface.CurrentOptions.RealSkyMode != RealSkyQuality.Off;
-			Interface.CurrentOptions.RealSkyAzimuth = (double)numericUpDownAzimuth.Value;
-			Interface.CurrentOptions.RealSkyElevation = (double)numericUpDownElevation.Value;
+			Interface.CurrentOptions.RealSkyAzimuth = trackBarSunAzimuth.Value;
+			Interface.CurrentOptions.RealSkyElevation = trackBarSunElevation.Value;
 
             switch (comboBoxShadowResolution.SelectedIndex)
             {

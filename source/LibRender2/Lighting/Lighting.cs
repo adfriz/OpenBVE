@@ -70,7 +70,7 @@ namespace LibRender2.Lightings
 		}
 
 		/// <summary>Updates the lighting model on a per frame basis</summary>
-		public void UpdateLighting(double Time, LightDefinition[] LightDefinitions)
+		public void UpdateLighting(double Time, LightDefinition[] LightDefinitions, bool realSkyOverride = false, Vector3 sunDir = default(Vector3))
 		{
 			//Check that we have more than one light definition & that the array is not null
 			if (LightDefinitions == null || LightDefinitions.Length < 2)
@@ -120,6 +120,27 @@ namespace LibRender2.Lightings
 			OptionDiffuseColor = Color24.CosineInterpolate(LightDefinitions[j].DiffuseColor, LightDefinitions[k].DiffuseColor, mu);
 			OptionAmbientColor = Color24.CosineInterpolate(LightDefinitions[j].AmbientColor, LightDefinitions[k].AmbientColor, mu);
 			OptionLightPosition = Vector3.CosineInterpolate(LightDefinitions[j].LightPosition, LightDefinitions[k].LightPosition, mu);
+
+			if (realSkyOverride)
+			{
+				float sunElev = (float)sunDir.Y;
+				float x = (sunElev - (-0.20f)) / (0.08f - (-0.20f));
+				float daylight = Math.Max(0.0f, Math.Min(1.0f, x * x * (3.0f - 2.0f * x)));
+
+				float ambFactor = Math.Max(0.0f, Math.Min(1.0f, sunElev + 0.2f));
+				float ambR = (0.38f * (1.0f - ambFactor) + 0.60f * ambFactor) * daylight;
+				float ambG = (0.52f * (1.0f - ambFactor) + 0.72f * ambFactor) * daylight;
+				float ambB = (0.80f * (1.0f - ambFactor) + 0.88f * ambFactor) * daylight;
+
+				float sunFactor = Math.Max(0.0f, Math.Min(1.0f, 1.0f - sunElev * 2.5f));
+				float sunR = (1.0f * (1.0f - sunFactor) + 1.0f * sunFactor) * daylight;
+				float sunG = (0.90f * (1.0f - sunFactor) + 0.50f * sunFactor) * daylight;
+				float sunB = (0.75f * (1.0f - sunFactor) + 0.15f * sunFactor) * daylight;
+
+				OptionAmbientColor = new Color24((byte)Math.Round(ambR * 255.0f), (byte)Math.Round(ambG * 255.0f), (byte)Math.Round(ambB * 255.0f));
+				OptionDiffuseColor = new Color24((byte)Math.Round(sunR * 255.0f), (byte)Math.Round(sunG * 255.0f), (byte)Math.Round(sunB * 255.0f));
+				OptionLightPosition = sunDir;
+			}
 
 			//Interpolate the cab brightness value
 			double mu2 = (1 - Math.Cos(mu * Math.PI)) / 2;

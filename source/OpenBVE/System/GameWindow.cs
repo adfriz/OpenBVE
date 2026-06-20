@@ -261,9 +261,23 @@ namespace OpenBve
 				}				
 			}
 
-			if (Program.CurrentRoute.DynamicLighting)
+			if (Program.CurrentRoute.DynamicLighting || Program.CurrentRoute.Atmosphere.RealSkyOverride)
 			{
-				Program.Renderer.Lighting.UpdateLighting(Program.CurrentRoute.SecondsSinceMidnight, Program.CurrentRoute.LightDefinitions);
+				OpenBveApi.Math.Vector3 sunDir = default;
+				if (Program.CurrentRoute.Atmosphere.RealSkyOverride || OpenBveApi.Interface.Interface.CurrentOptions.RealSkyEnabled)
+				{
+					double az = OpenBveApi.Interface.Interface.CurrentOptions.RealSkyAzimuth;
+					double el = OpenBveApi.Interface.Interface.CurrentOptions.RealSkyElevation;
+					if (Program.CurrentRoute.Atmosphere.RealSkyOverride)
+					{
+						az = Program.CurrentRoute.Atmosphere.RealSkyAzimuth;
+						el = Program.CurrentRoute.Atmosphere.RealSkyElevation;
+					}
+					double ra = az * 0.0174532925199433;
+					double re = el * 0.0174532925199433;
+					sunDir = new OpenBveApi.Math.Vector3(Math.Sin(ra) * Math.Cos(re), Math.Sin(re), Math.Cos(ra) * Math.Cos(re));
+				}
+				Program.Renderer.Lighting.UpdateLighting(Program.CurrentRoute.SecondsSinceMidnight, Program.CurrentRoute.LightDefinitions, Program.CurrentRoute.Atmosphere.RealSkyOverride, sunDir);
 			}
 			Program.Renderer.RenderScene(TimeElapsed, RealTimeElapsed);
 			Program.Sounds.Update(TimeElapsed, Interface.CurrentOptions.SoundModel);

@@ -80,7 +80,21 @@ namespace RouteViewer
 	            World.UpdateAbsoluteCamera(TimeElapsed);
 	            Program.Sounds.Update(TimeElapsed, SoundModels.Linear);
             }
-            Program.Renderer.Lighting.UpdateLighting(Program.CurrentRoute.SecondsSinceMidnight, Program.CurrentRoute.LightDefinitions);
+            Vector3 sunDir = default(Vector3);
+            if (Program.CurrentRoute.Atmosphere.RealSkyOverride || Interface.CurrentOptions.RealSkyEnabled)
+            {
+                double az = Interface.CurrentOptions.RealSkyAzimuth;
+                double el = Interface.CurrentOptions.RealSkyElevation;
+                if (Program.CurrentRoute.Atmosphere.RealSkyOverride)
+                {
+                    az = Program.CurrentRoute.Atmosphere.RealSkyAzimuth;
+                    el = Program.CurrentRoute.Atmosphere.RealSkyElevation;
+                }
+                double ra = az * 0.0174532925199433;
+                double re = el * 0.0174532925199433;
+                sunDir = new Vector3(Math.Sin(ra) * Math.Cos(re), Math.Sin(re), Math.Cos(ra) * Math.Cos(re));
+            }
+            Program.Renderer.Lighting.UpdateLighting(Program.CurrentRoute.SecondsSinceMidnight, Program.CurrentRoute.LightDefinitions, Program.CurrentRoute.Atmosphere.RealSkyOverride, sunDir);
             Program.Renderer.RenderScene(TimeElapsed);
             MessageManager.UpdateMessages(TimeElapsed);
             SwapBuffers();

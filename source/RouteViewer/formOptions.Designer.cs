@@ -60,10 +60,6 @@ namespace RouteViewer
             this.numericUpDownViewingDistance = new System.Windows.Forms.NumericUpDown();
             this.labelRealSky = new System.Windows.Forms.Label();
             this.comboBoxRealSkyMode = new System.Windows.Forms.ComboBox();
-            this.labelAzimuth = new System.Windows.Forms.Label();
-            this.numericUpDownAzimuth = new System.Windows.Forms.NumericUpDown();
-            this.labelElevation = new System.Windows.Forms.Label();
-            this.numericUpDownElevation = new System.Windows.Forms.NumericUpDown();
             this.tabPageShadows = new System.Windows.Forms.TabPage();
             this.comboBoxShadowResolution = new System.Windows.Forms.ComboBox();
             this.labelShadowResolution = new System.Windows.Forms.Label();
@@ -96,8 +92,6 @@ namespace RouteViewer
             ((System.ComponentModel.ISupportInitialize)(this.width)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.height)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownViewingDistance)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownAzimuth)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownElevation)).BeginInit();
             this.tabPageShadows.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownShadowStrength)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBarSunAzimuth)).BeginInit();
@@ -153,12 +147,8 @@ namespace RouteViewer
             this.tabPageOptions.Controls.Add(this.comboBoxNewObjParser);
             this.tabPageOptions.Controls.Add(this.label15);
             this.tabPageOptions.Controls.Add(this.numericUpDownViewingDistance);
-            this.tabPageOptions.Controls.Add(this.labelRealSky);
-            this.tabPageOptions.Controls.Add(this.comboBoxRealSkyMode);
-            this.tabPageOptions.Controls.Add(this.labelAzimuth);
-            this.tabPageOptions.Controls.Add(this.numericUpDownAzimuth);
-            this.tabPageOptions.Controls.Add(this.labelElevation);
-            this.tabPageOptions.Controls.Add(this.numericUpDownElevation);
+            this.tabPageOptions.Controls.Add(this.numericUpDownNearClip);
+            this.tabPageOptions.Controls.Add(this.labelNearClip);
             this.tabPageOptions.AutoScroll = true;
             this.tabPageOptions.Location = new System.Drawing.Point(4, 22);
             this.tabPageOptions.Name = "tabPageOptions";
@@ -487,7 +477,7 @@ namespace RouteViewer
             // 
             this.labelRealSky.AutoSize = true;
             this.labelRealSky.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.labelRealSky.Location = new System.Drawing.Point(93, 420);
+            this.labelRealSky.Location = new System.Drawing.Point(6, 375);
             this.labelRealSky.Name = "labelRealSky";
             this.labelRealSky.Size = new System.Drawing.Size(65, 15);
             this.labelRealSky.TabIndex = 35;
@@ -502,56 +492,15 @@ namespace RouteViewer
             "Low",
             "Medium",
             "High"});
-            this.comboBoxRealSkyMode.Location = new System.Drawing.Point(6, 442);
+            this.comboBoxRealSkyMode.Location = new System.Drawing.Point(160, 375);
             this.comboBoxRealSkyMode.Name = "comboBoxRealSkyMode";
             this.comboBoxRealSkyMode.Size = new System.Drawing.Size(121, 21);
             this.comboBoxRealSkyMode.TabIndex = 36;
             // 
-            // labelAzimuth
-            // 
-            this.labelAzimuth.AutoSize = true;
-            this.labelAzimuth.Location = new System.Drawing.Point(6, 470);
-            this.labelAzimuth.Name = "labelAzimuth";
-            this.labelAzimuth.Size = new System.Drawing.Size(47, 13);
-            this.labelAzimuth.TabIndex = 37;
-            this.labelAzimuth.Text = "Azimuth:";
-            // 
-            // numericUpDownAzimuth
-            // 
-            this.numericUpDownAzimuth.Location = new System.Drawing.Point(160, 468);
-            this.numericUpDownAzimuth.Maximum = new decimal(new int[] {
-            360,
-            0,
-            0,
-            0});
-            this.numericUpDownAzimuth.Name = "numericUpDownAzimuth";
-            this.numericUpDownAzimuth.Size = new System.Drawing.Size(120, 20);
-            this.numericUpDownAzimuth.TabIndex = 38;
-            // 
-            // labelElevation
-            // 
-            this.labelElevation.AutoSize = true;
-            this.labelElevation.Location = new System.Drawing.Point(6, 497);
-            this.labelElevation.Name = "labelElevation";
-            this.labelElevation.Size = new System.Drawing.Size(54, 13);
-            this.labelElevation.TabIndex = 39;
-            this.labelElevation.Text = "Elevation:";
-            // 
-            // numericUpDownElevation
-            // 
-            this.numericUpDownElevation.Location = new System.Drawing.Point(160, 495);
-            this.numericUpDownElevation.Maximum = new decimal(new int[] {
-            90,
-            0,
-            0,
-            0});
-            this.numericUpDownElevation.Name = "numericUpDownElevation";
-            this.numericUpDownElevation.Size = new System.Drawing.Size(120, 20);
-            this.numericUpDownElevation.TabIndex = 40;
-            // 
             // tabPageShadows
             // 
-            this.tabPageShadows.AutoScroll = true;
+            this.tabPageShadows.Controls.Add(this.labelRealSky);
+            this.tabPageShadows.Controls.Add(this.comboBoxRealSkyMode);
             this.tabPageShadows.Controls.Add(this.comboBoxShadowResolution);
             this.tabPageShadows.Controls.Add(this.labelShadowResolution);
             this.tabPageShadows.Controls.Add(this.comboBoxShadowDistance);
@@ -882,9 +831,6 @@ namespace RouteViewer
             ((System.ComponentModel.ISupportInitialize)(this.AntialiasingLevel)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.width)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.height)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownViewingDistance)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownAzimuth)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownElevation)).EndInit();
             this.tabPageShadows.ResumeLayout(false);
             this.tabPageShadows.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownShadowStrength)).EndInit();
@@ -954,10 +900,6 @@ namespace RouteViewer
         private System.Windows.Forms.NumericUpDown numericUpDownShadowNormalBias;
         private System.Windows.Forms.Label labelRealSky;
         private System.Windows.Forms.ComboBox comboBoxRealSkyMode;
-        private System.Windows.Forms.Label labelAzimuth;
-        private System.Windows.Forms.NumericUpDown numericUpDownAzimuth;
-        private System.Windows.Forms.Label labelElevation;
-        private System.Windows.Forms.NumericUpDown numericUpDownElevation;
         private System.Windows.Forms.Label labelShadowFilterCascades;
         private System.Windows.Forms.CheckBox checkBoxShadowFilterCascades;
     }
