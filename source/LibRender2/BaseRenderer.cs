@@ -2109,6 +2109,17 @@ namespace LibRender2
 						{
 							currentHost.AddMessage(MessageType.Warning, false, "RealSky: OpenGL 4.3 detected, but compute shader failed to load. Falling back to legacy path. " + ex.Message);
 							RealSkyComputeAvailable = false;
+							// RealSkyShader was already loaded with RealSky.frag which samples
+							// uSkyTexture (the compute output). Reload with the legacy
+							// single-pass raymarching fragment shader instead.
+							if (RealSkyShader != null)
+							{
+								GL.DeleteProgram(RealSkyShader.Handle);
+								RealSkyShader = null;
+							}
+							string legacyVert = Path.CombineFile(shaderPath, "RealSky.vert");
+							string legacyFrag = Path.CombineFile(shaderPath, "RealSky_legacy.frag");
+							RealSkyShader = new Shader(this, legacyVert, legacyFrag);
 						}
 					}
 					else

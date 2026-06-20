@@ -1,162 +1,166 @@
 #version 430 core
 /*
  * RealSky Compute Shader (OpenGL 4.3)
- * -------------------------------------------------------------
- * Computes atmospheric scattering AND volumetric cloud raymarching
- * for every pixel of the screen in a single compute dispatch.
- *
- * OpenGL 4.3 features exercised here:
- *   - Compute shaders                              (GL_COMPUTE_SHADER)
- *   - Image load / store (image2D, RGBA16F)        (GL 4.2 core)
- *   - Shader Storage Buffer Object (CloudParams)   (GL 4.3 core)
- *   - Explicit uniform locations                   (GL 4.3 core)
- *   - GLSL 430 core (required for compute shaders)
- *
- * Each work group is 16x16 (= 256 threads). Each thread computes
- * exactly one output pixel by:
- *   1. Reconstructing the world-space view ray from the inverse
- *      projection * inverse view matrix.
- *   2. Raymarching 32 steps through the cloud layer, accumulating
- *      density and Beer-Lambert self-shadowing.
- *   3. Sampling the analytic atmosphere (Rayleigh + Mie style) on
- *      top of the cloud result.
- *
- * Result is written to `uCloudImage` (image2D, RGBA16F). The
- * fragment shader then simply samples this texture and displays
- * it. This removes ALL of the expensive per-pixel raymarching
- * work from the rasteriser pipeline.
+ * Rewired: proper Beer-Lambert transmittance compositing, analytic
+ * atmosphere with horizon haze/sunset, multi-octave cloud noise.
  */
 
 layout(local_size_x = 16, local_size_y = 16) in;
 
-// ----- Image store (4.2) -----
 layout(r11f_g11f_b10f, binding = 0) writeonly uniform image2D uCloudImage;
 
-// ----- Uniforms -----
-layout(location = 0) uniform mat4 uInvViewProj;        // inverse(view * projection)
+layout(location = 0) uniform mat4 uInvViewProj;
 layout(location = 1) uniform vec3  uRealSkySunDirection;
 layout(location = 2) uniform vec3  uRealSkyCameraPos;
 layout(location = 3) uniform float uRealSkyTime;
 layout(location = 4) uniform vec2  uRealSkyResolution;
-layout(binding = 2) uniform sampler3D uNoiseTexture;
+layout(binding = 2)  uniform sampler3D uNoiseTexture;
 
-// ----- SSBO: cloud parameters (4.3) -----
-// A small SSBO is used here to demonstrate the SSBO path even though
-// the parameter block is small; it can later be expanded to per-cell
-// wind / humidity grids without changing the shader signature.
 struct CloudParam {
-    vec4 pack;  // x = cloudMinHeight, y = cloudMaxHeight, z = stepSize, w = maxDistance
-    vec4 pack2; // x = steps, y = lightSteps, z = unused, w = unused
+    vec4 pack;   // x=minH, y=maxH, z=stepSize, w=maxDist
+    vec4 pack2;  // x=steps, y=lightSteps, zw=unused
 };
-
 layout(std430, binding = 1) readonly buffer CloudParamsBlock {
     CloudParam params[];
 };
 
-// ----- Constants -----
 const float PI = 3.14159265358979;
 
-// Procedural noise functions removed in favor of 3D FBM noise texture lookup.
+// ---- Atmosphere -------------------------------------------------------
 
-// ----- Atmosphere (analytic single-scattering approximation) -----
+// Approximated Rayleigh + Mie sky with sunset support.
 vec3 getAtmosphere(vec3 dir) {
-    float sun = max(dot(dir, uRealSkySunDirection), 0.0);
-    vec3 skyColor = mix(vec3(0.05, 0.20, 0.50),
-                        vec3(0.40, 0.60, 0.90),
-                        pow(max(dir.y, 0.0), 0.5));
+    vec3 sunDir = normalize(uRealSkySunDirection);
+    float cosTheta  = dot(dir, sunDir);
+    float sunElev   = sunDir.y;                          // -1..1
+    float elevation = max(dir.y, 0.0);                   // 0..1
+
+    // Zenith gradient: deep blue (zenith) to pale blue/white (horizon)
+    vec3 zenithColor   = vec3(0.10, 0.30, 0.75);
+    vec3 horizonColor  = vec3(0.55, 0.75, 0.95);
+    vec3 skyColor = mix(horizonColor, zenithColor, pow(elevation, 0.5));
+
+    // Sunset/dusk tint on horizon (~orange-red when sun is low)
+    float sunsetFactor = clamp(1.0 - sunElev * 3.0, 0.0, 1.0);  // 0 at noon, 1 at sunset
+    float horizFactor  = exp(-elevation * 5.0);                   // fades upward
+    vec3 sunsetTint = mix(vec3(1.0, 0.85, 0.70), vec3(1.0, 0.38, 0.10), sunsetFactor);
+    skyColor = mix(skyColor, skyColor * sunsetTint, horizFactor * sunsetFactor * 0.8);
+
+    // Mie forward scatter glow around sun
+    float mieGlow = pow(max(cosTheta, 0.0), 6.0) * 0.6;
+    skyColor += sunsetTint * mieGlow * horizFactor;
+
     // Sun disk
-    skyColor += vec3(1.0, 0.8, 0.6) * pow(sun, 256.0);
-    // Glow
-    skyColor += vec3(1.0, 0.4, 0.2) * pow(sun, 8.0) * 0.5;
-    return skyColor;
+    float sunDisk = pow(max(cosTheta, 0.0), 1024.0) * 8.0;
+    vec3 sunColor = mix(vec3(1.0, 0.95, 0.80), vec3(1.0, 0.55, 0.15), sunsetFactor);
+    skyColor += sunColor * sunDisk;
+
+    // Dim below the horizon
+    skyColor *= smoothstep(-0.08, 0.04, dir.y);
+    return max(skyColor, vec3(0.0));
 }
 
-// ----- Cloud density field -----
-// Reads from the 3D FBM noise texture.
+// ---- Cloud noise ------------------------------------------------------
 float getCloudDensity(vec3 p, float cloudMinHeight, float cloudMaxHeight) {
-    float d = texture(uNoiseTexture, p * 0.0005 + vec3(uRealSkyTime * 0.05)).r;
-    d = smoothstep(0.4, 0.8, d);
-    float heightFade = smoothstep(cloudMinHeight, cloudMinHeight + 200.0, p.y) *
-                       (1.0 - smoothstep(cloudMaxHeight - 500.0, cloudMaxHeight, p.y));
-    return d * heightFade;
+    // Drift only on XZ so the layer stays flat, not sliding up/down
+    vec3 baseUV = p * 0.000220;
+    vec3 drift  = vec3(uRealSkyTime * 0.006, 0.0, uRealSkyTime * 0.003);
+
+    float d  = texture(uNoiseTexture, baseUV + drift).r;
+    d += 0.50 * texture(uNoiseTexture, baseUV * 2.2 + drift * 1.3 + vec3(0.31, 0.0, 0.57)).r;
+    d += 0.25 * texture(uNoiseTexture, baseUV * 4.7 + drift * 1.7 + vec3(0.67, 0.0, 0.12)).r;
+    d /= 1.75;
+
+    // Shape: billowy coverage
+    d = smoothstep(0.40, 0.75, d);
+
+    // Height fade inside the cloud slab
+    float hFade = smoothstep(cloudMinHeight, cloudMinHeight + 250.0, p.y)
+                * (1.0 - smoothstep(cloudMaxHeight - 350.0, cloudMaxHeight, p.y));
+    return d * hFade;
 }
 
-// Reconstruct a world-space view direction from a screen pixel.
-// Uses the inverse view-projection so we are completely decoupled
-// from the skybox-cube geometry used by the vertex shader.
+// ---- Ray direction reconstruction ------------------------------------
 vec3 reconstructViewDir(ivec2 pix) {
-    // texel centre in NDC
     vec2 ndc = (vec2(pix) + 0.5) / uRealSkyResolution * 2.0 - 1.0;
-    ndc.y = -ndc.y; // GL Y is up in NDC
-    vec4 farPoint = uInvViewProj * vec4(ndc, 1.0, 1.0);
-    farPoint.xyz /= farPoint.w;
-    vec3 dir = farPoint.xyz - uRealSkyCameraPos;
-    // NaN safeguard for normalisation
-    return normalize(dir + vec3(1e-7));
+    vec4 far = uInvViewProj * vec4(ndc, 1.0, 1.0);
+    far.xyz /= far.w;
+    // uInvViewProj already has translation stripped, so far.xyz is the world-space direction.
+    // Subtracting uRealSkyCameraPos was causing the sky to drift/move with camera position.
+    return normalize(far.xyz + vec3(1e-7));
 }
 
+// ---- Main -------------------------------------------------------------
 void main() {
     ivec2 pix = ivec2(gl_GlobalInvocationID.xy);
-    if (pix.x >= int(uRealSkyResolution.x) || pix.y >= int(uRealSkyResolution.y)) {
-        return;
-    }
+    if (pix.x >= int(uRealSkyResolution.x) || pix.y >= int(uRealSkyResolution.y)) return;
 
-    // Pull parameters from the SSBO.
     CloudParam cp = params[0];
-    float cloudMinHeight = cp.pack.x;
-    float cloudMaxHeight = cp.pack.y;
-    float stepSize       = cp.pack.z;
-    float maxDistance    = cp.pack.w;
-    int maxSteps         = int(cp.pack2.x);
-    int maxLightSteps    = int(cp.pack2.y);
+    float cloudMinH  = cp.pack.x;
+    float cloudMaxH  = cp.pack.y;
+    float stepSize   = cp.pack.z;
+    float maxDist    = cp.pack.w;
+    int   maxSteps   = int(cp.pack2.x);
+    int   maxLSteps  = int(cp.pack2.y);
 
     vec3 viewDir = reconstructViewDir(pix);
-    vec3 sky = getAtmosphere(viewDir);
+    vec3 sky     = getAtmosphere(viewDir);
 
-    // Raymarch the cloud layer.
-    vec3 cloudColor = vec3(0.0);
-    float alpha = 0.0;
+    vec3 sunDir   = normalize(uRealSkySunDirection);
+    float sunElev = sunDir.y;
+    vec3 sunColor = mix(vec3(1.0, 0.90, 0.75), vec3(1.0, 0.50, 0.15), clamp(1.0 - sunElev * 2.5, 0.0, 1.0));
+    vec3 ambColor = mix(vec3(0.38, 0.52, 0.80), vec3(0.60, 0.72, 0.88), clamp(sunElev + 0.2, 0.0, 1.0));
 
-    if (viewDir.y > 1e-4) {
-        float tMin = (cloudMinHeight - uRealSkyCameraPos.y) / viewDir.y;
-        float tMax = (cloudMaxHeight - uRealSkyCameraPos.y) / viewDir.y;
+    // Beer-Lambert cloud integration
+    vec3  cloudAccum  = vec3(0.0);
+    float transmit    = 1.0;
+
+    if (viewDir.y > 5e-4) {
+        float tMin   = (cloudMinH - uRealSkyCameraPos.y) / viewDir.y;
+        float tMax   = (cloudMaxH - uRealSkyCameraPos.y) / viewDir.y;
         float tEnter = max(0.0, tMin);
-        float tExit = min(maxDistance, tMax);
+        float tExit  = min(maxDist, tMax);
+
         if (tEnter < tExit) {
             float t = tEnter;
             for (int i = 0; i < 64; i++) {
-                if (i >= maxSteps) break;
-                vec3 p = uRealSkyCameraPos + viewDir * t;
-                float d = getCloudDensity(p, cloudMinHeight, cloudMaxHeight);
-                if (d > 0.01) {
-                    float transmittance = 1.0;
-                    if (d > 0.05 && maxLightSteps > 0) {
-                        // Beer-Lambert self-shadowing: march a short step toward the sun.
-                        float lightT = t;
-                        float lightDensity = 0.0;
+                if (i >= maxSteps || transmit < 0.01) break;
+
+                vec3  p = uRealSkyCameraPos + viewDir * t;
+                float d = getCloudDensity(p, cloudMinH, cloudMaxH);
+
+                if (d > 0.005) {
+                    // Beer-Lambert self-shadowing toward sun
+                    float shadow = 1.0;
+                    if (d > 0.02 && maxLSteps > 0) {
+                        float accum = 0.0;
                         for (int j = 0; j < 12; j++) {
-                            if (j >= maxLightSteps) break;
-                            lightT += stepSize * 0.5;
-                            vec3 lp = uRealSkyCameraPos + viewDir * lightT;
-                            // step toward the sun
-                            lp += uRealSkySunDirection * float(j + 1) * stepSize * 0.5;
-                            lightDensity += getCloudDensity(lp, cloudMinHeight, cloudMaxHeight);
+                            if (j >= maxLSteps) break;
+                            vec3 lp = p + sunDir * float(j + 1) * stepSize * 0.7;
+                            accum += getCloudDensity(lp, cloudMinH, cloudMaxH);
                         }
-                        transmittance = exp(-lightDensity * 0.6);
+                        shadow = exp(-accum * 0.5);
                     }
-                    float light = max(dot(uRealSkySunDirection, vec3(0.0, 1.0, 0.0)), 0.2);
-                    vec3 c = mix(vec3(0.6, 0.6, 0.7), vec3(1.0), d) * light * transmittance;
-                    cloudColor += c * d * (1.0 - alpha);
-                    alpha += d * 0.15;
+
+                    // Powder-sugar edge brightening
+                    float powder = 1.0 - exp(-d * stepSize * 0.004);
+
+                    // Ambient + directional cloud colour
+                    float dirLight = max(dot(sunDir, vec3(0.0, 1.0, 0.0)), 0.0);
+                    vec3 cloudLit  = ambColor * 0.45
+                                   + sunColor * (shadow * (dirLight + 0.05)) * powder;
+
+                    float sigma = d * 0.004 * stepSize;          // extinction coefficient
+                    cloudAccum += cloudLit * sigma * transmit;
+                    transmit   *= exp(-sigma);
                 }
                 t += stepSize;
-                if (alpha >= 1.0 || t > tExit) {
-                    break;
-                }
+                if (t > tExit) break;
             }
         }
     }
 
-    vec3 finalColor = mix(sky, cloudColor, clamp(alpha, 0.0, 1.0));
+    // Composite: sky light comes through wherever transmittance > 0
+    vec3 finalColor = sky * transmit + cloudAccum;
     imageStore(uCloudImage, pix, vec4(finalColor, 1.0));
 }

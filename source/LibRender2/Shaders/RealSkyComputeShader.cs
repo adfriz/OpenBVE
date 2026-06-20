@@ -138,11 +138,12 @@ namespace LibRender2.Shaders
 
             // Query uniform locations (explicit-location uniforms are used in
             // the .comp file too, but this is more robust against future edits).
-            uInvViewProjLocation   = GL.GetUniformLocation(Handle, "uInvViewProj");
-            uSunDirectionLocation  = GL.GetUniformLocation(Handle, "uRealSkySunDirection");
-            uCameraPosLocation     = GL.GetUniformLocation(Handle, "uRealSkyCameraPos");
-            uTimeLocation          = GL.GetUniformLocation(Handle, "uRealSkyTime");
-            uResolutionLocation    = GL.GetUniformLocation(Handle, "uRealSkyResolution");
+            // Explicit uniform locations matching layout(location = X) in RealSky.comp
+            uInvViewProjLocation   = 0;
+            uSunDirectionLocation  = 1;
+            uCameraPosLocation     = 2;
+            uTimeLocation          = 3;
+            uResolutionLocation    = 4;
 
             AllocateOutputTexture(16, 16);
             AllocateParametersBuffer();
@@ -256,16 +257,20 @@ namespace LibRender2.Shaders
             {
                 return;
             }
-            if (OutputTexture == 0)
+
+            // TexStorage2D creates IMMUTABLE storage – it cannot be called twice
+            // on the same texture object.  Delete the old one first.
+            if (OutputTexture != 0)
             {
-                OutputTexture = GL.GenTexture();
+                GL.DeleteTexture(OutputTexture);
+                OutputTexture = 0;
             }
-            Width = width;
+
+            OutputTexture = GL.GenTexture();
+            Width  = width;
             Height = height;
 
             GL.BindTexture(TextureTarget.Texture2D, OutputTexture);
-            // TexStorage2D is the immutable-texture allocation introduced in
-            // GL 4.2; required for binding as an image2D.
             GL.TexStorage2D(TextureTarget2d.Texture2D, 1, (SizedInternalFormat)PixelInternalFormat.R11fG11fB10f, Width, Height);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
@@ -273,6 +278,7 @@ namespace LibRender2.Shaders
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
             GL.BindTexture(TextureTarget.Texture2D, 0);
         }
+
 
         /// <summary>Allocates the SSBO that backs the <c>CloudParams</c> block.</summary>
         private void AllocateParametersBuffer()
