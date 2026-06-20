@@ -9,6 +9,7 @@ uniform vec3  uRealSkySunDirection;
 uniform vec3  uRealSkyCameraPos;
 uniform float uRealSkyTime;
 uniform vec2  uRealSkyResolution;
+uniform int   uRealSkyMode = 3;
 
 const float cloudMinHeight = 1500.0;
 const float cloudMaxHeight = 2500.0;
@@ -101,7 +102,7 @@ void main() {
     vec3  cloudAccum = vec3(0.0);
     float transmit   = 1.0;
 
-    if (viewDir.y > 5e-4) {
+    if (viewDir.y > 5e-4 && uRealSkyMode > 0) {
         float tMin   = (cloudMinHeight - uRealSkyCameraPos.y) / viewDir.y;
         float tMax   = (cloudMaxHeight - uRealSkyCameraPos.y) / viewDir.y;
         float tEnter = max(0.0, tMin);

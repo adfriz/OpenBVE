@@ -1965,6 +1965,10 @@ namespace LibRender2
 		{
 			switch (currentOptions.RealSkyMode)
 			{
+				case RealSkyQuality.Off:
+					RealSkyComputeShader.Parameters.Steps = 0f;
+					RealSkyComputeShader.Parameters.LightSteps = 0f;
+					break;
 				case RealSkyQuality.Low:
 					RealSkyComputeShader.Parameters.Steps = 16f;
 					RealSkyComputeShader.Parameters.LightSteps = 0f;
@@ -2056,6 +2060,12 @@ namespace LibRender2
 			GL.ProgramUniform1(RealSkyShader.Handle, RealSkyShader.UniformLayout.RealSkyTime, (float)Time);
 			GL.ProgramUniform2(RealSkyShader.Handle, RealSkyShader.UniformLayout.RealSkyResolution, (float)Screen.Width, (float)Screen.Height);
 			GL.ProgramUniform3(RealSkyShader.Handle, RealSkyShader.UniformLayout.RealSkyCameraPos, (float)Camera.AbsolutePosition.X, (float)Camera.AbsolutePosition.Y, (float)Camera.AbsolutePosition.Z);
+
+			int uRealSkyModeLoc = GL.GetUniformLocation(RealSkyShader.Handle, "uRealSkyMode");
+			if (uRealSkyModeLoc >= 0)
+			{
+				GL.ProgramUniform1(RealSkyShader.Handle, uRealSkyModeLoc, (int)currentOptions.RealSkyMode);
+			}
 
 			GL.Disable(EnableCap.DepthTest);
 			GL.DepthMask(false);
