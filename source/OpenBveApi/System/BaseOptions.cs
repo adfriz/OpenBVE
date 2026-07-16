@@ -92,6 +92,8 @@ namespace OpenBveApi
 		public double ShadowNormalBias = 2.0;
 		/// <summary>Whether to filter shadow casters per cascade to improve performance.</summary>
 		public bool ShadowFilterCascades = true;
+		/// <summary>The bloom quality level (Off disables the effect).</summary>
+		public BloomMode Bloom = BloomMode.Off;
 
 
 		/// <summary>The sun azimuth in degrees</summary>

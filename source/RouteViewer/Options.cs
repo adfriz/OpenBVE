@@ -90,6 +90,7 @@ namespace RouteViewer
 				Builder.AppendLine("shadownormalbias = " + ShadowNormalBias.ToString("0.00", Culture));
 				Builder.AppendLine("lightazimuth = " + LightAzimuth.ToString(Culture));
 				Builder.AppendLine("lightelevation = " + LightElevation.ToString(Culture));
+				Builder.AppendLine("bloom = " + (int)Bloom);
 				Builder.AppendLine();
 				Builder.AppendLine("[loading]");
 				Builder.AppendLine("showlogo = " + (LoadingLogo ? "true" : "false"));
@@ -186,8 +187,9 @@ namespace RouteViewer
 							block.TryGetValue(OptionsKey.ShadowBias, ref Interface.CurrentOptions.ShadowBias);
 							block.TryGetValue(OptionsKey.ShadowNormalBias, ref Interface.CurrentOptions.ShadowNormalBias);
 							block.TryGetValue(OptionsKey.LightAzimuth, ref Interface.CurrentOptions.LightAzimuth);
-							block.TryGetValue(OptionsKey.LightElevation, ref Interface.CurrentOptions.LightElevation);
-							break;
+						block.TryGetValue(OptionsKey.LightElevation, ref Interface.CurrentOptions.LightElevation);
+						block.TryGetEnumValue(OptionsKey.Bloom, ref Interface.CurrentOptions.Bloom);
+						break;
 						case OptionsSection.Loading:
 							block.GetValue(OptionsKey.ShowLogo, out Interface.CurrentOptions.LoadingLogo);
 							block.GetValue(OptionsKey.ShowProgressBar, out Interface.CurrentOptions.LoadingProgressBar);

@@ -58,6 +58,7 @@ namespace OpenBveApi
 		ShadowBias,
 		ShadowNormalBias,
 		ShadowFilterCascades,
+		Bloom,
 		LightAzimuth,
 
 		LightElevation,

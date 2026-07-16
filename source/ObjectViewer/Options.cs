@@ -104,6 +104,7 @@ namespace ObjectViewer
 				Builder.AppendLine("shadownormalbias = " + ShadowNormalBias.ToString("0.00", Culture));
 				Builder.AppendLine("lightazimuth = " + LightAzimuth.ToString(Culture));
 				Builder.AppendLine("lightelevation = " + LightElevation.ToString(Culture));
+				Builder.AppendLine("bloom = " + (int)Bloom);
 				Builder.AppendLine();
 				Builder.AppendLine("[Parsers]");
 				Builder.AppendLine("xObject = " + CurrentXParser);
@@ -209,6 +210,7 @@ namespace ObjectViewer
 							block.TryGetValue(OptionsKey.ShadowNormalBias, ref Interface.CurrentOptions.ShadowNormalBias);
 							block.TryGetValue(OptionsKey.LightAzimuth, ref Interface.CurrentOptions.LightAzimuth);
 							block.TryGetValue(OptionsKey.LightElevation, ref Interface.CurrentOptions.LightElevation);
+							block.TryGetEnumValue(OptionsKey.Bloom, ref Interface.CurrentOptions.Bloom);
 							break;
 						case OptionsSection.Parsers:
 							block.GetEnumValue(OptionsKey.XObject, out Interface.CurrentOptions.CurrentXParser);

@@ -179,6 +179,8 @@ namespace OpenBve {
             this.labelNearClipScenery = new System.Windows.Forms.Label();
             this.comboboxMotionBlur = new System.Windows.Forms.ComboBox();
             this.labelMotionBlur = new System.Windows.Forms.Label();
+            this.comboboxBloom = new System.Windows.Forms.ComboBox();
+            this.labelBloom = new System.Windows.Forms.Label();
             this.labelDistanceUnit = new System.Windows.Forms.Label();
             this.updownDistance = new System.Windows.Forms.NumericUpDown();
             this.labelDistance = new System.Windows.Forms.Label();
@@ -2463,13 +2465,15 @@ namespace OpenBve {
             this.groupboxDistance.Controls.Add(this.labelNearClipScenery);
             this.groupboxDistance.Controls.Add(this.comboboxMotionBlur);
             this.groupboxDistance.Controls.Add(this.labelMotionBlur);
+            this.groupboxDistance.Controls.Add(this.comboboxBloom);
+            this.groupboxDistance.Controls.Add(this.labelBloom);
             this.groupboxDistance.Controls.Add(this.labelDistanceUnit);
             this.groupboxDistance.Controls.Add(this.updownDistance);
             this.groupboxDistance.Controls.Add(this.labelDistance);
             this.groupboxDistance.ForeColor = System.Drawing.Color.Black;
             this.groupboxDistance.Location = new System.Drawing.Point(0, 0);
             this.groupboxDistance.Name = "groupboxDistance";
-            this.groupboxDistance.Size = new System.Drawing.Size(321, 153);
+            this.groupboxDistance.Size = new System.Drawing.Size(321, 174);
             this.groupboxDistance.TabIndex = 8;
             this.groupboxDistance.TabStop = false;
             this.groupboxDistance.Text = "Distance effects";
@@ -2613,6 +2617,28 @@ namespace OpenBve {
             this.labelMotionBlur.TabIndex = 3;
             this.labelMotionBlur.Text = "Motion blur:";
             this.labelMotionBlur.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            // 
+            // comboboxBloom
+            // 
+            this.comboboxBloom.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.comboboxBloom.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboboxBloom.FormattingEnabled = true;
+            this.comboboxBloom.Location = new System.Drawing.Point(149, 148);
+            this.comboboxBloom.Name = "comboboxBloom";
+            this.comboboxBloom.Size = new System.Drawing.Size(152, 21);
+            this.comboboxBloom.TabIndex = 5;
+            // 
+            // labelBloom
+            // 
+            this.labelBloom.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.labelBloom.AutoEllipsis = true;
+            this.labelBloom.Location = new System.Drawing.Point(5, 150);
+            this.labelBloom.Name = "labelBloom";
+            this.labelBloom.Size = new System.Drawing.Size(145, 18);
+            this.labelBloom.TabIndex = 6;
+            this.labelBloom.Text = "Bloom:";
+            this.labelBloom.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
             // labelDistanceUnit
             // 
@@ -6668,6 +6694,8 @@ namespace OpenBve {
         private System.Windows.Forms.Label labelDistanceUnit;
         private System.Windows.Forms.ComboBox comboboxMotionBlur;
         private System.Windows.Forms.Label labelMotionBlur;
+        private System.Windows.Forms.ComboBox comboboxBloom;
+        private System.Windows.Forms.Label labelBloom;
         private System.Windows.Forms.Panel panelReview;
         private System.Windows.Forms.Label labelReviewTitleSeparator;
         private System.Windows.Forms.Label labelReviewTitle;

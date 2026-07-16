@@ -478,6 +478,7 @@ namespace OpenBve
 			Program.Renderer.Loading.InitLoading(Program.FileSystem.GetDataFolder("In-game"), typeof(NewRenderer).Assembly.GetName().Version.ToString());
 			Program.Renderer.UpdateViewport(ViewportChangeMode.NoChange);
 			Program.Renderer.MotionBlur.Initialize(Interface.CurrentOptions.MotionBlur);
+			Program.Renderer.Bloom.Initialize(Interface.CurrentOptions.Bloom);
 			if (string.IsNullOrEmpty(MainLoop.currentResult.RouteFile))
 			{
 				GameMenu.LogoPictureBox.Texture = Program.Renderer.ProgramLogo;

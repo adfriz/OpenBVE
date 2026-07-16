@@ -218,6 +218,7 @@ namespace OpenBve
 			Program.Renderer.Lighting.Initialize();
 			Program.Renderer.UpdateViewport(ViewportChangeMode.NoChange);
 			Program.Renderer.MotionBlur.Initialize(Interface.CurrentOptions.MotionBlur);
+			Program.Renderer.Bloom.Initialize(Interface.CurrentOptions.Bloom);
 			lock (BaseRenderer.GdiPlusLock)
 			{
 				Timetable.CreateTimetable();
