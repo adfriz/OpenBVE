@@ -455,6 +455,9 @@ namespace OpenBve {
 			comboboxMotionBlur.Items.Clear();
 			comboboxMotionBlur.Items.AddRange(new object[] { "", "", "", "" });
 			comboboxMotionBlur.SelectedIndex = (int)Interface.CurrentOptions.MotionBlur;
+			comboboxBloom.Items.Clear();
+			comboboxBloom.Items.AddRange(new object[] { "", "", "", "" });
+			comboboxBloom.SelectedIndex = (int)Interface.CurrentOptions.Bloom;
 			trackbarTransparency.Value = (int)Interface.CurrentOptions.TransparencyMode;
 			updownTimeAccelerationFactor.Value = Interface.CurrentOptions.TimeAccelerationFactor > updownTimeAccelerationFactor.Maximum ? updownTimeAccelerationFactor.Maximum : Interface.CurrentOptions.TimeAccelerationFactor;
 			checkboxToppling.Checked = Interface.CurrentOptions.Toppling;
@@ -745,6 +748,11 @@ namespace OpenBve {
 			comboboxMotionBlur.Items[1] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_distance_motionblur_low"});
 			comboboxMotionBlur.Items[2] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_distance_motionblur_medium"});
 			comboboxMotionBlur.Items[3] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_distance_motionblur_high"});
+			labelBloom.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_bloom"});
+			comboboxBloom.Items[0] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_bloom_off"});
+			comboboxBloom.Items[1] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_bloom_low"});
+			comboboxBloom.Items[2] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_bloom_medium"});
+			comboboxBloom.Items[3] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_bloom_high"});
 			//Shadows
 			groupboxShadows.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "shadows_header" });
 			labelShadowResolution.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "shadows_resolution" });
@@ -1226,6 +1234,7 @@ namespace OpenBve {
 			
 			
 			Interface.CurrentOptions.MotionBlur = (MotionBlurMode)comboboxMotionBlur.SelectedIndex;
+			Interface.CurrentOptions.Bloom = (BloomMode)comboboxBloom.SelectedIndex;
 			Interface.CurrentOptions.Toppling = checkboxToppling.Checked;
 			Interface.CurrentOptions.Collisions = checkboxCollisions.Checked;
 			Interface.CurrentOptions.Derailments = checkboxDerailments.Checked;

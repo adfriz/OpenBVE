@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using LibRender2.Backgrounds;
+using LibRender2.Blooms;
 using LibRender2.Cameras;
 using LibRender2.Fogs;
 using LibRender2.Lightings;
@@ -133,6 +134,7 @@ namespace LibRender2
 		public Loading Loading;
 		public Keys Keys;
 		public MotionBlur MotionBlur;
+		public Bloom Bloom;
 		public Fonts Fonts;
 
 		public Matrix4D CurrentProjectionMatrix;
@@ -388,6 +390,7 @@ namespace LibRender2
 			Loading = new Loading(this);
 			Keys = new Keys(this);
 			MotionBlur = new MotionBlur(this);
+			Bloom = new Bloom(this);
 
 			StaticObjectStates = new List<ObjectState>();
 			DynamicObjectStates = new List<ObjectState>();

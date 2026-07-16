@@ -1501,6 +1501,26 @@
 						<source>High</source>
 						<target>High</target>
 					</trans-unit>
+					<trans-unit id="quality_bloom">
+						<source>Bloom:</source>
+						<target>Bloom:</target>
+					</trans-unit>
+					<trans-unit id="quality_bloom_off">
+						<source>Off</source>
+						<target>Off</target>
+					</trans-unit>
+					<trans-unit id="quality_bloom_low">
+						<source>Low</source>
+						<target>Low</target>
+					</trans-unit>
+					<trans-unit id="quality_bloom_medium">
+						<source>Medium</source>
+						<target>Medium</target>
+					</trans-unit>
+					<trans-unit id="quality_bloom_high">
+						<source>High</source>
+						<target>High</target>
+					</trans-unit>
 					<trans-unit id="misc">
 						<source>Miscellaneous</source>
 						<target>Miscellaneous</target>

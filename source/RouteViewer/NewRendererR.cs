@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
 using LibRender2;
+using LibRender2.Blooms;
 using LibRender2.Objects;
 using LibRender2.Screens;
 using OpenBveApi;
@@ -328,6 +329,14 @@ namespace RouteViewer
 
             // render overlays
             DefaultShader.Deactivate();
+
+			// bloom post-processing (wraps the 3D scene, not the 2D overlays)
+			if (Interface.CurrentOptions.Bloom != BloomMode.Off)
+			{
+				ResetOpenGlState();
+				DefaultShader.Deactivate();
+				Bloom.Render(Interface.CurrentOptions.Bloom);
+			}
 
             ResetOpenGlState();
 			OptionLighting = false;
