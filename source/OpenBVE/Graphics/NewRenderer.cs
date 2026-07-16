@@ -1,4 +1,5 @@
 using LibRender2;
+using LibRender2.Blooms;
 using LibRender2.MotionBlurs;
 using LibRender2.Objects;
 using LibRender2.Overlays;
@@ -458,6 +459,14 @@ namespace OpenBve.Graphics
 					face.Draw();
 				}
 			}
+			// bloom post-processing (wraps the 3D scene + cab, not the HUD)
+			if (Interface.CurrentOptions.Bloom != BloomMode.Off)
+			{
+				ResetOpenGlState();
+				DefaultShader.Deactivate();
+				Bloom.Render(Interface.CurrentOptions.Bloom);
+			}
+
 			// render touch
 			OptionLighting = false;
 			Touch.RenderScene();

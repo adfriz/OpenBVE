@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
 using LibRender2;
+using LibRender2.Blooms;
 using LibRender2.Objects;
 using LibRender2.Primitives;
 using LibRender2.Screens;
@@ -210,6 +211,14 @@ namespace ObjectViewer.Graphics
 
 			DefaultShader.Deactivate();
 			lastVAO = -1;
+
+			// bloom post-processing (wraps the 3D scene, not the 2D overlays)
+			if (Interface.CurrentOptions.Bloom != BloomMode.Off)
+			{
+				ResetOpenGlState();
+				DefaultShader.Deactivate();
+				Bloom.Render(Interface.CurrentOptions.Bloom);
+			}
 
             // render overlays
             ResetOpenGlState();
