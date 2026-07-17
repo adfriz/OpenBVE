@@ -165,6 +165,13 @@ namespace LibRender2.Blooms
 
 			renderer.LastBoundTexture = null;
 
+			// The post-processing passes draw a fullscreen triangle and must not be
+			// affected by the scene's depth buffer. Disable depth testing/mask and
+			// bind the empty VAO so the attribute-less draw is always valid.
+			GL.Disable(EnableCap.DepthTest);
+			GL.DepthMask(false);
+			renderer.dummyVao?.Bind();
+
 			// Capture the rendered frame.
 			GL.BindTexture(TextureTarget.Texture2D, sceneTexture);
 			GL.CopyTexImage2D(TextureTarget.Texture2D, 0, InternalFormat.Rgb8, 0, 0, sceneWidth, sceneHeight, 0);
@@ -223,6 +230,11 @@ namespace LibRender2.Blooms
 			DrawFullscreen();
 			GL.Enable(EnableCap.Blend);
 			compositeShader.Deactivate();
+
+			// Restore depth state for the subsequent HUD/overlay rendering.
+			GL.Enable(EnableCap.DepthTest);
+			GL.DepthMask(true);
+			GL.BindVertexArray(0);
 
 			renderer.LastBoundTexture = null;
 		}
