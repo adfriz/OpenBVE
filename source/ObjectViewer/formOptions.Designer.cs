@@ -32,6 +32,13 @@ namespace ObjectViewer
             this.tabPageOptions = new System.Windows.Forms.TabPage();
             this.comboBoxOptimizeObjects = new System.Windows.Forms.ComboBox();
             this.labelOptimizeObjects = new System.Windows.Forms.Label();
+            this.comboBoxBloomQuality = new System.Windows.Forms.ComboBox();
+            this.checkBoxBloom = new System.Windows.Forms.CheckBox();
+            this.groupboxMotionBlur = new System.Windows.Forms.GroupBox();
+            this.checkBoxMotionBlur = new System.Windows.Forms.CheckBox();
+            this.comboBoxMotionBlurQuality = new System.Windows.Forms.ComboBox();
+            this.flowMotionBlur = new System.Windows.Forms.FlowLayoutPanel();
+            this.flowMotionBlurRow0 = new System.Windows.Forms.TableLayoutPanel();
             this.labelNearClip = new System.Windows.Forms.Label();
             this.nearClip = new System.Windows.Forms.NumericUpDown();
             this.comboBoxNewObjParser = new System.Windows.Forms.ComboBox();
@@ -71,6 +78,19 @@ namespace ObjectViewer
             this.labelAutoReloadChanged = new System.Windows.Forms.Label();
             this.checkBoxAutoReload = new System.Windows.Forms.CheckBox();
             this.tabPageShadows = new System.Windows.Forms.TabPage();
+            this.tabPagePostProcess = new System.Windows.Forms.TabPage();
+            this.groupboxBloom = new System.Windows.Forms.GroupBox();
+            this.flowBloom = new System.Windows.Forms.FlowLayoutPanel();
+            this.flowBloomRow0 = new System.Windows.Forms.TableLayoutPanel();
+            this.flowBloomRow1 = new System.Windows.Forms.TableLayoutPanel();
+            this.flowBloomRow2 = new System.Windows.Forms.TableLayoutPanel();
+            this.flowBloomRow3 = new System.Windows.Forms.TableLayoutPanel();
+            this.labelBloomSpread = new System.Windows.Forms.Label();
+            this.numericUpDownBloomSpread = new System.Windows.Forms.NumericUpDown();
+            this.labelBloomStrength = new System.Windows.Forms.Label();
+            this.numericUpDownBloomStrength = new System.Windows.Forms.NumericUpDown();
+            this.labelBloomThreshold = new System.Windows.Forms.Label();
+            this.numericUpDownBloomThreshold = new System.Windows.Forms.NumericUpDown();
             this.comboBoxShadowResolution = new System.Windows.Forms.ComboBox();
             this.labelShadowResolution = new System.Windows.Forms.Label();
             this.comboBoxShadowDistance = new System.Windows.Forms.ComboBox();
@@ -92,6 +112,12 @@ namespace ObjectViewer
             this.numericUpDownShadowNormalBias = new System.Windows.Forms.NumericUpDown();
             this.labelShadowFilterCascades = new System.Windows.Forms.Label();
             this.checkBoxShadowFilterCascades = new System.Windows.Forms.CheckBox();
+            this.labelBloomSpread = new System.Windows.Forms.Label();
+            this.numericUpDownBloomSpread = new System.Windows.Forms.NumericUpDown();
+            this.labelBloomStrength = new System.Windows.Forms.Label();
+            this.numericUpDownBloomStrength = new System.Windows.Forms.NumericUpDown();
+            this.labelBloomThreshold = new System.Windows.Forms.Label();
+            this.numericUpDownBloomThreshold = new System.Windows.Forms.NumericUpDown();
             this.tabControl1.SuspendLayout();
             this.tabPageOptions.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.AntialiasingLevel)).BeginInit();
@@ -99,11 +125,16 @@ namespace ObjectViewer
             ((System.ComponentModel.ISupportInitialize)(this.height)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.width)).BeginInit();
             this.tabPageShadows.SuspendLayout();
+            this.tabPagePostProcess.SuspendLayout();
+            this.groupboxBloom.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownShadowStrength)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBarSunAzimuth)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBarSunElevation)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownShadowBias)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownShadowNormalBias)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownBloomSpread)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownBloomStrength)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownBloomThreshold)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nearClip)).BeginInit();
             this.tabPageKeys.SuspendLayout();
             this.SuspendLayout();
@@ -112,6 +143,7 @@ namespace ObjectViewer
             // 
             this.tabControl1.Controls.Add(this.tabPageOptions);
             this.tabControl1.Controls.Add(this.tabPageShadows);
+            this.tabControl1.Controls.Add(this.tabPagePostProcess);
             this.tabControl1.Controls.Add(this.tabPageKeys);
             this.tabControl1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
             this.tabControl1.Location = new System.Drawing.Point(1, 12);
@@ -176,6 +208,26 @@ namespace ObjectViewer
             this.labelOptimizeObjects.Size = new System.Drawing.Size(131, 13);
             this.labelOptimizeObjects.TabIndex = 46;
             this.labelOptimizeObjects.Text = "Object Optimization Mode:";
+            // 
+            // checkBoxBloom
+            // 
+            this.checkBoxBloom.AutoSize = true;
+            this.checkBoxBloom.Location = new System.Drawing.Point(0, 0);
+            this.checkBoxBloom.Name = "checkBoxBloom";
+            this.checkBoxBloom.Size = new System.Drawing.Size(15, 14);
+            this.checkBoxBloom.TabIndex = 50;
+            this.checkBoxBloom.UseVisualStyleBackColor = true;
+            // 
+            // comboBoxBloomQuality
+            // 
+            this.comboBoxBloomQuality.FormattingEnabled = true;
+            this.comboBoxBloomQuality.Items.AddRange(new object[] {
+            "Low",
+            "Medium",
+            "High"});
+            this.comboBoxBloomQuality.Name = "comboBoxBloomQuality";
+            this.comboBoxBloomQuality.Size = new System.Drawing.Size(121, 21);
+            this.comboBoxBloomQuality.TabIndex = 51;
             // 
             // labelNearClip
             // 
@@ -850,6 +902,229 @@ namespace ObjectViewer
             this.checkBoxShadowFilterCascades.TabIndex = 55;
             this.checkBoxShadowFilterCascades.UseVisualStyleBackColor = true;
             // 
+            // tabPagePostProcess
+            // 
+            this.tabPagePostProcess.Controls.Add(this.groupboxBloom);
+            this.tabPagePostProcess.Controls.Add(this.groupboxMotionBlur);
+            this.tabPagePostProcess.AutoScroll = true;
+            this.tabPagePostProcess.Location = new System.Drawing.Point(4, 22);
+            this.tabPagePostProcess.Name = "tabPagePostProcess";
+            this.tabPagePostProcess.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPagePostProcess.Size = new System.Drawing.Size(304, 348);
+            this.tabPagePostProcess.TabIndex = 3;
+            this.tabPagePostProcess.Text = "Post Process";
+            this.tabPagePostProcess.UseVisualStyleBackColor = true;
+            // 
+            // groupboxBloom
+            // 
+            this.groupboxBloom.Controls.Add(this.flowBloom);
+            this.groupboxBloom.Location = new System.Drawing.Point(6, 6);
+            this.groupboxBloom.Name = "groupboxBloom";
+            this.groupboxBloom.Size = new System.Drawing.Size(292, 175);
+            this.groupboxBloom.TabIndex = 0;
+            this.groupboxBloom.TabStop = false;
+            this.groupboxBloom.Text = "Bloom";
+            // 
+            // flowBloom
+            // 
+            this.flowBloom.AutoSize = true;
+            this.flowBloom.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.flowBloom.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
+            this.flowBloom.WrapContents = false;
+            this.flowBloom.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.flowBloom.Location = new System.Drawing.Point(3, 16);
+            this.flowBloom.Name = "flowBloom";
+            this.flowBloom.Size = new System.Drawing.Size(286, 156);
+            this.flowBloom.TabIndex = 70;
+            this.flowBloom.Controls.Add(this.flowBloomRow0);
+            this.flowBloom.Controls.Add(this.flowBloomRow1);
+            this.flowBloom.Controls.Add(this.flowBloomRow2);
+            this.flowBloom.Controls.Add(this.flowBloomRow3);
+            // 
+            // flowBloomRow0 (Bloom enable + quality)
+            // 
+            this.flowBloomRow0.ColumnCount = 2;
+            this.flowBloomRow0.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.AutoSize));
+            this.flowBloomRow0.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.flowBloomRow0.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.flowBloomRow0.Name = "flowBloomRow0";
+            this.flowBloomRow0.RowCount = 1;
+            this.flowBloomRow0.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 27F));
+            this.flowBloomRow0.Size = new System.Drawing.Size(286, 27);
+            this.flowBloomRow0.TabIndex = 71;
+            this.flowBloomRow0.Controls.Add(this.checkBoxBloom, 0, 0);
+            this.flowBloomRow0.Controls.Add(this.comboBoxBloomQuality, 1, 0);
+            // 
+            // flowBloomRow1 (Spread)
+            // 
+            this.flowBloomRow1.ColumnCount = 2;
+            this.flowBloomRow1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.AutoSize));
+            this.flowBloomRow1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.flowBloomRow1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.flowBloomRow1.Name = "flowBloomRow1";
+            this.flowBloomRow1.RowCount = 1;
+            this.flowBloomRow1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 27F));
+            this.flowBloomRow1.Size = new System.Drawing.Size(286, 27);
+            this.flowBloomRow1.TabIndex = 72;
+            this.flowBloomRow1.Controls.Add(this.labelBloomSpread, 0, 0);
+            this.flowBloomRow1.Controls.Add(this.numericUpDownBloomSpread, 1, 0);
+            // 
+            // flowBloomRow2 (Strength)
+            // 
+            this.flowBloomRow2.ColumnCount = 2;
+            this.flowBloomRow2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.AutoSize));
+            this.flowBloomRow2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.flowBloomRow2.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.flowBloomRow2.Name = "flowBloomRow2";
+            this.flowBloomRow2.RowCount = 1;
+            this.flowBloomRow2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 27F));
+            this.flowBloomRow2.Size = new System.Drawing.Size(286, 27);
+            this.flowBloomRow2.TabIndex = 73;
+            this.flowBloomRow2.Controls.Add(this.labelBloomStrength, 0, 0);
+            this.flowBloomRow2.Controls.Add(this.numericUpDownBloomStrength, 1, 0);
+            // 
+            // flowBloomRow3 (Threshold)
+            // 
+            this.flowBloomRow3.ColumnCount = 2;
+            this.flowBloomRow3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.AutoSize));
+            this.flowBloomRow3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.flowBloomRow3.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.flowBloomRow3.Name = "flowBloomRow3";
+            this.flowBloomRow3.RowCount = 1;
+            this.flowBloomRow3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 27F));
+            this.flowBloomRow3.Size = new System.Drawing.Size(286, 27);
+            this.flowBloomRow3.TabIndex = 74;
+            this.flowBloomRow3.Controls.Add(this.labelBloomThreshold, 0, 0);
+            this.flowBloomRow3.Controls.Add(this.numericUpDownBloomThreshold, 1, 0);
+            // 
+            // labelBloomSpread
+            // 
+            this.labelBloomSpread.AutoSize = true;
+            this.labelBloomSpread.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.labelBloomSpread.Name = "labelBloomSpread";
+            this.labelBloomSpread.TabIndex = 56;
+            this.labelBloomSpread.Text = "Bloom Spread:";
+            // 
+            // numericUpDownBloomSpread
+            // 
+            this.numericUpDownBloomSpread.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
+            this.numericUpDownBloomSpread.Maximum = new decimal(new int[] {
+            4,
+            0,
+            0,
+            0});
+            this.numericUpDownBloomSpread.Name = "numericUpDownBloomSpread";
+            this.numericUpDownBloomSpread.Size = new System.Drawing.Size(120, 20);
+            this.numericUpDownBloomSpread.TabIndex = 57;
+            // 
+            // labelBloomStrength
+            // 
+            this.labelBloomStrength.AutoSize = true;
+            this.labelBloomStrength.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.labelBloomStrength.Name = "labelBloomStrength";
+            this.labelBloomStrength.TabIndex = 58;
+            this.labelBloomStrength.Text = "Bloom Strength:";
+            // 
+            // numericUpDownBloomStrength
+            // 
+            this.numericUpDownBloomStrength.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
+            this.numericUpDownBloomStrength.Maximum = new decimal(new int[] {
+            10,
+            0,
+            0,
+            0});
+            this.numericUpDownBloomStrength.Name = "numericUpDownBloomStrength";
+            this.numericUpDownBloomStrength.Size = new System.Drawing.Size(120, 20);
+            this.numericUpDownBloomStrength.TabIndex = 59;
+            // 
+            // labelBloomThreshold
+            // 
+            this.labelBloomThreshold.AutoSize = true;
+            this.labelBloomThreshold.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.labelBloomThreshold.Name = "labelBloomThreshold";
+            this.labelBloomThreshold.TabIndex = 60;
+            this.labelBloomThreshold.Text = "Bloom Threshold:";
+            // 
+            // numericUpDownBloomThreshold
+            // 
+            this.numericUpDownBloomThreshold.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
+            this.numericUpDownBloomThreshold.Maximum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.numericUpDownBloomThreshold.Name = "numericUpDownBloomThreshold";
+            this.numericUpDownBloomThreshold.Size = new System.Drawing.Size(120, 20);
+            this.numericUpDownBloomThreshold.TabIndex = 61;
+            // 
+            // groupboxMotionBlur
+            // 
+            this.groupboxMotionBlur.Controls.Add(this.flowMotionBlur);
+            this.groupboxMotionBlur.Location = new System.Drawing.Point(6, 187);
+            this.groupboxMotionBlur.Name = "groupboxMotionBlur";
+            this.groupboxMotionBlur.Size = new System.Drawing.Size(292, 56);
+            this.groupboxMotionBlur.TabIndex = 1;
+            this.groupboxMotionBlur.TabStop = false;
+            this.groupboxMotionBlur.Text = "Motion Blur";
+            // 
+            // flowMotionBlur
+            // 
+            this.flowMotionBlur.AutoSize = true;
+            this.flowMotionBlur.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.flowMotionBlur.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
+            this.flowMotionBlur.WrapContents = false;
+            this.flowMotionBlur.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.flowMotionBlur.Location = new System.Drawing.Point(3, 16);
+            this.flowMotionBlur.Name = "flowMotionBlur";
+            this.flowMotionBlur.Size = new System.Drawing.Size(286, 37);
+            this.flowMotionBlur.TabIndex = 70;
+            this.flowMotionBlur.Controls.Add(this.flowMotionBlurRow0);
+            // 
+            // flowMotionBlurRow0 (enable + quality)
+            // 
+            this.flowMotionBlurRow0.ColumnCount = 2;
+            this.flowMotionBlurRow0.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.AutoSize));
+            this.flowMotionBlurRow0.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.flowMotionBlurRow0.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.flowMotionBlurRow0.Name = "flowMotionBlurRow0";
+            this.flowMotionBlurRow0.RowCount = 1;
+            this.flowMotionBlurRow0.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 27F));
+            this.flowMotionBlurRow0.Size = new System.Drawing.Size(286, 27);
+            this.flowMotionBlurRow0.TabIndex = 71;
+            this.flowMotionBlurRow0.Controls.Add(this.checkBoxMotionBlur, 0, 0);
+            this.flowMotionBlurRow0.Controls.Add(this.comboBoxMotionBlurQuality, 1, 0);
+            // 
+            // checkBoxMotionBlur
+            // 
+            this.checkBoxMotionBlur.AutoSize = true;
+            this.checkBoxMotionBlur.Name = "checkBoxMotionBlur";
+            this.checkBoxMotionBlur.TabIndex = 62;
+            this.checkBoxMotionBlur.UseVisualStyleBackColor = true;
+            // 
+            // comboBoxMotionBlurQuality
+            // 
+            this.comboBoxMotionBlurQuality.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboBoxMotionBlurQuality.FormattingEnabled = true;
+            this.comboBoxMotionBlurQuality.Items.AddRange(new object[] {
+            "Low",
+            "Medium",
+            "High"});
+            this.comboBoxMotionBlurQuality.Name = "comboBoxMotionBlurQuality";
+            this.comboBoxMotionBlurQuality.Size = new System.Drawing.Size(121, 21);
+            this.comboBoxMotionBlurQuality.TabIndex = 63;
+            // 
+            // comboBoxBloomQuality
+            // 
+            this.comboBoxBloomQuality.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboBoxBloomQuality.FormattingEnabled = true;
+            this.comboBoxBloomQuality.Items.AddRange(new object[] {
+            "Low",
+            "Medium",
+            "High"});
+            this.comboBoxBloomQuality.Name = "comboBoxBloomQuality";
+            this.comboBoxBloomQuality.Size = new System.Drawing.Size(121, 21);
+            this.comboBoxBloomQuality.TabIndex = 51;
+            // 
             // formOptions
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -876,7 +1151,14 @@ namespace ObjectViewer
             ((System.ComponentModel.ISupportInitialize)(this.trackBarSunElevation)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownShadowBias)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownShadowNormalBias)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownBloomSpread)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownBloomStrength)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownBloomThreshold)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.nearClip)).EndInit();
+            this.tabPagePostProcess.ResumeLayout(false);
+            this.tabPagePostProcess.PerformLayout();
+            this.groupboxBloom.ResumeLayout(false);
+            this.groupboxBloom.PerformLayout();
             this.tabPageKeys.ResumeLayout(false);
             this.tabPageKeys.PerformLayout();
             this.ResumeLayout(false);
@@ -889,6 +1171,8 @@ namespace ObjectViewer
 		private System.Windows.Forms.TabPage tabPageOptions;
 		private System.Windows.Forms.ComboBox comboBoxOptimizeObjects;
 		private System.Windows.Forms.Label labelOptimizeObjects;
+		private System.Windows.Forms.ComboBox comboBoxBloomQuality;
+		private System.Windows.Forms.CheckBox checkBoxBloom;
 		private System.Windows.Forms.ComboBox comboBoxNewObjParser;
 		private System.Windows.Forms.Label labelUseNewObjParser;
 		private System.Windows.Forms.ComboBox comboBoxNewXParser;
@@ -949,5 +1233,23 @@ namespace ObjectViewer
 		private System.Windows.Forms.Label labelAutoReloadChanged;
 		private System.Windows.Forms.Label labelShadowFilterCascades;
 		private System.Windows.Forms.CheckBox checkBoxShadowFilterCascades;
+		private System.Windows.Forms.TabPage tabPagePostProcess;
+		private System.Windows.Forms.GroupBox groupboxBloom;
+		private System.Windows.Forms.FlowLayoutPanel flowBloom;
+		private System.Windows.Forms.TableLayoutPanel flowBloomRow0;
+		private System.Windows.Forms.TableLayoutPanel flowBloomRow1;
+		private System.Windows.Forms.TableLayoutPanel flowBloomRow2;
+		private System.Windows.Forms.TableLayoutPanel flowBloomRow3;
+		private System.Windows.Forms.Label labelBloomSpread;
+		private System.Windows.Forms.NumericUpDown numericUpDownBloomSpread;
+		private System.Windows.Forms.Label labelBloomStrength;
+		private System.Windows.Forms.NumericUpDown numericUpDownBloomStrength;
+		private System.Windows.Forms.Label labelBloomThreshold;
+		private System.Windows.Forms.NumericUpDown numericUpDownBloomThreshold;
+		private System.Windows.Forms.GroupBox groupboxMotionBlur;
+		private System.Windows.Forms.FlowLayoutPanel flowMotionBlur;
+		private System.Windows.Forms.TableLayoutPanel flowMotionBlurRow0;
+		private System.Windows.Forms.CheckBox checkBoxMotionBlur;
+		private System.Windows.Forms.ComboBox comboBoxMotionBlurQuality;
 	}
 }

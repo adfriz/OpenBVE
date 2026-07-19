@@ -170,6 +170,9 @@ namespace LibRender2.ShadowMapping
 			GL.DepthFunc(DepthFunction.Lequal);
 			GL.CullFace(CullFaceMode.Front);
 			GL.Viewport(0, 0, renderer.Screen.Width, renderer.Screen.Height);
+			// The shadow pass leaves a shadow cascade framebuffer bound; restore the
+			// default framebuffer so the following scene capture binds cleanly.
+			GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
 			// Shadow pass corrupts the GL texture state, so ensure we null it out
 			// so the next render pass re-binds what it needs.
 			renderer.LastBoundTexture = null;

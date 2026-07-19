@@ -7,7 +7,7 @@ using System.Linq;
 using System.Net;
 using System.Windows.Forms;
 using System.Xml;
-using LibRender2.MotionBlurs;
+using OpenBveApi.Graphics;
 using LibRender2.Text;
 using OpenBve.Input;
 using OpenBve.UserInterface;
@@ -453,7 +453,7 @@ namespace OpenBve {
 			updownNearClipCab.Value = (decimal)Interface.CurrentOptions.NearClipCab;
 			updownNearClipBase.Value = (decimal)Interface.CurrentOptions.NearClipBase;
 			comboboxMotionBlur.Items.Clear();
-			comboboxMotionBlur.Items.AddRange(new object[] { "", "", "", "" });
+			comboboxMotionBlur.Items.AddRange(new object[] { "", "" });
 			comboboxMotionBlur.SelectedIndex = (int)Interface.CurrentOptions.MotionBlur;
 			comboboxBloom.Items.Clear();
 			comboboxBloom.Items.AddRange(new object[] { "", "", "", "" });
@@ -497,6 +497,13 @@ namespace OpenBve {
 			// Shadow Strength
 			trackbarShadowStrength.Value = (int)(Interface.CurrentOptions.ShadowStrength * 100.0);
 			labelShadowStrengthValue.Text = trackbarShadowStrength.Value + @"%";
+			// Bloom
+			trackbarBloomSpread.Value = (int)(Interface.CurrentOptions.BloomSpread * 100.0);
+			labelBloomSpreadValue.Text = trackbarBloomSpread.Value + @"%";
+			trackbarBloomStrength.Value = (int)(Interface.CurrentOptions.BloomStrength * 100.0);
+			labelBloomStrengthValue.Text = trackbarBloomStrength.Value + @"%";
+			trackbarBloomThreshold.Value = (int)(Interface.CurrentOptions.BloomThreshold * 100.0);
+			labelBloomThresholdValue.Text = trackbarBloomThreshold.Value + @"%";
 			updownShadowBias.Value = (decimal)Interface.CurrentOptions.ShadowBias;
 			updownShadowNormalBias.Value = (decimal)Interface.CurrentOptions.ShadowNormalBias;
 			checkboxShadowFilterCascades.Checked = Interface.CurrentOptions.ShadowFilterCascades;
@@ -745,9 +752,7 @@ namespace OpenBve {
 			labelNearClipBase.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_distance_nearclip_base"});
 			labelMotionBlur.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_distance_motionblur"});
 			comboboxMotionBlur.Items[0] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_distance_motionblur_none"});
-			comboboxMotionBlur.Items[1] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_distance_motionblur_low"});
-			comboboxMotionBlur.Items[2] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_distance_motionblur_medium"});
-			comboboxMotionBlur.Items[3] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_distance_motionblur_high"});
+			comboboxMotionBlur.Items[1] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_distance_motionblur_on"});
 			labelBloom.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_bloom"});
 			comboboxBloom.Items[0] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_bloom_off"});
 			comboboxBloom.Items[1] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_bloom_low"});
@@ -1270,6 +1275,10 @@ namespace OpenBve {
 			}
 			// Shadow Strength
 			Interface.CurrentOptions.ShadowStrength = trackbarShadowStrength.Value / 100.0;
+			// Bloom
+			Interface.CurrentOptions.BloomSpread = trackbarBloomSpread.Value / 100.0;
+			Interface.CurrentOptions.BloomStrength = trackbarBloomStrength.Value / 100.0;
+			Interface.CurrentOptions.BloomThreshold = trackbarBloomThreshold.Value / 100.0;
 			Interface.CurrentOptions.ShadowBias = (double)updownShadowBias.Value;
 			Interface.CurrentOptions.ShadowNormalBias = (double)updownShadowNormalBias.Value;
 			Interface.CurrentOptions.ShadowFilterCascades = checkboxShadowFilterCascades.Checked;

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
 using LibRender2;
@@ -216,8 +216,8 @@ namespace OpenBve
 			}
 			Program.Renderer.Lighting.Initialize();
 			Program.Renderer.UpdateViewport(ViewportChangeMode.NoChange);
-			Program.Renderer.MotionBlur.Initialize(Interface.CurrentOptions.MotionBlur);
-			Program.Renderer.Bloom.Initialize(Interface.CurrentOptions.Bloom);
+			Program.Renderer.PostProcess.InitializeMotionBlur(Interface.CurrentOptions.MotionBlur);
+			Program.Renderer.PostProcess.InitializeBloom(Interface.CurrentOptions.Bloom);
 			lock (BaseRenderer.GdiPlusLock)
 			{
 				Timetable.CreateTimetable();

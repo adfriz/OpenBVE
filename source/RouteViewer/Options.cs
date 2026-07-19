@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Windows.Forms;
 using Formats.OpenBve;
 using OpenBveApi;
+using OpenBveApi.Graphics;
 using Path = OpenBveApi.Path;
 
 namespace RouteViewer
@@ -59,6 +60,9 @@ namespace RouteViewer
 				Builder.AppendLine("lightazimuth = " + LightAzimuth.ToString(Culture));
 				Builder.AppendLine("lightelevation = " + LightElevation.ToString(Culture));
 				Builder.AppendLine("bloom = " + (int)Bloom);
+			Builder.AppendLine("bloomSpread = " + BloomSpread);
+			Builder.AppendLine("bloomStrength = " + BloomStrength);
+			Builder.AppendLine("bloomThreshold = " + BloomThreshold);
 				Builder.AppendLine();
 				Builder.AppendLine("[loading]");
 				Builder.AppendLine("showlogo = " + (LoadingLogo ? "true" : "false"));
@@ -81,7 +85,10 @@ namespace RouteViewer
 
 		internal static void LoadOptions()
 		{
-			Interface.CurrentOptions = new Options();
+			Interface.CurrentOptions = new Options
+			{
+				Bloom = BloomMode.Medium
+			};
 			string optionsFolder = Path.CombineDirectory(Program.FileSystem.SettingsFolder, "1.5.0");
 			if (!Directory.Exists(optionsFolder))
 			{
@@ -149,6 +156,9 @@ namespace RouteViewer
 							block.TryGetValue(OptionsKey.LightAzimuth, ref Interface.CurrentOptions.LightAzimuth);
 						block.TryGetValue(OptionsKey.LightElevation, ref Interface.CurrentOptions.LightElevation);
 						block.TryGetEnumValue(OptionsKey.Bloom, ref Interface.CurrentOptions.Bloom);
+						block.TryGetValue(OptionsKey.BloomSpread, ref Interface.CurrentOptions.BloomSpread);
+						block.TryGetValue(OptionsKey.BloomStrength, ref Interface.CurrentOptions.BloomStrength);
+						block.TryGetValue(OptionsKey.BloomThreshold, ref Interface.CurrentOptions.BloomThreshold);
 						break;
 						case OptionsSection.Loading:
 							block.GetValue(OptionsKey.ShowLogo, out Interface.CurrentOptions.LoadingLogo);

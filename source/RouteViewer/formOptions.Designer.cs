@@ -59,6 +59,14 @@ namespace RouteViewer
             this.label15 = new System.Windows.Forms.Label();
             this.numericUpDownViewingDistance = new System.Windows.Forms.NumericUpDown();
             this.tabPageShadows = new System.Windows.Forms.TabPage();
+            this.tabPagePostProcess = new System.Windows.Forms.TabPage();
+            this.groupboxBloom = new System.Windows.Forms.GroupBox();
+            this.labelBloomSpread = new System.Windows.Forms.Label();
+            this.numericUpDownBloomSpread = new System.Windows.Forms.NumericUpDown();
+            this.labelBloomStrength = new System.Windows.Forms.Label();
+            this.numericUpDownBloomStrength = new System.Windows.Forms.NumericUpDown();
+            this.labelBloomThreshold = new System.Windows.Forms.Label();
+            this.numericUpDownBloomThreshold = new System.Windows.Forms.NumericUpDown();
             this.comboBoxShadowResolution = new System.Windows.Forms.ComboBox();
             this.labelShadowResolution = new System.Windows.Forms.Label();
             this.comboBoxShadowDistance = new System.Windows.Forms.ComboBox();
@@ -80,6 +88,12 @@ namespace RouteViewer
             this.numericUpDownShadowNormalBias = new System.Windows.Forms.NumericUpDown();
             this.labelShadowFilterCascades = new System.Windows.Forms.Label();
             this.checkBoxShadowFilterCascades = new System.Windows.Forms.CheckBox();
+            this.labelBloomSpread = new System.Windows.Forms.Label();
+            this.numericUpDownBloomSpread = new System.Windows.Forms.NumericUpDown();
+            this.labelBloomStrength = new System.Windows.Forms.Label();
+            this.numericUpDownBloomStrength = new System.Windows.Forms.NumericUpDown();
+            this.labelBloomThreshold = new System.Windows.Forms.Label();
+            this.numericUpDownBloomThreshold = new System.Windows.Forms.NumericUpDown();
             this.labelNearClip = new System.Windows.Forms.Label();
             this.numericUpDownNearClip = new System.Windows.Forms.NumericUpDown();
             this.button1 = new System.Windows.Forms.Button();
@@ -91,11 +105,16 @@ namespace RouteViewer
             ((System.ComponentModel.ISupportInitialize)(this.height)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownViewingDistance)).BeginInit();
             this.tabPageShadows.SuspendLayout();
+            this.tabPagePostProcess.SuspendLayout();
+            this.groupboxBloom.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownShadowStrength)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBarSunAzimuth)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBarSunElevation)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownShadowBias)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownShadowNormalBias)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownBloomSpread)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownBloomStrength)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownBloomThreshold)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownNearClip)).BeginInit();
             this.SuspendLayout();
             // 
@@ -106,6 +125,7 @@ namespace RouteViewer
             | System.Windows.Forms.AnchorStyles.Right)));
             this.tabControl1.Controls.Add(this.tabPageOptions);
             this.tabControl1.Controls.Add(this.tabPageShadows);
+            this.tabControl1.Controls.Add(this.tabPagePostProcess);
             this.tabControl1.Location = new System.Drawing.Point(1, 12);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
@@ -738,6 +758,96 @@ namespace RouteViewer
             this.checkBoxShadowFilterCascades.TabIndex = 55;
             this.checkBoxShadowFilterCascades.UseVisualStyleBackColor = true;
             // 
+            // tabPagePostProcess
+            // 
+            this.tabPagePostProcess.Controls.Add(this.groupboxBloom);
+            this.tabPagePostProcess.AutoScroll = true;
+            this.tabPagePostProcess.Location = new System.Drawing.Point(4, 22);
+            this.tabPagePostProcess.Name = "tabPagePostProcess";
+            this.tabPagePostProcess.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPagePostProcess.Size = new System.Drawing.Size(304, 440);
+            this.tabPagePostProcess.TabIndex = 2;
+            this.tabPagePostProcess.Text = "Post Process";
+            this.tabPagePostProcess.UseVisualStyleBackColor = true;
+            // 
+            // groupboxBloom
+            // 
+            this.groupboxBloom.Controls.Add(this.labelBloomSpread);
+            this.groupboxBloom.Controls.Add(this.numericUpDownBloomSpread);
+            this.groupboxBloom.Controls.Add(this.labelBloomStrength);
+            this.groupboxBloom.Controls.Add(this.numericUpDownBloomStrength);
+            this.groupboxBloom.Controls.Add(this.labelBloomThreshold);
+            this.groupboxBloom.Controls.Add(this.numericUpDownBloomThreshold);
+            this.groupboxBloom.Location = new System.Drawing.Point(6, 6);
+            this.groupboxBloom.Name = "groupboxBloom";
+            this.groupboxBloom.Size = new System.Drawing.Size(292, 120);
+            this.groupboxBloom.TabIndex = 0;
+            this.groupboxBloom.TabStop = false;
+            this.groupboxBloom.Text = "Bloom";
+            // 
+            // labelBloomSpread
+            // 
+            this.labelBloomSpread.AutoSize = true;
+            this.labelBloomSpread.Location = new System.Drawing.Point(6, 22);
+            this.labelBloomSpread.Name = "labelBloomSpread";
+            this.labelBloomSpread.Size = new System.Drawing.Size(63, 13);
+            this.labelBloomSpread.TabIndex = 56;
+            this.labelBloomSpread.Text = "Bloom Spread:";
+            // 
+            // numericUpDownBloomSpread
+            // 
+            this.numericUpDownBloomSpread.Location = new System.Drawing.Point(160, 20);
+            this.numericUpDownBloomSpread.Maximum = new decimal(new int[] {
+            4,
+            0,
+            0,
+            0});
+            this.numericUpDownBloomSpread.Name = "numericUpDownBloomSpread";
+            this.numericUpDownBloomSpread.Size = new System.Drawing.Size(120, 20);
+            this.numericUpDownBloomSpread.TabIndex = 57;
+            // 
+            // labelBloomStrength
+            // 
+            this.labelBloomStrength.AutoSize = true;
+            this.labelBloomStrength.Location = new System.Drawing.Point(6, 48);
+            this.labelBloomStrength.Name = "labelBloomStrength";
+            this.labelBloomStrength.Size = new System.Drawing.Size(68, 13);
+            this.labelBloomStrength.TabIndex = 58;
+            this.labelBloomStrength.Text = "Bloom Strength:";
+            // 
+            // numericUpDownBloomStrength
+            // 
+            this.numericUpDownBloomStrength.Location = new System.Drawing.Point(160, 46);
+            this.numericUpDownBloomStrength.Maximum = new decimal(new int[] {
+            10,
+            0,
+            0,
+            0});
+            this.numericUpDownBloomStrength.Name = "numericUpDownBloomStrength";
+            this.numericUpDownBloomStrength.Size = new System.Drawing.Size(120, 20);
+            this.numericUpDownBloomStrength.TabIndex = 59;
+            // 
+            // labelBloomThreshold
+            // 
+            this.labelBloomThreshold.AutoSize = true;
+            this.labelBloomThreshold.Location = new System.Drawing.Point(6, 74);
+            this.labelBloomThreshold.Name = "labelBloomThreshold";
+            this.labelBloomThreshold.Size = new System.Drawing.Size(76, 13);
+            this.labelBloomThreshold.TabIndex = 60;
+            this.labelBloomThreshold.Text = "Bloom Threshold:";
+            // 
+            // numericUpDownBloomThreshold
+            // 
+            this.numericUpDownBloomThreshold.Location = new System.Drawing.Point(160, 72);
+            this.numericUpDownBloomThreshold.Maximum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.numericUpDownBloomThreshold.Name = "numericUpDownBloomThreshold";
+            this.numericUpDownBloomThreshold.Size = new System.Drawing.Size(120, 20);
+            this.numericUpDownBloomThreshold.TabIndex = 61;
+            // 
             // labelNearClip
             // 
             this.labelNearClip.AutoSize = true;
@@ -809,7 +919,14 @@ namespace RouteViewer
             ((System.ComponentModel.ISupportInitialize)(this.trackBarSunElevation)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownShadowBias)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownShadowNormalBias)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownBloomSpread)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownBloomStrength)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownBloomThreshold)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownNearClip)).EndInit();
+            this.tabPagePostProcess.ResumeLayout(false);
+            this.tabPagePostProcess.PerformLayout();
+            this.groupboxBloom.ResumeLayout(false);
+            this.groupboxBloom.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -819,6 +936,8 @@ namespace RouteViewer
         private System.Windows.Forms.TabControl tabControl1;
         private System.Windows.Forms.TabPage tabPageOptions;
         private System.Windows.Forms.TabPage tabPageShadows;
+        private System.Windows.Forms.TabPage tabPagePostProcess;
+        private System.Windows.Forms.GroupBox groupboxBloom;
         private System.Windows.Forms.ComboBox InterpolationMode;
         private System.Windows.Forms.Label InterpolationLabel;
         private System.Windows.Forms.Label label1;
@@ -871,5 +990,11 @@ namespace RouteViewer
         private System.Windows.Forms.NumericUpDown numericUpDownShadowNormalBias;
         private System.Windows.Forms.Label labelShadowFilterCascades;
         private System.Windows.Forms.CheckBox checkBoxShadowFilterCascades;
+        private System.Windows.Forms.Label labelBloomSpread;
+        private System.Windows.Forms.NumericUpDown numericUpDownBloomSpread;
+        private System.Windows.Forms.Label labelBloomStrength;
+        private System.Windows.Forms.NumericUpDown numericUpDownBloomStrength;
+        private System.Windows.Forms.Label labelBloomThreshold;
+        private System.Windows.Forms.NumericUpDown numericUpDownBloomThreshold;
     }
 }

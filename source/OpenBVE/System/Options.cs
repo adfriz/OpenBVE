@@ -4,7 +4,7 @@ using System.IO;
 using System.Text;
 using System.Windows.Forms;
 using Formats.OpenBve;
-using LibRender2.MotionBlurs;
+using OpenBveApi.Graphics;
 using LibRender2.Overlays;
 using OpenBveApi;
 using OpenBveApi.Graphics;
@@ -24,8 +24,6 @@ namespace OpenBve
 			internal string UserInterfaceFolder;
 			/// <summary>The accelerated time factor (1x to 5x)</summary>
 			internal int TimeAccelerationFactor;
-			///// <summary>The current type of motion blur</summary>
-			internal MotionBlurMode MotionBlur;
 			/// <summary>Whether duplicate vertices are culled during loading</summary>
 			internal bool ObjectOptimizationVertexCulling;
 			/// <summary>Whether collisions between trains are enabled</summary>
@@ -325,6 +323,10 @@ namespace OpenBve
 				Builder.AppendLine("shadownormalbias = " + ShadowNormalBias.ToString(Culture));
 				Builder.AppendLine("shadowfiltercascades = " + (ShadowFilterCascades ? "true" : "false"));
 				Builder.AppendLine("bloom = " + (int)Bloom);
+			Builder.AppendLine("bloomSpread = " + BloomSpread.ToString(Culture));
+			Builder.AppendLine("bloomStrength = " + BloomStrength.ToString(Culture));
+				Builder.AppendLine("bloomThreshold = " + BloomThreshold.ToString(Culture));
+				Builder.AppendLine("postprocessorder = " + PostProcessOrder);
 				Builder.AppendLine("fpslimit = " + FPSLimit.ToString(Culture));
 				Builder.AppendLine();
 				Builder.AppendLine("[objectOptimization]");
@@ -539,6 +541,10 @@ namespace OpenBve
 							if (CurrentOptions.ShadowNormalBias < 0.0) CurrentOptions.ShadowNormalBias = 0.0;
 							block.GetValue(OptionsKey.ShadowFilterCascades, out Interface.CurrentOptions.ShadowFilterCascades);
 							block.GetEnumValue(OptionsKey.Bloom, out CurrentOptions.Bloom);
+						block.TryGetValue(OptionsKey.BloomSpread, ref CurrentOptions.BloomSpread);
+						block.TryGetValue(OptionsKey.BloomStrength, ref CurrentOptions.BloomStrength);
+						block.TryGetValue(OptionsKey.BloomThreshold, ref CurrentOptions.BloomThreshold);
+						block.TryGetValue(OptionsKey.PostProcessOrder, ref CurrentOptions.PostProcessOrder);
 							block.GetValue(OptionsKey.FPSLimit, out CurrentOptions.FPSLimit);
 							if (CurrentOptions.FPSLimit < 0)
 							{

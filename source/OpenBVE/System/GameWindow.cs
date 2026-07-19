@@ -464,8 +464,9 @@ namespace OpenBve
 			HUD.LoadHUD();
 			Program.Renderer.Loading.InitLoading(Program.FileSystem.GetDataFolder("In-game"), typeof(NewRenderer).Assembly.GetName().Version.ToString());
 			Program.Renderer.UpdateViewport(ViewportChangeMode.NoChange);
-			Program.Renderer.MotionBlur.Initialize(Interface.CurrentOptions.MotionBlur);
-			Program.Renderer.Bloom.Initialize(Interface.CurrentOptions.Bloom);
+			Program.Renderer.PostProcess.InitializeMotionBlur(Interface.CurrentOptions.MotionBlur);
+			Program.Renderer.PostProcess.InitializeBloom(Interface.CurrentOptions.Bloom);
+			Program.Renderer.PostProcess.ApplyPassOrder(Interface.CurrentOptions.PostProcessOrder);
 			if (string.IsNullOrEmpty(MainLoop.currentResult.RouteFile))
 			{
 				Game.Menu.PushMenu(MenuType.GameStart);

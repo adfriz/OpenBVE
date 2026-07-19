@@ -75,6 +75,25 @@ namespace RouteViewer
             numericUpDownShadowNormalBias.Value = (decimal)Interface.CurrentOptions.ShadowNormalBias;
             numericUpDownShadowNormalBias.Refresh();
 
+            numericUpDownBloomSpread.Minimum = 0;
+            numericUpDownBloomSpread.Maximum = 4;
+            numericUpDownBloomSpread.DecimalPlaces = 2;
+            numericUpDownBloomSpread.Increment = 0.1m;
+            numericUpDownBloomSpread.Value = (decimal)Interface.CurrentOptions.BloomSpread;
+            numericUpDownBloomSpread.Refresh();
+            numericUpDownBloomStrength.Minimum = 0;
+            numericUpDownBloomStrength.Maximum = 10;
+            numericUpDownBloomStrength.DecimalPlaces = 2;
+            numericUpDownBloomStrength.Increment = 0.1m;
+            numericUpDownBloomStrength.Value = (decimal)Interface.CurrentOptions.BloomStrength;
+            numericUpDownBloomStrength.Refresh();
+            numericUpDownBloomThreshold.Minimum = 0;
+            numericUpDownBloomThreshold.Maximum = 1;
+            numericUpDownBloomThreshold.DecimalPlaces = 2;
+            numericUpDownBloomThreshold.Increment = 0.1m;
+            numericUpDownBloomThreshold.Value = (decimal)Interface.CurrentOptions.BloomThreshold;
+            numericUpDownBloomThreshold.Refresh();
+
 
             // Initialize sun direction sliders from current light position
             InitializeSunSliders();
@@ -293,6 +312,9 @@ namespace RouteViewer
             Interface.CurrentOptions.ShadowBias = (double)numericUpDownShadowBias.Value;
             Interface.CurrentOptions.ShadowNormalBias = (double)numericUpDownShadowNormalBias.Value;
             Interface.CurrentOptions.ShadowFilterCascades = checkBoxShadowFilterCascades.Checked;
+            Interface.CurrentOptions.BloomSpread = (double)numericUpDownBloomSpread.Value;
+            Interface.CurrentOptions.BloomStrength = (double)numericUpDownBloomStrength.Value;
+            Interface.CurrentOptions.BloomThreshold = (double)numericUpDownBloomThreshold.Value;
 
 
             

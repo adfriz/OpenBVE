@@ -28,6 +28,7 @@ in vec4 oViewPos;
 in vec2 oUv;
 in vec4 oColor;
 in vec4 oLightResult;
+in vec3 oEmission;
 // --- SHADOW MAPPING ---
 uniform bool              uShadowEnabled;
 uniform float             uShadowStrength;
@@ -278,5 +279,20 @@ void main(void)
 		}
 	}
 
-	fragColor = vec4(mix(uFogColor, finalColor.rgb, fogFactor), finalColor.a);
+	// Emissive bloom mask: for emissive materials, store the pure emissive color
+	// in the alpha channel so the bloom pass can selectively glow only emissive
+	// geometry. The mask uses the unlit emission (oEmission) multiplied by the
+	// texture's alpha and by the visible texel luminance, so transparent texels and
+	// dark emissive texels do NOT glow -- only the bright, visible, coloured parts of
+	// an emissive texture emit. In the offscreen scene buffer the alpha is used purely
+	// as a mask; transparent (non-emissive) geometry keeps its real opacity in alpha.
+	// This never reaches the screen (final composite forces alpha = 1.0), so window/
+	// texture transparency is unaffected.
+	float texAlpha = texture(uTexture, oUv).a;
+	vec3 texRgb = texture(uTexture, oUv).rgb;
+	float texLuma = dot(texRgb, vec3(0.2126, 0.7152, 0.0722));
+	float emissiveMask = ((uMaterialFlags & 1) != 0)
+		? clamp(length(oEmission) * texAlpha * clamp(texLuma * 1.5, 0.0, 1.0), 0.0, 1.0)
+		: 0.0;
+	fragColor = vec4(mix(uFogColor, finalColor.rgb, fogFactor), max(finalColor.a, emissiveMask));
 }

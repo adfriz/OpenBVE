@@ -31,6 +31,10 @@ namespace ObjectViewer
 			comboBoxNewXParser.SelectedIndex = (int) Interface.CurrentOptions.CurrentXParser;
 			comboBoxNewObjParser.SelectedIndex = (int) Interface.CurrentOptions.CurrentObjParser;
 			comboBoxOptimizeObjects.SelectedIndex = (int)Interface.CurrentOptions.ObjectOptimizationMode;
+			checkBoxBloom.Checked = Interface.CurrentOptions.Bloom != BloomMode.Off;
+			comboBoxBloomQuality.SelectedIndex = (int)Interface.CurrentOptions.Bloom - 1;
+			checkBoxMotionBlur.Checked = Interface.CurrentOptions.MotionBlur != MotionBlurMode.None;
+			comboBoxMotionBlurQuality.SelectedIndex = (int)Interface.CurrentOptions.MotionBlur - 1;
 			
 			// Loading current shadow settings
 			switch (Interface.CurrentOptions.ShadowResolution)
@@ -64,6 +68,21 @@ namespace ObjectViewer
 			numericUpDownShadowStrength.Value = (decimal)(Interface.CurrentOptions.ShadowStrength * 100.0);
 			numericUpDownShadowBias.Value = (decimal)Interface.CurrentOptions.ShadowBias;
 			numericUpDownShadowNormalBias.Value = (decimal)Interface.CurrentOptions.ShadowNormalBias;
+			numericUpDownBloomSpread.Minimum = 0;
+			numericUpDownBloomSpread.Maximum = 4;
+			numericUpDownBloomSpread.DecimalPlaces = 2;
+			numericUpDownBloomSpread.Increment = 0.1m;
+			numericUpDownBloomSpread.Value = (decimal)Interface.CurrentOptions.BloomSpread;
+			numericUpDownBloomStrength.Minimum = 0;
+			numericUpDownBloomStrength.Maximum = 10;
+			numericUpDownBloomStrength.DecimalPlaces = 2;
+			numericUpDownBloomStrength.Increment = 0.1m;
+			numericUpDownBloomStrength.Value = (decimal)Interface.CurrentOptions.BloomStrength;
+			numericUpDownBloomThreshold.Minimum = 0;
+			numericUpDownBloomThreshold.Maximum = 1;
+			numericUpDownBloomThreshold.DecimalPlaces = 2;
+			numericUpDownBloomThreshold.Increment = 0.1m;
+			numericUpDownBloomThreshold.Value = (decimal)Interface.CurrentOptions.BloomThreshold;
 
 
 			// Initialize sun direction sliders from current light position
@@ -72,6 +91,10 @@ namespace ObjectViewer
 			// Wire up shadow resolution change to enable/disable related controls
 			comboBoxShadowResolution.SelectedIndexChanged += comboBoxShadowResolution_SelectedIndexChanged;
 			UpdateShadowControlsEnabled();
+
+			// Wire up bloom enable to enable/disable related controls
+			checkBoxBloom.CheckedChanged += checkBoxBloom_CheckedChanged;
+			UpdateBloomControlsEnabled();
 
 			comboBoxLeft.DataSource = Enum.GetValues(typeof(Key));
 			comboBoxLeft.SelectedItem = Interface.CurrentOptions.CameraMoveLeft;
@@ -116,6 +139,22 @@ namespace ObjectViewer
 		private void comboBoxShadowResolution_SelectedIndexChanged(object sender, EventArgs e)
 		{
 			UpdateShadowControlsEnabled();
+		}
+
+		private void checkBoxBloom_CheckedChanged(object sender, EventArgs e)
+		{
+			UpdateBloomControlsEnabled();
+		}
+
+		private void UpdateBloomControlsEnabled()
+		{
+			bool enabled = checkBoxBloom.Checked;
+			numericUpDownBloomSpread.Enabled = enabled;
+			numericUpDownBloomStrength.Enabled = enabled;
+			numericUpDownBloomThreshold.Enabled = enabled;
+			labelBloomSpread.Enabled = enabled;
+			labelBloomStrength.Enabled = enabled;
+			labelBloomThreshold.Enabled = enabled;
 		}
 
 		private void UpdateSunDirection()
@@ -237,6 +276,12 @@ namespace ObjectViewer
 			
 
 			Interface.CurrentOptions.ObjectOptimizationMode = (ObjectOptimizationMode)comboBoxOptimizeObjects.SelectedIndex;
+			Interface.CurrentOptions.Bloom = checkBoxBloom.Checked ? (BloomMode)(comboBoxBloomQuality.SelectedIndex + 1) : BloomMode.Off;
+			Interface.CurrentOptions.MotionBlur = checkBoxMotionBlur.Checked ? (MotionBlurMode)(comboBoxMotionBlurQuality.SelectedIndex + 1) : MotionBlurMode.None;
+			System.Diagnostics.Debug.WriteLine("[FORM] APPLY hash=" + Interface.CurrentOptions.GetHashCode() + " Bloom=" + Interface.CurrentOptions.Bloom + " MotionBlur=" + Interface.CurrentOptions.MotionBlur);
+			Program.Renderer.PostProcess.InitializeBloom(Interface.CurrentOptions.Bloom);
+			Program.Renderer.PostProcess.InitializeMotionBlur(Interface.CurrentOptions.MotionBlur);
+			Program.Renderer.PostProcess.ApplyPassOrder(Interface.CurrentOptions.PostProcessOrder);
 			Interface.CurrentOptions.CameraMoveLeft = (Key)comboBoxLeft.SelectedItem;
 			Interface.CurrentOptions.CameraMoveRight = (Key)comboBoxRight.SelectedItem;
 			Interface.CurrentOptions.CameraMoveUp = (Key)comboBoxUp.SelectedItem;
@@ -281,6 +326,9 @@ namespace ObjectViewer
 			Interface.CurrentOptions.ShadowBias = (double)numericUpDownShadowBias.Value;
 			Interface.CurrentOptions.ShadowNormalBias = (double)numericUpDownShadowNormalBias.Value;
 			Interface.CurrentOptions.ShadowFilterCascades = checkBoxShadowFilterCascades.Checked;
+			Interface.CurrentOptions.BloomSpread = (double)numericUpDownBloomSpread.Value;
+			Interface.CurrentOptions.BloomStrength = (double)numericUpDownBloomStrength.Value;
+			Interface.CurrentOptions.BloomThreshold = (double)numericUpDownBloomThreshold.Value;
 			
 			Interface.CurrentOptions.Save(Path.CombineFile(Program.FileSystem.SettingsFolder, "1.5.0/options_ov.cfg"));
 			Program.RefreshObjects();

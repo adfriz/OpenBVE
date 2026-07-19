@@ -6,9 +6,9 @@
 //modification, are permitted provided that the following conditions are met:
 //
 //1. Redistributions of source code must retain the above copyright notice, this
-//   list of conditions and the following disclaimer.
+//   list of conditions and the above disclaimer.
 //2. Redistributions in binary form must reproduce the above copyright notice,
-//   this list of conditions and the following disclaimer in the documentation
+//   this list of conditions and the above disclaimer in the documentation
 //   and/or other materials provided with the distribution.
 //
 //THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -16,24 +16,24 @@
 //WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
 //DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
 //ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-//(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+//INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
 //LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 //ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 //(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 //SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#version 410 core
-precision highp float;
-
-in vec2 oUv;
-uniform sampler2D uScene;
-uniform sampler2D uBloom;
-uniform float uStrength;
-out vec4 fragColor;
-
-void main(void)
+namespace OpenBveApi.Graphics
 {
-	vec3 scene = texture(uScene, oUv).rgb;
-	vec3 bloom = texture(uBloom, oUv).rgb;
-	fragColor = vec4(scene + bloom * uStrength, 1.0);
+	/// <summary>Defines the available motion blur modes</summary>
+	public enum MotionBlurMode
+	{
+		/// <summary>Motion blur is disabled</summary>
+		None = 0,
+		/// <summary>Low quality motion blur (fewer samples)</summary>
+		Low = 1,
+		/// <summary>Medium quality motion blur</summary>
+		Medium = 2,
+		/// <summary>High quality motion blur (more samples)</summary>
+		High = 3,
+	}
 }

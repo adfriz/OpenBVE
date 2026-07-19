@@ -23,14 +23,31 @@
 //SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #version 410 core
+precision highp float;
 
-// Fullscreen triangle generated from gl_VertexID, no vertex buffer required.
-out vec2 oUv;
+in vec2 oUv;
+uniform sampler2D uScene;
+uniform float uThreshold;
+uniform float uEmissiveBoost;
+out vec4 fragColor;
 
 void main(void)
 {
-	// 0 -> (-1,-1), 1 -> (3,-1), 2 -> (-1,3)
-	vec2 pos = vec2((gl_VertexID == 1) ? 3.0 : -1.0, (gl_VertexID == 2) ? 3.0 : -1.0);
-	oUv = (pos + 1.0) * 0.5;
-	gl_Position = vec4(pos, 0.0, 1.0);
+	vec4 color = texture(uScene, oUv);
+
+	// Selective bloom: the alpha channel of the scene buffer is the emissive mask
+	// written by the material shader (0 for non-emissive, emissive brightness for
+	// emissive geometry). Only pixels with a non-zero mask contribute to the bloom,
+	// so bright non-emissive backgrounds never glow regardless of their luminance.
+	float mask = color.a;
+
+	// Hard cutoff at uThreshold so non-emissive pixels (mask == 0) never bloom.
+	float soft = step(uThreshold, mask);
+
+	vec3 bloom = color.rgb * mask * soft;
+
+	// Optional extra boost for emissive pixels.
+	bloom += color.rgb * uEmissiveBoost * soft;
+
+	fragColor = vec4(bloom, 1.0);
 }

@@ -1132,18 +1132,12 @@
 					<trans-unit id="quality_distance_motionblur">
 						<source>Motion blur:</source>
 					</trans-unit>
-					<trans-unit id="quality_distance_motionblur_none">
-						<source>Disabled</source>
-					</trans-unit>
-					<trans-unit id="quality_distance_motionblur_low">
-						<source>Low</source>
-					</trans-unit>
-					<trans-unit id="quality_distance_motionblur_medium">
-						<source>Medium</source>
-					</trans-unit>
-					<trans-unit id="quality_distance_motionblur_high">
-						<source>High</source>
-					</trans-unit>
+				<trans-unit id="quality_distance_motionblur_none">
+					<source>Disabled</source>
+				</trans-unit>
+				<trans-unit id="quality_distance_motionblur_on">
+					<source>On</source>
+				</trans-unit>
 					<trans-unit id="shadows_header">
 						<source>Shadows</source>
 					</trans-unit>

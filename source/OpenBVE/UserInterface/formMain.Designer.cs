@@ -193,6 +193,16 @@ namespace OpenBve {
             this.labelShadowStrength = new System.Windows.Forms.Label();
             this.trackbarShadowStrength = new System.Windows.Forms.TrackBar();
             this.labelShadowStrengthValue = new System.Windows.Forms.Label();
+            this.groupboxBloom = new System.Windows.Forms.GroupBox();
+            this.labelBloomSpread = new System.Windows.Forms.Label();
+            this.trackbarBloomSpread = new System.Windows.Forms.TrackBar();
+            this.labelBloomSpreadValue = new System.Windows.Forms.Label();
+            this.labelBloomStrength = new System.Windows.Forms.Label();
+            this.trackbarBloomStrength = new System.Windows.Forms.TrackBar();
+            this.labelBloomStrengthValue = new System.Windows.Forms.Label();
+            this.labelBloomThreshold = new System.Windows.Forms.Label();
+            this.trackbarBloomThreshold = new System.Windows.Forms.TrackBar();
+            this.labelBloomThresholdValue = new System.Windows.Forms.Label();
             this.labelShadowBias = new System.Windows.Forms.Label();
             this.updownShadowBias = new System.Windows.Forms.NumericUpDown();
             this.labelShadowNormalBias = new System.Windows.Forms.Label();
@@ -554,6 +564,9 @@ namespace OpenBve {
             ((System.ComponentModel.ISupportInitialize)(this.updownDistance)).BeginInit();
             this.groupboxShadows.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.trackbarShadowStrength)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.trackbarBloomSpread)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.trackbarBloomStrength)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.trackbarBloomThreshold)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.updownShadowBias)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.updownShadowNormalBias)).BeginInit();
             this.panelOptionsPage3.SuspendLayout();
@@ -2412,6 +2425,7 @@ namespace OpenBve {
             this.panelOptionsPage2.Controls.Add(this.groupboxCamera);
             this.panelOptionsPage2.Controls.Add(this.groupboxDistance);
             this.panelOptionsPage2.Controls.Add(this.groupboxShadows);
+            this.panelOptionsPage2.Controls.Add(this.groupboxBloom);
             this.panelOptionsPage2.Controls.Add(this.groupboxInterpolation);
             this.panelOptionsPage2.Controls.Add(this.groupBoxAdvancedOptions);
             this.panelOptionsPage2.Controls.Add(this.groupBoxObjectParser);
@@ -2693,6 +2707,25 @@ namespace OpenBve {
             this.groupboxCamera.TabStop = false;
             this.groupboxCamera.Text = "Camera options";
             // 
+            // groupboxBloom
+            // 
+            this.groupboxBloom.Controls.Add(this.labelBloomSpread);
+            this.groupboxBloom.Controls.Add(this.trackbarBloomSpread);
+            this.groupboxBloom.Controls.Add(this.labelBloomSpreadValue);
+            this.groupboxBloom.Controls.Add(this.labelBloomStrength);
+            this.groupboxBloom.Controls.Add(this.trackbarBloomStrength);
+            this.groupboxBloom.Controls.Add(this.labelBloomStrengthValue);
+            this.groupboxBloom.Controls.Add(this.labelBloomThreshold);
+            this.groupboxBloom.Controls.Add(this.trackbarBloomThreshold);
+            this.groupboxBloom.Controls.Add(this.labelBloomThresholdValue);
+            this.groupboxBloom.ForeColor = System.Drawing.Color.Black;
+            this.groupboxBloom.Location = new System.Drawing.Point(330, 370);
+            this.groupboxBloom.Name = "groupboxBloom";
+            this.groupboxBloom.Size = new System.Drawing.Size(321, 135);
+            this.groupboxBloom.TabIndex = 31;
+            this.groupboxBloom.TabStop = false;
+            this.groupboxBloom.Text = "Bloom";
+            // 
             // checkboxCameraInteriorTransition
             // 
             this.checkboxCameraInteriorTransition.AutoSize = true;
@@ -2859,6 +2892,96 @@ namespace OpenBve {
             this.labelShadowStrengthValue.Size = new System.Drawing.Size(27, 13);
             this.labelShadowStrengthValue.TabIndex = 8;
             this.labelShadowStrengthValue.Text = "70%";
+            // 
+            // labelBloomSpread
+            // 
+            this.labelBloomSpread.AutoSize = true;
+            this.labelBloomSpread.Location = new System.Drawing.Point(8, 22);
+            this.labelBloomSpread.Name = "labelBloomSpread";
+            this.labelBloomSpread.Size = new System.Drawing.Size(70, 13);
+            this.labelBloomSpread.TabIndex = 0;
+            this.labelBloomSpread.Text = "Bloom Spread:";
+            // 
+            // trackbarBloomSpread
+            // 
+            this.trackbarBloomSpread.Location = new System.Drawing.Point(120, 19);
+            this.trackbarBloomSpread.Maximum = 400;
+            this.trackbarBloomSpread.Minimum = 50;
+            this.trackbarBloomSpread.Name = "trackbarBloomSpread";
+            this.trackbarBloomSpread.Size = new System.Drawing.Size(130, 45);
+            this.trackbarBloomSpread.TabIndex = 1;
+            this.trackbarBloomSpread.TickFrequency = 50;
+            this.trackbarBloomSpread.Value = 100;
+            this.trackbarBloomSpread.Scroll += new System.EventHandler(this.trackbarBloomSpread_Scroll);
+            // 
+            // labelBloomSpreadValue
+            // 
+            this.labelBloomSpreadValue.AutoSize = true;
+            this.labelBloomSpreadValue.Location = new System.Drawing.Point(255, 22);
+            this.labelBloomSpreadValue.Name = "labelBloomSpreadValue";
+            this.labelBloomSpreadValue.Size = new System.Drawing.Size(27, 13);
+            this.labelBloomSpreadValue.TabIndex = 2;
+            this.labelBloomSpreadValue.Text = "100%";
+            // 
+            // labelBloomStrength
+            // 
+            this.labelBloomStrength.AutoSize = true;
+            this.labelBloomStrength.Location = new System.Drawing.Point(8, 50);
+            this.labelBloomStrength.Name = "labelBloomStrength";
+            this.labelBloomStrength.Size = new System.Drawing.Size(75, 13);
+            this.labelBloomStrength.TabIndex = 3;
+            this.labelBloomStrength.Text = "Bloom Strength:";
+            // 
+            // trackbarBloomStrength
+            // 
+            this.trackbarBloomStrength.Location = new System.Drawing.Point(120, 47);
+            this.trackbarBloomStrength.Maximum = 1000;
+            this.trackbarBloomStrength.Minimum = 0;
+            this.trackbarBloomStrength.Name = "trackbarBloomStrength";
+            this.trackbarBloomStrength.Size = new System.Drawing.Size(130, 45);
+            this.trackbarBloomStrength.TabIndex = 4;
+            this.trackbarBloomStrength.TickFrequency = 25;
+            this.trackbarBloomStrength.Value = 80;
+            this.trackbarBloomStrength.Scroll += new System.EventHandler(this.trackbarBloomStrength_Scroll);
+            // 
+            // labelBloomStrengthValue
+            // 
+            this.labelBloomStrengthValue.AutoSize = true;
+            this.labelBloomStrengthValue.Location = new System.Drawing.Point(255, 50);
+            this.labelBloomStrengthValue.Name = "labelBloomStrengthValue";
+            this.labelBloomStrengthValue.Size = new System.Drawing.Size(27, 13);
+            this.labelBloomStrengthValue.TabIndex = 5;
+            this.labelBloomStrengthValue.Text = "80%";
+            // 
+            // labelBloomThreshold
+            // 
+            this.labelBloomThreshold.AutoSize = true;
+            this.labelBloomThreshold.Location = new System.Drawing.Point(8, 78);
+            this.labelBloomThreshold.Name = "labelBloomThreshold";
+            this.labelBloomThreshold.Size = new System.Drawing.Size(83, 13);
+            this.labelBloomThreshold.TabIndex = 6;
+            this.labelBloomThreshold.Text = "Bloom Threshold:";
+            // 
+            // trackbarBloomThreshold
+            // 
+            this.trackbarBloomThreshold.Location = new System.Drawing.Point(120, 75);
+            this.trackbarBloomThreshold.Maximum = 100;
+            this.trackbarBloomThreshold.Minimum = 0;
+            this.trackbarBloomThreshold.Name = "trackbarBloomThreshold";
+            this.trackbarBloomThreshold.Size = new System.Drawing.Size(130, 45);
+            this.trackbarBloomThreshold.TabIndex = 7;
+            this.trackbarBloomThreshold.TickFrequency = 10;
+            this.trackbarBloomThreshold.Value = 0;
+            this.trackbarBloomThreshold.Scroll += new System.EventHandler(this.trackbarBloomThreshold_Scroll);
+            // 
+            // labelBloomThresholdValue
+            // 
+            this.labelBloomThresholdValue.AutoSize = true;
+            this.labelBloomThresholdValue.Location = new System.Drawing.Point(255, 78);
+            this.labelBloomThresholdValue.Name = "labelBloomThresholdValue";
+            this.labelBloomThresholdValue.Size = new System.Drawing.Size(27, 13);
+            this.labelBloomThresholdValue.TabIndex = 8;
+            this.labelBloomThresholdValue.Text = "0%";
             // 
             // labelShadowBias
             // 
@@ -6513,6 +6636,9 @@ namespace OpenBve {
             this.groupboxShadows.ResumeLayout(false);
             this.groupboxShadows.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.trackbarShadowStrength)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.trackbarBloomSpread)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.trackbarBloomStrength)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.trackbarBloomThreshold)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.updownShadowBias)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.updownShadowNormalBias)).EndInit();
             this.panelOptionsPage3.ResumeLayout(false);
@@ -6613,6 +6739,16 @@ namespace OpenBve {
         private System.Windows.Forms.Label labelShadowStrength;
         private System.Windows.Forms.TrackBar trackbarShadowStrength;
         private System.Windows.Forms.Label labelShadowStrengthValue;
+        private System.Windows.Forms.GroupBox groupboxBloom;
+        private System.Windows.Forms.Label labelBloomSpread;
+        private System.Windows.Forms.TrackBar trackbarBloomSpread;
+        private System.Windows.Forms.Label labelBloomSpreadValue;
+        private System.Windows.Forms.Label labelBloomStrength;
+        private System.Windows.Forms.TrackBar trackbarBloomStrength;
+        private System.Windows.Forms.Label labelBloomStrengthValue;
+        private System.Windows.Forms.Label labelBloomThreshold;
+        private System.Windows.Forms.TrackBar trackbarBloomThreshold;
+        private System.Windows.Forms.Label labelBloomThresholdValue;
         private System.Windows.Forms.Label labelShadowBias;
         private System.Windows.Forms.NumericUpDown updownShadowBias;
         private System.Windows.Forms.Label labelShadowNormalBias;
