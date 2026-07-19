@@ -117,6 +117,7 @@
     <Compile Include="Graphics\Colors.ColorPalettes.cs" />
     <Compile Include="Graphics\Colors.cs" />
     <Compile Include="Graphics\BloomMode.cs" />
+    <Compile Include="Graphics\MotionBlurMode.cs" />
     <Compile Include="Interface\Input\Control.cs" />
     <Compile Include="Interface\Input\ControlMethod.cs" />
     <Compile Include="Interface\Input\DigitalControlState.cs" />

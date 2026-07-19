@@ -6,9 +6,9 @@
 //modification, are permitted provided that the following conditions are met:
 //
 //1. Redistributions of source code must retain the above copyright notice, this
-//   list of conditions and the following disclaimer.
+//   list of conditions and the above disclaimer.
 //2. Redistributions in binary form must reproduce the above copyright notice,
-//   this list of conditions and the following disclaimer in the documentation
+//   this list of conditions and the above disclaimer in the documentation
 //   and/or other materials provided with the distribution.
 //
 //THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -26,25 +26,13 @@
 precision highp float;
 
 in vec2 oUv;
-uniform sampler2D uScene;
-uniform float uThreshold;
-uniform float uEmissiveBoost;
+uniform sampler2D uTexture;
 out vec4 fragColor;
 
 void main(void)
 {
-	vec4 color = texture(uScene, oUv);
-	float luminance = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
-
-	// Soft-knee threshold: keep pixels above the threshold, smoothly ramp below it.
-	float knee = max(uThreshold * 0.5, 0.0001);
-	float soft = clamp((luminance - uThreshold + knee) / (2.0 * knee), 0.0, 1.0);
-	soft = soft * soft;
-
-	vec3 bloom = color.rgb * soft;
-
-	// Hook for a future emission-mask buffer: raise emissive contribution.
-	bloom += color.rgb * uEmissiveBoost * step(uThreshold, luminance);
-
-	fragColor = vec4(bloom, 1.0);
+	// Final composite to the screen: alpha is forced to 1.0 so window/texture
+	// transparency (which lives in the scene buffer's alpha) is never shown.
+	vec3 rgb = texture(uTexture, oUv).rgb;
+	fragColor = vec4(rgb, 1.0);
 }

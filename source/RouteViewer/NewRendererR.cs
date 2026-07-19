@@ -4,7 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
 using LibRender2;
-using LibRender2.Blooms;
+using LibRender2.PostProcessing;
 using LibRender2.Objects;
 using LibRender2.Screens;
 using OpenBveApi;
@@ -81,6 +81,9 @@ namespace RouteViewer
 			// initialize
 			ResetOpenGlState();
 
+			// Post-processing: render the 3D scene into the pipeline's offscreen target.
+			PostProcess.BeginScene();
+
 			if (OptionWireFrame)
 			{
 				if (Program.CurrentRoute.CurrentFog.Start < Program.CurrentRoute.CurrentFog.End)
@@ -144,6 +147,11 @@ namespace RouteViewer
 			}
 
 			PerformCSMShadowPass();
+
+			// The shadow pass restores the default framebuffer; rebind the pipeline's
+			// offscreen scene buffer so the following geometry is captured for bloom.
+			PostProcess.BeginScene();
+
 			DefaultShader.Activate();
 			BindCSMToDefaultShader();
 
@@ -328,13 +336,10 @@ namespace RouteViewer
             // render overlays
             DefaultShader.Deactivate();
 
-			// bloom post-processing (wraps the 3D scene, not the 2D overlays)
-			if (Interface.CurrentOptions.Bloom != BloomMode.Off)
-			{
-				ResetOpenGlState();
-				DefaultShader.Deactivate();
-				Bloom.Render(Interface.CurrentOptions.Bloom);
-			}
+			// post-processing (wraps the 3D scene, not the 2D overlays)
+			ResetOpenGlState();
+			DefaultShader.Deactivate();
+			PostProcess.EndScene();
 
             ResetOpenGlState();
 			OptionLighting = false;

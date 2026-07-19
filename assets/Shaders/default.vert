@@ -75,6 +75,8 @@ out vec4 oViewPos;
 out vec2 oUv;
 out vec4 oColor;
 out vec4 oLightResult;
+// Pure emissive color (unaffected by lighting), used as the selective-bloom mask.
+out vec3 oEmission;
 out vec4 vPosLightSpace0;
 out vec4 vPosLightSpace1;
 out vec4 vPosLightSpace2;
@@ -233,4 +235,5 @@ void main()
 	oUv = (uCurrentTextureMatrix * vec4(iUv, 1.0, 1.0)).xy;
 	
 	oLightResult = uIsLight && (uMaterialFlags & 4) == 0 ? getLightResult() : uMaterial.ambient;
+	oEmission = (uMaterialFlags & 1) != 0 ? uMaterial.emission : vec3(0.0);
 }

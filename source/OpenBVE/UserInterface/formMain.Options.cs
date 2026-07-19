@@ -83,6 +83,21 @@ namespace OpenBve {
 			labelShadowStrengthValue.Text = trackbarShadowStrength.Value + @"%";
 		}
 
+		private void trackbarBloomSpread_Scroll(object sender, EventArgs e)
+		{
+			labelBloomSpreadValue.Text = trackbarBloomSpread.Value + @"%";
+		}
+
+		private void trackbarBloomStrength_Scroll(object sender, EventArgs e)
+		{
+			labelBloomStrengthValue.Text = trackbarBloomStrength.Value + @"%";
+		}
+
+		private void trackbarBloomThreshold_Scroll(object sender, EventArgs e)
+		{
+			labelBloomThresholdValue.Text = trackbarBloomThreshold.Value + @"%";
+		}
+
 		private void updownShadowBias_ValueChanged(object sender, EventArgs e)
 		{
 			Interface.CurrentOptions.ShadowBias = (double)updownShadowBias.Value;

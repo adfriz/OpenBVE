@@ -1,3 +1,4 @@
+using OpenBveApi.Graphics;
 using OpenBveApi.Colors;
 using OpenBveApi.Graphics;
 using OpenBveApi.Objects;
@@ -94,6 +95,16 @@ namespace OpenBveApi
 		public bool ShadowFilterCascades = true;
 		/// <summary>The bloom quality level (Off disables the effect).</summary>
 		public BloomMode Bloom = BloomMode.Off;
+		/// <summary>The motion blur mode (None / On).</summary>
+		public MotionBlurMode MotionBlur = MotionBlurMode.None;
+		/// <summary>Bloom halo spread multiplier (higher = wider glow, 0.5-4.0).</summary>
+		public double BloomSpread = 1.0;
+		/// <summary>Bloom intensity multiplier applied at composite (0.0-2.0).</summary>
+		public double BloomStrength = 0.8;
+		/// <summary>Bloom emissive mask threshold; lower = more emissive texels glow (0.0-1.0).</summary>
+		public double BloomThreshold = 0.0;
+		/// <summary>Comma-separated post-processing pass order (concrete type names). Empty = default registration order.</summary>
+		public string PostProcessOrder = string.Empty;
 
 
 		/// <summary>The sun azimuth in degrees</summary>

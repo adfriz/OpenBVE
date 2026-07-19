@@ -28,6 +28,7 @@ precision highp float;
 in vec2 oUv;
 uniform sampler2D uTexture;
 uniform vec2 uDirection; // (texelSize.x, 0) for horizontal, (0, texelSize.y) for vertical
+uniform float uSpread;   // Multiplies the tap offset so the halo can be widened without extra passes.
 out vec4 fragColor;
 
 void main(void)
@@ -40,16 +41,17 @@ void main(void)
 	weights[3] = 0.0540540541;
 	weights[4] = 0.0162162162;
 
+	vec2 spreadDir = uDirection * max(uSpread, 0.0);
 	vec3 result = texture(uTexture, oUv).rgb * weights[0];
 
-	result += texture(uTexture, oUv + uDirection * 1.0).rgb * weights[1];
-	result += texture(uTexture, oUv - uDirection * 1.0).rgb * weights[1];
-	result += texture(uTexture, oUv + uDirection * 2.0).rgb * weights[2];
-	result += texture(uTexture, oUv - uDirection * 2.0).rgb * weights[2];
-	result += texture(uTexture, oUv + uDirection * 3.0).rgb * weights[3];
-	result += texture(uTexture, oUv - uDirection * 3.0).rgb * weights[3];
-	result += texture(uTexture, oUv + uDirection * 4.0).rgb * weights[4];
-	result += texture(uTexture, oUv - uDirection * 4.0).rgb * weights[4];
+	result += texture(uTexture, oUv + spreadDir * 1.0).rgb * weights[1];
+	result += texture(uTexture, oUv - spreadDir * 1.0).rgb * weights[1];
+	result += texture(uTexture, oUv + spreadDir * 2.0).rgb * weights[2];
+	result += texture(uTexture, oUv - spreadDir * 2.0).rgb * weights[2];
+	result += texture(uTexture, oUv + spreadDir * 3.0).rgb * weights[3];
+	result += texture(uTexture, oUv - spreadDir * 3.0).rgb * weights[3];
+	result += texture(uTexture, oUv + spreadDir * 4.0).rgb * weights[4];
+	result += texture(uTexture, oUv - spreadDir * 4.0).rgb * weights[4];
 
 	fragColor = vec4(result, 1.0);
 }

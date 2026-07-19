@@ -8,12 +8,12 @@ using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using LibRender2.Backgrounds;
-using LibRender2.Blooms;
+using LibRender2.PostProcessing;
 using LibRender2.Cameras;
 using LibRender2.Fogs;
 using LibRender2.Lightings;
 using LibRender2.Loadings;
-using LibRender2.MotionBlurs;
+using OpenBveApi.Graphics;
 using LibRender2.Objects;
 using LibRender2.Overlays;
 using LibRender2.Primitives;
@@ -133,8 +133,7 @@ namespace LibRender2
 		public Particle Particle;
 		public Loading Loading;
 		public Keys Keys;
-		public MotionBlur MotionBlur;
-		public Bloom Bloom;
+		public PostProcessPipeline PostProcess;
 		public Fonts Fonts;
 
 		public Matrix4D CurrentProjectionMatrix;
@@ -436,8 +435,10 @@ namespace LibRender2
 			Particle = new Particle(this);
 			Loading = new Loading(this);
 			Keys = new Keys(this);
-			MotionBlur = new MotionBlur(this);
-			Bloom = new Bloom(this);
+			PostProcess = new PostProcessPipeline(this);
+			PostProcess.AddPass(new BloomPass(this, PostProcess.Resources));
+			PostProcess.AddPass(new MotionBlur(this, PostProcess.Resources));
+			PostProcess.ApplyPassOrder(currentOptions.PostProcessOrder);
 
 			StaticObjectStates = new List<ObjectState>();
 			DynamicObjectStates = new List<ObjectState>();

@@ -77,9 +77,15 @@
     <Compile Include="Menu\MenuEntries\MenuOption.cs" />
     <Compile Include="Menu\MenuTag.cs" />
     <Compile Include="Menu\MenuType.cs" />
-    <Compile Include="MotionBlur\MotionBlur.cs" />
-    <Compile Include="MotionBlur\MotionBlurMode.cs" />
-    <Compile Include="Bloom\Bloom.cs" />
+
+    <Compile Include="PostProcessing\IPostProcessPass.cs" />
+    <Compile Include="PostProcessing\PostProcessResources.cs" />
+    <Compile Include="PostProcessing\PostProcessPipeline.cs" />
+    <Compile Include="PostProcessing\RenderTarget.cs" />
+    <Compile Include="PostProcessing\RenderTargetPool.cs" />
+    <Compile Include="PostProcessing\Passes\GaussianBlur.cs" />
+    <Compile Include="PostProcessing\Passes\Bloom.cs" />
+    <Compile Include="PostProcessing\Passes\MotionBlur.cs" />
     <Compile Include="Objects\FaceState.cs" />
     <Compile Include="Objects\ObjectLibrary.cs" />
     <Compile Include="Objects\VisibilityUpdate.cs" />
@@ -143,10 +149,12 @@
     <EmbeddedResource Include="..\..\assets\Shaders\text.vert" />
     <EmbeddedResource Include="..\..\assets\Shaders\shadow_depth.vert" />
     <EmbeddedResource Include="..\..\assets\Shaders\shadow_depth.frag" />
-    <EmbeddedResource Include="..\..\assets\Shaders\post.vert" />
-    <EmbeddedResource Include="..\..\assets\Shaders\bloom_extract.frag" />
-    <EmbeddedResource Include="..\..\assets\Shaders\bloom_blur.frag" />
-    <EmbeddedResource Include="..\..\assets\Shaders\bloom_composite.frag" />
+    <EmbeddedResource Include="..\..\assets\Shaders\PostProcessing\post.vert" />
+    <EmbeddedResource Include="..\..\assets\Shaders\PostProcessing\bloom_extract.frag" />
+    <EmbeddedResource Include="..\..\assets\Shaders\PostProcessing\blur.frag" />
+    <EmbeddedResource Include="..\..\assets\Shaders\PostProcessing\bloom_composite.frag" />
+    <EmbeddedResource Include="..\..\assets\Shaders\PostProcessing\post_copy.frag" />
+    <EmbeddedResource Include="..\..\assets\Shaders\PostProcessing\motionblur.frag" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\OpenBveApi\OpenBveApi.csproj">

@@ -7,6 +7,7 @@ using Formats.OpenBve;
 using ObjectViewer.Graphics;
 using OpenBveApi;
 using OpenBveApi.Colors;
+using OpenBveApi.Graphics;
 using OpenBveApi.Input;
 using Path = OpenBveApi.Path;
 
@@ -105,6 +106,11 @@ namespace ObjectViewer
 				Builder.AppendLine("lightazimuth = " + LightAzimuth.ToString(Culture));
 				Builder.AppendLine("lightelevation = " + LightElevation.ToString(Culture));
 				Builder.AppendLine("bloom = " + (int)Bloom);
+				Builder.AppendLine("motionblur = " + (int)MotionBlur);
+			Builder.AppendLine("bloomSpread = " + BloomSpread);
+			Builder.AppendLine("bloomStrength = " + BloomStrength);
+				Builder.AppendLine("bloomThreshold = " + BloomThreshold);
+				Builder.AppendLine("postprocessorder = " + PostProcessOrder);
 				Builder.AppendLine();
 				Builder.AppendLine("[Parsers]");
 				Builder.AppendLine("xObject = " + CurrentXParser);
@@ -141,6 +147,7 @@ namespace ObjectViewer
 			Interface.CurrentOptions = new Options
 			{
 				ViewingDistance = 1000, // fixed
+				Bloom = BloomMode.Medium,
 				CameraMoveLeft = Key.A,
 				CameraMoveRight = Key.D,
 				CameraMoveUp = Key.W,
@@ -211,6 +218,11 @@ namespace ObjectViewer
 							block.TryGetValue(OptionsKey.LightAzimuth, ref Interface.CurrentOptions.LightAzimuth);
 							block.TryGetValue(OptionsKey.LightElevation, ref Interface.CurrentOptions.LightElevation);
 							block.TryGetEnumValue(OptionsKey.Bloom, ref Interface.CurrentOptions.Bloom);
+						block.TryGetEnumValue(OptionsKey.MotionBlur, ref Interface.CurrentOptions.MotionBlur);
+							block.TryGetValue(OptionsKey.BloomSpread, ref Interface.CurrentOptions.BloomSpread);
+							block.TryGetValue(OptionsKey.BloomStrength, ref Interface.CurrentOptions.BloomStrength);
+							block.TryGetValue(OptionsKey.BloomThreshold, ref Interface.CurrentOptions.BloomThreshold);
+							block.TryGetValue(OptionsKey.PostProcessOrder, ref Interface.CurrentOptions.PostProcessOrder);
 							break;
 						case OptionsSection.Parsers:
 							block.GetEnumValue(OptionsKey.XObject, out Interface.CurrentOptions.CurrentXParser);

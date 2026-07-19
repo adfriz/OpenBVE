@@ -105,6 +105,9 @@ namespace ObjectViewer {
 		        Renderer.Screen.Width = 960;
 		        Renderer.Screen.Height = 600;
 	        }
+	        Renderer.PostProcess.InitializeMotionBlur(Interface.CurrentOptions.MotionBlur);
+	        Renderer.PostProcess.InitializeBloom(Interface.CurrentOptions.Bloom);
+
 	        if (!CurrentHost.LoadPlugins(FileSystem, Interface.CurrentOptions, out string error, TrainManager, Renderer))
 	        {
 		        MessageBox.Show(error, @"OpenBVE", MessageBoxButtons.OK, MessageBoxIcon.Error);

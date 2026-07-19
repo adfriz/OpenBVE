@@ -4,7 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
 using LibRender2;
-using LibRender2.Blooms;
+using LibRender2.PostProcessing;
 using LibRender2.Objects;
 using LibRender2.Primitives;
 using LibRender2.Screens;
@@ -47,12 +47,17 @@ namespace ObjectViewer.Graphics
 
 		internal void ApplyBackgroundColor()
 		{
-			GL.ClearColor(Interface.CurrentOptions.BackgroundColor.R * inv255, Interface.CurrentOptions.BackgroundColor.G * inv255, Interface.CurrentOptions.BackgroundColor.B * inv255, 1.0f);
+			// When selective bloom is on, the scene is rendered to an offscreen RGBA
+			// buffer where the alpha channel is the emissive mask. The background must
+			// clear with alpha = 0 so it is not mistaken for emissive geometry.
+			float maskAlpha = (Interface.CurrentOptions.Bloom != BloomMode.Off) ? 0.0f : 1.0f;
+			GL.ClearColor(Interface.CurrentOptions.BackgroundColor.R * inv255, Interface.CurrentOptions.BackgroundColor.G * inv255, Interface.CurrentOptions.BackgroundColor.B * inv255, maskAlpha);
 		}
 
 		internal void ApplyBackgroundColor(byte red, byte green, byte blue)
 		{
-			GL.ClearColor(red / 255.0f, green / 255.0f, blue / 255.0f, 1.0f);
+			float maskAlpha = (Interface.CurrentOptions.Bloom != BloomMode.Off) ? 0.0f : 1.0f;
+			GL.ClearColor(red / 255.0f, green / 255.0f, blue / 255.0f, maskAlpha);
 		}
 
 		// render scene
@@ -64,7 +69,6 @@ namespace ObjectViewer.Graphics
 			// initialize
 			ResetOpenGlState();
 
-			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 			UpdateViewport(ViewportChangeMode.ChangeToScenery);
 			CurrentViewMatrix = Matrix4D.LookAt(Vector3.Zero, new Vector3(Camera.AbsoluteDirection.X, Camera.AbsoluteDirection.Y, -Camera.AbsoluteDirection.Z), new Vector3(Camera.AbsoluteUp.X, Camera.AbsoluteUp.Y, -Camera.AbsoluteUp.Z));
 			TransformedLightPosition = new Vector3(Lighting.OptionLightPosition.X, Lighting.OptionLightPosition.Y, -Lighting.OptionLightPosition.Z);
@@ -79,16 +83,19 @@ namespace ObjectViewer.Graphics
 
 			Fog.Enabled = false;
 
-			if (OptionCoordinateSystem)
-			{
-				UnsetAlphaFunc();
-				DefaultShader.SetShadowEnabled(false);
-				redAxisVAO.Draw(Vector3.Zero, Vector3.Forward, Vector3.Down, Vector3.Right, new Vector3(100.0, 0.01, 0.01), Camera.AbsolutePosition, null);
-				greenAxisVAO.Draw(Vector3.Zero, Vector3.Forward, Vector3.Down, Vector3.Right, new Vector3(0.01, 100.0, 0.01), Camera.AbsolutePosition, null);
-				blueAxisVAO.Draw(Vector3.Zero, Vector3.Forward, Vector3.Down, Vector3.Right, new Vector3(0.01, 0.01, 100.0), Camera.AbsolutePosition, null);
-            }
             // opaque face
             PerformCSMShadowPass();
+
+			// The shadow pass restores the default framebuffer; rebind the pipeline's
+			// offscreen scene buffer so the following geometry is captured for bloom.
+			ApplyBackgroundColor();
+			PostProcess.BeginScene();
+
+			// Clear the (now bound) target so the scene is drawn onto a clean buffer.
+			// When the pipeline is inactive BeginScene leaves the default framebuffer bound.
+			// DepthMask must be enabled or the depth buffer is not actually cleared.
+			GL.DepthMask(true);
+			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
             //Setup the shader for rendering the scene
             DefaultShader.Activate();
@@ -178,12 +185,21 @@ namespace ObjectViewer.Graphics
 			DefaultShader.Deactivate();
 			lastVAO = -1;
 
-			// bloom post-processing (wraps the 3D scene, not the 2D overlays)
-			if (Interface.CurrentOptions.Bloom != BloomMode.Off)
+			// post-processing (wraps the 3D scene, not the 2D overlays)
+			ResetOpenGlState();
+			DefaultShader.Deactivate();
+			PostProcess.EndScene();
+
+			// Coordinate-system axis helpers are drawn directly to the screen after
+			// the bloom composite, so they are never captured by the bloom pass.
+			if (OptionCoordinateSystem && VisibleObjects.Objects.Count > 0)
 			{
 				ResetOpenGlState();
-				DefaultShader.Deactivate();
-				Bloom.Render(Interface.CurrentOptions.Bloom);
+				UnsetAlphaFunc();
+				GL.Disable(EnableCap.DepthTest);
+				redAxisVAO.Draw(Vector3.Zero, Vector3.Forward, Vector3.Down, Vector3.Right, new Vector3(100.0, 0.01, 0.01), Camera.AbsolutePosition, null);
+				greenAxisVAO.Draw(Vector3.Zero, Vector3.Forward, Vector3.Down, Vector3.Right, new Vector3(0.01, 100.0, 0.01), Camera.AbsolutePosition, null);
+				blueAxisVAO.Draw(Vector3.Zero, Vector3.Forward, Vector3.Down, Vector3.Right, new Vector3(0.01, 0.01, 100.0), Camera.AbsolutePosition, null);
 			}
 
             // render overlays
