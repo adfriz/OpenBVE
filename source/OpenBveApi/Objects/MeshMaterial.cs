@@ -26,6 +26,20 @@ namespace OpenBveApi.Objects
 		public Texture NighttimeTexture;
 		/// <summary>The lightmap texture</summary>
 		public Texture LightMapTexture;
+		/// <summary>The normal map texture (filename suffix convention, e.g. _normal)</summary>
+		public Texture NormalTexture;
+		/// <summary>The emissive map texture (reserved for PBR)</summary>
+		public Texture EmissiveTexture;
+		/// <summary>The metallic/roughness map texture (reserved for PBR)</summary>
+		public Texture MetallicRoughnessTexture;
+		/// <summary>The ambient occlusion map texture (reserved for PBR)</summary>
+		public Texture AmbientOcclusionTexture;
+		/// <summary>Whether the ambient occlusion map is packed in the R channel of an ORM map (glTF convention)</summary>
+		public bool AmbientOcclusionMapIsORM;
+		/// <summary>The specular shininess exponent</summary>
+		public float Shininess;
+		/// <summary>Whether the normal map uses the DirectX (Y-) convention and the green channel must be flipped</summary>
+		public bool NormalMapIsDirectX;
 		/// <summary>The blend mode for this material</summary>
 		public MeshMaterialBlendMode BlendMode;
 		/// <summary>A bit mask specifying the glow properties. Use GetGlowAttenuationData to create valid data for this field.</summary>
@@ -45,6 +59,13 @@ namespace OpenBveApi.Objects
 			if (A.DaytimeTexture != B.DaytimeTexture) return false;
 			if (A.NighttimeTexture != B.NighttimeTexture) return false;
 			if (A.LightMapTexture != B.LightMapTexture) return false;
+			if (A.NormalTexture != B.NormalTexture) return false;
+			if (A.EmissiveTexture != B.EmissiveTexture) return false;
+			if (A.MetallicRoughnessTexture != B.MetallicRoughnessTexture) return false;
+			if (A.AmbientOcclusionTexture != B.AmbientOcclusionTexture) return false;
+			if (A.AmbientOcclusionMapIsORM != B.AmbientOcclusionMapIsORM) return false;
+			if (A.Shininess != B.Shininess) return false;
+			if (A.NormalMapIsDirectX != B.NormalMapIsDirectX) return false;
 			if (A.BlendMode != B.BlendMode) return false;
 			if (A.GlowAttenuationData != B.GlowAttenuationData) return false;
 			if (A.WrapMode != B.WrapMode) return false;
@@ -62,6 +83,13 @@ namespace OpenBveApi.Objects
 			if (A.DaytimeTexture != B.DaytimeTexture) return true;
 			if (A.NighttimeTexture != B.NighttimeTexture) return true;
 			if (A.LightMapTexture != B.LightMapTexture) return true;
+			if (A.NormalTexture != B.NormalTexture) return true;
+			if (A.EmissiveTexture != B.EmissiveTexture) return true;
+			if (A.MetallicRoughnessTexture != B.MetallicRoughnessTexture) return true;
+			if (A.AmbientOcclusionTexture != B.AmbientOcclusionTexture) return true;
+			if (A.AmbientOcclusionMapIsORM != B.AmbientOcclusionMapIsORM) return true;
+			if (A.Shininess != B.Shininess) return true;
+			if (A.NormalMapIsDirectX != B.NormalMapIsDirectX) return true;
 			if (A.BlendMode != B.BlendMode) return true;
 			if (A.GlowAttenuationData != B.GlowAttenuationData) return true;
 			if (A.WrapMode != B.WrapMode) return true;

@@ -136,6 +136,9 @@ namespace LibRender2.Backgrounds
 
 				renderer.DefaultShader.Activate();
 				renderer.ResetShader(renderer.DefaultShader);
+				// Backgrounds are flat and unlit; lighting is now computed in the fragment shader,
+				// so explicitly disable it here to preserve the previous behaviour.
+				renderer.DefaultShader.SetMaterialFlags(MaterialFlags.DisableLighting);
 
 				// matrix
 				renderer.DefaultShader.SetCurrentProjectionMatrix(renderer.CurrentProjectionMatrix);

@@ -26,6 +26,7 @@
 using System.Linq;
 using OpenBveApi.Colors;
 using OpenBveApi.Math;
+using OpenBveApi.Objects;
 using OpenBveApi.Textures;
 using OpenBveApi.World;
 using OpenTK.Graphics.OpenGL;
@@ -327,6 +328,9 @@ namespace LibRender2.Primitives
 		{
 			renderer.DefaultShader.Activate();
 			renderer.ResetShader(renderer.DefaultShader);
+			// Render as a flat, unlit coloured cube (lighting is now computed in the fragment shader,
+			// so explicitly disable it here to preserve the previous behaviour).
+			renderer.DefaultShader.SetMaterialFlags(MaterialFlags.DisableLighting);
 			// matrix
 			renderer.DefaultShader.SetCurrentProjectionMatrix(renderer.CurrentProjectionMatrix);
 			renderer.DefaultShader.SetCurrentModelViewMatrix(Matrix4D.Scale(Size) * (Matrix4D)new Transformation(Direction, Up, Side) * Matrix4D.CreateTranslation(Position.X - Camera.X, Position.Y - Camera.Y, -Position.Z + Camera.Z) * renderer.CurrentViewMatrix);

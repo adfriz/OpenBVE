@@ -1164,6 +1164,13 @@ namespace LibRender2
 			shader.SetOpacity(1.0f);
 			shader.SetObjectIndex(0);
 			shader.SetAlphaTest(false);
+			// Reset the normal map unit so it does not leak between draw calls
+			GL.ActiveTexture(TextureUnit.Texture1);
+			GL.BindTexture(TextureTarget.Texture2D, 0);
+			// Reset the ambient occlusion map unit
+			GL.ActiveTexture(TextureUnit.Texture2);
+			GL.BindTexture(TextureTarget.Texture2D, 0);
+			GL.ActiveTexture(TextureUnit.Texture0);
 		}
 
 		public void SetBlendFunc()
@@ -1346,7 +1353,20 @@ namespace LibRender2
 					shader.SetMaterialEmission(material.EmissiveColor);
 				}
 
-				shader.SetMaterialShininess(1.0f);
+				// Specular flag set but no explicit exponent: apply a sane default so we don't get
+			// pow(NdotH, 0) == 1.0 (a blown-out flat highlight on every lit pixel).
+			float shininess = material.Shininess;
+			if ((material.Flags & MaterialFlags.Specular) != 0 && shininess <= 0.0f)
+			{
+				shininess = 16.0f;
+			}
+			shader.SetMaterialShininess(shininess);
+				// Fresnel F0: prefer the material's specular colour, otherwise the dielectric default
+				Color24 specularF0 = ((material.Flags & MaterialFlags.Specular) != 0 ? material.SpecularColor : Color24.White);
+				float f0 = ((material.Flags & MaterialFlags.Specular) != 0)
+					? (specularF0.R + specularF0.G + specularF0.B) / (3.0f * 255.0f)
+					: 0.04f;
+				shader.SetFresnelF0(f0);
 			}
 			else
 			{
@@ -1412,6 +1432,46 @@ namespace LibRender2
 				{
 					shader.DisableTexturing();
 				}
+
+			// normal map (texture unit 1)
+			if (material.NormalTexture != null && (material.Flags & OpenBveApi.Objects.MaterialFlags.NormalMapped) != 0 && currentHost.LoadTexture(ref material.NormalTexture, OpenGlTextureWrapMode.ClampClamp))
+			{
+				GL.ActiveTexture(TextureUnit.Texture1);
+				GL.BindTexture(TextureTarget.Texture2D, material.NormalTexture.OpenGlTextures[(int)OpenGlTextureWrapMode.ClampClamp].Name);
+				shader.SetNormalMap(1);
+				shader.SetNormalMapIsDirectX(material.NormalMapIsDirectX);
+				GL.ActiveTexture(TextureUnit.Texture0);
+			}
+			else
+			{
+				shader.SetNormalMap(0);
+
+				if ((material.Flags & OpenBveApi.Objects.MaterialFlags.NormalMapped) != 0)
+				{
+					// The normal map failed to load; drop the flag so we don't sample the diffuse texture as a normal map.
+					material.Flags &= ~OpenBveApi.Objects.MaterialFlags.NormalMapped;
+				}
+			}
+
+			// ambient occlusion map (texture unit 2)
+			if (material.AmbientOcclusionTexture != null && (material.Flags & OpenBveApi.Objects.MaterialFlags.HasAmbientOcclusion) != 0 && currentHost.LoadTexture(ref material.AmbientOcclusionTexture, OpenGlTextureWrapMode.ClampClamp))
+			{
+				GL.ActiveTexture(TextureUnit.Texture2);
+				GL.BindTexture(TextureTarget.Texture2D, material.AmbientOcclusionTexture.OpenGlTextures[(int)OpenGlTextureWrapMode.ClampClamp].Name);
+				shader.SetAoMap(2);
+				shader.SetAoMapIsOrm(material.AmbientOcclusionMapIsORM);
+				GL.ActiveTexture(TextureUnit.Texture0);
+			}
+			else
+			{
+				shader.SetAoMap(0);
+
+				if ((material.Flags & OpenBveApi.Objects.MaterialFlags.HasAmbientOcclusion) != 0)
+				{
+					// The AO map failed to load; drop the flag so we don't darken with a missing texture.
+					material.Flags &= ~OpenBveApi.Objects.MaterialFlags.HasAmbientOcclusion;
+				}
+			}
 				// Calculate the brightness of the poly to render
 				float factor;
 				if (material.BlendMode == MeshMaterialBlendMode.Additive)

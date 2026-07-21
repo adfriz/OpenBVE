@@ -154,6 +154,31 @@ namespace LibRender2
 		public short Texture = -1;
 
 		/// <summary>
+		/// The handle of "uNormalMap" within the shader
+		/// </summary>
+		public short NormalMap = -1;
+
+		/// <summary>
+		/// The handle of "uNormalMapIsDirectX" within the shader
+		/// </summary>
+		public short NormalMapIsDirectX = -1;
+
+		/// <summary>
+		/// The handle of "uFresnelF0" within the shader
+		/// </summary>
+		public short FresnelF0 = -1;
+
+		/// <summary>
+		/// The handle of "uAoMap" within the shader
+		/// </summary>
+		public short AoMap = -1;
+
+		/// <summary>
+		/// The handle of "uAoMapIsOrm" within the shader
+		/// </summary>
+		public short AoMapIsOrm = -1;
+
+		/// <summary>
 		/// The handle of "uBrightness" within the shader
 		/// </summary>
 		public short Brightness = -1;

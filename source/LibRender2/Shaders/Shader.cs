@@ -67,6 +67,11 @@ namespace LibRender2.Shaders
 		private readonly int uLightSpaceMatrix3Location;
 		private readonly int uModelMatrixLocation;
 		private readonly int uCurrentViewMatrixLocation;
+		private readonly int uNormalMapLocation;
+		private readonly int uNormalMapIsDirectXLocation;
+		private readonly int uFresnelF0Location;
+		private readonly int uAoMapLocation;
+		private readonly int uAoMapIsOrmLocation;
 
 
 		/// <summary>
@@ -103,6 +108,11 @@ namespace LibRender2.Shaders
 			uLightSpaceMatrix3Location = GL.GetUniformLocation(Handle, "uLightSpaceMatrix3");
 			uModelMatrixLocation = GL.GetUniformLocation(Handle, "uModelMatrix");
 			uCurrentViewMatrixLocation = GL.GetUniformLocation(Handle, "uCurrentViewMatrix");
+			uNormalMapLocation = GL.GetUniformLocation(Handle, "uNormalMap");
+			uNormalMapIsDirectXLocation = GL.GetUniformLocation(Handle, "uNormalMapIsDirectX");
+			uFresnelF0Location = GL.GetUniformLocation(Handle, "uFresnelF0");
+			uAoMapLocation = GL.GetUniformLocation(Handle, "uAoMap");
+			uAoMapIsOrmLocation = GL.GetUniformLocation(Handle, "uAoMapIsOrm");
 
 			VertexLayout = GetVertexLayout();
 			UniformLayout = GetUniformLayout();
@@ -117,6 +127,13 @@ namespace LibRender2.Shaders
 			GL.ProgramUniform1(Handle, uShadowEnabledLocation, 0);
 			GL.ProgramUniform1(Handle, uShadowCascadeCountLocation, 0);
 			GL.ProgramUniform1(Handle, uShadowStrengthLocation, 1.0f);
+			// Normal map is sampled from texture unit 1 (shadow maps use units 4-7)
+			GL.ProgramUniform1(Handle, uNormalMapLocation, 1);
+			GL.ProgramUniform1(Handle, uNormalMapIsDirectXLocation, 0);
+			GL.ProgramUniform1(Handle, uFresnelF0Location, 0.04f);
+			// Ambient occlusion map is sampled from texture unit 2 (ORM packs AO in the R channel)
+			GL.ProgramUniform1(Handle, uAoMapLocation, 2);
+			GL.ProgramUniform1(Handle, uAoMapIsOrmLocation, 0);
 		}
 		
 		public VertexLayout GetVertexLayout()
@@ -160,6 +177,11 @@ namespace LibRender2.Shaders
 				FogIsLinear = (short)GL.GetUniformLocation(Handle, "uFogIsLinear"),
 				FogDensity = (short)GL.GetUniformLocation(Handle, "uFogDensity"),
 				Texture = (short)GL.GetUniformLocation(Handle, "uTexture"),
+				NormalMap = (short)GL.GetUniformLocation(Handle, "uNormalMap"),
+				NormalMapIsDirectX = (short)GL.GetUniformLocation(Handle, "uNormalMapIsDirectX"),
+				FresnelF0 = (short)GL.GetUniformLocation(Handle, "uFresnelF0"),
+				AoMap = (short)GL.GetUniformLocation(Handle, "uAoMap"),
+				AoMapIsOrm = (short)GL.GetUniformLocation(Handle, "uAoMapIsOrm"),
 				Brightness = (short)GL.GetUniformLocation(Handle, "uBrightness"),
 				Opacity = (short)GL.GetUniformLocation(Handle, "uOpacity"),
 				ObjectIndex = (short)GL.GetUniformLocation(Handle, "uObjectIndex"),
@@ -327,6 +349,36 @@ namespace LibRender2.Shaders
 		public void SetMaterialShininess(float materialShininess)
 		{
 			GL.ProgramUniform1(Handle, UniformLayout.MaterialShininess, materialShininess);
+		}
+
+		/// <summary>Sets the texture unit used for the normal map</summary>
+		public void SetNormalMap(int unit)
+		{
+			GL.ProgramUniform1(Handle, UniformLayout.NormalMap, unit);
+		}
+
+		/// <summary>Sets whether the normal map uses the DirectX (Y-) convention and the green channel must be flipped</summary>
+		public void SetNormalMapIsDirectX(bool isDirectX)
+		{
+			GL.ProgramUniform1(Handle, UniformLayout.NormalMapIsDirectX, isDirectX ? 1 : 0);
+		}
+
+		/// <summary>Sets the Fresnel F0 term used for the Schlick approximation</summary>
+		public void SetFresnelF0(float f0)
+		{
+			GL.ProgramUniform1(Handle, UniformLayout.FresnelF0, f0);
+		}
+
+		/// <summary>Sets the texture unit used for the ambient occlusion map</summary>
+		public void SetAoMap(int unit)
+		{
+			GL.ProgramUniform1(Handle, UniformLayout.AoMap, unit);
+		}
+
+		/// <summary>Sets whether the ambient occlusion map is packed in the R channel of an ORM map</summary>
+		public void SetAoMapIsOrm(bool isOrm)
+		{
+			GL.ProgramUniform1(Handle, UniformLayout.AoMapIsOrm, isOrm ? 1 : 0);
 		}
 
 		public void SetMaterialFlags(MaterialFlags Flags)

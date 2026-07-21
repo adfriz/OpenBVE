@@ -56,6 +56,13 @@ uniform float             uShadowNormalBias3;
 uniform vec2              uAlphaTest;
 uniform sampler2D uTexture;
 
+// --- NORMAL MAPPING ---
+uniform sampler2D uNormalMap;       // texture unit 1
+uniform bool       uNormalMapIsDirectX;
+uniform float      uFresnelF0;
+uniform sampler2D uAoMap;            // texture unit 2
+uniform bool       uAoMapIsOrm;      // ORM packs AO in the R channel (glTF convention)
+
 struct Light
 {
 	vec3 position;
@@ -65,6 +72,7 @@ struct Light
 	vec4 lightModel;
 };
 uniform Light uLight;
+uniform bool uIsLight;
 
 // Inputs from vertex shader
 in vec3  vNormal;
@@ -187,7 +195,64 @@ float CalculateShadowFactor()
         }
     }
 
-    return mix(1.0, shadow, uShadowStrength);
+	return mix(1.0, shadow, uShadowStrength);
+}
+
+/// Lambertian diffuse term (N.L)
+float GetLambertian(vec3 N, vec3 L)
+{
+	return max(dot(N, L), 0.0);
+}
+
+/// Oren-Nayar diffuse term (reserved for the future PBR path)
+float GetOrenNayar(vec3 N, vec3 V, vec3 L, float sigma)
+{
+	float sigma2 = sigma * sigma;
+	float A = 1.0 - 0.5 * sigma2 / (sigma2 + 0.33);
+	float B = 0.45 * sigma2 / (sigma2 + 0.09);
+	float cosThetaI = max(dot(N, L), 0.0);
+	float cosThetaR = max(dot(N, V), 0.0);
+	float sinThetaI = sqrt(max(1.0 - cosThetaI * cosThetaI, 0.0));
+	float sinThetaR = sqrt(max(1.0 - cosThetaR * cosThetaR, 0.0));
+	float cosPhi = max(dot(normalize(V - N * cosThetaR), normalize(L - N * cosThetaI)), 0.0);
+	float thetaI = acos(cosThetaI);
+	float thetaR = acos(cosThetaR);
+	float alpha = max(thetaI, thetaR);
+	float beta = min(thetaI, thetaR);
+	return (A + B * cosPhi * sin(alpha) * tan(beta)) * cosThetaI;
+}
+
+/// Blinn-Phong specular term using the half-vector
+float GetBlinnPhong(vec3 N, vec3 V, vec3 L, float shininess)
+{
+	vec3 H = normalize(L + V);
+	return pow(max(dot(N, H), 0.0), shininess);
+}
+
+/// Fresnel term (Schlick approximation)
+float GetFresnelSchlick(float F0, vec3 V, vec3 H)
+{
+	return F0 + (1.0 - F0) * pow(1.0 - max(dot(V, H), 0.0), 5.0);
+}
+
+/// Perturbs the geometric normal using a tangent-space normal map.
+/// The TBN basis is derived from screen-space derivatives (cotangent frame),
+/// avoiding the need for precomputed tangent attributes.
+vec3 PerturbNormal(vec3 N, vec3 viewPos, vec2 uv)
+{
+	vec3 mapN = texture(uNormalMap, uv).xyz * 2.0 - 1.0;
+	if (uNormalMapIsDirectX)
+	{
+		mapN.g = -mapN.g;
+	}
+	vec3 q0 = dFdx(viewPos);
+	vec3 q1 = dFdy(viewPos);
+	vec2 st0 = dFdx(uv);
+	vec2 st1 = dFdy(uv);
+	vec3 S = normalize(q0 * st1.t - q1 * st0.t);
+	vec3 T = normalize(-q0 * st1.s + q1 * st0.s);
+	mat3 tbn = mat3(S, T, N);
+	return normalize(tbn * mapN);
 }
 
 void main(void)
@@ -251,16 +316,50 @@ void main(void)
 	 * affect it's final opacity, and hence whether its discarded or not
 	 */
 	float shadow = CalculateShadowFactor();
-	
-	if ((uMaterialFlags & 1) == 0 && (uMaterialFlags & 4) == 0)
+
+	bool lit = uIsLight && (uMaterialFlags & 1) == 0 && (uMaterialFlags & 4) == 0;
+	if (lit)
 	{
-		// Material is not emissive, apply shadow to the light factor
-		finalColor.rgb *= (oLightResult.rgb * shadow);
-		finalColor.a *= oLightResult.a;
+		vec3 N = normalize(vNormal);
+		if ((uMaterialFlags & 128) != 0)
+		{
+			N = PerturbNormal(N, oViewPos.xyz, oUv);
+		}
+		vec3 V = normalize(-oViewPos.xyz);
+		vec3 L = normalize(uLight.position);
+
+		float diff = GetLambertian(N, L);
+		float spec = ((uMaterialFlags & 64) != 0) ? GetBlinnPhong(N, V, L, uMaterial.shininess) * GetFresnelSchlick(uFresnelF0, V, normalize(L + V)) : 0.0;
+
+		// Ambient occlusion: modulates the indirect (ambient + diffuse) term, never specular (glTF convention).
+		// For a standalone AO map the value is luminance; for an ORM map (glTF) the AO is packed in the R channel.
+		float ao = 1.0;
+		if ((uMaterialFlags & 1024) != 0)
+		{
+			vec3 aoSample = texture(uAoMap, oUv).rgb;
+			ao = uAoMapIsOrm ? aoSample.r : dot(aoSample, vec3(0.299, 0.587, 0.114));
+		}
+
+		vec3 ambient = uLight.ambient * uMaterial.ambient.rgb * ao;
+		vec3 diffuse = uLight.diffuse * uMaterial.diffuse.rgb * diff * ao;
+		vec3 specular = uLight.specular * uMaterial.specular.rgb * spec;
+		// Ambient is not shadowed; the direct (diffuse+specular) term receives the shadow factor.
+		vec3 litResult = ambient + (diffuse + specular) * shadow;
+
+		finalColor.rgb *= litResult;
 	}
 	else
 	{
-		finalColor *= oLightResult;
+		if ((uMaterialFlags & 1) != 0)
+		{
+			// Emissive material: use the emission term plus the ambient contribution (matches previous behaviour)
+			finalColor.rgb *= (uMaterial.emission + uMaterial.ambient.rgb * uLight.lightModel.rgb);
+		}
+		else
+		{
+			// Lighting disabled: use the flat ambient term, unchanged
+			finalColor.rgb *= oLightResult.rgb;
+		}
 	}
 	
 	// Fog

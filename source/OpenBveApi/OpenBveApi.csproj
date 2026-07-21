@@ -145,6 +145,7 @@
     <Compile Include="Objects\Glow.cs" />
     <Compile Include="Objects\Helpers\Material.cs" />
     <Compile Include="Objects\Helpers\MeshBuilder.cs" />
+    <Compile Include="Objects\Helpers\TextureMapConvention.cs" />
     <Compile Include="Objects\Helpers\ModelExporter.cs" />
     <Compile Include="Objects\Helpers\ObjectCreationParameters.cs" />
     <Compile Include="Objects\Mesh.cs" />

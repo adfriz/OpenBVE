@@ -115,10 +115,11 @@ namespace LibRender2.Primitives
 			modelViewMatrix.Row2.Xyz = new Vector3(0, 0, 1);
 			Matrix4D scale = Matrix4D.Scale(size.X, size.Y, size.X);
 			modelViewMatrix = scale * modelViewMatrix;
-			renderer.DefaultShader.SetMaterialFlags(MaterialFlags.None);
+			// Particles are flat and unlit; lighting is now computed in the fragment shader,
+			// so explicitly disable it here to preserve the previous behaviour.
+			renderer.DefaultShader.SetMaterialFlags(MaterialFlags.DisableLighting);
 			renderer.DefaultShader.SetCurrentModelViewMatrix(modelViewMatrix);
 			renderer.DefaultShader.SetOpacity(opacity);
-			renderer.DefaultShader.SetIsLight(false);
 			// texture
 			if (texture != null && renderer.currentHost.LoadTexture(ref texture, OpenGlTextureWrapMode.ClampClamp))
 			{

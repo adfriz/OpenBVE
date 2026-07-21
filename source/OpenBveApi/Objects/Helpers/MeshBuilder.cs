@@ -152,6 +152,22 @@ namespace OpenBveApi.Objects
 						Object.Mesh.Materials[mm + i].LightMapTexture = lightMap;
 					}
 
+				if (Materials[i].NormalMap != null)
+				{
+					currentHost.RegisterTexture(Materials[i].NormalMap, new TextureParameters(null, Color24.White), out Texture normalMap);
+					Object.Mesh.Materials[mm + i].NormalTexture = normalMap;
+					Object.Mesh.Materials[mm + i].NormalMapIsDirectX = Materials[i].NormalMapIsDirectX;
+					Object.Mesh.Materials[mm + i].Flags |= MaterialFlags.NormalMapped;
+				}
+
+				if (Materials[i].AmbientOcclusionMap != null)
+				{
+					currentHost.RegisterTexture(Materials[i].AmbientOcclusionMap, new TextureParameters(null, Color24.White), out Texture aoMap);
+					Object.Mesh.Materials[mm + i].AmbientOcclusionTexture = aoMap;
+					Object.Mesh.Materials[mm + i].AmbientOcclusionMapIsORM = Materials[i].AmbientOcclusionMapIsORM;
+					Object.Mesh.Materials[mm + i].Flags |= MaterialFlags.HasAmbientOcclusion;
+				}
+
 					Object.Mesh.Materials[mm + i].BlendMode = Materials[i].BlendMode;
 					Object.Mesh.Materials[mm + i].GlowAttenuationData = Materials[i].GlowAttenuationData;
 					Object.Mesh.Materials[mm + i].WrapMode = Materials[i].WrapMode;

@@ -81,22 +81,6 @@ out vec4 vPosLightSpace2;
 out vec4 vPosLightSpace3;
 out vec3 vNormal;
 
-vec4 getLightResult()
-{
-	vNormal = normalize(mat3(transpose(inverse(uCurrentModelViewMatrix))) * vec3(iNormal.x, iNormal.y, -iNormal.z));
-	float nDotVP = max(0.0, dot(vNormal, normalize(vec3(uLight.position))));
-	float nDotHV = max(0.0, dot(vNormal, normalize(vec3(oViewPos.xyz + uLight.position))));
-	float pf = nDotVP == 0.0 ? 0.0 : pow(nDotHV, uMaterial.shininess);
-
-	vec4 ambient = vec4(uLight.ambient, 1.0);
-	vec4 diffuse = vec4(uLight.diffuse, 1.0) * nDotVP;
-	vec4 specular = vec4(uLight.specular, 1.0) * pf;
-
-	vec4 sceneColor = (uMaterialFlags & 1) != 0 ? vec4(uMaterial.emission, 1.0) + uMaterial.ambient * uLight.lightModel : uLight.lightModel;
-	vec4 finalColor = sceneColor + ambient * uMaterial.ambient + diffuse * uMaterial.diffuse + specular * uMaterial.specular;
-	return clamp(finalColor, 0.0, 1.0);
-}
-
 vec3 transformVector(vec3 initialVector, int matrixIndex)
 {
 	float X = (initialVector.x * modelMatricies[matrixIndex][0].x) + (initialVector.y * modelMatricies[matrixIndex][1].x) + (initialVector.z * modelMatricies[matrixIndex][2].x);
@@ -230,7 +214,11 @@ void main()
 		vPosLightSpace3 = vec4(0.0);
 	}
 
+	// Pass the view-space normal to the fragment shader for per-pixel lighting.
+	vNormal = normalize(mat3(transpose(inverse(uCurrentModelViewMatrix))) * vec3(iNormal.x, iNormal.y, -iNormal.z));
+
 	oUv = (uCurrentTextureMatrix * vec4(iUv, 1.0, 1.0)).xy;
 	
-	oLightResult = uIsLight && (uMaterialFlags & 4) == 0 ? getLightResult() : uMaterial.ambient;
+	// Lighting is computed per-pixel in the fragment shader; pass the ambient term as a fallback.
+	oLightResult = uMaterial.ambient;
 }

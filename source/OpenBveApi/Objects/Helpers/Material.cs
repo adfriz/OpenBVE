@@ -24,6 +24,14 @@ namespace OpenBveApi.Objects
 		public string TransparencyTexture;
 		/// <summary>The absolute on-disk path to the light map texture</summary>
 		public string LightMap;
+		/// <summary>The absolute on-disk path to the normal map texture (filename suffix convention)</summary>
+		public string NormalMap;
+		/// <summary>Whether the normal map uses the DirectX (Y-) convention and the green channel must be flipped</summary>
+		public bool NormalMapIsDirectX;
+		/// <summary>The absolute on-disk path to the ambient occlusion map texture (filename suffix convention)</summary>
+		public string AmbientOcclusionMap;
+		/// <summary>Whether the ambient occlusion map is packed in the R channel of an ORM map (glTF convention)</summary>
+		public bool AmbientOcclusionMapIsORM;
 		/// <summary>The blend mode to be used</summary>
 		public MeshMaterialBlendMode BlendMode;
 		/// <summary>The wrap mode, or a null reference if not in use</summary>

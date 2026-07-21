@@ -255,6 +255,54 @@ namespace Object.CsvB3d
 								}
 							}
 
+							// Auto-detect map type from the daytime texture filename suffix (e.g. _normal).
+							if (currentMeshBuilder.Materials[0].DaytimeTexture != null &&
+								OpenBveApi.Objects.Helpers.TextureMapConvention.TryGetMapType(currentMeshBuilder.Materials[0].DaytimeTexture, out OpenBveApi.Objects.Helpers.TextureMapType mapType))
+							{
+								switch (mapType)
+								{
+									case OpenBveApi.Objects.Helpers.TextureMapType.Normal:
+										currentMeshBuilder.Materials[0].NormalMap = currentMeshBuilder.Materials[0].DaytimeTexture;
+										break;
+									case OpenBveApi.Objects.Helpers.TextureMapType.NormalDirectX:
+										currentMeshBuilder.Materials[0].NormalMap = currentMeshBuilder.Materials[0].DaytimeTexture;
+										currentMeshBuilder.Materials[0].NormalMapIsDirectX = true;
+										break;
+									case OpenBveApi.Objects.Helpers.TextureMapType.Emissive:
+										// Legacy behaviour: a solid EmissiveColor takes precedence over an emissive texture map.
+										if ((currentMeshBuilder.Materials[0].Flags & MaterialFlags.Emissive) != 0)
+										{
+											Plugin.currentHost.AddMessage(MessageType.Warning, false, "Emissive texture '" + currentMeshBuilder.Materials[0].DaytimeTexture + "' ignored; legacy EmissiveColor takes precedence in the same meshbuilder section at line " + subBlock.CurrentLine + " in file " + fileName);
+										}
+										// Do not load as a texture map; treat the file as a regular diffuse texture.
+										break;
+									case OpenBveApi.Objects.Helpers.TextureMapType.AmbientOcclusion:
+										// The AO map is the daytime texture itself (file explicitly named *_ao).
+										currentMeshBuilder.Materials[0].AmbientOcclusionMap = currentMeshBuilder.Materials[0].DaytimeTexture;
+										break;
+									case OpenBveApi.Objects.Helpers.TextureMapType.ORM:
+										// The ORM map is the daytime texture itself (file explicitly named *_orm); AO is packed in the R channel.
+										currentMeshBuilder.Materials[0].AmbientOcclusionMap = currentMeshBuilder.Materials[0].DaytimeTexture;
+										currentMeshBuilder.Materials[0].AmbientOcclusionMapIsORM = true;
+										break;
+									default:
+										// Reserved PBR map types (rough/metal) are not yet consumed; ignore silently.
+										break;
+								}
+							}
+
+							// Auto-discover sibling AO / ORM maps from the diffuse name (e.g. brick.jpg -> brick_ao.jpg or brick_orm.jpg).
+							if (!string.IsNullOrEmpty(currentMeshBuilder.Materials[0].DaytimeTexture) &&
+								(currentMeshBuilder.Materials[0].AmbientOcclusionMap == null))
+							{
+								string ao = TryFindSiblingMap(currentMeshBuilder.Materials[0].DaytimeTexture, new[] { "_orm", "_arm", "_ao", "_ambientocclusion" });
+								if (ao != null)
+								{
+									currentMeshBuilder.Materials[0].AmbientOcclusionMap = ao;
+									currentMeshBuilder.Materials[0].AmbientOcclusionMapIsORM = OpenBveApi.Objects.Helpers.TextureMapConvention.TryGetMapType(ao, out OpenBveApi.Objects.Helpers.TextureMapType aoType) && aoType == OpenBveApi.Objects.Helpers.TextureMapType.ORM;
+								}
+							}
+
 							break;
 						case CSVB3DKey.LoadLightMap:
 							if (subBlock.GetNextPath(basePath, out string lightMap))
@@ -347,6 +395,39 @@ namespace Object.CsvB3d
 			currentMeshBuilder.Apply(ref staticObject, Plugin.enabledHacks.BveTsHacks);
 			staticObject.Mesh.CreateNormals();
 			return staticObject;
+		}
+
+		/// <summary>
+		/// Searches for a sibling map texture by inserting a recognised suffix before the file extension.
+		/// Returns the first existing candidate path, or null if none are found.
+		/// </summary>
+		private static string TryFindSiblingMap(string baseTexture, string[] suffixes)
+		{
+			if (string.IsNullOrEmpty(baseTexture))
+			{
+				return null;
+			}
+
+			string directory = System.IO.Path.GetDirectoryName(baseTexture);
+			string name = System.IO.Path.GetFileNameWithoutExtension(baseTexture);
+			string extension = System.IO.Path.GetExtension(baseTexture);
+			if (string.IsNullOrEmpty(name))
+			{
+				return null;
+			}
+
+			foreach (string suffix in suffixes)
+			{
+				string candidate = string.IsNullOrEmpty(directory)
+					? name + suffix + extension
+					: System.IO.Path.Combine(directory, name + suffix + extension);
+				if (System.IO.File.Exists(candidate))
+				{
+					return candidate;
+				}
+			}
+
+			return null;
 		}
 	}
 }

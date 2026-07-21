@@ -22,6 +22,16 @@ namespace OpenBveApi.Objects
 		/// <summary>The material casts no shadows</summary>
 		NoShadow = 32,
 		/// <summary>The material has a separate specular light color</summary>
-		Specular = 64
+		Specular = 64,
+		/// <summary>The material has a normal map (filename suffix convention)</summary>
+		NormalMapped = 128,
+		/// <summary>The material has an emissive map (reserved for PBR)</summary>
+		HasEmissiveMap = 256,
+		/// <summary>The material has a metallic/roughness map (reserved for PBR)</summary>
+		HasMetallicRoughness = 512,
+		/// <summary>The material has an ambient occlusion map (reserved for PBR)</summary>
+		HasAmbientOcclusion = 1024,
+		/// <summary>The material uses the PBR shading path (reserved for future use)</summary>
+		PBR = 2048
 	}
 }
