@@ -93,7 +93,7 @@ namespace ObjectViewer.Graphics
 		internal void RenderScene(double timeElapsed)
 		{
 			lastObjectState = null;
-			CurrentShader.Deactivate();
+			CurrentShader?.Deactivate();
             ReleaseResources();
 			// initialize
 			ResetOpenGlState();
@@ -123,92 +123,95 @@ namespace ObjectViewer.Graphics
             // opaque face
             PerformCSMShadowPass();
 
-            //Setup the shader for rendering the scene
-            DefaultShader.Activate();
-            BindCSMToDefaultShader();
-            if (OptionLighting)
+            if (DefaultShader != null)
             {
-	            DefaultShader.SetIsLight(true);
-	            DefaultShader.SetLightPosition(TransformedLightPosition);
-	            DefaultShader.SetLightAmbient(Lighting.OptionAmbientColor);
-	            DefaultShader.SetLightDiffuse(Lighting.OptionDiffuseColor);
-	            DefaultShader.SetLightSpecular(Lighting.OptionSpecularColor);
-	            DefaultShader.SetLightModel(Lighting.LightModel);
+	            //Setup the shader for rendering the scene
+	            DefaultShader.Activate();
+	            BindCSMToDefaultShader();
+	            if (OptionLighting)
+	            {
+		            DefaultShader.SetIsLight(true);
+		            DefaultShader.SetLightPosition(TransformedLightPosition);
+		            DefaultShader.SetLightAmbient(Lighting.OptionAmbientColor);
+		            DefaultShader.SetLightDiffuse(Lighting.OptionDiffuseColor);
+		            DefaultShader.SetLightSpecular(Lighting.OptionSpecularColor);
+		            DefaultShader.SetLightModel(Lighting.LightModel);
+	            }
+	            DefaultShader.SetTexture(0);
+	            DefaultShader.SetCurrentProjectionMatrix(CurrentProjectionMatrix);
+	            ResetOpenGlState();
+				List<FaceState> opaqueFaces, alphaFaces;
+				lock (VisibleObjects.LockObject)
+				{
+					opaqueFaces = VisibleObjects.OpaqueFaces.ToList();
+					alphaFaces = VisibleObjects.GetSortedPolygons();
+				}
+
+				foreach (FaceState face in opaqueFaces)
+				{
+					face.Draw();
+				}
+
+				// alpha face
+				ResetOpenGlState();
+
+				if (Interface.CurrentOptions.TransparencyMode == TransparencyMode.Performance)
+				{
+					SetBlendFunc();
+					SetAlphaFunc(AlphaFunction.Greater, 0.0f);
+					GL.DepthMask(false);
+
+					foreach (FaceState face in alphaFaces)
+					{
+						face.Draw();
+					}
+				}
+				else
+				{
+					UnsetBlendFunc();
+					SetAlphaFunc(AlphaFunction.Equal, 1.0f);
+					GL.DepthMask(true);
+
+					foreach (FaceState face in alphaFaces)
+					{
+						if (face.Object.Prototype.Mesh.Materials[face.Face.Material].BlendMode == MeshMaterialBlendMode.Normal && face.Object.Prototype.Mesh.Materials[face.Face.Material].GlowAttenuationData == 0)
+						{
+							if (face.Object.Prototype.Mesh.Materials[face.Face.Material].Color.A == 255)
+							{
+								face.Draw();
+							}
+						}
+					}
+
+					SetBlendFunc();
+					SetAlphaFunc(AlphaFunction.Less, 1.0f);
+					GL.DepthMask(false);
+					bool additive = false;
+
+					foreach (FaceState face in alphaFaces)
+					{
+						if (face.Object.Prototype.Mesh.Materials[face.Face.Material].BlendMode == MeshMaterialBlendMode.Additive)
+						{
+							if (!additive)
+							{
+								UnsetAlphaFunc();
+								additive = true;
+							}
+						}
+						else
+						{
+							if (additive)
+							{
+								SetAlphaFunc();
+								additive = false;
+							}
+						}
+						face.Draw();
+					}
+				}
+
+				DefaultShader.Deactivate();
             }
-            DefaultShader.SetTexture(0);
-            DefaultShader.SetCurrentProjectionMatrix(CurrentProjectionMatrix);
-            ResetOpenGlState();
-			List<FaceState> opaqueFaces, alphaFaces;
-			lock (VisibleObjects.LockObject)
-			{
-				opaqueFaces = VisibleObjects.OpaqueFaces.ToList();
-				alphaFaces = VisibleObjects.GetSortedPolygons();
-			}
-
-			foreach (FaceState face in opaqueFaces)
-			{
-				face.Draw();
-			}
-
-			// alpha face
-			ResetOpenGlState();
-
-			if (Interface.CurrentOptions.TransparencyMode == TransparencyMode.Performance)
-			{
-				SetBlendFunc();
-				SetAlphaFunc(AlphaFunction.Greater, 0.0f);
-				GL.DepthMask(false);
-
-				foreach (FaceState face in alphaFaces)
-				{
-					face.Draw();
-				}
-			}
-			else
-			{
-				UnsetBlendFunc();
-				SetAlphaFunc(AlphaFunction.Equal, 1.0f);
-				GL.DepthMask(true);
-
-				foreach (FaceState face in alphaFaces)
-				{
-					if (face.Object.Prototype.Mesh.Materials[face.Face.Material].BlendMode == MeshMaterialBlendMode.Normal && face.Object.Prototype.Mesh.Materials[face.Face.Material].GlowAttenuationData == 0)
-					{
-						if (face.Object.Prototype.Mesh.Materials[face.Face.Material].Color.A == 255)
-						{
-							face.Draw();
-						}
-					}
-				}
-
-				SetBlendFunc();
-				SetAlphaFunc(AlphaFunction.Less, 1.0f);
-				GL.DepthMask(false);
-				bool additive = false;
-
-				foreach (FaceState face in alphaFaces)
-				{
-					if (face.Object.Prototype.Mesh.Materials[face.Face.Material].BlendMode == MeshMaterialBlendMode.Additive)
-					{
-						if (!additive)
-						{
-							UnsetAlphaFunc();
-							additive = true;
-						}
-					}
-					else
-					{
-						if (additive)
-						{
-							SetAlphaFunc();
-							additive = false;
-						}
-					}
-					face.Draw();
-				}
-			}
-
-			DefaultShader.Deactivate();
 			lastVAO = -1;
 
             // render overlays

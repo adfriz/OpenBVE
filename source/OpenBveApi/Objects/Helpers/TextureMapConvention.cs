@@ -26,7 +26,9 @@ namespace OpenBveApi.Objects.Helpers
 		/// <summary>An ambient occlusion map (reserved for PBR).</summary>
 		AmbientOcclusion,
 		/// <summary>A packed ORM map: R = AO, G = Roughness, B = Metallic (glTF convention, reserved for PBR).</summary>
-		ORM
+		ORM,
+		/// <summary>A combined metallic-roughness map: R = Metallic, G = Roughness (glTF 2.0 convention).</summary>
+		MetallicRoughness
 	}
 
 	/// <summary>
@@ -56,7 +58,9 @@ namespace OpenBveApi.Objects.Helpers
 			{ "_ao", TextureMapType.AmbientOcclusion },
 			{ "_ambientocclusion", TextureMapType.AmbientOcclusion },
 			{ "_orm", TextureMapType.ORM },
-			{ "_arm", TextureMapType.ORM }
+			{ "_arm", TextureMapType.ORM },
+			// Combined metallic-roughness (glTF 2.0: R = Metallic, G = Roughness)
+			{ "_metallic_roughness", TextureMapType.MetallicRoughness }
 		};
 
 		/// <summary>

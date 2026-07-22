@@ -23,7 +23,7 @@ namespace LibRender2.Lightings
 		/// <summary>The current diffuse light color</summary>
 		public Color24 OptionDiffuseColor = Color24.LightGrey;
 
-		public Color24 OptionSpecularColor = Color24.Black;  // TODO
+		public Color24 OptionSpecularColor = Color24.LightGrey;
 		
 		/// <summary>The current ambient light position</summary>
 		public Vector3 OptionLightPosition = new Vector3(0.223606797749979f, 0.86602540378444f, -0.447213595499958f);

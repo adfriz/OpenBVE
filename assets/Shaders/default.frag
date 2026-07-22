@@ -63,6 +63,16 @@ uniform float      uFresnelF0;
 uniform sampler2D uAoMap;            // texture unit 2
 uniform bool       uAoMapIsOrm;      // ORM packs AO in the R channel (glTF convention)
 
+struct MaterialColor
+{
+	vec4 ambient;
+	vec4 diffuse;
+	vec4 specular;
+	vec3 emission;
+	float shininess;
+};
+uniform MaterialColor uMaterial;
+
 struct Light
 {
 	vec3 position;
@@ -222,7 +232,7 @@ float GetOrenNayar(vec3 N, vec3 V, vec3 L, float sigma)
 	return (A + B * cosPhi * sin(alpha) * tan(beta)) * cosThetaI;
 }
 
-/// Blinn-Phong specular term using the half-vector
+/// Blinn-Phong specular term using the half-vector (legacy)
 float GetBlinnPhong(vec3 N, vec3 V, vec3 L, float shininess)
 {
 	vec3 H = normalize(L + V);
@@ -233,6 +243,42 @@ float GetBlinnPhong(vec3 N, vec3 V, vec3 L, float shininess)
 float GetFresnelSchlick(float F0, vec3 V, vec3 H)
 {
 	return F0 + (1.0 - F0) * pow(1.0 - max(dot(V, H), 0.0), 5.0);
+}
+
+// --- PBR functions ---
+
+/// GGX/Trowbridge-Reitz normal distribution function
+float GetDistributionGGX(vec3 N, vec3 H, float roughness)
+{
+	float a = roughness * roughness;
+	float a2 = a * a;
+	float NdotH = max(dot(N, H), 0.0);
+	float NdotH2 = NdotH * NdotH;
+	float denom = NdotH2 * (a2 - 1.0) + 1.0;
+	return a2 / max(3.14159265 * denom * denom, 0.0001);
+}
+
+/// Schlick-GGX geometry function (sub-part)
+float GetGeometrySchlickGGX(float NdotV, float roughness)
+{
+	float r = roughness + 1.0;
+	float k = (r * r) / 8.0;
+	return NdotV / max(NdotV * (1.0 - k) + k, 0.0001);
+}
+
+/// Smith geometry function (GGX)
+float GetGeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
+{
+	float NdotV = max(dot(N, V), 0.0);
+	float NdotL = max(dot(N, L), 0.0);
+	return GetGeometrySchlickGGX(NdotV, roughness) * GetGeometrySchlickGGX(NdotL, roughness);
+}
+
+/// Fresnel-Schlick for PBR (vec3 F0 to support metallic blend)
+vec3 GetFresnelSchlickPBR(vec3 F0, vec3 V, vec3 H)
+{
+	float cosTheta = max(dot(V, H), 0.0);
+	return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
 /// Perturbs the geometric normal using a tangent-space normal map.
@@ -328,25 +374,63 @@ void main(void)
 		vec3 V = normalize(-oViewPos.xyz);
 		vec3 L = normalize(uLight.position);
 
-		float diff = GetLambertian(N, L);
-		float spec = ((uMaterialFlags & 64) != 0) ? GetBlinnPhong(N, V, L, uMaterial.shininess) * GetFresnelSchlick(uFresnelF0, V, normalize(L + V)) : 0.0;
-
-		// Ambient occlusion: modulates the indirect (ambient + diffuse) term, never specular (glTF convention).
-		// For a standalone AO map the value is luminance; for an ORM map (glTF) the AO is packed in the R channel.
+		// Sample PBR maps: ORM/ARM packs AO=R, roughness=G, metallic=B.
 		float ao = 1.0;
+		float perceptualRoughness = 1.0;
+		float metallic = 0.0;
 		if ((uMaterialFlags & 1024) != 0)
 		{
-			vec3 aoSample = texture(uAoMap, oUv).rgb;
-			ao = uAoMapIsOrm ? aoSample.r : dot(aoSample, vec3(0.299, 0.587, 0.114));
+			vec3 ormSample = texture(uAoMap, oUv).rgb;
+			if (uAoMapIsOrm)
+			{
+				ao = ormSample.r;
+				perceptualRoughness = clamp(ormSample.g, 0.0, 1.0);
+				metallic = clamp(ormSample.b, 0.0, 1.0);
+			}
+			else
+			{
+				ao = dot(ormSample, vec3(0.299, 0.587, 0.114));
+			}
 		}
 
 		vec3 ambient = uLight.ambient * uMaterial.ambient.rgb * ao;
-		vec3 diffuse = uLight.diffuse * uMaterial.diffuse.rgb * diff * ao;
-		vec3 specular = uLight.specular * uMaterial.specular.rgb * spec;
-		// Ambient is not shadowed; the direct (diffuse+specular) term receives the shadow factor.
-		vec3 litResult = ambient + (diffuse + specular) * shadow;
 
-		finalColor.rgb *= litResult;
+		if (uAoMapIsOrm && (uMaterialFlags & 1024) != 0)
+		{
+			// --- PBR path (Cook-Torrance GGX) ---
+			vec3 H = normalize(L + V);
+			float NdotL = max(dot(N, L), 0.0);
+			float NdotV = max(dot(N, V), 0.0);
+
+			float alpha = max(perceptualRoughness * perceptualRoughness, 0.001);
+
+			float D = GetDistributionGGX(N, H, alpha);
+			float G = GetGeometrySmith(N, V, L, alpha);
+
+			vec3 F0 = mix(vec3(uFresnelF0), uMaterial.diffuse.rgb, metallic);
+			vec3 F = GetFresnelSchlickPBR(F0, V, H);
+
+			vec3 kS = F;
+			vec3 kD = (1.0 - kS) * (1.0 - metallic);
+
+			vec3 diffusePBR = uLight.diffuse * uMaterial.diffuse.rgb * kD * GetLambertian(N, L) * ao;
+			vec3 specularPBR = uLight.specular * (D * G * F) / max(4.0 * NdotV * NdotL, 0.001);
+
+			vec3 litResult = ambient + (diffusePBR + specularPBR) * shadow;
+			finalColor.rgb *= litResult;
+		}
+		else
+		{
+			// --- Legacy Blinn-Phong path ---
+			float diff = GetLambertian(N, L);
+			float spec = GetBlinnPhong(N, V, L, uMaterial.shininess) * GetFresnelSchlick(uFresnelF0, V, normalize(L + V));
+
+			vec3 diffuseLegacy = uLight.diffuse * uMaterial.diffuse.rgb * diff * ao;
+			vec3 specularLegacy = uLight.specular * uMaterial.specular.rgb * spec;
+
+			vec3 litResult = ambient + (diffuseLegacy + specularLegacy) * shadow;
+			finalColor.rgb *= litResult;
+		}
 	}
 	else
 	{

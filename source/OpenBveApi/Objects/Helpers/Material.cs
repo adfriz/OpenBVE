@@ -32,6 +32,8 @@ namespace OpenBveApi.Objects
 		public string AmbientOcclusionMap;
 		/// <summary>Whether the ambient occlusion map is packed in the R channel of an ORM map (glTF convention)</summary>
 		public bool AmbientOcclusionMapIsORM;
+		/// <summary>The absolute on-disk path to the combined metallic-roughness map (glTF 2.0: R = Metallic, G = Roughness)</summary>
+		public string MetallicRoughnessMap;
 		/// <summary>The blend mode to be used</summary>
 		public MeshMaterialBlendMode BlendMode;
 		/// <summary>The wrap mode, or a null reference if not in use</summary>
@@ -63,6 +65,7 @@ namespace OpenBveApi.Objects
 			this.Flags = MaterialFlags.None;
 			this.DaytimeTexture = null;
 			this.NighttimeTexture = null;
+			this.MetallicRoughnessMap = null;
 			this.BlendMode = MeshMaterialBlendMode.Normal;
 			this.GlowAttenuationData = 0;
 			this.TextColor = Color32.Black;
@@ -82,6 +85,7 @@ namespace OpenBveApi.Objects
 			this.Flags = MaterialFlags.None;
 			this.DaytimeTexture = null;
 			this.NighttimeTexture = null;
+			this.MetallicRoughnessMap = null;
 			this.BlendMode = MeshMaterialBlendMode.Normal;
 			this.GlowAttenuationData = 0;
 			this.TextColor = Color32.Black;
@@ -101,6 +105,7 @@ namespace OpenBveApi.Objects
 			this.Flags = prototypeMaterial.Flags;
 			this.DaytimeTexture = prototypeMaterial.DaytimeTexture;
 			this.NighttimeTexture = prototypeMaterial.NighttimeTexture;
+			this.MetallicRoughnessMap = prototypeMaterial.MetallicRoughnessMap;
 			this.BlendMode = prototypeMaterial.BlendMode;
 			this.GlowAttenuationData = prototypeMaterial.GlowAttenuationData;
 			this.TextColor = prototypeMaterial.TextColor;

@@ -401,7 +401,6 @@ namespace LibRender2
 				DefaultShader.SetMaterialSpecular(Color32.White);
 				lastColor = Color32.White;
 				DefaultShader.Deactivate();
-				dummyVao = new VertexArrayObject();
 			}
 			catch
 			{
@@ -429,6 +428,7 @@ namespace LibRender2
 				// Shader failed to load, but no exception
 				currentHost.AddMessage(MessageType.Error, false, "Initializing the default shaders failed.");
 			}
+			dummyVao = new VertexArrayObject();
 
             Background = new Background(this);
 			Fog = new Fog(this);
@@ -769,6 +769,7 @@ namespace LibRender2
 		/// the required VAO objects</remarks>
 		public void InitializeVisibility()
 		{
+			if (DefaultShader == null) return;
 			for (int i = 0; i < StaticObjectStates.Count; i++)
 			{
 				VAOExtensions.CreateVAO(StaticObjectStates[i].Prototype.Mesh, false, DefaultShader.VertexLayout, this);
@@ -1220,6 +1221,7 @@ namespace LibRender2
 			alphaTestEnabled = true;
 			alphaFuncComparison = comparison;
 			alphaFuncValue = value;
+			if (CurrentShader == null) return;
 			CurrentShader.SetAlphaTest(true);
 			CurrentShader.SetAlphaFunction(comparison, value);
         }
@@ -1228,12 +1230,14 @@ namespace LibRender2
 		public void UnsetAlphaFunc()
 		{
 			alphaTestEnabled = false;
+			if (CurrentShader == null) return;
 			CurrentShader.SetAlphaTest(false);
         }
 
 		/// <summary>Restores the OpenGL alpha function to it's previous state</summary>
 		public void RestoreAlphaFunc()
 		{
+			if (CurrentShader == null) return;
 			if (alphaTestEnabled)
 			{
 				CurrentShader.SetAlphaTest(true);
@@ -1353,10 +1357,10 @@ namespace LibRender2
 					shader.SetMaterialEmission(material.EmissiveColor);
 				}
 
-				// Specular flag set but no explicit exponent: apply a sane default so we don't get
+				// No explicit shininess exponent: apply a sane default so we don't get
 			// pow(NdotH, 0) == 1.0 (a blown-out flat highlight on every lit pixel).
 			float shininess = material.Shininess;
-			if ((material.Flags & MaterialFlags.Specular) != 0 && shininess <= 0.0f)
+			if (shininess <= 0.0f)
 			{
 				shininess = 16.0f;
 			}

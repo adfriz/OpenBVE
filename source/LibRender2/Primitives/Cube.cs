@@ -285,7 +285,10 @@ namespace LibRender2.Primitives
 			defaultVAO.Bind();
 			defaultVAO.SetVBO(new VertexBufferObject(vertexData, BufferUsageHint.StaticDraw));
 			defaultVAO.SetIBO(new IndexBufferObjectUS(Enumerable.Range(0, vertexData.Length).Select(x => (ushort)x).ToArray(), BufferUsageHint.StaticDraw));
-			defaultVAO.SetAttributes(renderer.DefaultShader.VertexLayout);
+			if (renderer.DefaultShader != null)
+			{
+				defaultVAO.SetAttributes(renderer.DefaultShader.VertexLayout);
+			}
 			defaultVAO.UnBind();
         }
 
@@ -326,6 +329,7 @@ namespace LibRender2.Primitives
 		/// <param name="TextureIndex">The texture to apply</param>
 		private void DrawRetained(VertexArrayObject VAO, Vector3 Position, Vector3 Direction, Vector3 Up, Vector3 Side, Vector3 Size, Vector3 Camera, Texture TextureIndex)
 		{
+			if (renderer.DefaultShader == null) return;
 			renderer.DefaultShader.Activate();
 			renderer.ResetShader(renderer.DefaultShader);
 			// Render as a flat, unlit coloured cube (lighting is now computed in the fragment shader,

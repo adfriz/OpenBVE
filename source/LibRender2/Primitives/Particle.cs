@@ -80,7 +80,10 @@ namespace LibRender2.Primitives
 						particlesVAO[i * 4 + j].Bind();
 						particlesVAO[i * 4 + j].SetVBO(new VertexBufferObject(vertexData, BufferUsageHint.StaticDraw));
 						particlesVAO[i * 4 + j].SetIBO(new IndexBufferObjectUS(Enumerable.Range(0, vertexData.Length).Select(x => (ushort)x).ToArray(), BufferUsageHint.StaticDraw));
-						particlesVAO[i * 4 + j].SetAttributes(renderer.DefaultShader.VertexLayout);
+						if (renderer.DefaultShader != null)
+						{
+							particlesVAO[i * 4 + j].SetAttributes(renderer.DefaultShader.VertexLayout);
+						}
 						particlesVAO[i * 4 + j].UnBind();
 					}
 
@@ -96,6 +99,7 @@ namespace LibRender2.Primitives
 
 		public void Draw(int particleIndex, Vector3 worldPosition, Vector3 worldDirection, Vector3 worldUp, Vector3 worldSide, Vector2 size, Texture texture, float opacity)
 		{
+			if (renderer.DefaultShader == null) return;
 			renderer.UnsetBlendFunc();
 			renderer.SetAlphaFunc(AlphaFunction.Equal, 1.0f);
 			GL.DepthMask(true);
@@ -108,6 +112,7 @@ namespace LibRender2.Primitives
 
 		private void DrawRetained(int particleIndex, Vector3 worldPosition, Vector3 worldDirection, Vector3 worldUp, Vector3 worldSide, Vector2 size, Texture texture, float opacity)
 		{
+			if (renderer.DefaultShader == null) return;
 			// spherical billboard
 			Matrix4D modelViewMatrix = (Matrix4D)new Transformation(worldDirection, worldUp, worldSide) * Matrix4D.CreateTranslation(worldPosition.X - renderer.Camera.AbsolutePosition.X, worldPosition.Y - renderer.Camera.AbsolutePosition.Y, -worldPosition.Z + renderer.Camera.AbsolutePosition.Z) * renderer.CurrentViewMatrix;
 			modelViewMatrix.Row0.Xyz = new Vector3(1, 0, 0);

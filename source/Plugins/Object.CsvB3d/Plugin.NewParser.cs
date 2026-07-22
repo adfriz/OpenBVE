@@ -31,6 +31,7 @@ using OpenBveApi.Objects;
 using OpenBveApi.Textures;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace Object.CsvB3d
@@ -244,8 +245,49 @@ namespace Object.CsvB3d
 						case CSVB3DKey.Load:
 							if (subBlock.GetNextTexturePath(basePath, out string tDay, out string tNight))
 							{
-								currentMeshBuilder.Materials[0].DaytimeTexture = tDay;
-								currentMeshBuilder.Materials[0].NighttimeTexture = tNight;
+								OpenBveApi.Objects.Helpers.TextureMapType mapType = OpenBveApi.Objects.Helpers.TextureMapType.None;
+								bool isMapType = !string.IsNullOrEmpty(tDay) &&
+									OpenBveApi.Objects.Helpers.TextureMapConvention.TryGetMapType(tDay, out mapType);
+
+								if (isMapType && mapType != OpenBveApi.Objects.Helpers.TextureMapType.Emissive)
+								{
+									switch (mapType)
+									{
+									case OpenBveApi.Objects.Helpers.TextureMapType.Normal:
+										currentMeshBuilder.Materials[0].NormalMap = tDay;
+										break;
+									case OpenBveApi.Objects.Helpers.TextureMapType.NormalDirectX:
+										currentMeshBuilder.Materials[0].NormalMap = tDay;
+										currentMeshBuilder.Materials[0].NormalMapIsDirectX = true;
+										break;
+									case OpenBveApi.Objects.Helpers.TextureMapType.AmbientOcclusion:
+										currentMeshBuilder.Materials[0].AmbientOcclusionMap = tDay;
+										break;
+									case OpenBveApi.Objects.Helpers.TextureMapType.ORM:
+										currentMeshBuilder.Materials[0].AmbientOcclusionMap = tDay;
+										currentMeshBuilder.Materials[0].AmbientOcclusionMapIsORM = true;
+										break;
+									case OpenBveApi.Objects.Helpers.TextureMapType.Roughness:
+									case OpenBveApi.Objects.Helpers.TextureMapType.Metallic:
+									case OpenBveApi.Objects.Helpers.TextureMapType.MetallicRoughness:
+										currentMeshBuilder.Materials[0].MetallicRoughnessMap = tDay;
+										currentMeshBuilder.Materials[0].Flags |= MaterialFlags.HasMetallicRoughness;
+										break;
+									}
+								}
+								else
+								{
+									currentMeshBuilder.Materials[0].DaytimeTexture = tDay;
+									currentMeshBuilder.Materials[0].NighttimeTexture = tNight;
+
+									if (isMapType)
+									{
+										if ((currentMeshBuilder.Materials[0].Flags & MaterialFlags.Emissive) != 0)
+										{
+											Plugin.currentHost.AddMessage(MessageType.Warning, false, "Emissive texture '" + tDay + "' ignored; legacy EmissiveColor takes precedence in the same meshbuilder section at line " + subBlock.CurrentLine + " in file " + fileName);
+										}
+									}
+								}
 							}
 							else
 							{
@@ -255,45 +297,7 @@ namespace Object.CsvB3d
 								}
 							}
 
-							// Auto-detect map type from the daytime texture filename suffix (e.g. _normal).
-							if (currentMeshBuilder.Materials[0].DaytimeTexture != null &&
-								OpenBveApi.Objects.Helpers.TextureMapConvention.TryGetMapType(currentMeshBuilder.Materials[0].DaytimeTexture, out OpenBveApi.Objects.Helpers.TextureMapType mapType))
-							{
-								switch (mapType)
-								{
-									case OpenBveApi.Objects.Helpers.TextureMapType.Normal:
-										currentMeshBuilder.Materials[0].NormalMap = currentMeshBuilder.Materials[0].DaytimeTexture;
-										break;
-									case OpenBveApi.Objects.Helpers.TextureMapType.NormalDirectX:
-										currentMeshBuilder.Materials[0].NormalMap = currentMeshBuilder.Materials[0].DaytimeTexture;
-										currentMeshBuilder.Materials[0].NormalMapIsDirectX = true;
-										break;
-									case OpenBveApi.Objects.Helpers.TextureMapType.Emissive:
-										// Legacy behaviour: a solid EmissiveColor takes precedence over an emissive texture map.
-										if ((currentMeshBuilder.Materials[0].Flags & MaterialFlags.Emissive) != 0)
-										{
-											Plugin.currentHost.AddMessage(MessageType.Warning, false, "Emissive texture '" + currentMeshBuilder.Materials[0].DaytimeTexture + "' ignored; legacy EmissiveColor takes precedence in the same meshbuilder section at line " + subBlock.CurrentLine + " in file " + fileName);
-										}
-										// Do not load as a texture map; treat the file as a regular diffuse texture.
-										break;
-									case OpenBveApi.Objects.Helpers.TextureMapType.AmbientOcclusion:
-										// The AO map is the daytime texture itself (file explicitly named *_ao).
-										currentMeshBuilder.Materials[0].AmbientOcclusionMap = currentMeshBuilder.Materials[0].DaytimeTexture;
-										break;
-									case OpenBveApi.Objects.Helpers.TextureMapType.ORM:
-										// The ORM map is the daytime texture itself (file explicitly named *_orm); AO is packed in the R channel.
-										currentMeshBuilder.Materials[0].AmbientOcclusionMap = currentMeshBuilder.Materials[0].DaytimeTexture;
-										currentMeshBuilder.Materials[0].AmbientOcclusionMapIsORM = true;
-										break;
-									default:
-										// Reserved PBR map types (rough/metal) are not yet consumed; ignore silently.
-										break;
-								}
-							}
-
-							// Auto-discover sibling AO / ORM maps from the diffuse name (e.g. brick.jpg -> brick_ao.jpg or brick_orm.jpg).
-							if (!string.IsNullOrEmpty(currentMeshBuilder.Materials[0].DaytimeTexture) &&
-								(currentMeshBuilder.Materials[0].AmbientOcclusionMap == null))
+							if (!string.IsNullOrEmpty(currentMeshBuilder.Materials[0].DaytimeTexture) && currentMeshBuilder.Materials[0].AmbientOcclusionMap == null)
 							{
 								string ao = TryFindSiblingMap(currentMeshBuilder.Materials[0].DaytimeTexture, new[] { "_orm", "_arm", "_ao", "_ambientocclusion" });
 								if (ao != null)
@@ -302,7 +306,6 @@ namespace Object.CsvB3d
 									currentMeshBuilder.Materials[0].AmbientOcclusionMapIsORM = OpenBveApi.Objects.Helpers.TextureMapConvention.TryGetMapType(ao, out OpenBveApi.Objects.Helpers.TextureMapType aoType) && aoType == OpenBveApi.Objects.Helpers.TextureMapType.ORM;
 								}
 							}
-
 							break;
 						case CSVB3DKey.LoadLightMap:
 							if (subBlock.GetNextPath(basePath, out string lightMap))
@@ -392,9 +395,116 @@ namespace Object.CsvB3d
 
 
 			}
+			TryAutoDiscoverTextures(fileName, basePath, ref currentMeshBuilder);
 			currentMeshBuilder.Apply(ref staticObject, Plugin.enabledHacks.BveTsHacks);
 			staticObject.Mesh.CreateNormals();
 			return staticObject;
+		}
+
+		private static void TryAutoDiscoverTextures(string b3dFilePath, string basePath, ref MeshBuilder meshBuilder)
+		{
+			if (meshBuilder.Materials[0].DaytimeTexture != null)
+			{
+				return;
+			}
+
+			string directory = System.IO.Path.GetDirectoryName(b3dFilePath);
+			string baseName = System.IO.Path.GetFileNameWithoutExtension(b3dFilePath);
+
+			if (string.IsNullOrEmpty(directory) || string.IsNullOrEmpty(baseName))
+			{
+				return;
+			}
+
+			string[] imageExtensions = { ".png", ".jpg", ".jpeg", ".bmp", ".tga", ".dds" };
+			string[] resolutionSuffixes = { "_1k", "_2k", "_4k", "_8k", "_16k", "_512", "_1024", "_2048", "_4096" };
+
+			foreach (string file in System.IO.Directory.GetFiles(directory))
+			{
+				string ext = System.IO.Path.GetExtension(file);
+				if (!imageExtensions.Contains(ext, StringComparer.OrdinalIgnoreCase))
+				{
+					continue;
+				}
+
+				string nameWithoutExt = System.IO.Path.GetFileNameWithoutExtension(file);
+				if (string.IsNullOrEmpty(nameWithoutExt) || !nameWithoutExt.StartsWith(baseName, StringComparison.OrdinalIgnoreCase))
+				{
+					continue;
+				}
+
+				string suffix = nameWithoutExt.Substring(baseName.Length);
+				if (string.IsNullOrEmpty(suffix))
+				{
+					if (meshBuilder.Materials[0].DaytimeTexture == null)
+					{
+						meshBuilder.Materials[0].DaytimeTexture = file;
+					}
+					continue;
+				}
+
+				foreach (string res in resolutionSuffixes)
+				{
+					if (suffix.EndsWith(res, StringComparison.OrdinalIgnoreCase))
+					{
+						suffix = suffix.Substring(0, suffix.Length - res.Length);
+						break;
+					}
+				}
+
+				// Build a virtual name with the resolution suffix stripped for map-type matching
+				string strippedName = baseName + suffix;
+				string strippedFile = System.IO.Path.Combine(directory, strippedName + ext);
+
+				if (OpenBveApi.Objects.Helpers.TextureMapConvention.TryGetMapType(strippedFile, out OpenBveApi.Objects.Helpers.TextureMapType mapType))
+				{
+					switch (mapType)
+					{
+					case OpenBveApi.Objects.Helpers.TextureMapType.Normal:
+						if (meshBuilder.Materials[0].NormalMap == null)
+						{
+							meshBuilder.Materials[0].NormalMap = file;
+						}
+						break;
+					case OpenBveApi.Objects.Helpers.TextureMapType.NormalDirectX:
+						if (meshBuilder.Materials[0].NormalMap == null)
+						{
+							meshBuilder.Materials[0].NormalMap = file;
+							meshBuilder.Materials[0].NormalMapIsDirectX = true;
+						}
+						break;
+					case OpenBveApi.Objects.Helpers.TextureMapType.ORM:
+						if (meshBuilder.Materials[0].AmbientOcclusionMap == null)
+						{
+							meshBuilder.Materials[0].AmbientOcclusionMap = file;
+							meshBuilder.Materials[0].AmbientOcclusionMapIsORM = true;
+						}
+						break;
+					case OpenBveApi.Objects.Helpers.TextureMapType.AmbientOcclusion:
+						if (meshBuilder.Materials[0].AmbientOcclusionMap == null)
+						{
+							meshBuilder.Materials[0].AmbientOcclusionMap = file;
+						}
+						break;
+					case OpenBveApi.Objects.Helpers.TextureMapType.Roughness:
+					case OpenBveApi.Objects.Helpers.TextureMapType.Metallic:
+					case OpenBveApi.Objects.Helpers.TextureMapType.MetallicRoughness:
+						if (meshBuilder.Materials[0].MetallicRoughnessMap == null)
+						{
+							meshBuilder.Materials[0].MetallicRoughnessMap = file;
+							meshBuilder.Materials[0].Flags |= MaterialFlags.HasMetallicRoughness;
+						}
+						break;
+					}
+				}
+				else
+				{
+					if (meshBuilder.Materials[0].DaytimeTexture == null)
+					{
+						meshBuilder.Materials[0].DaytimeTexture = file;
+					}
+				}
+			}
 		}
 
 		/// <summary>
