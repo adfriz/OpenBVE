@@ -160,6 +160,9 @@ namespace LibRender2
 		/// <summary>Manages the Cascaded Shadow Mapping (CSM) system.</summary>
 		public Shadows Shadows;
 
+		/// <summary>The detected OpenGL version at runtime.</summary>
+		public Version OpenGLVersion { get; private set; }
+
 		/// <summary>Whether shadows are enabled.</summary>
 		public bool ShadowsEnabled => Shadows?.Enabled ?? false;
 
@@ -493,6 +496,8 @@ namespace LibRender2
 			currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("Menu"), "joystick.png"), TextureParameters.NoChange, out JoystickTexture);
 			currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("Menu"), "raildriver.png"), TextureParameters.NoChange, out RailDriverTexture);
 
+			OpenGLVersion = Shadows.DetectOpenGLVersion();
+			currentHost.AddMessage(MessageType.Information, false, $"Detected OpenGL version: {OpenGLVersion}");
 			Lighting.Initialize();
 			Shadows.Initialize();
         }
