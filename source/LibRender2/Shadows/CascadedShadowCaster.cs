@@ -39,12 +39,20 @@ namespace LibRender2.ShadowMapping
         /// <summary>Per-cascade depth bias for shadow acne prevention.</summary>
         public float[] CascadeBiases { get; private set; }
 
+        /// <summary>Per-cascade hardware polygon offset factor (GL.PolygonOffset).</summary>
+        public float[] PolygonOffsetFactors { get; private set; }
+
+        /// <summary>Per-cascade hardware polygon offset units (GL.PolygonOffset).</summary>
+        public float[] PolygonOffsetUnits { get; private set; }
+
         public CascadedShadowCaster(int cascadeCount = 3)
         {
             CascadeCount = cascadeCount;
             LightSpaceMatrices = new Matrix4D[cascadeCount];
             SplitDistances = new float[cascadeCount];
             CascadeBiases = new float[cascadeCount];
+            PolygonOffsetFactors = new float[cascadeCount];
+            PolygonOffsetUnits = new float[cascadeCount];
 
             for (int i = 0; i < cascadeCount; i++)
             {
@@ -134,11 +142,25 @@ namespace LibRender2.ShadowMapping
 
                 lightView = Matrix4D.LookAt(snappedCenter, snappedCenter + ld, up);
                 
-                // Push the near plane backward towards the sun to capture all shadow casters
-                double zNear = -2000.0;
-                double zFar = radius + DepthMargin;
+                // Tight per-cascade zNear/zFar from actual sub-frustum corners in light space.
+                Vector3[] subCorners = FrustumUtils.GetSubFrustumCorners(fullCorners, splitNearFrac, splitFarFrac);
+                double minZ = double.MaxValue;
+                double maxZ = double.MinValue;
+                for (int j = 0; j < subCorners.Length; j++)
+                {
+                    Vector3 cornerLS = TransformPoint(subCorners[j], lightView);
+                    if (cornerLS.Z < minZ) minZ = cornerLS.Z;
+                    if (cornerLS.Z > maxZ) maxZ = cornerLS.Z;
+                }
+                double zNearParam = -(maxZ + DepthMargin);
+                double zFarParam = -(minZ - DepthMargin);
+                if (zNearParam >= zFarParam)
+                {
+                    zNearParam = -2000.0;
+                    zFarParam = radius + DepthMargin;
+                }
 
-                Matrix4D.CreateOrthographic(orthoSize * 2.0, orthoSize * 2.0, zNear, zFar, out Matrix4D lightProj);
+                Matrix4D.CreateOrthographic(orthoSize * 2.0, orthoSize * 2.0, zNearParam, zFarParam, out Matrix4D lightProj);
 
                 LightSpaceMatrices[i] = lightView * lightProj;
                 SplitDistances[i] = (float)splits[i + 1];
@@ -146,9 +168,12 @@ namespace LibRender2.ShadowMapping
                 // Z-Bias: Convert physical texel size into a Depth Buffer fraction.
                 // This ensures we push the depth exactly enough to cure acne, but no more.
                 double texelWorldSize = (orthoSize * 2.0) / (double)Resolution;
-                double depthRange = zFar - zNear;
-                double baseBias = texelWorldSize / depthRange;
+                double depthRange = zFarParam - zNearParam;
+                double minBias = 2.0 / Math.Pow(2.0, 24.0);
+                double baseBias = Math.Max(texelWorldSize / depthRange, minBias);
                 CascadeBiases[i] = (float)baseBias;
+                PolygonOffsetFactors[i] = (float)(baseBias * 2.0);
+                PolygonOffsetUnits[i] = (float)(2.0);
             }
         }
 

@@ -100,25 +100,16 @@ float GetCascadeShadowFactor(sampler2DShadow shadowMap, vec4 posLightSpace, floa
     // Compute slope-scaled Z-bias dynamically based on the exact texel size fraction passed from C#.
     vec3 normal = normalize(vNormal);
     vec3 lightDir = normalize(uLight.position);
-    float biasScale = clamp(1.0 - dot(normal, lightDir), 0.0, 1.0);
-    // Multiply the base Z-bias by a slope factor to perfectly cure acne on thin meshes
-    float activeBias = bias * (1.0 + biasScale * normalBias); 
+    float cosAngle = max(dot(normal, lightDir), 0.001);
+    float slope = sqrt(1.0 - cosAngle * cosAngle) / cosAngle;
+    float activeBias = bias * (1.0 + slope * normalBias); 
 
     float currentDepth = projCoords.z - activeBias;
 
-    // Tight 4-tap rotated grid PCF for sharper shadows.
-    // Each tap is bilinear-averaged by the hardware sampler2DShadow.
-    vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
-    float shadow = 0.0;
-    
-    // Rotated grid offsets at a tight 0.5 texels
-    shadow += texture(shadowMap, vec3(projCoords.xy + vec2(-0.5, -0.5) * texelSize, currentDepth));
-    shadow += texture(shadowMap, vec3(projCoords.xy + vec2( 0.5, -0.5) * texelSize, currentDepth));
-    shadow += texture(shadowMap, vec3(projCoords.xy + vec2(-0.5,  0.5) * texelSize, currentDepth));
-    shadow += texture(shadowMap, vec3(projCoords.xy + vec2( 0.5,  0.5) * texelSize, currentDepth));
-    shadow *= 0.25;
-
-    return shadow;
+    // Hardware-accelerated PCF via textureGather (single instruction, 4 texel comparisons).
+    // Faster than 4x manual texture() with identical visual quality at equivalent radius.
+    vec4 gathered = textureGather(shadowMap, projCoords.xy, currentDepth);
+    return dot(gathered, vec4(0.25));
 }
 
 /// Helper to sample a cascade by index.

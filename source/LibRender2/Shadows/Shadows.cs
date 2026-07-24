@@ -141,12 +141,14 @@ namespace LibRender2.ShadowMapping
 				GL.Disable(EnableCap.CullFace);
 			}
 			GL.DepthMask(true);
+			GL.Enable(EnableCap.PolygonOffsetFill);
 			DepthShader.SetTexture(0);
 
 			for (int i = 0; i < Caster.CascadeCount; i++)
 			{
 				Map.BindCascadeForWriting(i);
 				GL.Clear(ClearBufferMask.DepthBufferBit);
+				GL.PolygonOffset(Caster.PolygonOffsetFactors[i], Caster.PolygonOffsetUnits[i]);
 				DepthShader.SetLightSpaceMatrix(Caster.LightSpaceMatrices[i]);
 
 				lock (renderer.VisibleObjects.LockObject)
@@ -167,6 +169,7 @@ namespace LibRender2.ShadowMapping
 			}
 
 			// 4. Restore state
+			GL.Disable(EnableCap.PolygonOffsetFill);
 			GL.DepthFunc(DepthFunction.Lequal);
 			GL.CullFace(CullFaceMode.Front);
 			GL.Viewport(0, 0, renderer.Screen.Width, renderer.Screen.Height);
@@ -302,7 +305,7 @@ namespace LibRender2.ShadowMapping
 				shader.SetCascadeShadowMapUnit(i, 4 + i);
 				// Split distance = the view-space Z where this cascade ends.
 				shader.SetShadowSplitDistance(i, (float)Caster.SplitDistances[i]);
-				shader.SetCascadeBias(i, Caster.CascadeBiases[i] + (float)renderer.currentOptions.ShadowBias);
+				shader.SetCascadeBias(i, (float)renderer.currentOptions.ShadowBias);
 				shader.SetNormalBias(i, (float)renderer.currentOptions.ShadowNormalBias);
 			}
 
