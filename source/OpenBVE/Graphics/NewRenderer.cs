@@ -201,7 +201,6 @@ namespace OpenBve.Graphics
 			Program.CurrentRoute.UpdateBackground(TimeElapsed, Program.Renderer.CurrentInterface != InterfaceType.Normal);
 			DefaultShader.SetShadowEnabled(ShadowsEnabled);
 			
-
 			// fog
 			float aa = Program.CurrentRoute.CurrentFog.Start;
 			float bb = Program.CurrentRoute.CurrentFog.End;

@@ -17,7 +17,6 @@
     <ProjectReference Include="../../TrainManager/TrainManager.csproj" />
     <ProjectReference Include="../Formats.OpenBve/Formats.OpenBve.csproj" />
   </ItemGroup>
-
 <Target Name="AfterBuild" AfterTargets="Build">
     <ItemGroup>
       <OutputFiles Include="$(TargetDir)$(TargetName).*" />
