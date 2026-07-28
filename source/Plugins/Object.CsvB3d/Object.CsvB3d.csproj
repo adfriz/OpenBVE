@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../OpenBveApi/OpenBveApi.csproj" />
+    <ProjectReference Include="../Formats.OpenBve/Formats.OpenBve.csproj" />
   </ItemGroup>
 
 <Target Name="AfterBuild" AfterTargets="Build">

@@ -15,4 +15,10 @@
     <ProjectReference Include="../../OpenBveApi/OpenBveApi.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="CoreWCF.Http" Version="1.9.1" />
+    <PackageReference Include="CoreWCF.NetNamedPipe" Version="1.9.1" />
+    <PackageReference Include="CoreWCF.Primitives" Version="1.9.1" />
+  </ItemGroup>
+
 </Project>

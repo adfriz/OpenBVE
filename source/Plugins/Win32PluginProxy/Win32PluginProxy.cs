@@ -26,7 +26,7 @@ using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.ServiceModel;
+using CoreWCF;
 using System.Threading;
 using OpenBveApi.Hosts;
 using OpenBveApi.Runtime;

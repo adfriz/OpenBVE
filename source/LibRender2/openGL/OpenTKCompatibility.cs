@@ -340,17 +340,17 @@ namespace OpenTK
                 keyboard.KeyDown += (kb, key, code) =>
                 {
                     var tkKey = MapKey(key);
-                    bool shift = kb.IsKeyPressed(Silk.NET.Input.Key.LShift) || kb.IsKeyPressed(Silk.NET.Input.Key.RShift);
-                    bool control = kb.IsKeyPressed(Silk.NET.Input.Key.LControl) || kb.IsKeyPressed(Silk.NET.Input.Key.RControl);
-                    bool alt = kb.IsKeyPressed(Silk.NET.Input.Key.LAlt) || kb.IsKeyPressed(Silk.NET.Input.Key.RAlt);
+                    bool shift = kb.IsKeyPressed(Silk.NET.Input.Key.ShiftLeft) || kb.IsKeyPressed(Silk.NET.Input.Key.ShiftRight);
+                    bool control = kb.IsKeyPressed(Silk.NET.Input.Key.ControlLeft) || kb.IsKeyPressed(Silk.NET.Input.Key.ControlRight);
+                    bool alt = kb.IsKeyPressed(Silk.NET.Input.Key.AltLeft) || kb.IsKeyPressed(Silk.NET.Input.Key.AltRight);
                     KeyDown?.Invoke(this, new OpenTK.Input.KeyboardKeyEventArgs { Key = tkKey, Shift = shift, Control = control, Alt = alt });
                 };
                 keyboard.KeyUp += (kb, key, code) =>
                 {
                     var tkKey = MapKey(key);
-                    bool shift = kb.IsKeyPressed(Silk.NET.Input.Key.LShift) || kb.IsKeyPressed(Silk.NET.Input.Key.RShift);
-                    bool control = kb.IsKeyPressed(Silk.NET.Input.Key.LControl) || kb.IsKeyPressed(Silk.NET.Input.Key.RControl);
-                    bool alt = kb.IsKeyPressed(Silk.NET.Input.Key.LAlt) || kb.IsKeyPressed(Silk.NET.Input.Key.RAlt);
+                    bool shift = kb.IsKeyPressed(Silk.NET.Input.Key.ShiftLeft) || kb.IsKeyPressed(Silk.NET.Input.Key.ShiftRight);
+                    bool control = kb.IsKeyPressed(Silk.NET.Input.Key.ControlLeft) || kb.IsKeyPressed(Silk.NET.Input.Key.ControlRight);
+                    bool alt = kb.IsKeyPressed(Silk.NET.Input.Key.AltLeft) || kb.IsKeyPressed(Silk.NET.Input.Key.AltRight);
                     KeyUp?.Invoke(this, new OpenTK.Input.KeyboardKeyEventArgs { Key = tkKey, Shift = shift, Control = control, Alt = alt });
                 };
             }
