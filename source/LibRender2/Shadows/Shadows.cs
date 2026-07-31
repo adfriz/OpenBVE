@@ -155,9 +155,9 @@ namespace LibRender2.ShadowMapping
 					/*
 					 * Culling Per-Cascade:
 					 * Distant objects don't need to be rendered into near-field high-res shadow maps.
-					 * We use a safety margin (150m) to catch long shadows from tall objects.
+					 * The DepthMargin safety margin catches long shadows from tall objects.
 					 */
-					double maxDistance = renderer.currentOptions.ShadowFilterCascades ? Caster.SplitDistances[i] + 150.0 : double.MaxValue;
+					double maxDistance = renderer.currentOptions.ShadowFilterCascades ? Caster.SplitDistances[i] + Caster.DepthMargin : double.MaxValue;
 					double maxDistanceSquared = maxDistance * maxDistance;
 
 					RenderFacesFiltered(renderer.VisibleObjects.OpaqueFaces, ref lastVAO, maxDistanceSquared);
@@ -167,22 +167,15 @@ namespace LibRender2.ShadowMapping
 			}
 
 			// 4. Restore state
+			// Only the state the main pass relies on is restored here; the remaining
+			// changes (cull mode, depth mask, ...) are normalised by the renderer's
+			// ResetOpenGlState() after the shadow pass.
 			GL.DepthFunc(DepthFunction.Lequal);
 			GL.CullFace(CullFaceMode.Front);
 			GL.Viewport(0, 0, renderer.Screen.Width, renderer.Screen.Height);
 			// Shadow pass corrupts the GL texture state, so ensure we null it out
 			// so the next render pass re-binds what it needs.
 			renderer.LastBoundTexture = null;
-		}
-
-		/// <summary>
-		/// Renders a collection of faces while minimizing VAO and texture state switches.
-		/// </summary>
-		/// <param name="faces">The faces to render.</param>
-		/// <param name="lastVAO">A reference to the last bound VAO handle, to avoid redundant binds.</param>
-		private void RenderFaces(IEnumerable<FaceState> faces, ref int lastVAO)
-		{
-			RenderFacesFiltered(faces, ref lastVAO, double.MaxValue);
 		}
 
 		/// <summary>
@@ -299,7 +292,6 @@ namespace LibRender2.ShadowMapping
 			for (int i = 0; i < cascadeCount; i++)
 			{
 				shader.SetCascadeLightSpaceMatrix(i, Caster.LightSpaceMatrices[i]);
-				shader.SetCascadeShadowMapUnit(i, 4 + i);
 				// Split distance = the view-space Z where this cascade ends.
 				shader.SetShadowSplitDistance(i, (float)Caster.SplitDistances[i]);
 				shader.SetCascadeBias(i, Caster.CascadeBiases[i] + (float)renderer.currentOptions.ShadowBias);

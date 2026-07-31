@@ -60,9 +60,6 @@ namespace LibRender2.ShadowMapping
             {
                 CreateCascade(i);
             }
-
-            Console.WriteLine(
-                $"[CSM] Resized to {newCascadeCount} cascades at {newResolution}×{newResolution}");
         }
 
         private void CreateCascade(int index)
@@ -90,9 +87,11 @@ namespace LibRender2.ShadowMapping
             GL.TexParameter(TextureTarget.Texture2D,
                 TextureParameterName.TextureCompareMode,
                 (int)TextureCompareMode.CompareRefToTexture);
+            // GL_TEXTURE_COMPARE_FUNC takes glDepthFunc-style values, so DepthFunction is
+            // the correct enum in this OpenTK version (TextureCompareMode has no Lequal).
             GL.TexParameter(TextureTarget.Texture2D,
                 TextureParameterName.TextureCompareFunc,
-                (int)All.Lequal);
+                (int)DepthFunction.Lequal);
             GL.BindTexture(TextureTarget.Texture2D, 0);
 
             // Generate FBO

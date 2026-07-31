@@ -45,26 +45,11 @@ namespace LibRender2.Shaders
 		private readonly int uShadowEnabledLocation;
 		private readonly int uShadowStrengthLocation;
 		private readonly int uShadowCascadeCountLocation;
-		private readonly int uShadowMap0Location;
-		private readonly int uShadowMap1Location;
-		private readonly int uShadowMap2Location;
-		private readonly int uShadowMap3Location;
-		private readonly int uShadowSplit0Location;
-		private readonly int uShadowSplit1Location;
-		private readonly int uShadowSplit2Location;
-		private readonly int uShadowSplit3Location;
-		private readonly int uShadowBias0Location;
-		private readonly int uShadowBias1Location;
-		private readonly int uShadowBias2Location;
-		private readonly int uShadowBias3Location;
-		private readonly int uShadowNormalBias0Location;
-		private readonly int uShadowNormalBias1Location;
-		private readonly int uShadowNormalBias2Location;
-		private readonly int uShadowNormalBias3Location;
-		private readonly int uLightSpaceMatrix0Location;
-		private readonly int uLightSpaceMatrix1Location;
-		private readonly int uLightSpaceMatrix2Location;
-		private readonly int uLightSpaceMatrix3Location;
+		private readonly int[] uShadowMapLocations;
+		private readonly int[] uShadowSplitLocations;
+		private readonly int[] uShadowBiasLocations;
+		private readonly int[] uShadowNormalBiasLocations;
+		private readonly int[] uLightSpaceMatrixLocations;
 		private readonly int uModelMatrixLocation;
 		private readonly int uCurrentViewMatrixLocation;
 
@@ -81,26 +66,41 @@ namespace LibRender2.Shaders
 			uShadowEnabledLocation = GL.GetUniformLocation(Handle, "uShadowEnabled");
 			uShadowStrengthLocation = GL.GetUniformLocation(Handle, "uShadowStrength");
 			uShadowCascadeCountLocation = GL.GetUniformLocation(Handle, "uShadowCascadeCount");
-			uShadowMap0Location = GL.GetUniformLocation(Handle, "uShadowMap0");
-			uShadowMap1Location = GL.GetUniformLocation(Handle, "uShadowMap1");
-			uShadowMap2Location = GL.GetUniformLocation(Handle, "uShadowMap2");
-			uShadowMap3Location = GL.GetUniformLocation(Handle, "uShadowMap3");
-			uShadowSplit0Location = GL.GetUniformLocation(Handle, "uShadowSplit0");
-			uShadowSplit1Location = GL.GetUniformLocation(Handle, "uShadowSplit1");
-			uShadowSplit2Location = GL.GetUniformLocation(Handle, "uShadowSplit2");
-			uShadowSplit3Location = GL.GetUniformLocation(Handle, "uShadowSplit3");
-			uShadowBias0Location = GL.GetUniformLocation(Handle, "uShadowBias0");
-			uShadowBias1Location = GL.GetUniformLocation(Handle, "uShadowBias1");
-			uShadowBias2Location = GL.GetUniformLocation(Handle, "uShadowBias2");
-			uShadowBias3Location = GL.GetUniformLocation(Handle, "uShadowBias3");
-			uShadowNormalBias0Location = GL.GetUniformLocation(Handle, "uShadowNormalBias0");
-			uShadowNormalBias1Location = GL.GetUniformLocation(Handle, "uShadowNormalBias1");
-			uShadowNormalBias2Location = GL.GetUniformLocation(Handle, "uShadowNormalBias2");
-			uShadowNormalBias3Location = GL.GetUniformLocation(Handle, "uShadowNormalBias3");
-			uLightSpaceMatrix0Location = GL.GetUniformLocation(Handle, "uLightSpaceMatrix0");
-			uLightSpaceMatrix1Location = GL.GetUniformLocation(Handle, "uLightSpaceMatrix1");
-			uLightSpaceMatrix2Location = GL.GetUniformLocation(Handle, "uLightSpaceMatrix2");
-			uLightSpaceMatrix3Location = GL.GetUniformLocation(Handle, "uLightSpaceMatrix3");
+			uShadowMapLocations = new[]
+			{
+				GL.GetUniformLocation(Handle, "uShadowMap0"),
+				GL.GetUniformLocation(Handle, "uShadowMap1"),
+				GL.GetUniformLocation(Handle, "uShadowMap2"),
+				GL.GetUniformLocation(Handle, "uShadowMap3"),
+			};
+			uShadowSplitLocations = new[]
+			{
+				GL.GetUniformLocation(Handle, "uShadowSplit0"),
+				GL.GetUniformLocation(Handle, "uShadowSplit1"),
+				GL.GetUniformLocation(Handle, "uShadowSplit2"),
+				GL.GetUniformLocation(Handle, "uShadowSplit3"),
+			};
+			uShadowBiasLocations = new[]
+			{
+				GL.GetUniformLocation(Handle, "uShadowBias0"),
+				GL.GetUniformLocation(Handle, "uShadowBias1"),
+				GL.GetUniformLocation(Handle, "uShadowBias2"),
+				GL.GetUniformLocation(Handle, "uShadowBias3"),
+			};
+			uShadowNormalBiasLocations = new[]
+			{
+				GL.GetUniformLocation(Handle, "uShadowNormalBias0"),
+				GL.GetUniformLocation(Handle, "uShadowNormalBias1"),
+				GL.GetUniformLocation(Handle, "uShadowNormalBias2"),
+				GL.GetUniformLocation(Handle, "uShadowNormalBias3"),
+			};
+			uLightSpaceMatrixLocations = new[]
+			{
+				GL.GetUniformLocation(Handle, "uLightSpaceMatrix0"),
+				GL.GetUniformLocation(Handle, "uLightSpaceMatrix1"),
+				GL.GetUniformLocation(Handle, "uLightSpaceMatrix2"),
+				GL.GetUniformLocation(Handle, "uLightSpaceMatrix3"),
+			};
 			uModelMatrixLocation = GL.GetUniformLocation(Handle, "uModelMatrix");
 			uCurrentViewMatrixLocation = GL.GetUniformLocation(Handle, "uCurrentViewMatrix");
 
@@ -109,10 +109,10 @@ namespace LibRender2.Shaders
 
 			// Initialise shadow map units to something non-zero to avoid sampler collision with uTexture
 			// Note: GL spec forbids different sampler types (sampler2D and sampler2DShadow) targeting the same unit
-			GL.ProgramUniform1(Handle, uShadowMap0Location, 4);
-			GL.ProgramUniform1(Handle, uShadowMap1Location, 5);
-			GL.ProgramUniform1(Handle, uShadowMap2Location, 6);
-			GL.ProgramUniform1(Handle, uShadowMap3Location, 7);
+			for (int i = 0; i < uShadowMapLocations.Length; i++)
+			{
+				GL.ProgramUniform1(Handle, uShadowMapLocations[i], 4 + i);
+			}
 			// Also ensure shadow is disabled by default
 			GL.ProgramUniform1(Handle, uShadowEnabledLocation, 0);
 			GL.ProgramUniform1(Handle, uShadowCascadeCountLocation, 0);
@@ -180,7 +180,7 @@ namespace LibRender2.Shaders
 		}
 
 
-		private Matrix4 ConvertToMatrix4(Matrix4D mat)
+		private static Matrix4 ConvertToMatrix4(Matrix4D mat)
 		{
 			return new Matrix4(
 				(float)mat.Row0.X, (float)mat.Row0.Y, (float)mat.Row0.Z, (float)mat.Row0.W,
@@ -209,6 +209,15 @@ namespace LibRender2.Shaders
 		public void SetCurrentAnimationMatricies(ObjectState objectState)
 		{
 			Renderer.lastObjectState = null; // clear the cached object state, as otherwise it might be stale
+			UpdateAnimationMatrixBuffer(objectState);
+		}
+
+		/// <summary>
+		/// Uploads the animation matricies of an object state to its uniform buffer, generating the buffer on first use.
+		/// </summary>
+		/// <param name="objectState">The object state whose matricies should be uploaded.</param>
+		internal static void UpdateAnimationMatrixBuffer(ObjectState objectState)
+		{
 			Matrix4[] matriciesToShader = new Matrix4[objectState.Matricies.Length];
 
 			for (int i = 0; i < objectState.Matricies.Length; i++)
@@ -226,7 +235,6 @@ namespace LibRender2.Shaders
 				GL.BindBuffer(BufferTarget.UniformBuffer, objectState.MatrixBufferIndex);
 				GL.BufferData(BufferTarget.UniformBuffer, sizeof(Matrix4) * matriciesToShader.Length, matriciesToShader, BufferUsageHint.StaticDraw);
 			}
-
 		}
 
 		/// <summary>
@@ -433,75 +441,45 @@ namespace LibRender2.Shaders
 			GL.ProgramUniform1(Handle, uShadowEnabledLocation, enabled ? 1 : 0);
 		}
 
+		/// <summary>Sets the light-space matrix of a shadow cascade (index 0-3, others ignored).</summary>
 		public void SetCascadeLightSpaceMatrix(int cascade, OpenBveApi.Math.Matrix4D matrix)
 		{
-			int loc;
-			switch (cascade)
+			if (cascade < 0 || cascade >= uLightSpaceMatrixLocations.Length)
 			{
-				case 0: loc = uLightSpaceMatrix0Location; break;
-				case 1: loc = uLightSpaceMatrix1Location; break;
-				case 2: loc = uLightSpaceMatrix2Location; break;
-				case 3: loc = uLightSpaceMatrix3Location; break;
-				default: return;
+				return;
 			}
 			Matrix4 OpenTKMatrix = ConvertToMatrix4(matrix);
-			GL.ProgramUniformMatrix4(Handle, loc, false, ref OpenTKMatrix);
+			GL.ProgramUniformMatrix4(Handle, uLightSpaceMatrixLocations[cascade], false, ref OpenTKMatrix);
 		}
 
-		public void SetCascadeShadowMapUnit(int cascade, int textureUnit)
-		{
-			int loc;
-			switch (cascade)
-			{
-				case 0: loc = uShadowMap0Location; break;
-				case 1: loc = uShadowMap1Location; break;
-				case 2: loc = uShadowMap2Location; break;
-				case 3: loc = uShadowMap3Location; break;
-				default: return;
-			}
-			GL.ProgramUniform1(Handle, loc, textureUnit);
-		}
-
+		/// <summary>Sets the view-space Z distance at which a shadow cascade (index 0-3, others ignored) ends.</summary>
 		public void SetShadowSplitDistance(int cascade, float distance)
 		{
-			int loc;
-			switch (cascade)
+			if (cascade < 0 || cascade >= uShadowSplitLocations.Length)
 			{
-				case 0: loc = uShadowSplit0Location; break;
-				case 1: loc = uShadowSplit1Location; break;
-				case 2: loc = uShadowSplit2Location; break;
-				case 3: loc = uShadowSplit3Location; break;
-				default: return;
+				return;
 			}
-			GL.ProgramUniform1(Handle, loc, distance);
+			GL.ProgramUniform1(Handle, uShadowSplitLocations[cascade], distance);
 		}
 
+		/// <summary>Sets the depth bias used when sampling a shadow cascade (index 0-3, others ignored).</summary>
 		public void SetCascadeBias(int cascade, float bias)
 		{
-			int loc;
-			switch (cascade)
+			if (cascade < 0 || cascade >= uShadowBiasLocations.Length)
 			{
-				case 0: loc = uShadowBias0Location; break;
-				case 1: loc = uShadowBias1Location; break;
-				case 2: loc = uShadowBias2Location; break;
-				case 3: loc = uShadowBias3Location; break;
-				default: return;
+				return;
 			}
-			GL.ProgramUniform1(Handle, loc, bias);
+			GL.ProgramUniform1(Handle, uShadowBiasLocations[cascade], bias);
 		}
 
+		/// <summary>Sets the slope-scaled normal bias of a shadow cascade (index 0-3, others ignored).</summary>
 		public void SetNormalBias(int cascade, float bias)
 		{
-			int loc;
-			switch (cascade)
+			if (cascade < 0 || cascade >= uShadowNormalBiasLocations.Length)
 			{
-				case 0: loc = uShadowNormalBias0Location; break;
-				case 1: loc = uShadowNormalBias1Location; break;
-				case 2: loc = uShadowNormalBias2Location; break;
-				case 3: loc = uShadowNormalBias3Location; break;
-				default: return;
+				return;
 			}
-			GL.ProgramUniform1(Handle, loc, bias);
+			GL.ProgramUniform1(Handle, uShadowNormalBiasLocations[cascade], bias);
 		}
 
 		public void SetShadowCascadeCount(int count)
@@ -524,17 +502,6 @@ namespace LibRender2.Shaders
 		{
 			Matrix4 matrix = ConvertToMatrix4(modelMatrix);
 			GL.ProgramUniformMatrix4(Handle, uModelMatrixLocation, false, ref matrix);
-		}
-
-		private static float[] Matrix4DToFloatArray(OpenBveApi.Math.Matrix4D m)
-		{
-			return new float[]
-			{
-				(float)m.Row0.X, (float)m.Row0.Y, (float)m.Row0.Z, (float)m.Row0.W,
-				(float)m.Row1.X, (float)m.Row1.Y, (float)m.Row1.Z, (float)m.Row1.W,
-				(float)m.Row2.X, (float)m.Row2.Y, (float)m.Row2.Z, (float)m.Row2.W,
-				(float)m.Row3.X, (float)m.Row3.Y, (float)m.Row3.Z, (float)m.Row3.W
-			};
 		}
 
 		#endregion
