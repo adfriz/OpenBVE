@@ -229,6 +229,9 @@ namespace OpenBve {
             this.updownTimeAccelerationFactor = new System.Windows.Forms.NumericUpDown();
             this.checkBoxIsUseNewRenderer = new System.Windows.Forms.CheckBox();
             this.checkBoxLoadInAdvance = new System.Windows.Forms.CheckBox();
+            this.groupBoxExperimentalOptions = new System.Windows.Forms.GroupBox();
+            this.labelExperimentalWarning = new System.Windows.Forms.Label();
+            this.flowLayoutPanelExperimental = new System.Windows.Forms.FlowLayoutPanel();
             this.groupBoxPackageOptions = new System.Windows.Forms.GroupBox();
             this.buttonMSTSTrainsetDirectory = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
@@ -560,6 +563,8 @@ namespace OpenBve {
             this.groupBoxKioskMode.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownKioskTimeout)).BeginInit();
             this.groupBoxAdvancedOptions.SuspendLayout();
+            this.groupBoxExperimentalOptions.SuspendLayout();
+            this.flowLayoutPanelExperimental.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureboxCursor)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.updownTimeAccelerationFactor)).BeginInit();
             this.groupBoxPackageOptions.SuspendLayout();
@@ -2412,8 +2417,10 @@ namespace OpenBve {
             this.panelOptionsPage2.Controls.Add(this.groupboxShadows);
             this.panelOptionsPage2.Controls.Add(this.groupboxInterpolation);
             this.panelOptionsPage2.Controls.Add(this.groupBoxAdvancedOptions);
+            this.panelOptionsPage2.Controls.Add(this.groupBoxExperimentalOptions);
             this.panelOptionsPage2.Controls.Add(this.groupBoxObjectParser);
             this.panelOptionsPage2.Controls.Add(this.groupboxSimulation);
+            this.panelOptionsPage2.AutoScroll = true;
             this.panelOptionsPage2.Location = new System.Drawing.Point(0, 72);
             this.panelOptionsPage2.Name = "panelOptionsPage2";
             this.panelOptionsPage2.Size = new System.Drawing.Size(683, 583);
@@ -3165,6 +3172,38 @@ namespace OpenBve {
             this.groupBoxAdvancedOptions.TabIndex = 21;
             this.groupBoxAdvancedOptions.TabStop = false;
             this.groupBoxAdvancedOptions.Text = "Advanced Options";
+            // 
+            // groupBoxExperimentalOptions
+            // 
+            this.groupBoxExperimentalOptions.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBoxExperimentalOptions.Controls.Add(this.labelExperimentalWarning);
+            this.groupBoxExperimentalOptions.Controls.Add(this.flowLayoutPanelExperimental);
+            this.groupBoxExperimentalOptions.ForeColor = System.Drawing.Color.Black;
+            this.groupBoxExperimentalOptions.Location = new System.Drawing.Point(0, 531);
+            this.groupBoxExperimentalOptions.Name = "groupBoxExperimentalOptions";
+            this.groupBoxExperimentalOptions.Size = new System.Drawing.Size(321, 210);
+            this.groupBoxExperimentalOptions.TabIndex = 22;
+            this.groupBoxExperimentalOptions.TabStop = false;
+            this.groupBoxExperimentalOptions.Text = "Experimental features";
+            // 
+            // labelExperimentalWarning
+            // 
+            this.labelExperimentalWarning.Location = new System.Drawing.Point(8, 16);
+            this.labelExperimentalWarning.Name = "labelExperimentalWarning";
+            this.labelExperimentalWarning.Size = new System.Drawing.Size(305, 48);
+            this.labelExperimentalWarning.TabIndex = 0;
+            this.labelExperimentalWarning.Text = "Experimental features are potentially unstable. If the program crashes whilst any are enabled, they will be automatically reset.";
+            // 
+            // flowLayoutPanelExperimental
+            // 
+            this.flowLayoutPanelExperimental.AutoScroll = true;
+            this.flowLayoutPanelExperimental.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
+            this.flowLayoutPanelExperimental.Location = new System.Drawing.Point(8, 68);
+            this.flowLayoutPanelExperimental.Name = "flowLayoutPanelExperimental";
+            this.flowLayoutPanelExperimental.Size = new System.Drawing.Size(305, 134);
+            this.flowLayoutPanelExperimental.TabIndex = 1;
+            this.flowLayoutPanelExperimental.WrapContents = false;
             // 
             // checkBoxPanel2Extended
             // 
@@ -6497,6 +6536,10 @@ namespace OpenBve {
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownKioskTimeout)).EndInit();
             this.groupBoxAdvancedOptions.ResumeLayout(false);
             this.groupBoxAdvancedOptions.PerformLayout();
+            this.groupBoxExperimentalOptions.ResumeLayout(false);
+            this.groupBoxExperimentalOptions.PerformLayout();
+            this.flowLayoutPanelExperimental.ResumeLayout(false);
+            this.flowLayoutPanelExperimental.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureboxCursor)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.updownTimeAccelerationFactor)).EndInit();
             this.groupBoxPackageOptions.ResumeLayout(false);
@@ -6974,6 +7017,9 @@ namespace OpenBve {
         private System.Windows.Forms.Button buttonAbort;
 		private System.Windows.Forms.CheckBox checkBoxLoadingSway;
 		private System.Windows.Forms.GroupBox groupBoxAdvancedOptions;
+		private System.Windows.Forms.GroupBox groupBoxExperimentalOptions;
+		private System.Windows.Forms.Label labelExperimentalWarning;
+		private System.Windows.Forms.FlowLayoutPanel flowLayoutPanelExperimental;
 		private System.Windows.Forms.CheckBox checkBoxHacks;
 		private System.Windows.Forms.CheckBox checkBoxTransparencyFix;
 		private System.Windows.Forms.CheckBox checkBoxUnloadTextures;

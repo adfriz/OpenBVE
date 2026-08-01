@@ -5,6 +5,8 @@ using System.Reflection;
 using System.Windows.Forms;
 using Formats.OpenBve;
 using OpenBveApi;
+using OpenBveApi.Hosts;
+using OpenBveApi.Interface;
 using Path = OpenBveApi.Path;
 
 namespace RouteViewer
@@ -66,6 +68,12 @@ namespace RouteViewer
 				Builder.AppendLine("[parsers]");
 				Builder.AppendLine("xObject = " + (int)CurrentXParser);
 				Builder.AppendLine("objObject = " + (int)CurrentObjParser);
+				Builder.AppendLine();
+				Builder.AppendLine("[experimental]");
+				foreach (ExperimentalFeature feature in ExperimentalFeatures.All)
+				{
+					Builder.AppendLine(feature.Key.ToString() + " = " + (feature.Get(this) ? "true" : "false"));
+				}
 				Builder.AppendLine();
 				Builder.AppendLine("[Folders]");
 				Builder.AppendLine($"routesearch = {RouteSearchDirectory}");
@@ -158,16 +166,29 @@ namespace RouteViewer
 							block.GetEnumValue(OptionsKey.ObjObject, out Interface.CurrentOptions.CurrentObjParser);
 							block.GetValue(OptionsKey.GDIPlus, out Interface.CurrentOptions.UseGDIDecoders);
 							break;
-						case OptionsSection.Folders:
-							block.GetValue(OptionsKey.RouteSearch, out string folder);
-							if (Directory.Exists(folder))
-							{
-								Interface.CurrentOptions.RouteSearchDirectory = folder;
-							}
-							break;
-					}
+					case OptionsSection.Folders:
+						block.GetValue(OptionsKey.RouteSearch, out string folder);
+						if (Directory.Exists(folder))
+						{
+							Interface.CurrentOptions.RouteSearchDirectory = folder;
+						}
+						break;
+					case OptionsSection.Experimental:
+						foreach (ExperimentalFeature feature in ExperimentalFeatures.All)
+						{
+							bool value = feature.Get(Interface.CurrentOptions);
+							block.GetValue(feature.Key, out value);
+							feature.Set(Interface.CurrentOptions, value);
+						}
+						break;
 				}
 			}
+
+			if (ExperimentalFeatures.CheckCrashMarkerAndReset(Program.FileSystem.SettingsFolder, Interface.CurrentOptions, Path.CombineFile(optionsFolder, "options_rv.cfg")))
+			{
+				MessageBox.Show(Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"experimental", "crash_reset_message"}), Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+			}
+		}
 		}
 	}
 }

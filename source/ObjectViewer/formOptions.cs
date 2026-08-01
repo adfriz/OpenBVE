@@ -87,6 +87,11 @@ namespace ObjectViewer
 			comboBoxBackwards.SelectedItem = Interface.CurrentOptions.CameraMoveBackward;
 			checkBoxAutoReload.Checked = Interface.CurrentOptions.AutoReloadObjects;
 			checkBoxShadowFilterCascades.Checked = Interface.CurrentOptions.ShadowFilterCascades;
+
+			foreach (ExperimentalFeature feature in ExperimentalFeatures.All)
+			{
+				flowLayoutPanelExperimental.Controls.Add(ExperimentalFeatures.CreateCheckBox(feature, Interface.CurrentOptions));
+			}
 		}
 
 		private void InitializeSunSliders()
@@ -279,6 +284,8 @@ namespace ObjectViewer
 			Interface.CurrentOptions.ShadowBias = (double)numericUpDownShadowBias.Value;
 			Interface.CurrentOptions.ShadowNormalBias = (double)numericUpDownShadowNormalBias.Value;
 			Interface.CurrentOptions.ShadowFilterCascades = checkBoxShadowFilterCascades.Checked;
+
+			ExperimentalFeatures.ApplyCheckBoxes(flowLayoutPanelExperimental.Controls, Interface.CurrentOptions);
 			
 			Interface.CurrentOptions.Save(Path.CombineFile(Program.FileSystem.SettingsFolder, "1.5.0/options_ov.cfg"));
 			Program.RefreshObjects();

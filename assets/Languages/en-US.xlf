@@ -1421,6 +1421,20 @@
 						<source>UI Scale Factor:</source>
 					</trans-unit>
 				</group>
+				<group id="experimental">
+					<trans-unit id="title">
+						<source>Experimental features</source>
+					</trans-unit>
+					<trans-unit id="warning">
+						<source>Experimental features are potentially unstable. If the program crashes whilst any are enabled, they will be automatically reset.</source>
+					</trans-unit>
+					<trans-unit id="placeholder_name">
+						<source>Experimental placeholder feature</source>
+					</trans-unit>
+					<trans-unit id="crash_reset_message">
+						<source>The program crashed the last time it was run with experimental features enabled. All experimental features have been reset to their default (disabled) state.</source>
+					</trans-unit>
+				</group>
 				<group id="tooltips">
 					<trans-unit id="interpolation">
 						<source>The texture filtering mode used to smooth textures.</source>

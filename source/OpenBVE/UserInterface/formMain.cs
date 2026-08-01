@@ -553,6 +553,7 @@ namespace OpenBve {
 			Cursors.ListCursors(comboboxCursor);
 			checkBoxPanel2Extended.Checked = Interface.CurrentOptions.Panel2ExtendedMode;
 			LoadCompatibilitySignalSets();
+			SetupExperimentalFeatures();
 			try
 			{
 				SetFont(Controls, Interface.CurrentOptions.Font);
@@ -1191,6 +1192,15 @@ namespace OpenBve {
 			}
 		}
 
+		/// <summary>Populates the experimental features group with one checkbox per registered feature</summary>
+		private void SetupExperimentalFeatures()
+		{
+			foreach (ExperimentalFeature feature in ExperimentalFeatures.All)
+			{
+				flowLayoutPanelExperimental.Controls.Add(ExperimentalFeatures.CreateCheckBox(feature, Interface.CurrentOptions));
+			}
+		}
+
 		// form closing
 		private void formMain_FormClosing()
 		{
@@ -1286,6 +1296,7 @@ namespace OpenBve {
 			Interface.CurrentOptions.CameraInteriorTransition = checkboxCameraInteriorTransition.Checked;
 			Interface.CurrentOptions.CameraExteriorTransition = checkboxCameraExteriorTransition.Checked;
 			Interface.CurrentOptions.CameraTransitionSpeed = (double)updownCameraTransitionSpeed.Value;
+			ExperimentalFeatures.ApplyCheckBoxes(flowLayoutPanelExperimental.Controls, Interface.CurrentOptions);
 			switch (trackBarHUDSize.Value)
 			{
 				case 0:

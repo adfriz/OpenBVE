@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Threading;
 using System.Windows.Forms;
+using OpenBveApi;
 using OpenBveApi.Hosts;
 // ReSharper disable LocalizableElement
 // Note: Crashes may occur before languages have been loaded, so this file cannot be localised
@@ -40,6 +41,7 @@ namespace OpenBve
                 }
                 Program.ShowMessageBox("Unhandled exception:\n\n" + ex.Message, Application.ProductName);
                 LogCrash(ex + Environment.StackTrace);
+                ExperimentalFeatures.WriteCrashMarker(Program.FileSystem.SettingsFolder, Interface.CurrentOptions);
 
             }
             catch (Exception exc)
@@ -71,6 +73,7 @@ namespace OpenBve
             {
                 MessageBox.Show("An unhandled Windows Forms Exception occured. \r\n\r\n OpenBVE will now exit. Please consider reporting this with the \"Report Problem\" button on the bottom left of the main menu.", "OpenBVE Crashed", MessageBoxButtons.OK, MessageBoxIcon.Stop);
                 LogCrash(t.Exception + Environment.NewLine + Environment.StackTrace);
+                ExperimentalFeatures.WriteCrashMarker(Program.FileSystem.SettingsFolder, Interface.CurrentOptions);
             }
             catch (Exception exc)
             {
@@ -121,6 +124,10 @@ namespace OpenBve
                 else
                 {
                     outputFile.WriteLine("Current screen resolution is: Windowed " + Interface.CurrentOptions.WindowWidth + "px x " + Interface.CurrentOptions.WindowHeight + "px ");
+                }
+                if (Interface.CurrentOptions != null)
+                {
+                    outputFile.WriteLine("Experimental features enabled: " + ExperimentalFeatures.GetEnabledList(Interface.CurrentOptions));
                 }
                 //Route and train
 	            if (Program.CurrentRoute.Information.RouteFile != null)
@@ -213,6 +220,10 @@ namespace OpenBve
                 {
                     outputFile.WriteLine("Current screen resolution is: Windowed " + Interface.CurrentOptions.WindowWidth + "px X " + Interface.CurrentOptions.WindowHeight + "px ");
                 }
+                if (Interface.CurrentOptions != null)
+                {
+                    outputFile.WriteLine("Experimental features enabled: " + ExperimentalFeatures.GetEnabledList(Interface.CurrentOptions));
+                }
                 //Route and train information
                 try
                 {
@@ -256,6 +267,7 @@ namespace OpenBve
                 }
             }
             // Attempt to gracefully shutdown the renderer to terminate hanging threads etc.
+            ExperimentalFeatures.WriteCrashMarker(Program.FileSystem.SettingsFolder, Interface.CurrentOptions);
             Loading.Cancel = true;
 		}
     }

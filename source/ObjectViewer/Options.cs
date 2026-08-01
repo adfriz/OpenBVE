@@ -7,7 +7,9 @@ using Formats.OpenBve;
 using ObjectViewer.Graphics;
 using OpenBveApi;
 using OpenBveApi.Colors;
+using OpenBveApi.Hosts;
 using OpenBveApi.Input;
+using OpenBveApi.Interface;
 using Path = OpenBveApi.Path;
 
 namespace ObjectViewer
@@ -108,6 +110,12 @@ namespace ObjectViewer
 				Builder.AppendLine();
 				Builder.AppendLine("[objectOptimization]");
 				Builder.AppendLine($"mode = {ObjectOptimizationMode}");
+				Builder.AppendLine();
+				Builder.AppendLine("[experimental]");
+				foreach (ExperimentalFeature feature in ExperimentalFeatures.All)
+				{
+					Builder.AppendLine(feature.Key.ToString() + " = " + (feature.Get(this) ? "true" : "false"));
+				}
 				Builder.AppendLine();
 				Builder.AppendLine("[Folders]");
 				Builder.AppendLine($"objectsearch = {ObjectSearchDirectory}");
@@ -212,18 +220,31 @@ namespace ObjectViewer
 								Interface.CurrentOptions.ObjectSearchDirectory = folder;
 							}
 							break;
-						case OptionsSection.Keys:
-							block.GetEnumValue(OptionsKey.Left, out Interface.CurrentOptions.CameraMoveLeft);
-							block.GetEnumValue(OptionsKey.Right, out Interface.CurrentOptions.CameraMoveRight);
-							block.GetEnumValue(OptionsKey.Up, out Interface.CurrentOptions.CameraMoveUp);
-							block.GetEnumValue(OptionsKey.Down, out Interface.CurrentOptions.CameraMoveDown);
-							block.GetEnumValue(OptionsKey.Forward, out Interface.CurrentOptions.CameraMoveForward);
-							block.GetEnumValue(OptionsKey.Backward, out Interface.CurrentOptions.CameraMoveBackward);
-							break;
+					case OptionsSection.Keys:
+						block.GetEnumValue(OptionsKey.Left, out Interface.CurrentOptions.CameraMoveLeft);
+						block.GetEnumValue(OptionsKey.Right, out Interface.CurrentOptions.CameraMoveRight);
+						block.GetEnumValue(OptionsKey.Up, out Interface.CurrentOptions.CameraMoveUp);
+						block.GetEnumValue(OptionsKey.Down, out Interface.CurrentOptions.CameraMoveDown);
+						block.GetEnumValue(OptionsKey.Forward, out Interface.CurrentOptions.CameraMoveForward);
+						block.GetEnumValue(OptionsKey.Backward, out Interface.CurrentOptions.CameraMoveBackward);
+						break;
+					case OptionsSection.Experimental:
+						foreach (ExperimentalFeature feature in ExperimentalFeatures.All)
+						{
+							bool value = feature.Get(Interface.CurrentOptions);
+							block.GetValue(feature.Key, out value);
+							feature.Set(Interface.CurrentOptions, value);
+						}
+						break;
 
-					}
 				}
 			}
+
+			if (ExperimentalFeatures.CheckCrashMarkerAndReset(Program.FileSystem.SettingsFolder, Interface.CurrentOptions, Path.CombineFile(optionsFolder, "options_ov.cfg")))
+			{
+				MessageBox.Show(Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"experimental", "crash_reset_message"}), Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+			}
+		}
 		}
 	}
 }

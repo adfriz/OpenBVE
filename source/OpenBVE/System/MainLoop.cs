@@ -48,6 +48,11 @@ namespace OpenBve
 			Program.FileSystem.AppendToLogFile("Backend: " + (Interface.CurrentOptions.PreferNativeBackend ? "Native" : "SDL2"));
 			Program.FileSystem.AppendToLogFile("User Interface Size: " + Interface.CurrentOptions.UserInterfaceFolder);
 			Program.FileSystem.AppendToLogFile("User Interface Scale Factor: " + Interface.CurrentOptions.UserInterfaceScaleFactor);
+			string enabledExperimentalFeatures = OpenBveApi.ExperimentalFeatures.GetEnabledList(Interface.CurrentOptions);
+			if (enabledExperimentalFeatures != "None")
+			{
+				Program.FileSystem.AppendToLogFile("Experimental features enabled: " + enabledExperimentalFeatures);
+			}
 			if (Program.CurrentHost.Platform == HostPlatform.MicrosoftWindows)
 			{
 				Tolk.Load();

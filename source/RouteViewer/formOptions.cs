@@ -89,7 +89,12 @@ namespace RouteViewer
 				labelNearClip.Text = Translations.GetInterfaceString(OpenBveApi.Hosts.HostApplication.OpenBve, new[] { "options", "quality_distance_nearclip" });
 			}
 			checkBoxShadowFilterCascades.Checked = Interface.CurrentOptions.ShadowFilterCascades;
-        }
+
+			foreach (ExperimentalFeature feature in ExperimentalFeatures.All)
+			{
+				flowLayoutPanelExperimental.Controls.Add(ExperimentalFeatures.CreateCheckBox(feature, Interface.CurrentOptions));
+			}
+		}
 
         private void InitializeSunSliders()
         {
@@ -294,8 +299,7 @@ namespace RouteViewer
             Interface.CurrentOptions.ShadowNormalBias = (double)numericUpDownShadowNormalBias.Value;
             Interface.CurrentOptions.ShadowFilterCascades = checkBoxShadowFilterCascades.Checked;
 
-
-            
+			ExperimentalFeatures.ApplyCheckBoxes(flowLayoutPanelExperimental.Controls, Interface.CurrentOptions);
 
             // Sun direction is already updated in real-time via slider events
 

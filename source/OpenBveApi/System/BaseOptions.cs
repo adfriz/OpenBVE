@@ -147,6 +147,8 @@ namespace OpenBveApi
 		/// <summary>The color used by the renderer when issuing GL.Clear()</summary>
 		/// <remarks>Not saved</remarks>
 		public Color24 ClearColor = new Color24(170, 170, 170);
+		/// <summary>Enables the experimental placeholder feature</summary>
+		public bool EnableExperimentalPlaceholder;
 
 		/// <summary>Saves the options to the specified filename</summary>
 		/// <param name="fileName">The filename to save the options to</param>

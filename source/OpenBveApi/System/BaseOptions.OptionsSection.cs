@@ -44,6 +44,8 @@
 		/// <summary>Contains touch control options</summary>
 		Touch = 18,
 		/// <summary>Contains loading related options</summary>
-		Loading = 19
+		Loading = 19,
+		/// <summary>Contains experimental feature options</summary>
+		Experimental = 20
 	}
 }

@@ -92,6 +92,9 @@ namespace ObjectViewer
             this.numericUpDownShadowNormalBias = new System.Windows.Forms.NumericUpDown();
             this.labelShadowFilterCascades = new System.Windows.Forms.Label();
             this.checkBoxShadowFilterCascades = new System.Windows.Forms.CheckBox();
+            this.tabPageExperimental = new System.Windows.Forms.TabPage();
+            this.labelExperimentalWarning = new System.Windows.Forms.Label();
+            this.flowLayoutPanelExperimental = new System.Windows.Forms.FlowLayoutPanel();
             this.tabControl1.SuspendLayout();
             this.tabPageOptions.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.AntialiasingLevel)).BeginInit();
@@ -106,6 +109,8 @@ namespace ObjectViewer
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownShadowNormalBias)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nearClip)).BeginInit();
             this.tabPageKeys.SuspendLayout();
+            this.tabPageExperimental.SuspendLayout();
+            this.flowLayoutPanelExperimental.SuspendLayout();
             this.SuspendLayout();
             // 
             // tabControl1
@@ -113,6 +118,7 @@ namespace ObjectViewer
             this.tabControl1.Controls.Add(this.tabPageOptions);
             this.tabControl1.Controls.Add(this.tabPageShadows);
             this.tabControl1.Controls.Add(this.tabPageKeys);
+            this.tabControl1.Controls.Add(this.tabPageExperimental);
             this.tabControl1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
             this.tabControl1.Location = new System.Drawing.Point(1, 12);
             this.tabControl1.Name = "tabControl1";
@@ -783,6 +789,41 @@ namespace ObjectViewer
             this.tabPageKeys.Text = "Keys";
             this.tabPageKeys.UseVisualStyleBackColor = true;
             // 
+            // tabPageExperimental
+            // 
+            this.tabPageExperimental.Controls.Add(this.flowLayoutPanelExperimental);
+            this.tabPageExperimental.AutoScroll = true;
+            this.tabPageExperimental.Location = new System.Drawing.Point(4, 22);
+            this.tabPageExperimental.Name = "tabPageExperimental";
+            this.tabPageExperimental.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPageExperimental.Size = new System.Drawing.Size(304, 348);
+            this.tabPageExperimental.TabIndex = 2;
+            this.tabPageExperimental.Text = "Experimental";
+            this.tabPageExperimental.UseVisualStyleBackColor = true;
+            // 
+            // flowLayoutPanelExperimental
+            // 
+            this.flowLayoutPanelExperimental.AutoScroll = true;
+            this.flowLayoutPanelExperimental.Controls.Add(this.labelExperimentalWarning);
+            this.flowLayoutPanelExperimental.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.flowLayoutPanelExperimental.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
+            this.flowLayoutPanelExperimental.Location = new System.Drawing.Point(3, 3);
+            this.flowLayoutPanelExperimental.Name = "flowLayoutPanelExperimental";
+            this.flowLayoutPanelExperimental.Padding = new System.Windows.Forms.Padding(10);
+            this.flowLayoutPanelExperimental.Size = new System.Drawing.Size(298, 342);
+            this.flowLayoutPanelExperimental.TabIndex = 0;
+            this.flowLayoutPanelExperimental.WrapContents = false;
+            // 
+            // labelExperimentalWarning
+            // 
+            this.labelExperimentalWarning.AutoSize = true;
+            this.labelExperimentalWarning.Location = new System.Drawing.Point(13, 13);
+            this.labelExperimentalWarning.MaximumSize = new System.Drawing.Size(270, 0);
+            this.labelExperimentalWarning.Name = "labelExperimentalWarning";
+            this.labelExperimentalWarning.Size = new System.Drawing.Size(0, 13);
+            this.labelExperimentalWarning.TabIndex = 0;
+            this.labelExperimentalWarning.Text = "Experimental features are potentially unstable. If the program crashes whilst any are enabled, they will be automatically reset.";
+            // 
             // labelControls
             // 
             this.labelControls.AutoSize = true;
@@ -971,6 +1012,9 @@ namespace ObjectViewer
             ((System.ComponentModel.ISupportInitialize)(this.nearClip)).EndInit();
             this.tabPageKeys.ResumeLayout(false);
             this.tabPageKeys.PerformLayout();
+            this.tabPageExperimental.ResumeLayout(false);
+            this.flowLayoutPanelExperimental.ResumeLayout(false);
+            this.flowLayoutPanelExperimental.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -1041,5 +1085,8 @@ namespace ObjectViewer
 		private System.Windows.Forms.Label labelAutoReloadChanged;
 		private System.Windows.Forms.Label labelShadowFilterCascades;
 		private System.Windows.Forms.CheckBox checkBoxShadowFilterCascades;
+		private System.Windows.Forms.TabPage tabPageExperimental;
+		private System.Windows.Forms.Label labelExperimentalWarning;
+		private System.Windows.Forms.FlowLayoutPanel flowLayoutPanelExperimental;
 	}
 }

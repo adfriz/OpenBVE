@@ -9,6 +9,7 @@ using LibRender2.Overlays;
 using OpenBveApi;
 using OpenBveApi.Graphics;
 using OpenBveApi.Hosts;
+using OpenBveApi.Interface;
 using OpenBveApi.Objects;
 using SoundManager;
 using CompressionType = OpenBveApi.Packages.CompressionType;
@@ -342,6 +343,12 @@ namespace OpenBve
 				Builder.AppendLine("enablebvetshacks = " + (EnableBveTsHacks ? "true" : "false"));
 				Builder.AppendLine("enablebve5scriptedtrain = " + (EnableBve5ScriptedTrain ? "true" : "false"));
 				Builder.AppendLine();
+				Builder.AppendLine("[experimental]");
+				foreach (ExperimentalFeature feature in ExperimentalFeatures.All)
+				{
+					Builder.AppendLine(feature.Key.ToString() + " = " + (feature.Get(this) ? "true" : "false"));
+				}
+				Builder.AppendLine();
 				Builder.AppendLine("[verbosity]");
 				Builder.AppendLine("showWarningMessages = " + (ShowWarningMessages ? "true" : "false"));
 				Builder.AppendLine("showErrorMessages = " + (ShowErrorMessages ? "true" : "false"));
@@ -654,14 +661,27 @@ namespace OpenBve
 							block.GetEnumValue(OptionsKey.ObjObject, out Interface.CurrentOptions.CurrentObjParser);
 							block.GetValue(OptionsKey.GDIPlus, out Interface.CurrentOptions.UseGDIDecoders);
 							break;
-						case OptionsSection.Touch:
-							block.TryGetValue(OptionsKey.Cursor, ref CurrentOptions.CursorFileName);
-							block.GetValue(OptionsKey.Panel2Extended, out CurrentOptions.Panel2ExtendedMode);
-							block.GetValue(OptionsKey.Panel2ExtendedMinSize, out CurrentOptions.Panel2ExtendedMinSize);
-							break;
-					}
+					case OptionsSection.Touch:
+						block.TryGetValue(OptionsKey.Cursor, ref CurrentOptions.CursorFileName);
+						block.GetValue(OptionsKey.Panel2Extended, out CurrentOptions.Panel2ExtendedMode);
+						block.GetValue(OptionsKey.Panel2ExtendedMinSize, out CurrentOptions.Panel2ExtendedMinSize);
+						break;
+					case OptionsSection.Experimental:
+						foreach (ExperimentalFeature feature in ExperimentalFeatures.All)
+						{
+							bool value = feature.Get(CurrentOptions);
+							block.GetValue(feature.Key, out value);
+							feature.Set(CurrentOptions, value);
+						}
+						break;
 				}
 			}
+
+			if (ExperimentalFeatures.CheckCrashMarkerAndReset(Program.FileSystem.SettingsFolder, CurrentOptions, Path.CombineFile(OptionsDir, "options.cfg")))
+			{
+				Program.ShowMessageBox(Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"experimental", "crash_reset_message"}), Application.ProductName);
+			}
+		}
 		}
 		
 	}

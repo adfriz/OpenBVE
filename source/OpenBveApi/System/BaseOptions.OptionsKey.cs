@@ -116,6 +116,8 @@ namespace OpenBveApi
 		Up,
 		Down,
 		Forward,
-		Backward
+		Backward,
+		// Experimental
+		ExperimentalPlaceholder
     }
 }
