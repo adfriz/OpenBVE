@@ -198,6 +198,7 @@ namespace OpenBve {
             this.buttonOptionsPrevious = new System.Windows.Forms.Button();
             this.buttonOptionsNext = new System.Windows.Forms.Button();
             this.panelOptionsPage3 = new System.Windows.Forms.Panel();
+            this.panelOptionsPage4 = new System.Windows.Forms.Panel();
             this.groupBoxInputDevice = new System.Windows.Forms.GroupBox();
             this.labelInputDevice = new System.Windows.Forms.Label();
             this.listviewInputDevice = new System.Windows.Forms.ListView();
@@ -230,7 +231,10 @@ namespace OpenBve {
             this.checkBoxIsUseNewRenderer = new System.Windows.Forms.CheckBox();
             this.checkBoxLoadInAdvance = new System.Windows.Forms.CheckBox();
             this.groupBoxExperimentalOptions = new System.Windows.Forms.GroupBox();
+            this.panelExperimentalBanner = new System.Windows.Forms.Panel();
+            this.pictureboxExperimentalWarning = new System.Windows.Forms.PictureBox();
             this.labelExperimentalWarning = new System.Windows.Forms.Label();
+            this.labelExperimentalBannerSeparator = new System.Windows.Forms.Label();
             this.flowLayoutPanelExperimental = new System.Windows.Forms.FlowLayoutPanel();
             this.groupBoxPackageOptions = new System.Windows.Forms.GroupBox();
             this.buttonMSTSTrainsetDirectory = new System.Windows.Forms.Button();
@@ -558,12 +562,15 @@ namespace OpenBve {
             ((System.ComponentModel.ISupportInitialize)(this.updownShadowBias)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.updownShadowNormalBias)).BeginInit();
             this.panelOptionsPage3.SuspendLayout();
+            this.panelOptionsPage4.SuspendLayout();
             this.groupBoxInputDevice.SuspendLayout();
             this.groupBoxObjectParser.SuspendLayout();
             this.groupBoxKioskMode.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownKioskTimeout)).BeginInit();
             this.groupBoxAdvancedOptions.SuspendLayout();
             this.groupBoxExperimentalOptions.SuspendLayout();
+            this.panelExperimentalBanner.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureboxExperimentalWarning)).BeginInit();
             this.flowLayoutPanelExperimental.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureboxCursor)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.updownTimeAccelerationFactor)).BeginInit();
@@ -1579,6 +1586,7 @@ namespace OpenBve {
             this.panelOptions.Controls.Add(this.buttonOptionsPrevious);
             this.panelOptions.Controls.Add(this.buttonOptionsNext);
             this.panelOptions.Controls.Add(this.panelOptionsPage3);
+            this.panelOptions.Controls.Add(this.panelOptionsPage4);
             this.panelOptions.Controls.Add(this.pictureboxLanguage);
             this.panelOptions.Controls.Add(this.comboboxLanguages);
             this.panelOptions.Controls.Add(this.labelOptionsTitleSeparator);
@@ -2417,7 +2425,6 @@ namespace OpenBve {
             this.panelOptionsPage2.Controls.Add(this.groupboxShadows);
             this.panelOptionsPage2.Controls.Add(this.groupboxInterpolation);
             this.panelOptionsPage2.Controls.Add(this.groupBoxAdvancedOptions);
-            this.panelOptionsPage2.Controls.Add(this.groupBoxExperimentalOptions);
             this.panelOptionsPage2.Controls.Add(this.groupBoxObjectParser);
             this.panelOptionsPage2.Controls.Add(this.groupboxSimulation);
             this.panelOptionsPage2.AutoScroll = true;
@@ -2943,6 +2950,63 @@ namespace OpenBve {
             this.panelOptionsPage3.Size = new System.Drawing.Size(683, 583);
             this.panelOptionsPage3.TabIndex = 20;
             // 
+            // panelOptionsPage4
+            // 
+            this.panelOptionsPage4.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.panelOptionsPage4.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(243)))), ((int)(((byte)(255)))), ((int)(((byte)(243)))));
+            this.panelOptionsPage4.Controls.Add(this.groupBoxExperimentalOptions);
+            this.panelOptionsPage4.Controls.Add(this.panelExperimentalBanner);
+            this.panelOptionsPage4.Location = new System.Drawing.Point(0, 72);
+            this.panelOptionsPage4.Name = "panelOptionsPage4";
+            this.panelOptionsPage4.Size = new System.Drawing.Size(683, 583);
+            this.panelOptionsPage4.TabIndex = 22;
+            // 
+            // panelExperimentalBanner
+            // 
+            this.panelExperimentalBanner.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.panelExperimentalBanner.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(247)))), ((int)(((byte)(214)))));
+            this.panelExperimentalBanner.Controls.Add(this.pictureboxExperimentalWarning);
+            this.panelExperimentalBanner.Controls.Add(this.labelExperimentalWarning);
+            this.panelExperimentalBanner.Controls.Add(this.labelExperimentalBannerSeparator);
+            this.panelExperimentalBanner.Location = new System.Drawing.Point(0, 8);
+            this.panelExperimentalBanner.Name = "panelExperimentalBanner";
+            this.panelExperimentalBanner.Size = new System.Drawing.Size(683, 64);
+            this.panelExperimentalBanner.TabIndex = 0;
+            // 
+            // pictureboxExperimentalWarning
+            // 
+            this.pictureboxExperimentalWarning.Location = new System.Drawing.Point(10, 13);
+            this.pictureboxExperimentalWarning.Name = "pictureboxExperimentalWarning";
+            this.pictureboxExperimentalWarning.Size = new System.Drawing.Size(36, 36);
+            this.pictureboxExperimentalWarning.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
+            this.pictureboxExperimentalWarning.TabIndex = 0;
+            this.pictureboxExperimentalWarning.TabStop = false;
+            // 
+            // labelExperimentalWarning
+            // 
+            this.labelExperimentalWarning.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.labelExperimentalWarning.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(110)))), ((int)(((byte)(84)))), ((int)(((byte)(30)))));
+            this.labelExperimentalWarning.Location = new System.Drawing.Point(54, 10);
+            this.labelExperimentalWarning.Name = "labelExperimentalWarning";
+            this.labelExperimentalWarning.Size = new System.Drawing.Size(619, 44);
+            this.labelExperimentalWarning.TabIndex = 1;
+            this.labelExperimentalWarning.Text = "Experimental features are potentially unstable. They are disabled by default and can only be enabled from this screen. If the program crashes whilst any are enabled, they will be automatically reset the next time it starts.";
+            // 
+            // labelExperimentalBannerSeparator
+            // 
+            this.labelExperimentalBannerSeparator.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.labelExperimentalBannerSeparator.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(206)))), ((int)(((byte)(143)))));
+            this.labelExperimentalBannerSeparator.Location = new System.Drawing.Point(0, 62);
+            this.labelExperimentalBannerSeparator.Name = "labelExperimentalBannerSeparator";
+            this.labelExperimentalBannerSeparator.Size = new System.Drawing.Size(683, 2);
+            this.labelExperimentalBannerSeparator.TabIndex = 2;
+            // 
             // groupBoxInputDevice
             // 
             this.groupBoxInputDevice.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
@@ -3175,33 +3239,25 @@ namespace OpenBve {
             // 
             // groupBoxExperimentalOptions
             // 
-            this.groupBoxExperimentalOptions.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            this.groupBoxExperimentalOptions.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.groupBoxExperimentalOptions.Controls.Add(this.labelExperimentalWarning);
             this.groupBoxExperimentalOptions.Controls.Add(this.flowLayoutPanelExperimental);
             this.groupBoxExperimentalOptions.ForeColor = System.Drawing.Color.Black;
-            this.groupBoxExperimentalOptions.Location = new System.Drawing.Point(0, 531);
+            this.groupBoxExperimentalOptions.Location = new System.Drawing.Point(0, 78);
             this.groupBoxExperimentalOptions.Name = "groupBoxExperimentalOptions";
-            this.groupBoxExperimentalOptions.Size = new System.Drawing.Size(321, 210);
+            this.groupBoxExperimentalOptions.Size = new System.Drawing.Size(683, 505);
             this.groupBoxExperimentalOptions.TabIndex = 22;
             this.groupBoxExperimentalOptions.TabStop = false;
             this.groupBoxExperimentalOptions.Text = "Experimental features";
             // 
-            // labelExperimentalWarning
-            // 
-            this.labelExperimentalWarning.Location = new System.Drawing.Point(8, 16);
-            this.labelExperimentalWarning.Name = "labelExperimentalWarning";
-            this.labelExperimentalWarning.Size = new System.Drawing.Size(305, 48);
-            this.labelExperimentalWarning.TabIndex = 0;
-            this.labelExperimentalWarning.Text = "Experimental features are potentially unstable. If the program crashes whilst any are enabled, they will be automatically reset.";
-            // 
             // flowLayoutPanelExperimental
             // 
             this.flowLayoutPanelExperimental.AutoScroll = true;
+            this.flowLayoutPanelExperimental.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flowLayoutPanelExperimental.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
-            this.flowLayoutPanelExperimental.Location = new System.Drawing.Point(8, 68);
             this.flowLayoutPanelExperimental.Name = "flowLayoutPanelExperimental";
-            this.flowLayoutPanelExperimental.Size = new System.Drawing.Size(305, 134);
+            this.flowLayoutPanelExperimental.Padding = new System.Windows.Forms.Padding(12, 8, 12, 8);
             this.flowLayoutPanelExperimental.TabIndex = 1;
             this.flowLayoutPanelExperimental.WrapContents = false;
             // 
@@ -6529,6 +6585,7 @@ namespace OpenBve {
             ((System.ComponentModel.ISupportInitialize)(this.updownShadowBias)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.updownShadowNormalBias)).EndInit();
             this.panelOptionsPage3.ResumeLayout(false);
+            this.panelOptionsPage4.ResumeLayout(false);
             this.groupBoxInputDevice.ResumeLayout(false);
             this.groupBoxObjectParser.ResumeLayout(false);
             this.groupBoxKioskMode.ResumeLayout(false);
@@ -6538,6 +6595,9 @@ namespace OpenBve {
             this.groupBoxAdvancedOptions.PerformLayout();
             this.groupBoxExperimentalOptions.ResumeLayout(false);
             this.groupBoxExperimentalOptions.PerformLayout();
+            this.panelExperimentalBanner.ResumeLayout(false);
+            this.panelExperimentalBanner.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureboxExperimentalWarning)).EndInit();
             this.flowLayoutPanelExperimental.ResumeLayout(false);
             this.flowLayoutPanelExperimental.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureboxCursor)).EndInit();
@@ -6963,6 +7023,7 @@ namespace OpenBve {
 		private System.Windows.Forms.Button buttonOptionsPrevious;
 		private System.Windows.Forms.Button buttonOptionsNext;
 		private System.Windows.Forms.Panel panelOptionsPage3;
+		private System.Windows.Forms.Panel panelOptionsPage4;
 		private System.Windows.Forms.GroupBox groupBoxPackageOptions;
 		private System.Windows.Forms.ComboBox comboBoxCompressionFormat;
 		private System.Windows.Forms.Label labelPackageCompression;
@@ -7018,7 +7079,10 @@ namespace OpenBve {
 		private System.Windows.Forms.CheckBox checkBoxLoadingSway;
 		private System.Windows.Forms.GroupBox groupBoxAdvancedOptions;
 		private System.Windows.Forms.GroupBox groupBoxExperimentalOptions;
+		private System.Windows.Forms.Panel panelExperimentalBanner;
+		private System.Windows.Forms.PictureBox pictureboxExperimentalWarning;
 		private System.Windows.Forms.Label labelExperimentalWarning;
+		private System.Windows.Forms.Label labelExperimentalBannerSeparator;
 		private System.Windows.Forms.FlowLayoutPanel flowLayoutPanelExperimental;
 		private System.Windows.Forms.CheckBox checkBoxHacks;
 		private System.Windows.Forms.CheckBox checkBoxTransparencyFix;

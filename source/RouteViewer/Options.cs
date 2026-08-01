@@ -70,7 +70,7 @@ namespace RouteViewer
 				Builder.AppendLine("objObject = " + (int)CurrentObjParser);
 				Builder.AppendLine();
 				Builder.AppendLine("[experimental]");
-				foreach (ExperimentalFeature feature in ExperimentalFeatures.All)
+				foreach (ExperimentalFeature feature in ExperimentalFeatures.GetFeatures(ExperimentalFeatureHost.RouteViewer))
 				{
 					Builder.AppendLine(feature.Key.ToString() + " = " + (feature.Get(this) ? "true" : "false"));
 				}
@@ -174,7 +174,7 @@ namespace RouteViewer
 						}
 						break;
 					case OptionsSection.Experimental:
-						foreach (ExperimentalFeature feature in ExperimentalFeatures.All)
+						foreach (ExperimentalFeature feature in ExperimentalFeatures.GetFeatures(ExperimentalFeatureHost.RouteViewer))
 						{
 							bool value = feature.Get(Interface.CurrentOptions);
 							block.GetValue(feature.Key, out value);

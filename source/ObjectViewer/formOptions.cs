@@ -88,7 +88,7 @@ namespace ObjectViewer
 			checkBoxAutoReload.Checked = Interface.CurrentOptions.AutoReloadObjects;
 			checkBoxShadowFilterCascades.Checked = Interface.CurrentOptions.ShadowFilterCascades;
 
-			foreach (ExperimentalFeature feature in ExperimentalFeatures.All)
+			foreach (ExperimentalFeature feature in ExperimentalFeatures.GetFeatures(ExperimentalFeatureHost.ObjectViewer))
 			{
 				flowLayoutPanelExperimental.Controls.Add(ExperimentalFeatures.CreateCheckBox(feature, Interface.CurrentOptions));
 			}

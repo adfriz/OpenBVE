@@ -90,7 +90,7 @@ namespace RouteViewer
 			}
 			checkBoxShadowFilterCascades.Checked = Interface.CurrentOptions.ShadowFilterCascades;
 
-			foreach (ExperimentalFeature feature in ExperimentalFeatures.All)
+			foreach (ExperimentalFeature feature in ExperimentalFeatures.GetFeatures(ExperimentalFeatureHost.RouteViewer))
 			{
 				flowLayoutPanelExperimental.Controls.Add(ExperimentalFeatures.CreateCheckBox(feature, Interface.CurrentOptions));
 			}

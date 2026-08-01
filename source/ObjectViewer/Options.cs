@@ -112,7 +112,7 @@ namespace ObjectViewer
 				Builder.AppendLine($"mode = {ObjectOptimizationMode}");
 				Builder.AppendLine();
 				Builder.AppendLine("[experimental]");
-				foreach (ExperimentalFeature feature in ExperimentalFeatures.All)
+				foreach (ExperimentalFeature feature in ExperimentalFeatures.GetFeatures(ExperimentalFeatureHost.ObjectViewer))
 				{
 					Builder.AppendLine(feature.Key.ToString() + " = " + (feature.Get(this) ? "true" : "false"));
 				}
@@ -229,7 +229,7 @@ namespace ObjectViewer
 						block.GetEnumValue(OptionsKey.Backward, out Interface.CurrentOptions.CameraMoveBackward);
 						break;
 					case OptionsSection.Experimental:
-						foreach (ExperimentalFeature feature in ExperimentalFeatures.All)
+						foreach (ExperimentalFeature feature in ExperimentalFeatures.GetFeatures(ExperimentalFeatureHost.ObjectViewer))
 						{
 							bool value = feature.Get(Interface.CurrentOptions);
 							block.GetValue(feature.Key, out value);

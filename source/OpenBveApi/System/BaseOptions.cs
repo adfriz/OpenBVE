@@ -148,6 +148,7 @@ namespace OpenBveApi
 		/// <remarks>Not saved</remarks>
 		public Color24 ClearColor = new Color24(170, 170, 170);
 		/// <summary>Enables the experimental placeholder feature</summary>
+		[ExperimentalFeature(Key = "ExperimentalPlaceholder", NameId = "placeholder_name", DescriptionId = "placeholder_description")]
 		public bool EnableExperimentalPlaceholder;
 
 		/// <summary>Saves the options to the specified filename</summary>

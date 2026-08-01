@@ -621,6 +621,7 @@ namespace OpenBve {
 			}
 			panelOptionsPage2.Visible = false;
 			panelOptionsPage3.Visible = false; // Deliberately hide, as changing font can glitch this into visibility
+			panelOptionsPage4.Visible = false;
 			comboBoxFont.DrawItem += comboBoxFont_DrawItem;
 		}
 
@@ -1157,10 +1158,16 @@ namespace OpenBve {
 				panelOptionsPage3.Hide();
 				panelOptionsPage2.Show();
 			}
+			else if (panelOptionsPage4.Visible)
+			{
+				panelOptionsPage4.Hide();
+				panelOptionsPage4.Show();
+			}
 			else
 			{
 				panelOptionsPage2.Hide();
 				panelOptionsPage3.Hide();
+				panelOptionsPage4.Hide();
 			}
 
 
@@ -1192,12 +1199,14 @@ namespace OpenBve {
 			}
 		}
 
-		/// <summary>Populates the experimental features group with one checkbox per registered feature</summary>
+		/// <summary>Populates the experimental features group with one feature panel per registered feature</summary>
 		private void SetupExperimentalFeatures()
 		{
-			foreach (ExperimentalFeature feature in ExperimentalFeatures.All)
+			pictureboxExperimentalWarning.Image = SystemIcons.Warning.ToBitmap();
+			int width = flowLayoutPanelExperimental.ClientSize.Width;
+			foreach (ExperimentalFeature feature in ExperimentalFeatures.GetFeatures(ExperimentalFeatureHost.OpenBve))
 			{
-				flowLayoutPanelExperimental.Controls.Add(ExperimentalFeatures.CreateCheckBox(feature, Interface.CurrentOptions));
+				flowLayoutPanelExperimental.Controls.Add(ExperimentalFeatures.CreateFeaturePanel(feature, Interface.CurrentOptions, width));
 			}
 		}
 
@@ -2112,7 +2121,8 @@ namespace OpenBve {
 				optionsPages = new[] {
 					new Control[] { panelOptionsLeft, panelOptionsRight },
 					new Control[] { panelOptionsPage2 },
-					new Control[] { panelOptionsPage3 }
+					new Control[] { panelOptionsPage3 },
+					new Control[] { panelOptionsPage4 }
 				};
 			}
 			currentOptionsPage = pageIndex;

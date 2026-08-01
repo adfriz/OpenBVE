@@ -1431,6 +1431,9 @@
 					<trans-unit id="placeholder_name">
 						<source>Experimental placeholder feature</source>
 					</trans-unit>
+					<trans-unit id="placeholder_description">
+						<source>Placeholder feature used to demonstrate the experimental features system.</source>
+					</trans-unit>
 					<trans-unit id="crash_reset_message">
 						<source>The program crashed the last time it was run with experimental features enabled. All experimental features have been reset to their default (disabled) state.</source>
 					</trans-unit>

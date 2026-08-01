@@ -344,7 +344,7 @@ namespace OpenBve
 				Builder.AppendLine("enablebve5scriptedtrain = " + (EnableBve5ScriptedTrain ? "true" : "false"));
 				Builder.AppendLine();
 				Builder.AppendLine("[experimental]");
-				foreach (ExperimentalFeature feature in ExperimentalFeatures.All)
+				foreach (ExperimentalFeature feature in ExperimentalFeatures.GetFeatures(ExperimentalFeatureHost.OpenBve))
 				{
 					Builder.AppendLine(feature.Key.ToString() + " = " + (feature.Get(this) ? "true" : "false"));
 				}
@@ -667,7 +667,7 @@ namespace OpenBve
 						block.GetValue(OptionsKey.Panel2ExtendedMinSize, out CurrentOptions.Panel2ExtendedMinSize);
 						break;
 					case OptionsSection.Experimental:
-						foreach (ExperimentalFeature feature in ExperimentalFeatures.All)
+						foreach (ExperimentalFeature feature in ExperimentalFeatures.GetFeatures(ExperimentalFeatureHost.OpenBve))
 						{
 							bool value = feature.Get(CurrentOptions);
 							block.GetValue(feature.Key, out value);
