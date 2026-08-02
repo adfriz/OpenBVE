@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
 using LibRender2;
@@ -45,7 +45,7 @@ namespace OpenBve
 								 * In order to get a functioning GL3 context, we appear to need to be running as 64-bit & explicitly specify the forwards compatible flag
 								 */
 								Program.Renderer.GameWindow = new OpenBVEGame(currentResolution.Width, currentResolution.Height, Program.Renderer.GraphicsMode,
-									GameWindowFlags.Default, GraphicsContextFlags.ForwardCompatible)
+									GameWindowFlags.Default, GraphicsContextFlags.Default)
 								{
 									Visible = true,
 									WindowState = WindowState.Fullscreen
@@ -96,7 +96,7 @@ namespace OpenBve
 						 * In order to get a functioning GL3 context, we appear to need to be running as 64-bit & explicitly specify the forwards compatible flag
 						 */
 						Program.Renderer.GameWindow = new OpenBVEGame(Interface.CurrentOptions.WindowWidth,
-							Interface.CurrentOptions.WindowHeight, Program.Renderer.GraphicsMode, GameWindowFlags.Default, GraphicsContextFlags.ForwardCompatible)
+							Interface.CurrentOptions.WindowHeight, Program.Renderer.GraphicsMode, GameWindowFlags.Default, GraphicsContextFlags.Default)
 						{
 							Visible = true
 						};

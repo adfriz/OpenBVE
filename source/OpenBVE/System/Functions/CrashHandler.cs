@@ -1,4 +1,5 @@
-﻿using System;
+extern alias RealOpenTK;
+using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -97,19 +98,19 @@ namespace OpenBve
                 outputFile.WriteLine(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
                 outputFile.WriteLine("OpenBVE " + Application.ProductVersion + " Crash Log");
                 var Platform = "Unknown";
-                if (OpenTK.Configuration.RunningOnWindows)
+                if (RealOpenTK::OpenTK.Configuration.RunningOnWindows)
                 {
                     Platform = "Windows";
                 }
-                else if (OpenTK.Configuration.RunningOnLinux)
+                else if (RealOpenTK::OpenTK.Configuration.RunningOnLinux)
                 {
                     Platform = "Linux";
                 }
-                else if (OpenTK.Configuration.RunningOnMacOS)
+                else if (RealOpenTK::OpenTK.Configuration.RunningOnMacOS)
                 {
                     Platform = "MacOS";
                 }
-                else if (OpenTK.Configuration.RunningOnSdl2)
+                else if (RealOpenTK::OpenTK.Configuration.RunningOnSdl2)
                 {
                     Platform = "SDL2";
                 }
@@ -188,19 +189,19 @@ namespace OpenBve
                 outputFile.WriteLine(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
                 outputFile.WriteLine("OpenBVE " + Application.ProductVersion + " Crash Log");
                 var Platform = "Unknown";
-                if (OpenTK.Configuration.RunningOnWindows)
+                if (RealOpenTK::OpenTK.Configuration.RunningOnWindows)
                 {
                     Platform = "Windows";
                 }
-                else if (OpenTK.Configuration.RunningOnLinux)
+                else if (RealOpenTK::OpenTK.Configuration.RunningOnLinux)
                 {
                     Platform = "Linux";
                 }
-                else if (OpenTK.Configuration.RunningOnMacOS)
+                else if (RealOpenTK::OpenTK.Configuration.RunningOnMacOS)
                 {
                     Platform = "MacOS";
                 }
-                else if (OpenTK.Configuration.RunningOnSdl2)
+                else if (RealOpenTK::OpenTK.Configuration.RunningOnSdl2)
                 {
                     Platform = "SDL2";
                 }

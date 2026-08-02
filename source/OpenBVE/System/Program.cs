@@ -78,17 +78,8 @@ namespace OpenBve {
 				// ignored
 			}
 			//Switch between SDL2 and native backends; use native backend by default
+			//Note: The Silk.NET based renderer ignores the legacy OpenTK platform backend selection
 			var options = new ToolkitOptions();
-			
-			if (CurrentHost.Platform == HostPlatform.FreeBSD)
-			{
-				// The OpenTK X11 backend is broken on FreeBSD, so force SDL2
-				options.Backend = PlatformBackend.Default;
-			}
-			else if (Interface.CurrentOptions.PreferNativeBackend)
-			{
-				options.Backend = PlatformBackend.PreferNative;
-			}
 			Toolkit.Init(options);
 			
 			// Add handler for UI thread exceptions

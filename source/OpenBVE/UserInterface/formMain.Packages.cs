@@ -1412,7 +1412,7 @@ namespace OpenBve
 			string[] files = null;
 			string folder = string.Empty;
 			string folderDisplay = string.Empty;
-			if (Program.CurrentHost.Platform == HostPlatform.AppleOSX || Program.CurrentHost.Platform == HostPlatform.Linux)
+			if (Program.CurrentHost.Platform == HostPlatform.AppleOSX || Program.CurrentHost.Platform == HostPlatform.GNULinux)
 			{
 				//Mono doesn't like our fancy folder selector
 				//Some versions of OS-X crash, and Linux just falls back- Safer to specifically use the old version on these...

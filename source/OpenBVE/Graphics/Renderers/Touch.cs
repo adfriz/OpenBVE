@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using LibRender2;
 using LibRender2.Trains;
 using OpenBveApi.Interface;
@@ -135,12 +136,20 @@ namespace OpenBve.Graphics.Renderers
 
         private ObjectState ParseFBO(Vector2 point, int deltaX, int deltaY)
         {
-            Vector2 topLeft = point - new Vector2(deltaX, deltaY) / 2.0f;
+            Vector2 topLeft = new Vector2(point.X - deltaX / 2.0f, point.Y - deltaY / 2.0f);
             float[,] objectIndices = new float[deltaX, deltaY];
 
             fbo.Bind();
             GL.ReadBuffer(ReadBufferMode.ColorAttachment0);
-            GL.ReadPixels((int)topLeft.X, renderer.Screen.Height - (int)topLeft.Y, deltaX, deltaY, PixelFormat.Red, PixelType.Float, objectIndices);
+            GCHandle handle = GCHandle.Alloc(objectIndices, GCHandleType.Pinned);
+            try
+            {
+                GL.ReadPixels((int)topLeft.X, renderer.Screen.Height - (int)topLeft.Y, deltaX, deltaY, PixelFormat.Red, PixelType.Float, handle.AddrOfPinnedObject());
+            }
+            finally
+            {
+                handle.Free();
+            }
             GL.ReadBuffer(ReadBufferMode.None);
             fbo.UnBind();
 

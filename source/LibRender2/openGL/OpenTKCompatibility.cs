@@ -160,6 +160,7 @@ namespace OpenTK
     {
         public int Width { get; set; }
         public int Height { get; set; }
+        public int BitsPerPixel { get; set; } = 32;
         public DisplayResolution(int w, int h) { Width = w; Height = h; }
     }
 
@@ -207,6 +208,13 @@ namespace OpenTK
     public enum PlatformBackend
     {
         PreferX11
+    }
+
+    public enum VSyncMode
+    {
+        Off = 0,
+        On = 1,
+        Adaptive = -1
     }
 
     public class MouseCursor
@@ -265,6 +273,12 @@ namespace OpenTK
         }
 
         public double RenderFrequency => 60.0; // fallback
+
+        public VSyncMode VSync
+        {
+            get => window.VSync ? VSyncMode.On : VSyncMode.Off;
+            set => window.VSync = value != VSyncMode.Off;
+        }
 
         // Input Events
         public event EventHandler<CancelEventArgs> Closing;
@@ -679,6 +693,7 @@ namespace OpenTK.Graphics.OpenGL
         LuminanceAlpha = 0x190A,
         DepthComponent24 = 0x81A6,
         R32ui = 0x8236,
+        R32f = 0x822E,
         Rgb = 0x1907,
         Rgba16f = 0x881A
     }
@@ -1089,7 +1104,8 @@ namespace OpenTK.Graphics.OpenGL
     {
         None = 0,
         Front = 0x0404,
-        Back = 0x0405
+        Back = 0x0405,
+        ColorAttachment0 = 0x8CE0
     }
 }
 

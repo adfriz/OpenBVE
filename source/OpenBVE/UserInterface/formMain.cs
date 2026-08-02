@@ -1,5 +1,4 @@
 extern alias RealOpenTK;
-using OpenTK = RealOpenTK::OpenTK;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -52,7 +51,7 @@ namespace OpenBve {
 				//Dispose of the worker thread when closing the form
 				//If it's still running, it attempts to update a non-existent form and crashes nastily
 				mainDialog.DisposePreviewRouteThread();
-				if (!OpenTK.Configuration.RunningOnMacOS)
+				if (!RealOpenTK::OpenTK.Configuration.RunningOnMacOS)
 				{
 					mainDialog.trainWatcher.Dispose();
 					mainDialog.routeWatcher.Dispose();

@@ -1,4 +1,5 @@
-﻿using System;
+﻿extern alias RealOpenTK;
+using System;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
@@ -8,6 +9,9 @@ using OpenBveApi.Hosts;
 using OpenBveApi.Interface;
 using OpenBveApi.Math;
 using OpenTK.Input;
+using HatPosition = RealOpenTK::OpenTK.Input.HatPosition;
+using Keyboard = RealOpenTK::OpenTK.Input.Keyboard;
+using JoystickHatState = RealOpenTK::OpenTK.Input.JoystickHatState;
 using Key = OpenBveApi.Input.Key;
 using MouseEventArgs = System.Windows.Forms.MouseEventArgs;
 
@@ -560,7 +564,7 @@ namespace OpenBve {
 			for (int j = 0; j < Translations.TranslatedKeys.Count; j++)
 			{
 				Key k = Translations.TranslatedKeys.ElementAt(j).Key;
-				if (kbState.IsKeyDown((OpenTK.Input.Key)k))
+				if (kbState.IsKeyDown((RealOpenTK::OpenTK.Input.Key)k))
 				{
 					int i = listviewControls.SelectedIndices[0];
 					Interface.CurrentControls[i].Key = k;
@@ -660,7 +664,7 @@ namespace OpenBve {
 					configureLinkLocations[i] = new[] {new Vector2(x + w + 8.0f + joystickSize.Width - configureSize.Width, y + numberSize.Height), new Vector2(x + w + 8.0f + joystickSize.Width + configureSize.Width, y + numberSize.Height + configureSize.Height)};
 				}
 				
-				if (OpenTK.Configuration.RunningOnSdl2)
+				if (RealOpenTK::OpenTK.Configuration.RunningOnSdl2)
 				{
 					//HACK: Control configuration doesn't work in-form on SDL2
 					string error = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"errors","controls_ingame"});

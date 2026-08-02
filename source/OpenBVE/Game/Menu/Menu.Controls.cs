@@ -1,7 +1,9 @@
-﻿using LibRender2.Primitives;
+﻿extern alias RealOpenTK;
+using LibRender2.Primitives;
 using OpenBveApi.Colors;
 using OpenBveApi.Hosts;
 using OpenBveApi.Interface;
+using HatPosition = RealOpenTK::OpenTK.Input.HatPosition;
 
 namespace OpenBve
 {
@@ -46,7 +48,7 @@ namespace OpenBve
 //						str = str;
 //						break;
 					case JoystickComponent.Hat:
-						str += " " + (OpenTK.Input.HatPosition)loadedControl.Direction;
+						str += " " + (HatPosition)loadedControl.Direction;
 						break;
 					case JoystickComponent.Invalid:
 						str = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "menu", "joystick_notavailable" });
