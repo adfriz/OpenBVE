@@ -297,10 +297,7 @@ namespace LibRender2.Atmosphere
                         {
                                 if (fallbackShader == null)
                                 {
-                                        string shaderPath = renderer.fileSystem.GetDataFolder("Shaders", "Atmosphere");
-                                        fallbackShader = new Shader(renderer,
-                                                OpenBveApi.Path.CombineFile(shaderPath, "RealSky.vert"),
-                                                OpenBveApi.Path.CombineFile(shaderPath, "RealSky.frag"));
+                                        fallbackShader = new Shader(renderer, "RealSky", "RealSky", true);
                                 }
                                 if (fallbackSkyboxVao == null)
                                 {

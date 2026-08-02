@@ -21,6 +21,8 @@
     <EmbeddedResource Include="..\..\assets\Shaders\shadow_depth.frag" LogicalName="LibRender2.shadow_depth.frag" />
     <EmbeddedResource Include="..\..\assets\Shaders\cluster_culling.comp" LogicalName="LibRender2.cluster_culling.comp" />
     <EmbeddedResource Include="..\..\assets\Shaders\RealSky.comp" LogicalName="LibRender2.RealSky.comp" />
+    <EmbeddedResource Include="..\..\assets\Shaders\Atmosphere\RealSky.vert" LogicalName="LibRender2.RealSky.vert" />
+    <EmbeddedResource Include="..\..\assets\Shaders\Atmosphere\RealSky.frag" LogicalName="LibRender2.RealSky.frag" />
   </ItemGroup>
 
   <ItemGroup>
