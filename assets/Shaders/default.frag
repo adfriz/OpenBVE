@@ -23,6 +23,9 @@
 //SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #version 410 core
+#ifdef CLUSTERED_RENDERING
+#extension GL_ARB_shader_storage_buffer_object : require
+#endif
 precision highp float;
 in vec4 oViewPos;
 in vec2 oUv;
@@ -84,6 +87,163 @@ struct DynamicLight {
 };
 uniform int uDynamicLightCount;
 uniform DynamicLight uDynamicLights[16];
+
+// --- CLUSTERED FORWARD RENDERING (GL 4.3+ / ARB SSBO) ---
+// Compiled in only on capable devices via the CLUSTERED_RENDERING define
+// injected by Shader.cs. On GL 4.1 hardware this block is removed and the
+// shader falls back to the uDynamicLights uniform path below.
+#ifdef CLUSTERED_RENDERING
+struct ClusterLight
+{
+	vec4 positionAndRange;    // xyz=viewPos, w=range
+	vec4 colorAndIntensity;   // rgb=color, w=intensity (power * 2^exposure, precomputed)
+	vec4 directionAndCutoff;  // xyz=spotDir, w=spotCutoff cosine
+	vec4 params;              // x=type(0=point,1=spot,2=area), y=softFalloff, z=softness, w=rangeSquared
+	vec4 extra;               // x=radius, y=normalizeCone, z=areaSize.x, w=areaSize.y
+};
+
+layout(std430, binding = 0) readonly buffer ClusterGrid {
+	uvec2 clusters[];         // per-cluster: (lightOffset, lightCount)
+};
+layout(std430, binding = 1) readonly buffer LightIndices {
+	uint lightIndices[];
+};
+layout(std430, binding = 2) readonly buffer ClusterLights {
+	ClusterLight lights[];
+};
+
+uniform bool  uClusteringEnabled;
+uniform float uClusterNear;
+uniform float uClusterFar;
+uniform float uClusterScreenWidth;
+uniform float uClusterScreenHeight;
+uniform int   uClusterNumX;
+uniform int   uClusterNumY;
+uniform int   uClusterNumZ;
+
+/// Computes the linear cluster index for the current fragment.
+/// Must match ClusterGrid.GetClusterIndex and the log-depth formula used on the CPU.
+int GetClusterIndex()
+{
+	int tileX = clamp(int(gl_FragCoord.x * float(uClusterNumX) / uClusterScreenWidth), 0, uClusterNumX - 1);
+	int tileY = clamp(int(gl_FragCoord.y * float(uClusterNumY) / uClusterScreenHeight), 0, uClusterNumY - 1);
+	float viewDepth = max(-oViewPos.z, uClusterNear);
+	float t = log(viewDepth / uClusterNear) / log(uClusterFar / uClusterNear);
+	int tileZ = clamp(int(t * float(uClusterNumZ)), 0, uClusterNumZ - 1);
+	return tileZ * uClusterNumX * uClusterNumY + tileY * uClusterNumX + tileX;
+}
+
+/// Accumulates the light contribution of every cluster light affecting this fragment.
+/// Mirrors the DynamicLight loop below, but reads lights from the SSBO light grid.
+vec3 AccumulateClusteredLights(vec3 N)
+{
+	const float TWO_PI = 6.283185307;   // 2.0 * PI
+	const float FOUR_PI = 12.566370614; // 4.0 * PI
+	vec3 sum = vec3(0.0);
+
+	uvec2 cluster = clusters[GetClusterIndex()];
+	uint count  = cluster.y;
+	uint offset = cluster.x;
+
+	for (uint i = 0u; i < count; i++)
+	{
+		uint lightIdx = lightIndices[offset + i];
+		ClusterLight light = lights[lightIdx];
+
+		vec3 toLight = light.positionAndRange.xyz - oViewPos.xyz;
+		float d2 = dot(toLight, toLight);
+		if (d2 > light.params.w) continue;
+
+		float d = sqrt(d2);
+		float intensity = light.colorAndIntensity.w;
+		vec3 lightColor = light.colorAndIntensity.rgb * intensity;
+
+		// Attenuation: SoftFalloff, Radius
+		float denom = d2 + light.extra.x * light.extra.x;
+		float att = 1.0 / max(denom, 0.0001);
+		if (light.params.y > 0.5)
+		{
+			att *= clamp((light.positionAndRange.w - d) / max(0.001, light.positionAndRange.w * 0.2), 0.0, 1.0);
+		}
+
+		int type = int(light.params.x);
+		if (type == 2)
+		{
+			// AREA LIGHT
+			vec3 normal = normalize(light.directionAndCutoff.xyz);
+			vec3 right = normalize(cross(normal, abs(normal.y) < 0.999 ? vec3(0.0, 1.0, 0.0) : vec3(0.0, 0.0, 1.0)));
+			vec3 up = cross(right, normal);
+
+			vec2 halfSize = light.extra.zw * 0.5;
+
+			// Four vertices of the rectangular light in view space
+			vec3 P[4];
+			P[0] = light.positionAndRange.xyz - right * halfSize.x - up * halfSize.y;
+			P[1] = light.positionAndRange.xyz + right * halfSize.x - up * halfSize.y;
+			P[2] = light.positionAndRange.xyz + right * halfSize.x + up * halfSize.y;
+			P[3] = light.positionAndRange.xyz - right * halfSize.x + up * halfSize.y;
+
+			// Integrate cosine-weighted illumination analytically (projected solid angle)
+			float irradiance = 0.0;
+			vec3 p[4];
+			for (int j = 0; j < 4; j++)
+			{
+				p[j] = normalize(P[j] - oViewPos.xyz);
+			}
+			for (int j = 0; j < 4; j++)
+			{
+				int next = (j + 1) % 4;
+				vec3 p1 = p[j];
+				vec3 p2 = p[next];
+
+				float cosTheta = clamp(dot(p1, p2), -1.0, 1.0);
+				float theta = acos(cosTheta);
+
+				vec3 crossP = cross(p1, p2);
+				float len = length(crossP);
+				if (len > 0.0001)
+				{
+					vec3 g = crossP / len;
+					irradiance += theta * dot(g, N);
+				}
+			}
+			irradiance = max(irradiance / TWO_PI, 0.0);
+
+			// Double-sided / backface check (light only emits forward)
+			float frontFacing = clamp(dot(N, normalize(toLight)), 0.0, 1.0);
+			irradiance *= frontFacing;
+
+			sum += lightColor * irradiance * att;
+		}
+		else
+		{
+			// POINT / SPOT LIGHT
+			vec3 L = toLight / d;
+			float solidAngle = TWO_PI * (1.0 - light.directionAndCutoff.w);
+			bool normalizeSpot = (type == 1 && light.extra.y > 0.5);
+			float normalizedIntensity = intensity / (normalizeSpot ? max(solidAngle, 0.0001) : FOUR_PI);
+			vec3 normalizedLightColor = light.colorAndIntensity.rgb * normalizedIntensity;
+
+			// Spot Cone Attenuation (Branchless)
+			vec3 lightToFrag = -L;
+			float spotDot = dot(lightToFrag, light.directionAndCutoff.xyz);
+			float outerCutoff = light.directionAndCutoff.w;
+
+			float softnessFactor = clamp(light.params.z, 0.0, 1.0);
+			float innerCutoff = mix(1.0, outerCutoff, 1.0 - softnessFactor);
+
+			float intensityFactor = clamp((spotDot - outerCutoff) / max(innerCutoff - outerCutoff, 0.0001), 0.0, 1.0);
+			float spotAtt = smoothstep(0.0, 1.0, intensityFactor) * step(outerCutoff, spotDot);
+
+			att *= mix(1.0, spotAtt, float(type == 1));
+
+			float nDotL = abs(dot(N, L));
+			sum += normalizedLightColor * nDotL * att;
+		}
+	}
+	return sum;
+}
+#endif
 
 // Inputs from vertex shader
 in vec3  vNormal;
@@ -262,6 +422,14 @@ void main(void)
 	float shadow = CalculateShadowFactor();
 	
 	vec3 dynamicLightSum = vec3(0.0);
+#ifdef CLUSTERED_RENDERING
+	if ((uMaterialFlags & 1) == 0 && (uMaterialFlags & 4) == 0 && uClusteringEnabled)
+	{
+		vec3 N = normalize(vNormal);
+		dynamicLightSum = AccumulateClusteredLights(N);
+	}
+	else
+#endif
 	if ((uMaterialFlags & 1) == 0 && (uMaterialFlags & 4) == 0 && uDynamicLightCount > 0)
 	{
 		// Precalculated constants for faster lighting calculations

@@ -7,7 +7,7 @@ namespace LibRender2.Clustering
 	/// <summary>
 	/// GPU-ready representation of a dynamic light source (std430 compatible).
 	/// Maps directly from <see cref="OpenBveApi.Objects.SceneLight"/>.
-	/// Total size: 48 bytes (std430 aligned).
+	/// Total size: 80 bytes (std430 aligned).
 	/// </summary>
 	[StructLayout(LayoutKind.Sequential)]
 	public struct GpuLight
@@ -21,10 +21,13 @@ namespace LibRender2.Clustering
 		/// <summary>Spot direction in view space (xyz) + SpotCutoff cosine (w)</summary>
 		public OTKVector4 DirectionAndCutoff;  // 16 bytes — offset 32
 
-		/// <summary>x=Type (0=Point,1=Spot), y=SoftFalloff, z=Softness, w=RangeSquared packed</summary>
+		/// <summary>x=Type (0=Point,1=Spot,2=Area), y=SoftFalloff, z=Softness, w=RangeSquared packed</summary>
 		public OTKVector4 Params;              // 16 bytes — offset 48
 
-		// Total: 64 bytes per GpuLight (4 × vec4)
+		/// <summary>x=Radius, y=NormalizeCone(0/1), z=AreaSize.X, w=AreaSize.Y packed</summary>
+		public OTKVector4 Extra;               // 16 bytes — offset 64
+
+		// Total: 80 bytes per GpuLight (5 × vec4)
 	}
 
 	/// <summary>

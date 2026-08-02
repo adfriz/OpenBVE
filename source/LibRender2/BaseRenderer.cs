@@ -47,6 +47,32 @@ namespace LibRender2
 	public abstract class BaseRenderer
 	{
 		public bool AvailableNewRenderer => true;
+
+		private bool? supportsClusterCompute;
+		/// <summary>
+		/// Whether the current GL context supports Clustered Forward Rendering
+		/// (SSBOs + compute shaders). Requires GL 4.3+ or both GL_ARB_compute_shader
+		/// and GL_ARB_shader_storage_buffer_object. Detected once and cached.
+		/// When false, the renderer and shader fall back to the GL 4.1-compatible
+		/// UBO dynamic-lights path.
+		/// </summary>
+		public bool SupportsClusterCompute
+		{
+			get
+			{
+				if (supportsClusterCompute == null)
+				{
+					string extensions = GL.GetString(StringName.Extensions) ?? string.Empty;
+					int major = GL.GetInteger(GetPName.MajorVersion);
+					int minor = GL.GetInteger(GetPName.MinorVersion);
+					bool gl43Plus = major > 4 || (major == 4 && minor >= 3);
+					bool hasSSBO = gl43Plus || extensions.Contains("GL_ARB_shader_storage_buffer_object");
+					bool hasCompute = gl43Plus || extensions.Contains("GL_ARB_compute_shader");
+					supportsClusterCompute = hasSSBO && hasCompute;
+				}
+				return supportsClusterCompute.Value;
+			}
+		}
 		// constants
 		protected const float inv255 = 1.0f / 255.0f;
 

@@ -83,20 +83,12 @@ namespace LibRender2.Clustering
 			try
 			{
 				// --- Runtime GL capability detection (Opsi B) ---
-				string extensions = GL.GetString(StringName.Extensions) ?? string.Empty;
 				int major = GL.GetInteger(GetPName.MajorVersion);
 				int minor = GL.GetInteger(GetPName.MinorVersion);
-				bool gl43Plus = major > 4 || (major == 4 && minor >= 3);
-
-				bool hasSSBO = gl43Plus
-					|| extensions.Contains("GL_ARB_shader_storage_buffer_object");
-				bool hasCompute = gl43Plus
-					|| extensions.Contains("GL_ARB_compute_shader");
-
-				UseComputePath = hasSSBO && hasCompute;
+				UseComputePath = renderer.SupportsClusterCompute;
 
 				renderer.fileSystem.AppendToLogFile(
-					$"[CFR] GL {major}.{minor} | SSBO={hasSSBO} Compute={hasCompute} → UseComputePath={UseComputePath}");
+					$"[CFR] GL {major}.{minor} → UseComputePath={UseComputePath} (SSBO + compute required)");
 
 				grid = new ClusterGrid();
 				gpuLightCache = new GpuLight[MaxLightsCompute];
@@ -220,7 +212,12 @@ namespace LibRender2.Clustering
 					                         (float)sl.Type,
 					                         sl.SoftFalloff ? 1.0f : 0.0f,
 					                         sl.Softness,
-					                         sl.RangeSquared)
+					                         sl.RangeSquared),
+					Extra              = new OTKVec4(
+					                         sl.Radius,
+					                         sl.NormalizeCone ? 1.0f : 0.0f,
+					                         (float)sl.AreaSize.X,
+					                         (float)sl.AreaSize.Y)
 				};
 			}
 

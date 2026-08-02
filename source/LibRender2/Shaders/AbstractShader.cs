@@ -43,7 +43,7 @@ namespace LibRender2.Shaders
 		internal readonly BaseRenderer Renderer;
 
 		internal bool IsActive;
-		public AbstractShader(BaseRenderer renderer, string vertexShaderName, string fragmentShaderName, bool isFromStream, bool fragColor)
+		public AbstractShader(BaseRenderer renderer, string vertexShaderName, string fragmentShaderName, bool isFromStream, bool fragColor, string[] preprocessorDefines = null)
 		{
 			Handle = GL.CreateProgram();
 			Renderer = renderer;
@@ -56,7 +56,7 @@ namespace LibRender2.Shaders
 					{
 						using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
 						{
-							LoadShader(reader.ReadToEnd(), ShaderType.VertexShader);
+							LoadShader(reader.ReadToEnd(), ShaderType.VertexShader, preprocessorDefines);
 						}
 					}
 				}
@@ -66,15 +66,15 @@ namespace LibRender2.Shaders
 					{
 						using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
 						{
-							LoadShader(reader.ReadToEnd(), ShaderType.FragmentShader);
+							LoadShader(reader.ReadToEnd(), ShaderType.FragmentShader, preprocessorDefines);
 						}
 					}
 				}
 			}
 			else
 			{
-				LoadShader(File.ReadAllText(vertexShaderName, Encoding.UTF8), ShaderType.VertexShader);
-				LoadShader(File.ReadAllText(fragmentShaderName, Encoding.UTF8), ShaderType.FragmentShader);
+				LoadShader(File.ReadAllText(vertexShaderName, Encoding.UTF8), ShaderType.VertexShader, preprocessorDefines);
+				LoadShader(File.ReadAllText(fragmentShaderName, Encoding.UTF8), ShaderType.FragmentShader, preprocessorDefines);
 			}
 			GL.AttachShader(Handle, VertexShader);
 			GL.AttachShader(Handle, FragmentShader);
@@ -98,8 +98,14 @@ namespace LibRender2.Shaders
 		/// <summary>Loads the shader source and compiles the shader</summary>
 		/// <param name="shaderSource">Shader source code string</param>
 		/// <param name="shaderType">type of shader VertexShader or FragmentShader</param>
-		internal void LoadShader(string shaderSource, ShaderType shaderType)
+		/// <param name="preprocessorDefines">Optional preprocessor defines injected immediately after the #version directive</param>
+		internal void LoadShader(string shaderSource, ShaderType shaderType, string[] preprocessorDefines = null)
 		{
+			if (preprocessorDefines != null && preprocessorDefines.Length > 0)
+			{
+				shaderSource = InjectPreprocessorDefines(shaderSource, preprocessorDefines);
+			}
+
 			int status;
 
 			switch (shaderType)
@@ -129,6 +135,30 @@ namespace LibRender2.Shaders
 				default:
 					throw new InvalidOperationException("Attempted to load an unknown shader type");
 			}
+		}
+
+		/// <summary>
+		/// Injects <c>#define NAME</c> lines immediately after the <c>#version</c>
+		/// directive (or at the top of the source if no #version is present),
+		/// so shader code can enable/disable features at compile time.
+		/// </summary>
+		private static string InjectPreprocessorDefines(string source, string[] defines)
+		{
+			int versionIndex = source.IndexOf("#version", StringComparison.Ordinal);
+			int insertAt = 0;
+			if (versionIndex >= 0)
+			{
+				int newline = source.IndexOf('\n', versionIndex);
+				insertAt = newline >= 0 ? newline + 1 : source.Length;
+			}
+			var sb = new StringBuilder(source.Length + defines.Length * 16);
+			sb.Append(source, 0, insertAt);
+			for (int i = 0; i < defines.Length; i++)
+			{
+				sb.Append("#define ").Append(defines[i]).Append('\n');
+			}
+			sb.Append(source, insertAt, source.Length - insertAt);
+			return sb.ToString();
 		}
 
 

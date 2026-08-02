@@ -106,7 +106,7 @@ namespace LibRender2.Shaders
 		/// <param name="vertexShaderName">file path and name to vertex shader source</param>
 		/// <param name="fragmentShaderName">file path and name to fragment shader source</param>
 		/// <param name="isFromStream"></param>
-		public Shader(BaseRenderer Renderer, string vertexShaderName, string fragmentShaderName, bool isFromStream = false) : base(Renderer, vertexShaderName, fragmentShaderName, isFromStream, true)
+		public Shader(BaseRenderer Renderer, string vertexShaderName, string fragmentShaderName, bool isFromStream = false) : base(Renderer, vertexShaderName, fragmentShaderName, isFromStream, true, Renderer.SupportsClusterCompute ? new[] { "CLUSTERED_RENDERING" } : null)
 		{
 			uShadowEnabledLocation = GL.GetUniformLocation(Handle, "uShadowEnabled");
 			uShadowStrengthLocation = GL.GetUniformLocation(Handle, "uShadowStrength");

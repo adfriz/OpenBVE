@@ -29,7 +29,8 @@ struct GpuLight {
     vec4 positionAndRange;    // xyz=viewPos, w=range
     vec4 colorAndIntensity;   // rgb=color, w=intensity
     vec4 directionAndCutoff;  // xyz=spotDir, w=spotCutoff
-    vec4 params;              // x=type(0=point,1=spot), y=softFalloff, z=softness, w=rangeSquared
+    vec4 params;              // x=type(0=point,1=spot,2=area), y=softFalloff, z=softness, w=rangeSquared
+    vec4 extra;               // x=radius, y=normalizeCone, z=areaSize.x, w=areaSize.y
 };
 
 struct GpuCluster {
