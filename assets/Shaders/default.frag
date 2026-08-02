@@ -219,26 +219,33 @@ vec3 AccumulateClusteredLights(vec3 N)
 		{
 			// POINT / SPOT LIGHT
 			vec3 L = toLight / d;
-			float solidAngle = TWO_PI * (1.0 - light.directionAndCutoff.w);
-			bool normalizeSpot = (type == 1 && light.extra.y > 0.5);
-			float normalizedIntensity = intensity / (normalizeSpot ? max(solidAngle, 0.0001) : FOUR_PI);
-			vec3 normalizedLightColor = light.colorAndIntensity.rgb * normalizedIntensity;
-
-			// Spot Cone Attenuation (Branchless)
-			vec3 lightToFrag = -L;
-			float spotDot = dot(lightToFrag, light.directionAndCutoff.xyz);
-			float outerCutoff = light.directionAndCutoff.w;
-
-			float softnessFactor = clamp(light.params.z, 0.0, 1.0);
-			float innerCutoff = mix(1.0, outerCutoff, 1.0 - softnessFactor);
-
-			float intensityFactor = clamp((spotDot - outerCutoff) / max(innerCutoff - outerCutoff, 0.0001), 0.0, 1.0);
-			float spotAtt = smoothstep(0.0, 1.0, intensityFactor) * step(outerCutoff, spotDot);
-
-			att *= mix(1.0, spotAtt, float(type == 1));
-
 			float nDotL = abs(dot(N, L));
-			sum += normalizedLightColor * nDotL * att;
+
+			if (type == 1)
+			{
+				// SPOT LIGHT: cone attenuation
+				float solidAngle = TWO_PI * (1.0 - light.directionAndCutoff.w);
+				float normalizedIntensity = intensity / (light.extra.y > 0.5 ? max(solidAngle, 0.0001) : FOUR_PI);
+				vec3 normalizedLightColor = light.colorAndIntensity.rgb * normalizedIntensity;
+
+				vec3 lightToFrag = -L;
+				float spotDot = dot(lightToFrag, light.directionAndCutoff.xyz);
+				float outerCutoff = light.directionAndCutoff.w;
+
+				float softnessFactor = clamp(light.params.z, 0.0, 1.0);
+				float innerCutoff = mix(1.0, outerCutoff, 1.0 - softnessFactor);
+
+				float intensityFactor = clamp((spotDot - outerCutoff) / max(innerCutoff - outerCutoff, 0.0001), 0.0, 1.0);
+				float spotAtt = smoothstep(0.0, 1.0, intensityFactor) * step(outerCutoff, spotDot);
+
+				sum += normalizedLightColor * nDotL * att * spotAtt;
+			}
+			else
+			{
+				// POINT LIGHT
+				vec3 normalizedLightColor = light.colorAndIntensity.rgb * (intensity / FOUR_PI);
+				sum += normalizedLightColor * nDotL * att;
+			}
 		}
 	}
 	return sum;
