@@ -59,6 +59,15 @@ uniform float             uShadowNormalBias3;
 uniform vec2              uAlphaTest;
 uniform sampler2D uTexture;
 
+// --- RealSky atmospheric system ---
+// uSkyTexture holds the RGBA16F sky image written by the RealSky compute
+// pass (view-space direction -> pixel mapping). uSkyEnabled is flipped on by
+// RealSkyPass.BindSkyToShader once the image is bound.
+uniform sampler2D uSkyTexture;
+uniform bool      uSkyEnabled;
+uniform float     uSkyStrength;
+uniform mat4      uProjectionMatrix;
+
 struct Light
 {
 	vec3 position;
@@ -376,6 +385,17 @@ float CalculateShadowFactor()
     return mix(1.0, shadow, uShadowStrength);
 }
 
+/// Maps a normalized view-space direction onto the sky texture UV.
+/// The RealSky compute pass builds the image by unprojecting each pixel's NDC
+/// to a world ray, so the reverse mapping (project a direction to its NDC) is
+/// exactly the lookup that yields the sky colour along that direction.
+vec2 DirToSkyUv(vec3 viewDir)
+{
+    vec4 clip = uProjectionMatrix * vec4(viewDir, 0.0);
+    vec2 ndc = clip.xy / clip.w;
+    return clamp(ndc * 0.5 + 0.5, 0.0, 1.0);
+}
+
 void main(void)
 {
 	vec4 finalColor;
@@ -553,6 +573,20 @@ void main(void)
 	else
 	{
 		finalColor *= oLightResult;
+	}
+	
+	// RealSky ambient / reflection contribution (compute path).
+	// Samples the sky image in the reflected view direction so surfaces facing
+	// the sky pick up its colour; grazing angles reflect more (Fresnel).
+	if (uSkyEnabled && (uMaterialFlags & 1) == 0 && (uMaterialFlags & 4) == 0)
+	{
+		vec3 N = normalize(vNormal);
+		vec3 V = normalize(oViewPos.xyz);
+		vec3 R = reflect(-V, N);
+		vec3 skyColor = texture(uSkyTexture, DirToSkyUv(R)).rgb;
+		float fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
+		float weight = mix(0.15, 1.0, fresnel);
+		finalColor.rgb += skyColor * uSkyStrength * weight;
 	}
 	
 	// Fog

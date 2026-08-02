@@ -73,6 +73,8 @@ namespace LibRender2.Shaders
 		// --- RealSky atmospheric system ---
 		private readonly int uSkyEnabledLocation;
 		private readonly int uSkyTextureLocation;
+		private readonly int uSkyStrengthLocation;
+		private readonly int uProjectionMatrixLocation;
 
 		private readonly int[] uDynamicLightTypeLocation = new int[16];
 		private readonly int[] uDynamicLightPositionLocation = new int[16];
@@ -138,6 +140,8 @@ namespace LibRender2.Shaders
 			// RealSky atmospheric system uniforms
 			uSkyEnabledLocation  = GL.GetUniformLocation(Handle, "uSkyEnabled");
 			uSkyTextureLocation  = GL.GetUniformLocation(Handle, "uSkyTexture");
+			uSkyStrengthLocation = GL.GetUniformLocation(Handle, "uSkyStrength");
+			uProjectionMatrixLocation = GL.GetUniformLocation(Handle, "uProjectionMatrix");
 			// Default: sky sampling disabled until RealSkyPass binds a texture
 			if (uSkyEnabledLocation >= 0)
 			{
@@ -276,6 +280,11 @@ namespace LibRender2.Shaders
 			Renderer.lastObjectState = null; // clear the cached object state, as otherwise it might be stale
 			Matrix4 matrix = ConvertToMatrix4(ProjectionMatrix);
 			GL.ProgramUniformMatrix4(Handle, UniformLayout.CurrentProjectionMatrix, false, ref matrix);
+			if (uProjectionMatrixLocation >= 0)
+			{
+				// Fragment-stage copy used by the RealSky sky-lookup (DirToSkyUv).
+				GL.ProgramUniformMatrix4(Handle, uProjectionMatrixLocation, false, ref matrix);
+			}
 		}
 
 		/// <summary>
@@ -721,6 +730,17 @@ namespace LibRender2.Shaders
 		{
 			if (uSkyTextureLocation < 0) return;
 			GL.ProgramUniform1(Handle, uSkyTextureLocation, unit);
+		}
+
+		/// <summary>
+		/// Sets the strength of the RealSky ambient / reflection contribution
+		/// sampled in the fragment shader.
+		/// </summary>
+		/// <param name="strength">Multiplier applied to the sampled sky colour (0 disables the effect visually).</param>
+		public void SetSkyStrength(float strength)
+		{
+			if (uSkyStrengthLocation < 0) return;
+			GL.ProgramUniform1(Handle, uSkyStrengthLocation, strength);
 		}
 
 		#endregion

@@ -67,6 +67,9 @@ namespace LibRender2.Atmosphere
                 /// <summary>Texture unit the sky sampler is bound to (default.frag reads from here).</summary>
                 public int SkyTextureUnit => skyTextureUnit;
 
+                /// <summary>Strength of the sky ambient / reflection contribution in default.frag.</summary>
+                public float SkyAmbientStrength = 0.35f;
+
                 public RealSkyPass(BaseRenderer renderer)
                 {
                         this.renderer = renderer;
@@ -379,6 +382,7 @@ namespace LibRender2.Atmosphere
 
                         shader.SetSkyEnabled(true);
                         shader.SetSkyTextureUnit(skyTextureUnit);
+                        shader.SetSkyStrength(SkyAmbientStrength);
                 }
 
                 /// <summary>Unbinds the sky sampler and disables sky sampling in the shader.</summary>
