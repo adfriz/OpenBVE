@@ -39,7 +39,8 @@ namespace Train.MsTs
 	internal class CabComponent
 	{
 		private CabComponentType Type = CabComponentType.None;
-		private string TexturePath;
+		private Texture DaytimeTexture;
+		private Texture NightTimeTexture;
 		private PanelSubject panelSubject;
 		private Units Units;
 		private Vector2 Position = new Vector2(0, 0);
@@ -92,7 +93,7 @@ namespace Train.MsTs
 
 		internal void Create(ref CarBase currentCar, int componentLayer)
 		{
-			if (!File.Exists(TexturePath) && Type != CabComponentType.Digital && Type != CabComponentType.DigitalClock)
+			if (DaytimeTexture == null && Type != CabComponentType.Digital && Type != CabComponentType.DigitalClock)
 			{
 				return;
 			}
@@ -126,14 +127,12 @@ namespace Train.MsTs
 			//Create element
 			const double rW = 1024.0 / 640.0;
 			const double rH = 768.0 / 480.0;
-			int wday, hday;
 			int elementIndex;
 			string f;
 			CultureInfo culture = CultureInfo.InvariantCulture;
 			switch (Type)
 			{
 				case CabComponentType.Dial:
-					Plugin.CurrentHost.RegisterTexture(TexturePath, new TextureParameters(null, null), out Texture tday, true);
 					// correct angle position if appropriate
 					if (!DirIncrease && InitialAngle > LastAngle)
 					{
@@ -146,7 +145,7 @@ namespace Train.MsTs
 					Size.X *= rW;
 					Size.Y *= rH;
 					PivotPoint *= rH;
-					elementIndex = CabviewFileParser.CreateElement(ref currentCar.CarSections[CarSectionType.Interior].Groups[0], Position, Size, new Vector2((0.5 * Size.X) / (tday.Width * rW), PivotPoint / (tday.Height * rH)), componentLayer * CabviewFileParser.StackDistance, PanelPosition, tday, Color32.White);
+					elementIndex = CabviewFileParser.CreateElement(ref currentCar.CarSections[CarSectionType.Interior].Groups[0], Position, Size, new Vector2((0.5 * Size.X) / (DaytimeTexture.Width * rW), PivotPoint / (DaytimeTexture.Height * rH)), componentLayer * CabviewFileParser.StackDistance, PanelPosition, DaytimeTexture, NightTimeTexture, Color32.White);
 					currentCar.CarSections[CarSectionType.Interior].Groups[0].Elements[elementIndex].RotateZDirection = new Vector3(0.0, 0.0, -1.0);
 					currentCar.CarSections[CarSectionType.Interior].Groups[0].Elements[elementIndex].RotateXDirection = DirIncrease ? new Vector3(1.0, 0.0, 0.0) : new Vector3(-1.0, 0.0, 0.0);
 					currentCar.CarSections[CarSectionType.Interior].Groups[0].Elements[elementIndex].RotateYDirection = Vector3.Cross(currentCar.CarSections[CarSectionType.Interior].Groups[0].Elements[elementIndex].RotateZDirection, currentCar.CarSections[CarSectionType.Interior].Groups[0].Elements[elementIndex].RotateXDirection);
@@ -181,17 +180,16 @@ namespace Train.MsTs
 					Position.Y *= rH;
 					Size.X *= rW;
 					Size.Y *= rH;
-					Plugin.CurrentHost.QueryTextureDimensions(TexturePath, out wday, out hday);
-					if (wday > 0 && hday > 0)
+					if (DaytimeTexture.Width > 0 && DaytimeTexture.Height > 0)
 					{
 						Texture[] textures = new Texture[TotalFrames];
 						int row = 0;
 						int column = 0;
-						int frameWidth = wday / HorizontalFrames;
-						int frameHeight = hday / VerticalFrames;
+						int frameWidth = DaytimeTexture.Width / HorizontalFrames;
+						int frameHeight = DaytimeTexture.Height / VerticalFrames;
 						for (int k = 0; k < TotalFrames; k++)
 						{
-							Plugin.CurrentHost.RegisterTexture(TexturePath, new TextureParameters(new TextureClipRegion(column * frameWidth, row * frameHeight, frameWidth, frameHeight), null), out textures[k]);
+							Plugin.CurrentHost.RegisterTexture(DaytimeTexture, new TextureParameters(new TextureClipRegion(column * frameWidth, row * frameHeight, frameWidth, frameHeight), null), out textures[k]);
 							if (column < HorizontalFrames - 1)
 							{
 								column++;
@@ -207,7 +205,7 @@ namespace Train.MsTs
 						for (int k = 0; k < textures.Length; k++)
 						{
 								
-							int l = CabviewFileParser.CreateElement(ref currentCar.CarSections[CarSectionType.Interior].Groups[0], Position, Size, new Vector2(0.5, 0.5), componentLayer * CabviewFileParser.StackDistance, PanelPosition, textures[k], Color32.White, k != 0);
+							int l = CabviewFileParser.CreateElement(ref currentCar.CarSections[CarSectionType.Interior].Groups[0], Position, Size, new Vector2(0.5, 0.5), componentLayer * CabviewFileParser.StackDistance, PanelPosition, textures[k], null, Color32.White, k != 0);
 							if (k == 0) elementIndex = l;
 						}
 
@@ -238,17 +236,22 @@ namespace Train.MsTs
 					Position.Y *= rH;
 					Size.X *= rW;
 					Size.Y *= rH;
-					Plugin.CurrentHost.QueryTextureDimensions(TexturePath, out wday, out hday);
-					if (wday > 0 && hday > 0)
+					if (DaytimeTexture.Width > 0 && DaytimeTexture.Height > 0)
 					{
-						Texture[] textures = new Texture[TotalFrames];
+						Texture[] dayTextures = new Texture[TotalFrames];
+						Texture[] nightTextures = new Texture[TotalFrames];
 						int row = 0;
 						int column = 0;
-						int frameWidth = wday / HorizontalFrames;
-						int frameHeight = hday / VerticalFrames;
+						int frameWidth = DaytimeTexture.Width / HorizontalFrames;
+						int frameHeight = DaytimeTexture.Height / VerticalFrames;
 						for (int k = 0; k < TotalFrames; k++)
 						{
-							Plugin.CurrentHost.RegisterTexture(TexturePath, new TextureParameters(new TextureClipRegion(column * frameWidth, row * frameHeight, frameWidth, frameHeight), null), out textures[k]);
+							Plugin.CurrentHost.RegisterTexture(DaytimeTexture, new TextureParameters(new TextureClipRegion(column * frameWidth, row * frameHeight, frameWidth, frameHeight), null), out dayTextures[k]);
+							if (NightTimeTexture != null)
+							{
+								Plugin.CurrentHost.RegisterTexture(NightTimeTexture, new TextureParameters(new TextureClipRegion(column * frameWidth, row * frameHeight, frameWidth, frameHeight), null), out nightTextures[k]);
+							}
+							
 							if (column < HorizontalFrames - 1)
 							{
 								column++;
@@ -261,9 +264,9 @@ namespace Train.MsTs
 						}
 
 						elementIndex = -1;
-						for (int k = 0; k < textures.Length; k++)
+						for (int k = 0; k < dayTextures.Length; k++)
 						{
-							int l = CabviewFileParser.CreateElement(ref currentCar.CarSections[CarSectionType.Interior].Groups[0], Position, Size, new Vector2(0.5, 0.5), componentLayer * CabviewFileParser.StackDistance, PanelPosition, textures[k], Color32.White, k != 0);
+							int l = CabviewFileParser.CreateElement(ref currentCar.CarSections[CarSectionType.Interior].Groups[0], Position, Size, new Vector2(0.5, 0.5), componentLayer * CabviewFileParser.StackDistance, PanelPosition, dayTextures[k], nightTextures[k], Color32.White, k != 0);
 							if (k == 0) elementIndex = l;
 						}
 
@@ -288,6 +291,8 @@ namespace Train.MsTs
 							case PanelSubject.Water_Injector1:
 							case PanelSubject.Steam_Inj2:
 							case PanelSubject.Water_Injector2:
+							case PanelSubject.Dynamic_Brake_Display:
+							case PanelSubject.Dynamic_Brake:
 								currentCar.CarSections[CarSectionType.Interior].Groups[0].Elements[elementIndex].StateFunction = new CvfAnimation(Plugin.CurrentHost, panelSubject, FrameMappings);
 								break;
 							default:
@@ -305,14 +310,14 @@ namespace Train.MsTs
 					Color24 textColor = PositiveColors[0].Item2;
 
 					Texture[] frameTextures = new Texture[11];
-					TexturePath = OpenBveApi.Path.CombineFile(OpenBveApi.Path.CombineDirectory(Plugin.FileSystem.DataFolder, "Compatibility"), "numbers.png"); // arial 9.5pt
+					string texturePath = OpenBveApi.Path.CombineFile(OpenBveApi.Path.CombineDirectory(Plugin.FileSystem.DataFolder, "Compatibility"), "numbers.png"); // arial 9.5pt
 
 					for (int i = 0; i < 10; i++)
 					{
-						Plugin.CurrentHost.RegisterTexture(TexturePath, new TextureParameters(new TextureClipRegion(0, i * 24, 16, 24), null), out frameTextures[i], true);
+						Plugin.CurrentHost.RegisterTexture(texturePath, new TextureParameters(new TextureClipRegion(0, i * 24, 16, 24), null), out frameTextures[i], true);
 					}
 
-					Plugin.CurrentHost.RegisterTexture(TexturePath, new TextureParameters(new TextureClipRegion(0, 0, 16, 24), null), out frameTextures[10], true); // repeated zero [check vice MSTS]
+					Plugin.CurrentHost.RegisterTexture(texturePath, new TextureParameters(new TextureClipRegion(0, 0, 16, 24), null), out frameTextures[10], true); // repeated zero [check vice MSTS]
 
 					int numMaxDigits = (int)Math.Floor(Math.Log10(Maximum) + 1);
 					int numMinDigits = (int)Math.Floor(Math.Log10(Minimum) + 1);
@@ -324,7 +329,7 @@ namespace Train.MsTs
 					{
 						for (int k = 0; k < frameTextures.Length; k++)
 						{
-							int l = CabviewFileParser.CreateElement(ref currentCar.CarSections[CarSectionType.Interior].Groups[0], new Vector2(Position.X + Size.X - (digitWidth * (currentDigit + 1)), Position.Y), new Vector2(digitWidth * rW, Size.Y * rH), new Vector2(0.5, 0.5), componentLayer * CabviewFileParser.StackDistance, PanelPosition, frameTextures[k], textColor, k != 0);
+							int l = CabviewFileParser.CreateElement(ref currentCar.CarSections[CarSectionType.Interior].Groups[0], new Vector2(Position.X + Size.X - (digitWidth * (currentDigit + 1)), Position.Y), new Vector2(digitWidth * rW, Size.Y * rH), new Vector2(0.5, 0.5), componentLayer * CabviewFileParser.StackDistance, PanelPosition, frameTextures[k], null, textColor, k != 0);
 							if (k == 0) elementIndex = l;
 						}
 
@@ -358,18 +363,37 @@ namespace Train.MsTs
 					Position.Y *= rH;
 					Size.X *= rW;
 					Size.Y *= rH;
-					Plugin.CurrentHost.QueryTextureDimensions(TexturePath, out wday, out hday);
-					if (wday > 0 && hday > 0)
+					if (DaytimeTexture.Width > 0 && DaytimeTexture.Height > 0)
 					{
-						Texture[] textures = new Texture[8];
+						Texture[] dayTextures = new Texture[8];
+						Texture[] nightTextures = new Texture[8];
 						// 4 h-frames, 2 v-frames
 						int row = 0;
 						int column = 0;
-						int frameWidth = wday / HorizontalFrames;
-						int frameHeight = hday / VerticalFrames;
+						int frameWidth = DaytimeTexture.Width / HorizontalFrames;
+						int frameHeight = DaytimeTexture.Height / VerticalFrames;
 						for (int k = 0; k < TotalFrames; k++)
 						{
-							Plugin.CurrentHost.RegisterTexture(TexturePath, new TextureParameters(new TextureClipRegion(column * frameWidth, row * frameHeight, frameWidth, frameHeight), null), out textures[k]);
+							if (column * frameWidth + frameWidth <= DaytimeTexture.Width && row * frameHeight + frameHeight <= DaytimeTexture.Height)
+							{
+								Plugin.CurrentHost.RegisterTexture(DaytimeTexture, new TextureParameters(new TextureClipRegion(column * frameWidth, row * frameHeight, frameWidth, frameHeight), null), out dayTextures[k]);
+							}
+							else
+							{
+								Plugin.CurrentHost.AddMessage(MessageType.Error, false, "MSTS CVF Parser: Frame was outside the bounds of the DaytimeTexture for CabSignalDisplay.");
+							}
+
+							if (NightTimeTexture != null)
+							{
+								if (column * frameWidth + frameWidth <= NightTimeTexture.Width && row * frameHeight + frameHeight <= NightTimeTexture.Height)
+								{
+									Plugin.CurrentHost.RegisterTexture(NightTimeTexture, new TextureParameters(new TextureClipRegion(column * frameWidth, row * frameHeight, frameWidth, frameHeight), null), out nightTextures[k]);
+								}
+								else
+								{
+									Plugin.CurrentHost.AddMessage(MessageType.Error, false, "MSTS CVF Parser: Frame was outside the bounds of the NightTimeTexture for CabSignalDisplay.");
+								}
+							}
 							if (column < HorizontalFrames - 1)
 							{
 								column++;
@@ -382,9 +406,9 @@ namespace Train.MsTs
 						}
 
 						elementIndex = -1;
-						for (int k = 0; k < textures.Length; k++)
+						for (int k = 0; k < dayTextures.Length; k++)
 						{
-							int l = CabviewFileParser.CreateElement(ref currentCar.CarSections[CarSectionType.Interior].Groups[0], Position, Size, new Vector2(0.5, 0.5), componentLayer * CabviewFileParser.StackDistance, PanelPosition, textures[k], Color32.White, k != 0);
+							int l = CabviewFileParser.CreateElement(ref currentCar.CarSections[CarSectionType.Interior].Groups[0], Position, Size, new Vector2(0.5, 0.5), componentLayer * CabviewFileParser.StackDistance, PanelPosition, dayTextures[k], nightTextures[k], Color32.White, k != 0);
 							if (k == 0) elementIndex = l;
 						}
 
@@ -400,20 +424,19 @@ namespace Train.MsTs
 					textColor = ControlColor;
 
 					frameTextures = new Texture[12];
-					TexturePath = OpenBveApi.Path.CombineFile(OpenBveApi.Path.CombineDirectory(Plugin.FileSystem.DataFolder, "Compatibility"), "numbers.png"); // arial 9.5pt
-					Plugin.CurrentHost.QueryTextureDimensions(TexturePath, out wday, out hday);
+					texturePath = OpenBveApi.Path.CombineFile(OpenBveApi.Path.CombineDirectory(Plugin.FileSystem.DataFolder, "Compatibility"), "numbers.png"); // arial 9.5pt
 
 					for (int i = 0; i < 10; i++)
 					{
-						Plugin.CurrentHost.RegisterTexture(TexturePath, new TextureParameters(new TextureClipRegion(0, i * 24, 16, 24), null), out frameTextures[i], true);
+						Plugin.CurrentHost.RegisterTexture(texturePath, new TextureParameters(new TextureClipRegion(0, i * 24, 16, 24), null), out frameTextures[i], true);
 					}
-					Plugin.CurrentHost.RegisterTexture(TexturePath, new TextureParameters(new TextureClipRegion(0, 240, 16, 16), null), out frameTextures[11], true);
+					Plugin.CurrentHost.RegisterTexture(texturePath, new TextureParameters(new TextureClipRegion(0, 240, 16, 16), null), out frameTextures[11], true);
 
 					for (int currentDigit = 0; currentDigit < totalDigits; currentDigit++)
 					{
 						for (int k = 0; k < frameTextures.Length; k++)
 						{
-							int l = CabviewFileParser.CreateElement(ref currentCar.CarSections[CarSectionType.Interior].Groups[0], new Vector2(Position.X + Size.X - (digitWidth * (currentDigit + 1)), Position.Y), new Vector2(digitWidth * rW, Size.Y * rH), new Vector2(0.5, 0.5), componentLayer * CabviewFileParser.StackDistance, PanelPosition, frameTextures[k], textColor, k != 0);
+							int l = CabviewFileParser.CreateElement(ref currentCar.CarSections[CarSectionType.Interior].Groups[0], new Vector2(Position.X + Size.X - (digitWidth * (currentDigit + 1)), Position.Y), new Vector2(digitWidth * rW, Size.Y * rH), new Vector2(0.5, 0.5), componentLayer * CabviewFileParser.StackDistance, PanelPosition, frameTextures[k], null, textColor, k != 0);
 							if (k == 0) elementIndex = l;
 						}
 
@@ -439,7 +462,6 @@ namespace Train.MsTs
 						Plugin.CurrentHost.AddMessage(MessageType.Error, false, "MSTS CVF Parser: Gauge pointer cannot be of zero size.");
 						break;
 					}
-					Plugin.CurrentHost.RegisterTexture(TexturePath, new TextureParameters(null, null), out tday, true);
 					
 
 					double worldWidth, worldHeight;
@@ -463,12 +485,11 @@ namespace Train.MsTs
 						double translationTotal = (y1 - y0) * 0.2; // FIXME: why do we need this??
 						double minSizeMultiplier = 1.0;
 						double maxSizeMultiplier = (Size.Y / AreaSize.Y) * 0.9;
-						double areaSize = AreaSize.Y / 240;
 						
 						switch(Style)
 						{
 							case CabComponentStyle.Pointer:
-								int e = CabviewFileParser.CreateElement(ref currentCar.CarSections[CarSectionType.Interior].Groups[0], new Vector2(Position.X, Position.Y - AreaSize.Y), AreaSize, Vector2.Null, (componentLayer + 200) * CabviewFileParser.StackDistance, PanelPosition, tday, Color32.White);
+								int e = CabviewFileParser.CreateElement(ref currentCar.CarSections[CarSectionType.Interior].Groups[0], new Vector2(Position.X, Position.Y - AreaSize.Y), AreaSize, Vector2.Null, (componentLayer + 200) * CabviewFileParser.StackDistance, PanelPosition, DaytimeTexture, NightTimeTexture, Color32.White);
 								f = CabviewFileParser.GetStackLanguageFromSubject(currentCar, panelSubject, Units);
 								double t0 = (0 * Maximum - translationTotal * Minimum) / (Maximum - Minimum);
 								double t1 = (translationTotal - 0) / (Maximum - Minimum);
@@ -486,7 +507,7 @@ namespace Train.MsTs
 								Vector2 v = new Vector2(Position);
 								// ignore area position for the minute, move Y
 								v.Y += Size.Y - AreaSize.Y;
-								e = CabviewFileParser.CreateScalableYElement(ref currentCar.CarSections[CarSectionType.Interior].Groups[0], v, Size, AreaSize, (componentLayer + 200) * CabviewFileParser.StackDistance, PanelPosition, tday, null, Color32.White, DirIncrease);
+								e = CabviewFileParser.CreateScalableYElement(ref currentCar.CarSections[CarSectionType.Interior].Groups[0], v, Size, AreaSize, (componentLayer + 200) * CabviewFileParser.StackDistance, PanelPosition, DaytimeTexture, NightTimeTexture, Color32.White, DirIncrease);
 								f = CabviewFileParser.GetStackLanguageFromSubject(currentCar, panelSubject, Units);
 								double s0 = (minSizeMultiplier * Maximum - maxSizeMultiplier * Minimum) / (Maximum - Minimum);
 								double s1 = (maxSizeMultiplier - minSizeMultiplier) / (Maximum - Minimum);
@@ -505,7 +526,7 @@ namespace Train.MsTs
 						switch (Style)
 						{
 							case CabComponentStyle.Pointer:
-								int e = CabviewFileParser.CreateElement(ref currentCar.CarSections[CarSectionType.Interior].Groups[0], Position + AreaPosition, AreaSize, Vector2.Null, componentLayer * CabviewFileParser.StackDistance, PanelPosition, tday, Color32.White);
+								int e = CabviewFileParser.CreateElement(ref currentCar.CarSections[CarSectionType.Interior].Groups[0], Position + AreaPosition, AreaSize, Vector2.Null, componentLayer * CabviewFileParser.StackDistance, PanelPosition, DaytimeTexture, NightTimeTexture, Color32.White);
 								f = CabviewFileParser.GetStackLanguageFromSubject(currentCar, panelSubject, Units);
 								f += " " + translationTotal.ToString(culture) + " * 0.5 *";
 								currentCar.CarSections[CarSectionType.Interior].Groups[0].Elements[e].TranslateXFunction = new FunctionScript(Plugin.CurrentHost, f, false);
@@ -603,18 +624,39 @@ namespace Train.MsTs
 					string s = block.ReadString();
 					if (!string.IsNullOrEmpty(s))
 					{
+						string texturePath = string.Empty;
 						try
 						{
-							TexturePath = OpenBveApi.Path.CombineFile(CabviewFileParser.CurrentFolder, s);
+							texturePath = OpenBveApi.Path.CombineFile(CabviewFileParser.CurrentFolder, s);
 						}
 						catch
 						{
 							Plugin.CurrentHost.AddMessage(MessageType.Error, true, "MSTS CVF Parser: The texture path contains invalid characters in CabComponent " + Type);
 						}
 
-						if (!File.Exists(TexturePath))
+						if (!File.Exists(texturePath))
 						{
 							Plugin.CurrentHost.AddMessage(MessageType.Error, true, "MSTS CVF Parser: The texture file " + s + " was not found in CabComponent " + Type);
+						}
+						else
+						{
+							Plugin.CurrentHost.RegisterTexture(texturePath, new TextureParameters(null, null), out DaytimeTexture, true);
+						}
+
+						try
+						{
+							string fileName = Path.GetFileName(texturePath);
+							string textureDirectory = Path.GetDirectoryName(texturePath);
+							textureDirectory = OpenBveApi.Path.CombineDirectory(textureDirectory, "NIGHT");
+							texturePath = OpenBveApi.Path.CombineFile(textureDirectory, fileName);
+							if (File.Exists(texturePath))
+							{
+								Plugin.CurrentHost.RegisterTexture(texturePath, new TextureParameters(null, null), out NightTimeTexture);
+							}
+						}
+						catch
+						{
+							// ignored
 						}
 					}
 					else

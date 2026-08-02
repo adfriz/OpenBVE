@@ -311,6 +311,17 @@ namespace Formats.OpenBve
 					{
 						splitLine = splitLine.Skip(1).ToArray();
 					}
+
+					for (int idx = splitLine.Length - 1; idx >= 0; idx--)
+					{
+						if (!string.IsNullOrWhiteSpace(splitLine[idx]))
+						{
+							// remove empty entries at end
+							idx++;
+							Array.Resize(ref splitLine, idx);
+							break;
+						}
+					}
 					
 					currentSection.Values.Enqueue(new ValueTuple<int, string, T2, string[]>(i, command, key, splitLine));
 				}
@@ -350,37 +361,8 @@ namespace Formats.OpenBve
 		{
 			string[] value = Dequeue();
 			Vertex currentVertex = new Vertex();
-			if (value.Length >= 1 && !string.IsNullOrWhiteSpace(value[0]) && !NumberFormats.TryParseDoubleVb6(value[0], out currentVertex.Coordinates.X))
-			{
-				currentHost.AddMessage(MessageType.Error, false, "Invalid argument vX in " + CurrentCommand + " at line " + CurrentLine + " in file " + FileName);
-				currentVertex.Coordinates.X = 0.0;
-			}
-			if (value.Length >= 2 && !string.IsNullOrWhiteSpace(value[1]) && !NumberFormats.TryParseDoubleVb6(value[1], out currentVertex.Coordinates.Y))
-			{
-				currentHost.AddMessage(MessageType.Error, false, "Invalid argument vY in " + CurrentCommand + " at line " + CurrentLine + " in file " + FileName);
-				currentVertex.Coordinates.Y = 0.0;
-			}
-			if (value.Length >= 3 && !string.IsNullOrWhiteSpace(value[2]) && !NumberFormats.TryParseDoubleVb6(value[2], out currentVertex.Coordinates.Z))
-			{
-				currentHost.AddMessage(MessageType.Error, false, "Invalid argument vZ in " + CurrentCommand + " at line " + CurrentLine + " in file " + FileName);
-				currentVertex.Coordinates.Z = 0.0;
-			}
-			currentNormal = new Vector3();
-			if (value.Length >= 4 && !string.IsNullOrWhiteSpace(value[3]) && !NumberFormats.TryParseDoubleVb6(value[3], out currentNormal.X))
-			{
-				currentHost.AddMessage(MessageType.Error, false, "Invalid argument nX in " + CurrentCommand + " at line " + CurrentLine + " in file " + FileName);
-				currentNormal.X = 0.0;
-			}
-			if (value.Length >= 5 && !string.IsNullOrWhiteSpace(value[4]) && !NumberFormats.TryParseDoubleVb6(value[4], out currentNormal.Y))
-			{
-				currentHost.AddMessage(MessageType.Error, false, "Invalid argument nY in " + CurrentCommand + " at line " + CurrentLine + " in file " + FileName);
-				currentNormal.Y = 0.0;
-			}
-			if (value.Length >= 6 && !string.IsNullOrWhiteSpace(value[5]) && !NumberFormats.TryParseDoubleVb6(value[5], out currentNormal.Z))
-			{
-				currentHost.AddMessage(MessageType.Error, false, "Invalid argument nZ in " + CurrentCommand + " at line " + CurrentLine + " in file " + FileName);
-				currentNormal.Z = 0.0;
-			}
+			currentVertex.Coordinates = GetVector3(value, 0, (T2)(object)CSVB3DKey.VertexCoordinates, CurrentLine);
+			currentNormal = GetVector3(value, 3, (T2)(object)CSVB3DKey.VertexNormal, CurrentLine);
 			currentNormal.Normalize();
 			return currentVertex;
 		}
@@ -393,12 +375,24 @@ namespace Formats.OpenBve
 			for (int i = 0; i < value.Length; i++)
 			{
 				/*
-				 * NOTE: Face ,1,2,3
-				 * is interpreted by BVE as Face 0,1,2,3
+				 * NOTES:
+				 * BVE interprets any 'unknown' value as 0
+				 * -------------------------------------------------
+				 * Face ,1,2,3 is interpreted by BVE as Face 0,1,2,3
 				 * Applies to both CSV and B3D files
+				 *--------------------------------------------------
+				 * Similarly, using the letter O in place of a zero
+				 * e.g. Face O,1,2,3 works.
+				 * Limit it to just these two for the minute to try
+				 * and keep things clean.
 				 */
-				if (!NumberFormats.TryParseIntVb6(value[i], out parsedValues[i]) && (i != 0 || enableHacks == false))
+				if (!NumberFormats.TryParseIntVb6(value[i], out parsedValues[i]))
 				{
+					if (enableHacks && (i == 0 || value[i].ToLowerInvariant() == "o"))
+					{
+						parsedValues[i] = 0;
+						continue;
+					}
 					if (!string.IsNullOrWhiteSpace(value[i]))
 					{
 						currentHost.AddMessage(MessageType.Error, false, "The vertex referenced at index " + i + " is not a valid integer in " + CurrentCommand + " at line " + CurrentLine + " in file " + FileName);
@@ -485,13 +479,29 @@ namespace Formats.OpenBve
 			else
 			{
 				tDay = value.Length >= 1 ? value[0] : string.Empty;
-				currentHost.AddMessage(MessageType.Error, false, "DaytimeTexture File + " + tDay + " was not found for " + CurrentCommand + " at line " + CurrentLine + " in file " + FileName);
+				if (string.IsNullOrWhiteSpace(tDay))
+				{
+					currentHost.AddMessage(MessageType.Warning, false, "No DaytimeTexture File was specified for " + CurrentCommand + " at line " + CurrentLine + " in file " + FileName);
+				}
+				else
+				{
+					currentHost.AddMessage(MessageType.Error, false, "DaytimeTexture File " + tDay + " was not found for " + CurrentCommand + " at line " + CurrentLine + " in file " + FileName);
+				}
+				tDay = string.Empty;
 			}
 
 			if (!string.IsNullOrEmpty(tNight) && !File.Exists(tNight))
 			{
 				tNight = value.Length >= 2 ? value[1] : string.Empty;
-				currentHost.AddMessage(MessageType.Error, false, "NightTimeTexture File " + tNight + " was not found for " + CurrentCommand + " at line " + CurrentLine + " in file " + FileName);
+				if(string.IsNullOrWhiteSpace(tNight))
+				{
+					currentHost.AddMessage(MessageType.Warning, false, "No NightTimeTexture File was specified for " + CurrentCommand + " at line " + CurrentLine + " in file " + FileName);
+				}
+				else
+				{
+					currentHost.AddMessage(MessageType.Error, false, "NightTimeTexture File " + tNight + " was not found for " + CurrentCommand + " at line " + CurrentLine + " in file " + FileName);
+				}
+				tNight = string.Empty;
 			}
 
 			return textureFound;
@@ -544,7 +554,7 @@ namespace Formats.OpenBve
 			glowHalfDistance = 0;
 			glowAttenuationMode = (T4)(object)GlowAttenuationMode.DivisionExponent4;
 			
-			if (value.Length >= 2)
+			if (value.Length >= 1)
 			{
 				if (Enum.TryParse(value[0], true, out MeshMaterialBlendMode mode))
 				{
@@ -563,7 +573,7 @@ namespace Formats.OpenBve
 				double.TryParse(value[1], out glowHalfDistance);
 			}
 
-			if (value.Length >= 3)
+			if (value.Length >= 3 && !string.IsNullOrWhiteSpace(value[2])) // mode is optional, but string may consist of whitespace :(
 			{
 				if (Enum.TryParse(value[2], true, out GlowAttenuationMode glowMode))
 				{
@@ -602,14 +612,28 @@ namespace Formats.OpenBve
 		private Vector2 GetVector2(string[] values, int startingIndex, T2 key, int line)
 		{
 			Vector2 v = Vector2.Null;
-			if (values.Length >= startingIndex + 1 && values[startingIndex].Length > 0 && !NumberFormats.TryParseDoubleVb6(values[startingIndex], out v.X))
+			if (values.Length >= startingIndex + 1 && !NumberFormats.TryParseDoubleVb6(values[startingIndex], out v.X))
 			{
-				currentHost.AddMessage(MessageType.Error, false, "X was invalid for " + key + " at line " + line + " in file " + FileName);
+				if (string.IsNullOrWhiteSpace(values[startingIndex]))
+				{
+					currentHost.AddMessage(MessageType.Warning, false, "X was empty for " + key + " at line " + line + " in file " + FileName);
+				}
+				else
+				{
+					currentHost.AddMessage(MessageType.Error, false, "X was invalid for " + key + " at line " + line + " in file " + FileName);
+				}
 			}
 
-			if (values.Length >= startingIndex + 2 && values[startingIndex + 1].Length > 0 && !NumberFormats.TryParseDoubleVb6(values[startingIndex + 1], out v.Y))
+			if (values.Length >= startingIndex + 2 && !NumberFormats.TryParseDoubleVb6(values[startingIndex + 1], out v.Y))
 			{
-				currentHost.AddMessage(MessageType.Error, false, "Y was invalid for " + key + " at line " + line + " in file " + FileName);
+				if (string.IsNullOrWhiteSpace(values[startingIndex + 1]))
+				{
+					currentHost.AddMessage(MessageType.Warning, false, "Y was empty for " + key + " at line " + line + " in file " + FileName);
+				}
+				else
+				{
+					currentHost.AddMessage(MessageType.Error, false, "Y was invalid for " + key + " at line " + line + " in file " + FileName);
+				}	
 			}
 
 			return v;
@@ -634,17 +658,38 @@ namespace Formats.OpenBve
 			Vector3 v = Vector3.Zero;
 			if (values.Length >= startingIndex + 1 && !string.IsNullOrWhiteSpace(values[startingIndex]) && !NumberFormats.TryParseDoubleVb6(values[startingIndex], out v.X))
 			{
-				currentHost.AddMessage(MessageType.Error, false, "X was invalid for " + key + " at line " + line + " in file " + FileName);
+				if (string.IsNullOrWhiteSpace(values[startingIndex]))
+				{
+					currentHost.AddMessage(MessageType.Warning, false, "X was empty for " + key + " at line " + line + " in file " + FileName);
+				}
+				else
+				{
+					currentHost.AddMessage(MessageType.Error, false, "X was invalid for " + key + " at line " + line + " in file " + FileName);
+				}
 			}
 
 			if (values.Length >= startingIndex + 2 && !string.IsNullOrWhiteSpace(values[startingIndex + 1]) && !NumberFormats.TryParseDoubleVb6(values[startingIndex + 1], out v.Y))
 			{
-				currentHost.AddMessage(MessageType.Error, false, "Y was invalid for " + key + " at line " + line + " in file " + FileName);
+				if (string.IsNullOrWhiteSpace(values[startingIndex + 1]))
+				{
+					currentHost.AddMessage(MessageType.Warning, false, "Y was empty for " + key + " at line " + line + " in file " + FileName);
+				}
+				else
+				{
+					currentHost.AddMessage(MessageType.Error, false, "Y was invalid for " + key + " at line " + line + " in file " + FileName);
+				}
 			}
 
 			if (values.Length >= startingIndex + 3 && !string.IsNullOrWhiteSpace(values[startingIndex + 2]) && !NumberFormats.TryParseDoubleVb6(values[startingIndex + 2], out v.Z))
 			{
-				currentHost.AddMessage(MessageType.Error, false, "Z was invalid for " + key + " at line " + line + " in file " + FileName);
+				if (string.IsNullOrWhiteSpace(values[startingIndex + 2]))
+				{
+					currentHost.AddMessage(MessageType.Error, false, "Z was empty for " + key + " at line " + line + " in file " + FileName);
+				}
+				else
+				{
+					currentHost.AddMessage(MessageType.Error, false, "Z was invalid for " + key + " at line " + line + " in file " + FileName);
+				}
 			}
 
 			return v;
