@@ -92,6 +92,11 @@ namespace LibRender2.Objects
 				return;
 			}
 
+			if (State?.Prototype?.Mesh != null && State.Prototype.Mesh.VAO == null)
+			{
+				VAOExtensions.CreateVAO(State.Prototype.Mesh, State.Prototype.Dynamic, renderer.DefaultShader.VertexLayout, renderer);
+			}
+
 			foreach (MeshFace face in State.Prototype.Mesh.Faces)
 			{
 				OpenGlTextureWrapMode wrap = OpenGlTextureWrapMode.ClampClamp;
@@ -163,7 +168,7 @@ namespace LibRender2.Objects
 							State.Prototype.Mesh.Materials[face.Material].DaytimeTexture.Origin.GetTexture(out daytimeTexture);
 							if (!TextureManager.textureCache.ContainsKey(State.Prototype.Mesh.Materials[face.Material].DaytimeTexture.Origin)) // because getting the Origin may change the ref
 							{
-								TextureManager.textureCache.Add(State.Prototype.Mesh.Materials[face.Material].DaytimeTexture.Origin, daytimeTexture);
+								TextureManager.textureCache.TryAdd(State.Prototype.Mesh.Materials[face.Material].DaytimeTexture.Origin, daytimeTexture);
 							}
 							
 						}
@@ -195,7 +200,7 @@ namespace LibRender2.Objects
 						else
 						{
 							State.Prototype.Mesh.Materials[face.Material].NighttimeTexture.Origin.GetTexture(out nighttimeTexture);
-							TextureManager.textureCache.Add(State.Prototype.Mesh.Materials[face.Material].NighttimeTexture.Origin, nighttimeTexture);
+							TextureManager.textureCache.TryAdd(State.Prototype.Mesh.Materials[face.Material].NighttimeTexture.Origin, nighttimeTexture);
 						}
 						TextureTransparencyType transparencyType = TextureTransparencyType.Opaque;
 						if (nighttimeTexture != null)

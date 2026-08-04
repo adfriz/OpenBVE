@@ -59,21 +59,6 @@ namespace LibRender2.ShadowMapping
 		}
 
 		/// <summary>
-		/// Interpolates between full frustum corners to get a sub-frustum between nearFrac and farFrac [0,1].
-		/// </summary>
-		public static Vector3[] GetSubFrustumCorners(Vector3[] fullCorners, double nearFrac, double farFrac)
-		{
-			Vector3[] corners = new Vector3[8];
-			for (int i = 0; i < 4; i++)
-			{
-				Vector3 dir = fullCorners[i + 4] - fullCorners[i];
-				corners[i] = fullCorners[i] + dir * nearFrac;
-				corners[i + 4] = fullCorners[i] + dir * farFrac;
-			}
-			return corners;
-		}
-
-		/// <summary>
 		/// Computes a stable radius for a bounding sphere circumscribing the sub-frustum.
 		/// </summary>
 		public static double GetStableRadius(double zNear, double zFar, double fovYRad, double aspect)
@@ -93,31 +78,6 @@ namespace LibRender2.ShadowMapping
 			double dz = zFar - centerZ;
 			
 			return Math.Sqrt(w * w + h * h + dz * dz);
-		}
-
-		/// <summary>
-		/// Computes the average center of a set of points.
-		/// </summary>
-		public static Vector3 ComputeCenter(Vector3[] points)
-		{
-			Vector3 center = Vector3.Zero;
-			if (points == null || points.Length == 0) return center;
-			foreach (var p in points) center += p;
-			return center / points.Length;
-		}
-
-		/// <summary>
-		/// Computes the radius of a bounding sphere that encompasses all points.
-		/// </summary>
-		public static double ComputeBoundingSphereRadius(Vector3[] points, Vector3 center)
-		{
-			double maxDistSq = 0;
-			foreach (var p in points)
-			{
-				double d2 = (p - center).NormSquared();
-				if (d2 > maxDistSq) maxDistSq = d2;
-			}
-			return Math.Sqrt(maxDistSq);
 		}
 	}
 }

@@ -17,12 +17,7 @@ namespace LibRender2.Objects
 			Object = _object;
 			Face = face;
 			Renderer = renderer;
-			if (Object.Prototype.Mesh.VAO == null)
-			{
-				VAOExtensions.CreateVAO(Object.Prototype.Mesh, Object.Prototype.Dynamic, Renderer.DefaultShader.VertexLayout, Renderer);
-            }
-			
-        }
+		}
 
 		public void Draw()
 		{

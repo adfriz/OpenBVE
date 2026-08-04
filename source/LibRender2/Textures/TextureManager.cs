@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -23,7 +24,7 @@ namespace LibRender2.Textures
 		/// <summary>Holds all currently registered textures.</summary>
 		public static Texture[] RegisteredTextures;
 		/// <summary>Holds cached texture origins</summary>
-		internal static Dictionary<TextureOrigin, Texture> textureCache = new Dictionary<TextureOrigin, Texture>();
+		internal static ConcurrentDictionary<TextureOrigin, Texture> textureCache = new ConcurrentDictionary<TextureOrigin, Texture>();
 
 		private static Dictionary<TextureOrigin, Texture> animatedTextures;
 
@@ -500,7 +501,7 @@ namespace LibRender2.Textures
 			handle.Ignore = false;
 			if (handle.Origin != null)
 			{
-				textureCache.Remove(handle.Origin);
+				textureCache.TryRemove(handle.Origin, out _);
 			}
 		}
 
@@ -536,7 +537,7 @@ namespace LibRender2.Textures
 					{
 						if (!File.Exists(pathOrigin.Path) || pathOrigin.FileSize != new FileInfo(pathOrigin.Path).Length || pathOrigin.LastModificationTime != File.GetLastWriteTime(pathOrigin.Path))
 						{
-							textureCache.Remove(origin);
+							textureCache.TryRemove(origin, out _);
 						}
 					}
 				}

@@ -809,7 +809,7 @@ namespace LibRender2
 			}
 		}
 
-		private VisibilityUpdate updateVisibility;
+		private volatile VisibilityUpdate updateVisibility;
 		/// <summary>The lock to be held whilst visibility updates or loading operations are in progress</summary>
 		public object VisibilityUpdateLock = new object();
 		
