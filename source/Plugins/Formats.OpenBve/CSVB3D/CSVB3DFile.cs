@@ -137,6 +137,15 @@ namespace Formats.OpenBve
 			return false;
 		}
 
+		/// <summary>Attempts to read the next value as a virtual camera feed reference (e.g. CAM_1)</summary>
+		/// <param name="camIndex">The camera index, or -1 if the next value is not a camera feed</param>
+		/// <returns>True if the next value was a camera feed reference (and was consumed), false otherwise</returns>
+		public virtual bool TryGetCameraFeedIndex(out int camIndex)
+		{
+			camIndex = -1;
+			return false;
+		}
+
 		/// <summary>Gets the next set of texture coordinates from the block</summary>
 		public virtual bool GetNextTextureCoordinates(out int index, out Vector2 coordinates, out bool hasLightMap, out Vector2 lightMapCoordinates)
 		{
@@ -505,6 +514,32 @@ namespace Formats.OpenBve
 			}
 
 			return textureFound;
+		}
+
+		public override bool TryGetCameraFeedIndex(out int camIndex)
+		{
+			camIndex = -1;
+			if (Values.Count == 0)
+			{
+				return false;
+			}
+			ValueTuple<int, string, T2, string[]> tuple = Values.Peek();
+			if (tuple.Item4.Length < 1 || string.IsNullOrWhiteSpace(tuple.Item4[0]))
+			{
+				return false;
+			}
+			string raw = tuple.Item4[0].Trim();
+			if (raw.StartsWith("CAM_", StringComparison.OrdinalIgnoreCase))
+			{
+				if (NumberFormats.TryParseIntVb6(raw.Substring(4), out camIndex) && camIndex > 0)
+				{
+					Values.Dequeue();
+					CurrentLine = tuple.Item1 + 1;
+					CurrentCommand = tuple.Item2;
+					return true;
+				}
+			}
+			return false;
 		}
 
 		public override bool GetNextPath(string absolutePath, out string finalPath)

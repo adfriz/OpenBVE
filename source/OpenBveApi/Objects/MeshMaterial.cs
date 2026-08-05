@@ -33,6 +33,8 @@ namespace OpenBveApi.Objects
 		public ushort GlowAttenuationData;
 		/// <summary>The wrap mode, or null to allow the renderer to decide</summary>
 		public OpenGlTextureWrapMode? WrapMode;
+		/// <summary>The camera receiver index for dynamic texture feed, or 0 if not a camera receiver</summary>
+		public int CameraReceiverIndex;
 
 		/// <summary>Returns whether two MeshMaterial structs are equal</summary>
 		public static bool operator ==(MeshMaterial A, MeshMaterial B)
@@ -48,6 +50,7 @@ namespace OpenBveApi.Objects
 			if (A.BlendMode != B.BlendMode) return false;
 			if (A.GlowAttenuationData != B.GlowAttenuationData) return false;
 			if (A.WrapMode != B.WrapMode) return false;
+			if (A.CameraReceiverIndex != B.CameraReceiverIndex) return false;
 			return true;
 		}
 
@@ -65,6 +68,7 @@ namespace OpenBveApi.Objects
 			if (A.BlendMode != B.BlendMode) return true;
 			if (A.GlowAttenuationData != B.GlowAttenuationData) return true;
 			if (A.WrapMode != B.WrapMode) return true;
+			if (A.CameraReceiverIndex != B.CameraReceiverIndex) return true;
 			return false;
 		}
 	}

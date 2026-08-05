@@ -12,6 +12,7 @@ using RouteManager2.MessageManager.MessageTypes;
 using RouteManager2.SignalManager;
 using RouteManager2.Stations;
 using RouteManager2.Tracks;
+using RouteManager2.VirtualCameras;
 
 namespace CsvRwRouteParser
 {
@@ -3871,6 +3872,219 @@ namespace CsvRwRouteParser
 							}
 						}
 					}
+					break;
+				case TrackCommand.VirtualCamera:
+				{
+					if (!PreviewOnly)
+					{
+						// Track.VirtualCamera Index;X;Y;TrackPos;Yaw;Pitch;Roll;FOV;ResW;ResH;ActiveMode;ActivationDistance;Label
+						if (Arguments.Length < 1)
+						{
+							Plugin.CurrentHost.AddMessage(MessageType.Error, false, "Track.VirtualCamera requires at least the camera index at line " + Expression.Line.ToString(Culture) + ", column " + Expression.Column.ToString(Culture) + " in file " + Expression.File);
+							break;
+						}
+
+						VirtualCameraData cam = new VirtualCameraData();
+
+						// Arg 0: Index (required)
+						if (Arguments.Length >= 1 && Arguments[0].Length > 0)
+						{
+							if (!NumberFormats.TryParseIntVb6(Arguments[0], out cam.Index) || cam.Index < 1)
+							{
+								Plugin.CurrentHost.AddMessage(MessageType.Error, false, "VirtualCamera Index is invalid in Track.VirtualCamera at line " + Expression.Line.ToString(Culture) + ", column " + Expression.Column.ToString(Culture) + " in file " + Expression.File);
+								break;
+							}
+						}
+						else
+						{
+							Plugin.CurrentHost.AddMessage(MessageType.Error, false, "VirtualCamera Index is required in Track.VirtualCamera at line " + Expression.Line.ToString(Culture) + ", column " + Expression.Column.ToString(Culture) + " in file " + Expression.File);
+							break;
+						}
+
+						// Check for duplicate index
+						for (int v = 0; v < Data.VirtualCameras.Count; v++)
+						{
+							if (Data.VirtualCameras[v].Index == cam.Index)
+							{
+								Plugin.CurrentHost.AddMessage(MessageType.Error, false, "VirtualCamera Index " + cam.Index + " is already defined in Track.VirtualCamera at line " + Expression.Line.ToString(Culture) + ", column " + Expression.Column.ToString(Culture) + " in file " + Expression.File);
+								break;
+							}
+						}
+
+						// Arg 1: X position
+						if (Arguments.Length >= 2 && Arguments[1].Length > 0)
+						{
+							if (!NumberFormats.TryParseDoubleVb6(Arguments[1], UnitOfLength, out double x))
+							{
+								Plugin.CurrentHost.AddMessage(MessageType.Error, false, "VirtualCamera X is invalid in Track.VirtualCamera at line " + Expression.Line.ToString(Culture) + ", column " + Expression.Column.ToString(Culture) + " in file " + Expression.File);
+								x = 0.0;
+							}
+							cam.Position.X = x;
+						}
+
+						// Arg 2: Y position
+						if (Arguments.Length >= 3 && Arguments[2].Length > 0)
+						{
+							if (!NumberFormats.TryParseDoubleVb6(Arguments[2], UnitOfLength, out double y))
+							{
+								Plugin.CurrentHost.AddMessage(MessageType.Error, false, "VirtualCamera Y is invalid in Track.VirtualCamera at line " + Expression.Line.ToString(Culture) + ", column " + Expression.Column.ToString(Culture) + " in file " + Expression.File);
+								y = 3.0;
+							}
+							cam.Position.Y = y;
+						}
+						else
+						{
+							cam.Position.Y = 3.0;
+						}
+
+						// Arg 3: Track position (Z)
+						if (Arguments.Length >= 4 && Arguments[3].Length > 0)
+						{
+							if (!NumberFormats.TryParseDoubleVb6(Arguments[3], UnitOfLength, out double trackPos))
+							{
+								Plugin.CurrentHost.AddMessage(MessageType.Error, false, "VirtualCamera TrackPosition is invalid in Track.VirtualCamera at line " + Expression.Line.ToString(Culture) + ", column " + Expression.Column.ToString(Culture) + " in file " + Expression.File);
+								trackPos = Data.TrackPosition;
+							}
+							cam.Position.Z = trackPos;
+						}
+						else
+						{
+							cam.Position.Z = Data.TrackPosition;
+						}
+
+						// Arg 4: Yaw (degrees -> radians)
+						if (Arguments.Length >= 5 && Arguments[4].Length > 0)
+						{
+							if (!NumberFormats.TryParseDoubleVb6(Arguments[4], out double yaw))
+							{
+								Plugin.CurrentHost.AddMessage(MessageType.Error, false, "VirtualCamera Yaw is invalid in Track.VirtualCamera at line " + Expression.Line.ToString(Culture) + ", column " + Expression.Column.ToString(Culture) + " in file " + Expression.File);
+								yaw = 0.0;
+							}
+							cam.Yaw = yaw / 57.2957795130824;
+						}
+
+						// Arg 5: Pitch (degrees -> radians)
+						if (Arguments.Length >= 6 && Arguments[5].Length > 0)
+						{
+							if (!NumberFormats.TryParseDoubleVb6(Arguments[5], out double pitch))
+							{
+								Plugin.CurrentHost.AddMessage(MessageType.Error, false, "VirtualCamera Pitch is invalid in Track.VirtualCamera at line " + Expression.Line.ToString(Culture) + ", column " + Expression.Column.ToString(Culture) + " in file " + Expression.File);
+								pitch = 15.0;
+							}
+							cam.Pitch = pitch / 57.2957795130824;
+						}
+						else
+						{
+							cam.Pitch = 15.0 / 57.2957795130824;
+						}
+
+						// Arg 6: Roll (degrees -> radians)
+						if (Arguments.Length >= 7 && Arguments[6].Length > 0)
+						{
+							if (!NumberFormats.TryParseDoubleVb6(Arguments[6], out double roll))
+							{
+								Plugin.CurrentHost.AddMessage(MessageType.Error, false, "VirtualCamera Roll is invalid in Track.VirtualCamera at line " + Expression.Line.ToString(Culture) + ", column " + Expression.Column.ToString(Culture) + " in file " + Expression.File);
+								roll = 0.0;
+							}
+							cam.Roll = roll / 57.2957795130824;
+						}
+
+						// Arg 7: FieldOfView (degrees -> radians)
+						if (Arguments.Length >= 8 && Arguments[7].Length > 0)
+						{
+							if (!NumberFormats.TryParseDoubleVb6(Arguments[7], out double fov))
+							{
+								Plugin.CurrentHost.AddMessage(MessageType.Error, false, "VirtualCamera FOV is invalid in Track.VirtualCamera at line " + Expression.Line.ToString(Culture) + ", column " + Expression.Column.ToString(Culture) + " in file " + Expression.File);
+								fov = 45.0;
+							}
+							if (fov < 1.0) fov = 1.0;
+							if (fov > 179.0) fov = 179.0;
+							cam.FieldOfView = fov / 57.2957795130824;
+						}
+						else
+						{
+							cam.FieldOfView = 45.0 / 57.2957795130824;
+						}
+
+						// Arg 8: RenderWidth
+						if (Arguments.Length >= 9 && Arguments[8].Length > 0)
+						{
+							if (!NumberFormats.TryParseIntVb6(Arguments[8], out int w) || w < 1)
+							{
+								w = 320;
+							}
+							cam.RenderWidth = w;
+						}
+						else
+						{
+							cam.RenderWidth = 320;
+						}
+
+						// Arg 9: RenderHeight
+						if (Arguments.Length >= 10 && Arguments[9].Length > 0)
+						{
+							if (!NumberFormats.TryParseIntVb6(Arguments[9], out int h) || h < 1)
+							{
+								h = 240;
+							}
+							cam.RenderHeight = h;
+						}
+						else
+						{
+							cam.RenderHeight = 240;
+						}
+
+						// Arg 10: ActiveMode
+						if (Arguments.Length >= 11 && Arguments[10].Length > 0)
+						{
+							switch (Arguments[10].Trim().ToUpperInvariant())
+							{
+								case "STOPONLY":
+								case "STOP":
+									cam.ActiveMode = VirtualCameraActiveMode.StopOnly;
+									break;
+								case "DISTANCE":
+								case "DIST":
+									cam.ActiveMode = VirtualCameraActiveMode.Distance;
+									break;
+								case "ALWAYS":
+								default:
+									cam.ActiveMode = VirtualCameraActiveMode.Always;
+									break;
+							}
+						}
+						else
+						{
+							cam.ActiveMode = VirtualCameraActiveMode.Always;
+						}
+
+						// Arg 11: ActivationDistance
+						if (Arguments.Length >= 12 && Arguments[11].Length > 0)
+						{
+							if (!NumberFormats.TryParseDoubleVb6(Arguments[11], UnitOfLength, out double dist))
+							{
+								dist = 100.0;
+							}
+							cam.ActivationDistance = dist;
+						}
+						else
+						{
+							cam.ActivationDistance = 100.0;
+						}
+
+						// Arg 12: Label
+						if (Arguments.Length >= 13 && Arguments[12].Length > 0)
+						{
+							cam.Label = Arguments[12].Trim();
+						}
+						else
+						{
+							cam.Label = string.Empty;
+						}
+
+						Data.VirtualCameras.Add(cam);
+					}
+				}
 					break;
 				case TrackCommand.RailSound:
 				case TrackCommand.CurveTransition:

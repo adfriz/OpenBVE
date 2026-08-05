@@ -168,6 +168,8 @@
 		/// <summary>Begins a transition curve</summary>
 		CurveTransition,
 		/// <summary>Begins pitch transition</summary>
-		PitchTransition
+		PitchTransition,
+		/// <summary>Defines a virtual camera at a world position</summary>
+		VirtualCamera
 	}
 }

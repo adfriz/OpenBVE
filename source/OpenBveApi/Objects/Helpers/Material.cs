@@ -45,6 +45,9 @@ namespace OpenBveApi.Objects
 		/// <summary>Whether the first color in the texture palette is transparent</summary>
 		/// <remarks>Used by Mechanik routes</remarks>
 		public bool FirstColorTransparent;
+		/// <summary>The camera receiver index for dynamic texture feed, or 0 if not a camera receiver</summary>
+		/// <remarks>Set via Load,CAM_X command in CSV/B3D mesh files; camera indexes must be greater than 0</remarks>
+		public int CameraReceiverIndex;
 
 		/// <summary>Creates a new Material with default properties</summary>
 		public Material() {
@@ -100,6 +103,7 @@ namespace OpenBveApi.Objects
 			this.TextPadding = prototypeMaterial.TextPadding;
 			this.Font = prototypeMaterial.Font;
 			this.WrapMode = prototypeMaterial.WrapMode;
+			this.CameraReceiverIndex = prototypeMaterial.CameraReceiverIndex;
 		}
 	}
 }

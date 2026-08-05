@@ -16,10 +16,12 @@ using OpenBveApi.Math;
 using OpenBveApi.Objects;
 using OpenBveApi.Routes;
 using OpenBveApi.Textures;
+using OpenBveApi.Trains;
 using OpenTK.Graphics.OpenGL;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using TrainManager;
 using TrainManager.Trains;
 using Vector3 = OpenBveApi.Math.Vector3;
 
@@ -39,6 +41,7 @@ namespace OpenBve.Graphics
 		private Events events;
 		private Overlays overlays;
 		internal Touch Touch;
+		internal VirtualCameraRenderer VirtualCameras;
 
 		public override void Initialize()
 		{
@@ -54,6 +57,7 @@ namespace OpenBve.Graphics
             events = new Events(this);
 			overlays = new Overlays(this);
 			Touch = new Touch(this);
+			VirtualCameras = new VirtualCameraRenderer(this);
 			ObjectsSortedByStart = new int[] { };
 			ObjectsSortedByEnd = new int[] { };
 			
@@ -115,6 +119,14 @@ namespace OpenBve.Graphics
 			}
 
 			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+			
+			// virtual cameras (CCTV-style camera feeds)
+			if (Program.CurrentRoute.VirtualCameras != null && Program.CurrentRoute.VirtualCameras.Length > 0)
+			{
+				TrainBase playerTrain = TrainManagerBase.PlayerTrain;
+				bool stoppedAtStation = playerTrain != null && playerTrain.Station >= 0 && playerTrain.StationState == TrainStopState.Boarding;
+				VirtualCameras.Update(Program.CurrentRoute.VirtualCameras, CameraTrackFollower.TrackPosition, stoppedAtStation);
+			}
 			
 			// set up camera and lighting early for shadows
 			CurrentViewMatrix = Matrix4D.LookAt(Vector3.Zero, new Vector3(Camera.AbsoluteDirection.X, Camera.AbsoluteDirection.Y, -Camera.AbsoluteDirection.Z), new Vector3(Camera.AbsoluteUp.X, Camera.AbsoluteUp.Y, -Camera.AbsoluteUp.Z));

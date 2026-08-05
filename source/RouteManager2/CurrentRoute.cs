@@ -15,6 +15,7 @@ using RouteManager2.SignalManager;
 using RouteManager2.SignalManager.PreTrain;
 using RouteManager2.Stations;
 using RouteManager2.Tracks;
+using RouteManager2.VirtualCameras;
 
 namespace RouteManager2
 {
@@ -101,6 +102,9 @@ namespace RouteManager2
 
 		/// <summary>All switches on the route</summary>
 		public Dictionary<Guid, Switch> Switches;
+
+		/// <summary>All virtual cameras defined on the route</summary>
+		public VirtualCameraData[] VirtualCameras = new VirtualCameraData[0];
 
 		public CurrentRoute(HostInterface host, BaseRenderer renderer)
 		{

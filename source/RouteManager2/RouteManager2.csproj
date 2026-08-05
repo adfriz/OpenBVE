@@ -100,6 +100,7 @@
     <Compile Include="Tracks\BufferStop.cs" />
     <Compile Include="Tracks\Switch.cs" />
     <Compile Include="Tracks\SwitchType.cs" />
+    <Compile Include="VirtualCameras\VirtualCameraData.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\LibRender2\LibRender2.csproj">

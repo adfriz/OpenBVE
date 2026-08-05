@@ -253,7 +253,14 @@ namespace Object.CsvB3d
 
 							break;
 						case CSVB3DKey.Load:
-							if (subBlock.GetNextTexturePath(basePath, out string tDay, out string tNight))
+							if (subBlock.TryGetCameraFeedIndex(out int camIndex))
+							{
+								// Load,CAM_X assigns a virtual camera feed to this material
+								currentMeshBuilder.Materials[0].CameraReceiverIndex = camIndex;
+								currentMeshBuilder.Materials[0].DaytimeTexture = null;
+								currentMeshBuilder.Materials[0].NighttimeTexture = null;
+							}
+							else if (subBlock.GetNextTexturePath(basePath, out string tDay, out string tNight))
 							{
 								currentMeshBuilder.Materials[0].DaytimeTexture = tDay;
 								currentMeshBuilder.Materials[0].NighttimeTexture = tNight;

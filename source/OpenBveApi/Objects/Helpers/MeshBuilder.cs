@@ -155,6 +155,7 @@ namespace OpenBveApi.Objects
 					Object.Mesh.Materials[mm + i].BlendMode = Materials[i].BlendMode;
 					Object.Mesh.Materials[mm + i].GlowAttenuationData = Materials[i].GlowAttenuationData;
 					Object.Mesh.Materials[mm + i].WrapMode = Materials[i].WrapMode;
+					Object.Mesh.Materials[mm + i].CameraReceiverIndex = Materials[i].CameraReceiverIndex;
 				}
 			}
 		}

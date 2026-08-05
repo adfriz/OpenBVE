@@ -4,6 +4,7 @@ using OpenBveApi.Math;
 using OpenBveApi.Routes;
 using OpenBveApi.Textures;
 using RouteManager2.SignalManager;
+using RouteManager2.VirtualCameras;
 
 namespace CsvRwRouteParser
 {
@@ -43,6 +44,9 @@ namespace CsvRwRouteParser
 
 			internal readonly List<string> ScriptedTrainFiles;
 
+			/// <summary>Parsed virtual camera definitions collected during route parsing</summary>
+			internal readonly List<VirtualCameraData> VirtualCameras;
+
 			internal void SetHmmsimProperties()
 			{
 				IsHmmsim = true;
@@ -74,6 +78,7 @@ namespace CsvRwRouteParser
 				Signals = new SignalDictionary();
 				Structure = new StructureData();
 				IsHmmsim = false;
+				VirtualCameras = new List<VirtualCameraData>();
 				Blocks.Add(new Block(previewOnly));
 				Blocks[0].Rails.Add(0, new Rail(2.0, 1.0) { RailStarted = true });
 				Blocks[0].Rails.Add(-1, new Rail(0, 0) { RailStarted = true });

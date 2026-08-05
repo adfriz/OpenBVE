@@ -1242,6 +1242,12 @@ namespace CsvRwRouteParser
 					CurrentRoute.Tracks[0].Elements[0].Events.Add(transponders[i]);
 				}
 			}
+			// virtual cameras
+			if (!PreviewOnly && Data.VirtualCameras.Count > 0)
+			{
+				CurrentRoute.VirtualCameras = Data.VirtualCameras.ToArray();
+			}
+
 			// cant
 			if (!PreviewOnly)
 			{
