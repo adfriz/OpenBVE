@@ -43,13 +43,21 @@ namespace OpenBve.Graphics
 		public override void Initialize()
 		{
 			base.Initialize();
-			if (pickingShader == null)
+			try
 			{
-				pickingShader = new Shader(this, "default", "picking", true);
-			}
+				if (pickingShader == null)
+				{
+					pickingShader = new Shader(this, "default", "picking", true);
+				}
 
-			pickingShader.Activate();
-			pickingShader.Deactivate();
+				pickingShader.Activate();
+				pickingShader.Deactivate();
+			}
+			catch
+			{
+				Interface.AddMessage(MessageType.Error, false, "Initializing the touch shader failed- Falling back to legacy openGL.");
+				Interface.CurrentOptions.IsUseNewRenderer = false;
+			}
 
             events = new Events(this);
 			overlays = new Overlays(this);
@@ -202,6 +210,11 @@ namespace OpenBve.Graphics
 	            DefaultShader.SetLightDiffuse(Lighting.OptionDiffuseColor);
 	            DefaultShader.SetLightSpecular(Lighting.OptionSpecularColor);
 	            DefaultShader.SetLightModel(Lighting.LightModel);
+	            UpdateActiveLights(DefaultShader);
+            }
+            else
+            {
+	            DefaultShader.SetDynamicLights(new List<SceneLight>(), CurrentViewMatrix, 0);
             }
             Fog.Set();
             DefaultShader.SetTexture(0);
@@ -455,6 +468,8 @@ namespace OpenBve.Graphics
 			// render touch
 			OptionLighting = false;
 			Touch.RenderScene();
+			
+			DrawLightVisuals();
 			
 			// render overlays
 			ResetOpenGlState();

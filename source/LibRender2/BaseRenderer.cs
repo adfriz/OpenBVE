@@ -9,6 +9,7 @@ using System.Runtime.ExceptionServices;
 using System.Threading;
 using LibRender2.Backgrounds;
 using LibRender2.Cameras;
+using LibRender2.Clustering;
 using LibRender2.Fogs;
 using LibRender2.Lightings;
 using LibRender2.Loadings;
@@ -19,7 +20,6 @@ using LibRender2.Primitives;
 using LibRender2.Screens;
 using LibRender2.Shaders;
 using LibRender2.ShadowMapping;
-using LibRender2.Clustering;
 using LibRender2.Text;
 using LibRender2.Textures;
 using LibRender2.Viewports;
@@ -146,35 +146,32 @@ namespace LibRender2
 
 		public List<int> usedTrackColors = new List<int>();
 		public Dictionary<int, RailPath> trackColors = new Dictionary<int, RailPath>();
-#if RELEASE
+
 #pragma warning disable 0219, CS0169
-#endif
 		/// <summary>Holds the last openGL error</summary>
 		/// <remarks>Is only used in debug builds, hence the pragma</remarks>
 		private ErrorCode lastError;
-#if RELEASE
 #pragma warning restore 0219, CS0169
-#endif
 
 		/// <summary>The current shader in use</summary>
-		public AbstractShader CurrentShader;
+		protected internal AbstractShader CurrentShader;
 
 		public Shader DefaultShader;
-
-		public List<SceneLight> ActiveSceneLights = new List<SceneLight>();
-		public List<SceneLight> TempObjectLights = new List<SceneLight>();
 		
 		/// <summary>Manages the Cascaded Shadow Mapping (CSM) system.</summary>
 		public Shadows Shadows;
-
-		/// <summary>Manages Clustered Forward Rendering (CFR). Null until Initialize() completes.</summary>
-		public ClusterEngine ClusterEngine;
 
 		/// <summary>Whether shadows are enabled.</summary>
 		public bool ShadowsEnabled => Shadows?.Enabled ?? false;
 
 		/// <summary>Shadow strength: 0=invisible, 1=full darkness.</summary>
 		public float ShadowStrength => Shadows?.Strength ?? 0.7f;
+
+		/// <summary>Manages the Clustered Forward Rendering light culling system.</summary>
+		public ClusterEngine ClusterEngine;
+
+		/// <summary>Lights visible in the current frame, used by CFR and debug visuals.</summary>
+		public List<SceneLight> ActiveSceneLights = new List<SceneLight>();
 
 		/// <summary>Whether lighting is enabled in the debug options</summary>
 		public bool OptionLighting = true;
@@ -371,7 +368,15 @@ namespace LibRender2
 			currentHost = CurrentHost;
 			currentOptions = CurrentOptions;
 			fileSystem = FileSystem;
-			Screen = new Screen(this);
+			if (CurrentHost.Application != HostApplication.TrainEditor && CurrentHost.Application != HostApplication.TrainEditor2)
+			{
+				/*
+				 * TrainEditor2 uses a GLControl
+				 * On the Linux SLD2 backend, this crashes when attempting to get the list of supported screen resolutions
+				 * As we don't care about fullscreen here, just don't bother with this constructor
+				 */
+				Screen = new Screen();
+			}
 			Camera = new CameraProperties(this);
 			Lighting = new Lighting(this);
 			Marker = new Marker(this);
@@ -446,7 +451,7 @@ namespace LibRender2
 			StaticObjectStates = new List<ObjectState>();
 			DynamicObjectStates = new List<ObjectState>();
 			VisibleObjects = new VisibleObjectLibrary(this);
-			whitePixel = new Texture(new Texture(1, 1, PixelFormat.RGBAlpha, new byte[] {255, 255, 255, 255}, (OpenBveApi.Colors.Color24[])null));
+			whitePixel = new Texture(new Texture(1, 1, PixelFormat.RGBAlpha, new byte[] {255, 255, 255, 255}, null));
 			nullDepthMap = GL.GenTexture();
 			GL.BindTexture(TextureTarget.Texture2D, nullDepthMap);
 			GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent16, 1, 1, 0, OpenTK.Graphics.OpenGL.PixelFormat.DepthComponent, PixelType.Float, IntPtr.Zero);
@@ -497,14 +502,10 @@ namespace LibRender2
 
 			Lighting.Initialize();
 			Shadows.Initialize();
-
-			if (AvailableNewRenderer)
-			{
-				// Initialize Clustered Forward Rendering after shadows (GL context fully ready)
-				ClusterEngine = new ClusterEngine(this);
-				ClusterEngine.Initialize();
-			}
-		}
+			// Initialize Clustered Forward Rendering after shadows (GL context fully ready)
+			ClusterEngine = new ClusterEngine(this);
+			ClusterEngine.Initialize();
+        }
 
 		/// <summary>Initializes (or reinitializes) shadow mapping from current options.</summary>
 		public void InitializeShadows() => Shadows.Initialize();
@@ -799,7 +800,7 @@ namespace LibRender2
 		{
 			for (int i = 0; i < StaticObjectStates.Count; i++)
 			{
-				VAOExtensions.CreateOrUpdateVAO(StaticObjectStates[i].Prototype.Mesh, false, DefaultShader.VertexLayout, this);
+				VAOExtensions.CreateVAO(StaticObjectStates[i].Prototype.Mesh, false, DefaultShader.VertexLayout, this);
 				/*
 				 * n.b.
 				 * Only create the actual matrix buffer at first frame render time
@@ -811,7 +812,7 @@ namespace LibRender2
 			}
 			for (int i = 0; i < DynamicObjectStates.Count; i++)
 			{
-				VAOExtensions.CreateOrUpdateVAO(DynamicObjectStates[i].Prototype.Mesh, false, DefaultShader.VertexLayout, this);
+				VAOExtensions.CreateVAO(DynamicObjectStates[i].Prototype.Mesh, false, DefaultShader.VertexLayout, this);
 			}
             ObjectsSortedByStart = StaticObjectStates.Select((x, i) => new { Index = i, Distance = x.StartingDistance }).OrderBy(x => x.Distance).Select(x => x.Index).ToArray();
 			ObjectsSortedByEnd = StaticObjectStates.Select((x, i) => new { Index = i, Distance = x.EndingDistance }).OrderBy(x => x.Distance).Select(x => x.Index).ToArray();
@@ -1195,30 +1196,8 @@ namespace LibRender2
 			shader.SetTexture(0);
 			shader.SetBrightness(1.0f);
 			shader.SetOpacity(1.0f);
-			shader.SetDynamicLights(new List<SceneLight>(), Matrix4D.Identity, 0);
-		}
-
-		private static bool logged = false;
-
-		private void UpdateLightsForObject(Shader shader, ObjectState state)
-		{
-			if (ActiveSceneLights.Count <= currentOptions.DynamicLightLimit)
-			{
-				return;
-			}
-
-			Vector3 objPos = new Vector3(state.ModelMatrix.Row3.X, state.ModelMatrix.Row3.Y, state.ModelMatrix.Row3.Z);
-
-			TempObjectLights.Clear();
-			TempObjectLights.AddRange(ActiveSceneLights);
-			TempObjectLights.Sort((a, b) =>
-			{
-				double distA = (a.Position - objPos).NormSquared();
-				double distB = (b.Position - objPos).NormSquared();
-				return distA.CompareTo(distB);
-			});
-
-			shader.SetDynamicLights(TempObjectLights, CurrentViewMatrix, currentOptions.DynamicLightLimit);
+			shader.SetObjectIndex(0);
+			shader.SetAlphaTest(false);
 		}
 
 		public void UpdateActiveLights(Shader shader)
@@ -1288,22 +1267,6 @@ namespace LibRender2
 				double distB = (b.Position - cameraPos).NormSquared();
 				return distA.CompareTo(distB);
 			});
-
-			if (ActiveSceneLights.Count > 0 && !logged)
-			{
-				logged = true;
-				for (int i = 0; i < ActiveSceneLights.Count; i++)
-				{
-					SceneLight light = ActiveSceneLights[i];
-					Vector3 viewPos = light.Position;
-					viewPos.Transform(lightViewMatrix, false);
-					Vector3 viewDir = light.Direction;
-					viewDir.Transform(CurrentViewMatrix, true);
-					viewDir.Normalize();
-					System.Console.WriteLine(
-						$"[LIGHT_LOG] CamPos={cameraPos}, LightPos={light.Position}, ViewPos={viewPos}, LightDir={light.Direction}, ViewDir={viewDir}");
-				}
-			}
 
 			shader.SetDynamicLights(ActiveSceneLights, CurrentViewMatrix, currentOptions.DynamicLightLimit);
 			shader.SetObjectIndex(0);
@@ -1383,7 +1346,7 @@ namespace LibRender2
 		}
 
 
-		// Cached object state and matrices for shader drawing
+		// Cached object state and matricies for shader drawing
 		protected internal ObjectState lastObjectState;
 		private Matrix4D lastModelMatrix;
 		private Matrix4D lastModelViewMatrix;
@@ -1397,7 +1360,7 @@ namespace LibRender2
 			RenderFace(CurrentShader as Shader, state.Object, state.Face, isDebugTouchMode);
 		}
 
-		/// <summary>Draws a face using the specified shader and matrices</summary>
+		/// <summary>Draws a face using the specified shader and matricies</summary>
 		/// <param name="shader">The shader to use</param>
 		/// <param name="state">The ObjectState to draw</param>
 		/// <param name="face">The Face within the ObjectState</param>
@@ -1424,7 +1387,6 @@ namespace LibRender2
 				lastModelMatrix = state.ModelMatrix * Camera.TranslationMatrix;
 				lastModelViewMatrix = lastModelMatrix * CurrentViewMatrix;
 				sendToShader = true;
-				UpdateLightsForObject(shader, state);
 			}
 
 			if (state.Prototype.Mesh.Vertices.Length < 1)
@@ -1713,10 +1675,7 @@ namespace LibRender2
 			if (!anyVisual) return;
 
 			ResetOpenGlState();
-			if (AvailableNewRenderer)
-			{
-				CurrentShader.Deactivate();
-			}
+			CurrentShader.Deactivate();
 
 			unsafe
 			{
