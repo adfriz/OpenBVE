@@ -26,11 +26,16 @@ using System;
 using System.Collections.Generic;
 using LibRender2;
 using LibRender2.Objects;
+using LibRender2.Trains;
 using OpenBveApi.Math;
 using OpenBveApi.Objects;
 using OpenBveApi.Textures;
+using OpenBveApi.Trains;
 using OpenTK.Graphics.OpenGL;
 using RouteManager2.VirtualCameras;
+using TrainManager;
+using TrainManager.Car;
+using TrainManager.Trains;
 using Vector3 = OpenBveApi.Math.Vector3;
 
 namespace OpenBve.Graphics.Renderers
@@ -73,11 +78,17 @@ namespace OpenBve.Graphics.Renderers
 
 		/// <summary>Evaluates which cameras are active, renders their feeds and applies them to the visible receiver materials.</summary>
 		/// <param name="cameras">The virtual cameras defined in the current route.</param>
+		/// <param name="playerTrain">The player's train, from which cameras attached to individual cars are collected.</param>
 		/// <param name="trainTrackPosition">The current track position of the player's train.</param>
 		/// <param name="stoppedAtStation">Whether the player's train is currently stopped at a station.</param>
-		internal void Update(VirtualCameraData[] cameras, double trainTrackPosition, bool stoppedAtStation)
+		/// <param name="timeElapsed">The time elapsed since the last frame, used to throttle feed updates by FeedFPS.</param>
+		internal void Update(VirtualCameraData[] cameras, TrainBase playerTrain, double trainTrackPosition, bool stoppedAtStation, double timeElapsed)
 		{
-			if (cameras == null || cameras.Length == 0)
+			// Build the merged camera set for this frame: route cameras plus any cameras attached to the player train.
+			// A camera attached to the train overrides a route camera with the same index.
+			VirtualCameraData[] merged = MergeCameras(cameras, playerTrain);
+
+			if (merged == null || merged.Length == 0)
 			{
 				if (feeds.Count > 0)
 				{
@@ -91,21 +102,29 @@ namespace OpenBve.Graphics.Renderers
 				return;
 			}
 
-			// Recreate the render targets if the camera set has changed (e.g. a new route was loaded)
-			if (!ReferenceEquals(lastCameras, cameras))
+			// Recreate the render targets if the camera set has changed (e.g. a new route was loaded, or the train changed)
+			if (!CameraSetsEqual(lastCameras, merged))
 			{
 				foreach (CameraFeed feed in feeds)
 				{
 					feed.Dispose();
 				}
 				feeds.Clear();
-				foreach (VirtualCameraData camera in cameras)
+				foreach (VirtualCameraData camera in merged)
 				{
 					CameraFeed feed = new CameraFeed(camera);
 					feed.Create(this);
 					feeds.Add(feed);
 				}
-				lastCameras = cameras;
+				lastCameras = merged;
+			}
+			else
+			{
+				// Refresh the camera data in place so that attached cameras track the current car position and orientation
+				for (int i = 0; i < feeds.Count && i < merged.Length; i++)
+				{
+					feeds[i].Camera = merged[i];
+				}
 			}
 
 			// Collect the receiver materials from the currently visible faces
@@ -165,13 +184,21 @@ namespace OpenBve.Graphics.Renderers
 				active[i] = EvaluateActivity(feeds[i].Camera, trainTrackPosition, stoppedAtStation);
 			}
 
-			// Render a feed for every active camera that is used by at least one visible receiver
+			// Render a feed for every active camera that is used by at least one visible receiver,
+			// throttled by the camera's FeedFPS setting. When a feed is not updated this frame it
+			// still displays its most recently rendered image.
 			for (int i = 0; i < feeds.Count; i++)
 			{
 				feeds[i].Active = false;
 				if (active[i] && receiverIndexes.Contains(feeds[i].Index))
 				{
-					RenderCameraView(feeds[i]);
+					feeds[i].SecondsSinceLastRender += Math.Max(0.0, timeElapsed);
+					double interval = 1.0 / (double)Math.Max(1, feeds[i].Camera.FeedFPS);
+					if (feeds[i].SecondsSinceLastRender >= interval)
+					{
+						RenderCameraView(feeds[i]);
+						feeds[i].SecondsSinceLastRender = feeds[i].SecondsSinceLastRender - interval;
+					}
 					feeds[i].Active = true;
 				}
 			}
@@ -203,16 +230,137 @@ namespace OpenBve.Graphics.Renderers
 		/// <summary>Determines whether a camera should render a feed in the current state.</summary>
 		private bool EvaluateActivity(VirtualCameraData camera, double trainTrackPosition, bool stoppedAtStation)
 		{
+			// A camera attached to the train always sits at the train's own track position
+			double cameraTrackPosition = camera.AttachedToTrain ? camera.TrackPosition : camera.Position.Z;
 			switch (camera.ActiveMode)
 			{
 				case VirtualCameraActiveMode.StopOnly:
-					return stoppedAtStation && Math.Abs(trainTrackPosition - camera.Position.Z) <= camera.ActivationDistance;
+					return stoppedAtStation && Math.Abs(trainTrackPosition - cameraTrackPosition) <= camera.ActivationDistance;
 				case VirtualCameraActiveMode.Distance:
-					return Math.Abs(trainTrackPosition - camera.Position.Z) <= camera.ActivationDistance;
+					return Math.Abs(trainTrackPosition - cameraTrackPosition) <= camera.ActivationDistance;
 				case VirtualCameraActiveMode.Always:
 				default:
 					return true;
 			}
+		}
+
+		/// <summary>Merges the route cameras with the cameras attached to the player's train. Attached cameras override route cameras with the same index.</summary>
+		private VirtualCameraData[] MergeCameras(VirtualCameraData[] cameras, TrainBase playerTrain)
+		{
+			List<VirtualCameraData> attached = BuildAttachedCameras(playerTrain);
+			if ((cameras == null || cameras.Length == 0) && (attached == null || attached.Count == 0))
+			{
+				return null;
+			}
+			if (attached == null || attached.Count == 0)
+			{
+				return cameras;
+			}
+			List<VirtualCameraData> merged = new List<VirtualCameraData>();
+			if (cameras != null)
+			{
+				foreach (VirtualCameraData camera in cameras)
+				{
+					bool overridden = false;
+					foreach (VirtualCameraData a in attached)
+					{
+						if (a.Index == camera.Index)
+						{
+							overridden = true;
+							break;
+						}
+					}
+					if (!overridden)
+					{
+						merged.Add(camera);
+					}
+				}
+			}
+			merged.AddRange(attached);
+			return merged.ToArray();
+		}
+
+		/// <summary>Collects the virtual cameras defined in the player train's car sections, computing their world position and orientation for the current frame.</summary>
+		private List<VirtualCameraData> BuildAttachedCameras(TrainBase playerTrain)
+		{
+			if (playerTrain == null || playerTrain.Cars == null)
+			{
+				return null;
+			}
+			List<VirtualCameraData> attached = null;
+			for (int c = 0; c < playerTrain.Cars.Length; c++)
+			{
+				CarBase car = playerTrain.Cars[c];
+				if (car == null || car.CarSections == null)
+				{
+					continue;
+				}
+				foreach (var pair in car.CarSections)
+				{
+					CarSection section = pair.Value;
+					if (section == null || section.VirtualCameras == null)
+					{
+						continue;
+					}
+					for (int i = 0; i < section.VirtualCameras.Length; i++)
+					{
+						AnimatedVirtualCamera vcam = section.VirtualCameras[i];
+						if (vcam == null)
+						{
+							continue;
+						}
+						// Convert the car-frame offset into a world position and heading
+						car.CreateWorldCoordinates(vcam.Offset, out Vector3 position, out Vector3 direction);
+						double worldYaw = Math.Atan2(direction.X, direction.Z);
+						double worldPitch = Math.Asin(Math.Max(-1.0, Math.Min(1.0, direction.Y)));
+						VirtualCameraData data = new VirtualCameraData
+						{
+							Index = vcam.Index,
+							Position = position,
+							Yaw = worldYaw + vcam.Yaw,
+							Pitch = worldPitch + vcam.Pitch,
+							Roll = vcam.Roll,
+							FieldOfView = vcam.FieldOfView,
+							RenderWidth = vcam.RenderWidth,
+							RenderHeight = vcam.RenderHeight,
+							ActiveMode = (VirtualCameraActiveMode)vcam.ActiveMode,
+							ActivationDistance = vcam.ActivationDistance,
+							FeedFPS = vcam.FeedFPS,
+							AttachedToTrain = true,
+							CarIndex = c,
+							Offset = vcam.Offset,
+							TrackPosition = car.TrackPosition
+						};
+						if (attached == null)
+						{
+							attached = new List<VirtualCameraData>();
+						}
+						attached.Add(data);
+					}
+				}
+			}
+			return attached;
+		}
+
+		/// <summary>Determines whether two camera sets share the same indices and render resolutions, meaning the render targets can be reused.</summary>
+		private bool CameraSetsEqual(VirtualCameraData[] a, VirtualCameraData[] b)
+		{
+			if (ReferenceEquals(a, b))
+			{
+				return true;
+			}
+			if (a == null || b == null || a.Length != b.Length)
+			{
+				return false;
+			}
+			for (int i = 0; i < a.Length; i++)
+			{
+				if (a[i] == null || b[i] == null || a[i].Index != b[i].Index || a[i].RenderWidth != b[i].RenderWidth || a[i].RenderHeight != b[i].RenderHeight)
+				{
+					return false;
+				}
+			}
+			return true;
 		}
 
 		/// <summary>Renders the world as seen by a single virtual camera into its framebuffer.</summary>
@@ -353,10 +501,11 @@ namespace OpenBve.Graphics.Renderers
 		/// <summary>Represents a single camera feed render target.</summary>
 		private sealed class CameraFeed : IDisposable
 		{
-			internal readonly VirtualCameraData Camera;
+			internal VirtualCameraData Camera;
 			internal readonly int Index;
 			internal readonly int Width;
 			internal readonly int Height;
+			internal double SecondsSinceLastRender;
 			internal int Framebuffer;
 			internal int ColorTexture;
 			internal int DepthBuffer;

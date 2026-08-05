@@ -326,6 +326,82 @@ namespace Plugin
 							SoundCount++;
 						}
 						break;
+					case AnimatedSection.VirtualCamera:
+						AnimatedVirtualCamera vcam = new AnimatedVirtualCamera
+						{
+							Offset = Vector3.Zero,
+							Yaw = 0.0,
+							Pitch = 0.0,
+							Roll = 0.0,
+							FieldOfView = 45.0 / 57.2957795130824,
+							RenderWidth = 320,
+							RenderHeight = 240,
+							ActiveMode = 0,
+							ActivationDistance = 100.0,
+							FeedFPS = 24
+						};
+						if (!Block.GetValue(AnimatedKey.Index, out int cameraIndex, NumberRange.Positive) || cameraIndex < 1)
+						{
+							currentHost.AddMessage(MessageType.Error, false, "VirtualCamera requires a valid Index in the Section " + Block.Key + " in file " + FileName);
+							break;
+						}
+						vcam.Index = cameraIndex;
+						Block.GetVector3(AnimatedKey.Position, ',', out Vector3 cameraPosition);
+						vcam.Offset = cameraPosition;
+						double camYaw = 0.0;
+						Block.TryGetValue(AnimatedKey.Yaw, ref camYaw);
+						vcam.Yaw = camYaw / 57.2957795130824;
+						double camPitch = 0.0;
+						Block.TryGetValue(AnimatedKey.Pitch, ref camPitch);
+						vcam.Pitch = camPitch / 57.2957795130824;
+						double camRoll = 0.0;
+						Block.TryGetValue(AnimatedKey.Roll, ref camRoll);
+						vcam.Roll = camRoll / 57.2957795130824;
+						double camFov = 45.0;
+						Block.TryGetValue(AnimatedKey.FieldOfView, ref camFov);
+						if (camFov < 1.0) camFov = 1.0;
+						if (camFov > 179.0) camFov = 179.0;
+						vcam.FieldOfView = camFov / 57.2957795130824;
+						if (Block.GetVector2(AnimatedKey.Resolution, ',', out Vector2 cameraResolution))
+						{
+							if (cameraResolution.X >= 1.0) vcam.RenderWidth = (int)Math.Round(cameraResolution.X);
+							if (cameraResolution.Y >= 1.0) vcam.RenderHeight = (int)Math.Round(cameraResolution.Y);
+						}
+						if (Block.GetValue(AnimatedKey.ActiveMode, out string cameraActiveMode))
+						{
+							switch (cameraActiveMode.Trim().ToUpperInvariant())
+							{
+								case "STOPONLY":
+								case "STOP":
+									vcam.ActiveMode = 1;
+									break;
+								case "DISTANCE":
+								case "DIST":
+									vcam.ActiveMode = 2;
+									break;
+								default:
+									vcam.ActiveMode = 0;
+									break;
+							}
+						}
+						double camActivationDistance = 100.0;
+						Block.TryGetValue(AnimatedKey.ActivationDistance, ref camActivationDistance);
+						vcam.ActivationDistance = camActivationDistance;
+						int camFeedFps = 24;
+						Block.TryGetValue(AnimatedKey.FeedFPS, ref camFeedFps);
+						if (camFeedFps < 1) camFeedFps = 24;
+						if (camFeedFps > 200) camFeedFps = 200;
+						vcam.FeedFPS = camFeedFps;
+						if (Result.Cameras == null)
+						{
+							Result.Cameras = new[] { vcam };
+						}
+						else
+						{
+							Array.Resize(ref Result.Cameras, Result.Cameras.Length + 1);
+							Result.Cameras[Result.Cameras.Length - 1] = vcam;
+						}
+						break;
 					case AnimatedSection.StateChangeSound:
 						if (Result.Sounds.Length == SoundCount)
 						{

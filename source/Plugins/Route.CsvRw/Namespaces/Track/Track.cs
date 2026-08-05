@@ -3877,7 +3877,7 @@ namespace CsvRwRouteParser
 				{
 					if (!PreviewOnly)
 					{
-						// Track.VirtualCamera Index;X;Y;TrackPos;Yaw;Pitch;Roll;FOV;ResW;ResH;ActiveMode;ActivationDistance;Label
+						// Track.VirtualCamera Index;X;Y;TrackPos;Yaw;Pitch;Roll;FOV;ResW;ResH;ActiveMode;ActivationDistance;FeedFPS
 						if (Arguments.Length < 1)
 						{
 							Plugin.CurrentHost.AddMessage(MessageType.Error, false, "Track.VirtualCamera requires at least the camera index at line " + Expression.Line.ToString(Culture) + ", column " + Expression.Column.ToString(Culture) + " in file " + Expression.File);
@@ -4072,14 +4072,19 @@ namespace CsvRwRouteParser
 							cam.ActivationDistance = 100.0;
 						}
 
-						// Arg 12: Label
+						// Arg 12: FeedFPS (0 or unset defaults to 24)
 						if (Arguments.Length >= 13 && Arguments[12].Length > 0)
 						{
-							cam.Label = Arguments[12].Trim();
+							if (!NumberFormats.TryParseIntVb6(Arguments[12], out int fps) || fps < 1)
+							{
+								fps = 24;
+							}
+							if (fps > 200) fps = 200;
+							cam.FeedFPS = fps;
 						}
 						else
 						{
-							cam.Label = string.Empty;
+							cam.FeedFPS = 24;
 						}
 
 						Data.VirtualCameras.Add(cam);

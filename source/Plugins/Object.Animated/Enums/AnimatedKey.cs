@@ -63,6 +63,14 @@ namespace Plugin
 		ScaleYScript,
 		ScaleZFunction,
 		ScaleZScript,
-		StateScript
+		StateScript,
+		Index,
+		Yaw,
+		Roll,
+		FieldOfView,
+		Resolution,
+		ActiveMode,
+		ActivationDistance,
+		FeedFPS
 	}
 }

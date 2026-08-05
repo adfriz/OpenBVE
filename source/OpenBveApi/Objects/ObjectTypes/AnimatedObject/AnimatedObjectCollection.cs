@@ -17,6 +17,9 @@ namespace OpenBveApi.Objects
 		/// <summary>The sounds that this collection contains</summary>
 		public WorldObject[] Sounds;
 
+		/// <summary>The virtual cameras that this collection contains</summary>
+		public AnimatedVirtualCamera[] Cameras;
+
 		/// <summary>Creates a new AnimatedObjectCollection</summary>
 		public AnimatedObjectCollection(HostInterface Host)
 		{
@@ -141,6 +144,11 @@ namespace OpenBveApi.Objects
 				aoc.Sounds = Sounds.Select(x => x?.Clone()).ToArray();
 			}
 
+			if (Cameras != null)
+			{
+				aoc.Cameras = Cameras.Select(x => (AnimatedVirtualCamera)x.Clone()).ToArray();
+			}
+
 			return aoc;
 		}
 
@@ -199,6 +207,39 @@ namespace OpenBveApi.Objects
 		public override void ApplyTranslation(Vector3 translationVector, bool absoluteTranslation = false)
 		{
 			throw new NotSupportedException();
+		}
+	}
+
+	/// <summary>A virtual camera defined within an animated object file, attached to the car frame</summary>
+	public class AnimatedVirtualCamera : ICloneable
+	{
+		/// <summary>The unique index of this camera (matches CAM_X receiver index)</summary>
+		public int Index;
+		/// <summary>The offset of this camera relative to the car frame (X=side, Y=up, Z=along car)</summary>
+		public Vector3 Offset;
+		/// <summary>The yaw rotation in radians, relative to the car heading</summary>
+		public double Yaw;
+		/// <summary>The pitch rotation in radians, relative to the car frame</summary>
+		public double Pitch;
+		/// <summary>The roll rotation in radians, relative to the car frame</summary>
+		public double Roll;
+		/// <summary>The vertical field of view in radians</summary>
+		public double FieldOfView;
+		/// <summary>The render texture width in pixels</summary>
+		public int RenderWidth;
+		/// <summary>The render texture height in pixels</summary>
+		public int RenderHeight;
+		/// <summary>The activation mode for this camera (0=Always, 1=StopOnly, 2=Distance)</summary>
+		public int ActiveMode;
+		/// <summary>The activation distance in meters (only used when ActiveMode is Distance)</summary>
+		public double ActivationDistance;
+		/// <summary>The maximum number of times per second the camera feed is rendered (0 or unset defaults to 24)</summary>
+		public int FeedFPS;
+
+		/// <inheritdoc/>
+		public object Clone()
+		{
+			return MemberwiseClone();
 		}
 	}
 }

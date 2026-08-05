@@ -121,12 +121,9 @@ namespace OpenBve.Graphics
 			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 			
 			// virtual cameras (CCTV-style camera feeds)
-			if (Program.CurrentRoute.VirtualCameras != null && Program.CurrentRoute.VirtualCameras.Length > 0)
-			{
-				TrainBase playerTrain = TrainManagerBase.PlayerTrain;
-				bool stoppedAtStation = playerTrain != null && playerTrain.Station >= 0 && playerTrain.StationState == TrainStopState.Boarding;
-				VirtualCameras.Update(Program.CurrentRoute.VirtualCameras, CameraTrackFollower.TrackPosition, stoppedAtStation);
-			}
+			TrainBase playerTrain = TrainManagerBase.PlayerTrain;
+			bool stoppedAtStation = playerTrain != null && playerTrain.Station >= 0 && playerTrain.StationState == TrainStopState.Boarding;
+			VirtualCameras.Update(Program.CurrentRoute.VirtualCameras, playerTrain, CameraTrackFollower.TrackPosition, stoppedAtStation, TimeElapsed);
 			
 			// set up camera and lighting early for shadows
 			CurrentViewMatrix = Matrix4D.LookAt(Vector3.Zero, new Vector3(Camera.AbsoluteDirection.X, Camera.AbsoluteDirection.Y, -Camera.AbsoluteDirection.Z), new Vector3(Camera.AbsoluteUp.X, Camera.AbsoluteUp.Y, -Camera.AbsoluteUp.Z));

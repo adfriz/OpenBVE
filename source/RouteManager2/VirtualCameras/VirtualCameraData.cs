@@ -36,7 +36,15 @@ namespace RouteManager2.VirtualCameras
 		public VirtualCameraActiveMode ActiveMode;
 		/// <summary>The activation distance in meters (only used when ActiveMode is Distance)</summary>
 		public double ActivationDistance;
-		/// <summary>An optional label for this camera</summary>
-		public string Label;
+		/// <summary>The maximum number of times per second the camera feed is rendered (0 or unset defaults to 24)</summary>
+		public int FeedFPS;
+		/// <summary>Whether this camera is attached to a train car rather than fixed in the route</summary>
+		public bool AttachedToTrain;
+		/// <summary>The index of the car this camera is attached to</summary>
+		public int CarIndex;
+		/// <summary>The offset of this camera relative to the car frame (X=side, Y=up, Z=along car)</summary>
+		public Vector3 Offset;
+		/// <summary>The track position of this camera in meters (only used when AttachedToTrain is true)</summary>
+		public double TrackPosition;
 	}
 }

@@ -24,6 +24,9 @@ namespace LibRender2.Trains
 		/// <remarks>Allows rotation of a 2D panel etc.</remarks>
 		public Vector3 ViewDirection;
 
+		/// <summary>The virtual cameras attached to this section</summary>
+		public AnimatedVirtualCamera[] VirtualCameras;
+
 		/// <summary>Creates a new CarSection</summary>
 		/// <param name="Host">The host</param>
 		/// <param name="ObjectType">The object type</param>
@@ -55,6 +58,14 @@ namespace LibRender2.Trains
 					Groups[0].Elements[h] = a.Objects[h].Clone();
 					Groups[0].Elements[h].IsPartOfTrain = true;
 					currentHost.CreateDynamicObject(ref Groups[0].Elements[h].internalObject);
+				}
+				if (a.Cameras != null)
+				{
+					VirtualCameras = new AnimatedVirtualCamera[a.Cameras.Length];
+					for (int h = 0; h < a.Cameras.Length; h++)
+					{
+						VirtualCameras[h] = (AnimatedVirtualCamera)a.Cameras[h].Clone();
+					}
 				}
 			}
 			else if (Object is KeyframeAnimatedObject k)
@@ -109,6 +120,26 @@ namespace LibRender2.Trains
 					Groups[gl].Elements[h] = a.Objects[h].Clone();
 					Groups[gl].Elements[h].IsPartOfTrain = true;
 					currentHost.CreateDynamicObject(ref Groups[gl].Elements[h].internalObject);
+				}
+				if (a.Cameras != null)
+				{
+					if (VirtualCameras == null)
+					{
+						VirtualCameras = new AnimatedVirtualCamera[a.Cameras.Length];
+						for (int h = 0; h < a.Cameras.Length; h++)
+						{
+							VirtualCameras[h] = (AnimatedVirtualCamera)a.Cameras[h].Clone();
+						}
+					}
+					else
+					{
+						int oldLength = VirtualCameras.Length;
+						Array.Resize(ref VirtualCameras, oldLength + a.Cameras.Length);
+						for (int h = 0; h < a.Cameras.Length; h++)
+						{
+							VirtualCameras[oldLength + h] = (AnimatedVirtualCamera)a.Cameras[h].Clone();
+						}
+					}
 				}
 			}
 			else if (Object is KeyframeAnimatedObject k)
