@@ -65,14 +65,6 @@ namespace LibRender2.Clustering
 		/// </summary>
 		public void Initialize()
 		{
-			// Guard: legacy renderer or disabled by user option
-			if (!renderer.AvailableNewRenderer)
-			{
-				renderer.fileSystem.AppendToLogFile("[CFR] Skipped: legacy renderer active.");
-				Enabled = false;
-				return;
-			}
-
 			if (renderer.currentOptions.DynamicLightLimit <= 0)
 			{
 				renderer.fileSystem.AppendToLogFile("[CFR] Skipped: DynamicLightLimit is 0.");
