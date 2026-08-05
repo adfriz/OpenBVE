@@ -17,7 +17,7 @@ namespace RouteViewer
         {
             InitializeComponent();
             InterpolationMode.SelectedIndex = (int) Interface.CurrentOptions.Interpolation;
-            AnsiotropicLevel.Value = Interface.CurrentOptions.AnisotropicFilteringLevel;
+            AnisotropicLevel.Value = Interface.CurrentOptions.AnisotropicFilteringLevel;
             AntialiasingLevel.Value = Interface.CurrentOptions.AntiAliasingLevel;
             TransparencyQuality.SelectedIndex = Interface.CurrentOptions.TransparencyMode == TransparencyMode.Performance ? 0 : 2;
             width.Value = Program.Renderer.Screen.Width;
@@ -27,7 +27,7 @@ namespace RouteViewer
 			checkBoxProgressBar.Checked = Interface.CurrentOptions.LoadingProgressBar;
 			comboBoxNewXParser.SelectedIndex = (int) Interface.CurrentOptions.CurrentXParser;
 			comboBoxNewObjParser.SelectedIndex = (int) Interface.CurrentOptions.CurrentObjParser;
-			numericUpDownViewingDistance.Value = Interface.CurrentOptions.ViewingDistance;
+			numericUpDownViewingDistance.Value = Math.Min(Interface.CurrentOptions.ViewingDistance, numericUpDownViewingDistance.Maximum);
 
             // Shadows
             switch (Interface.CurrentOptions.ShadowResolution)
@@ -82,7 +82,7 @@ namespace RouteViewer
             // Wire up shadow resolution change to enable/disable related controls
             comboBoxShadowResolution.SelectedIndexChanged += comboBoxShadowResolution_SelectedIndexChanged;
             UpdateShadowControlsEnabled();
-			numericUpDownViewingDistance.Value = (decimal)Interface.CurrentOptions.ViewingDistance;
+			numericUpDownViewingDistance.Value = (decimal)Math.Min(Interface.CurrentOptions.ViewingDistance, numericUpDownViewingDistance.Maximum);
 			numericUpDownNearClip.Value = (decimal)Interface.CurrentOptions.NearClipBase;
 			if (Translations.CurrentLanguageCode != "en-US")
 			{
@@ -130,7 +130,7 @@ namespace RouteViewer
 
             // Convert spherical to direction vector (matching DirectionalLight docs)
             float x = (float)(-Math.Cos(elevationRad) * Math.Sin(azimuthRad));
-            float y = (float)(Math.Sin(elevationRad));
+            float y = (float)Math.Sin(elevationRad);
             float z = (float)(-Math.Cos(elevationRad) * Math.Cos(azimuthRad));
 
             Program.Renderer.Lighting.OptionLightPosition = new Vector3(x, y, z);
@@ -206,8 +206,8 @@ namespace RouteViewer
 	            Program.Renderer.TextureManager.UnloadAllTextures(false);
             }
 
-			//Ansiotropic filtering level
-			Interface.CurrentOptions.AnisotropicFilteringLevel = (int) AnsiotropicLevel.Value;
+			//Anisotropic filtering level
+			Interface.CurrentOptions.AnisotropicFilteringLevel = (int) AnisotropicLevel.Value;
             //Antialiasing level
             Interface.CurrentOptions.AntiAliasingLevel = (int)AntialiasingLevel.Value;
             if (Interface.CurrentOptions.AntiAliasingLevel != previousAntialiasingLevel)
