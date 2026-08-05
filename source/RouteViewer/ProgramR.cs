@@ -749,6 +749,9 @@ namespace RouteViewer
 				case Key.I:
 					Renderer.OptionInterface = !Renderer.OptionInterface;
 					break;
+				case Key.V:
+					Renderer.OptionVirtualCameras = !Renderer.OptionVirtualCameras;
+					break;
 				case Key.Plus:
 				case Key.KeypadPlus:
 					if (!JumpToPositionEnabled)

@@ -20,6 +20,7 @@ using OpenBveApi.Textures;
 using OpenTK.Graphics.OpenGL;
 using RouteManager2.Events;
 using RouteManager2.Tracks;
+using RouteManager2.VirtualCameras;
 using Vector2 = OpenBveApi.Math.Vector2;
 using Vector3 = OpenBveApi.Math.Vector3;
 
@@ -34,6 +35,7 @@ namespace RouteViewer
 		internal bool OptionInterface = true;
 		internal bool OptionEvents = false;
 		internal bool OptionPaths = false;
+		internal bool OptionVirtualCameras = false;
 
 		// textures
 		private Texture BrightnessChangeTexture;
@@ -324,6 +326,140 @@ namespace RouteViewer
 
 			}
 
+			if (OptionVirtualCameras)
+			{
+				ResetOpenGlState();
+				DefaultShader.Deactivate();
+
+				unsafe
+				{
+					GL.MatrixMode(MatrixMode.Projection);
+					GL.PushMatrix();
+					fixed (double* matrixPointer = &CurrentProjectionMatrix.Row0.X)
+					{
+						GL.LoadMatrix(matrixPointer);
+					}
+
+					GL.MatrixMode(MatrixMode.Modelview);
+					GL.PushMatrix();
+
+					fixed (double* matrixPointer = &CurrentViewMatrix.Row0.X)
+					{
+						GL.LoadMatrix(matrixPointer);
+					}
+
+					Matrix4D m = Camera.TranslationMatrix;
+					double* matrixPointer2 = &m.Row0.X;
+					{
+						GL.MultMatrix(matrixPointer2);
+					}
+				}
+
+				VirtualCameraData[] cameras = Program.CurrentRoute.VirtualCameras;
+				if (cameras != null)
+				{
+					GL.LineWidth(2.0f);
+					for (int i = 0; i < cameras.Length; i++)
+					{
+						VirtualCameraData camera = cameras[i];
+						Vector3 position = new Vector3(camera.Position.X, camera.Position.Y, -camera.Position.Z);
+						Vector3 direction = new Vector3(Math.Cos(camera.Pitch) * Math.Sin(camera.Yaw), Math.Sin(camera.Pitch), Math.Cos(camera.Pitch) * Math.Cos(camera.Yaw));
+						direction.Normalize();
+						Vector3 side = Vector3.Cross(direction, new Vector3(0.0, 1.0, 0.0));
+						if (side.NormSquared() < 1e-9)
+						{
+							side = new Vector3(1.0, 0.0, 0.0);
+						}
+						side.Normalize();
+						Vector3 up = Vector3.Cross(side, direction);
+						up.Normalize();
+						if (camera.Roll != 0.0)
+						{
+							up = up * Math.Cos(camera.Roll) + side * Math.Sin(camera.Roll);
+							up.Normalize();
+						}
+						Vector3 forward = new Vector3(direction.X, direction.Y, -direction.Z);
+						Vector3 right = new Vector3(side.X, side.Y, -side.Z);
+						Vector3 upWorld = new Vector3(up.X, up.Y, -up.Z);
+
+						switch (camera.ActiveMode)
+						{
+							case VirtualCameraActiveMode.Always:
+								GL.Color3(0.0f, 1.0f, 0.0f);
+								break;
+							case VirtualCameraActiveMode.Distance:
+								GL.Color3(1.0f, 1.0f, 0.0f);
+								break;
+							case VirtualCameraActiveMode.StopOnly:
+							default:
+								GL.Color3(1.0f, 0.0f, 0.0f);
+								break;
+						}
+
+						double aspect = (double)camera.RenderWidth / (double)camera.RenderHeight;
+						double halfV = Math.Tan(camera.FieldOfView * 0.5);
+						double halfH = halfV * aspect;
+
+						// body: small triangle pointing forward
+						double bw = 0.4;
+						double bl = 0.8;
+						Vector3 bTip = position + forward * bl;
+						Vector3 bLeft = position - right * bw;
+						Vector3 bRight = position + right * bw;
+
+						GL.Begin(PrimitiveType.LineLoop);
+						GL.Vertex3(bLeft.X, bLeft.Y, bLeft.Z);
+						GL.Vertex3(bTip.X, bTip.Y, bTip.Z);
+						GL.Vertex3(bRight.X, bRight.Y, bRight.Z);
+						GL.End();
+
+						// frustum pyramid: camera -> far plane (far = 3m)
+						const double near = 0.5;
+						const double far = 3.0;
+						double nearH = halfV * near;
+						double nearW = halfH * near;
+						double farH = halfV * far;
+						double farW = halfH * far;
+
+						Vector3[] nearCorners = new Vector3[4];
+						Vector3[] farCorners = new Vector3[4];
+						for (int j = 0; j < 4; j++)
+						{
+							double sx = (j == 0 || j == 3) ? -1.0 : 1.0;
+							double sy = (j == 0 || j == 1) ? 1.0 : -1.0;
+							nearCorners[j] = position + forward * near + right * (nearW * sx) + upWorld * (nearH * sy);
+							farCorners[j] = position + forward * far + right * (farW * sx) + upWorld * (farH * sy);
+						}
+
+						GL.Begin(PrimitiveType.Lines);
+						// 4 pyramid edges (camera to far corners)
+						for (int j = 0; j < 4; j++)
+						{
+							GL.Vertex3(position.X, position.Y, position.Z);
+							GL.Vertex3(farCorners[j].X, farCorners[j].Y, farCorners[j].Z);
+						}
+						// far quad
+						for (int j = 0; j < 4; j++)
+						{
+							GL.Vertex3(farCorners[j].X, farCorners[j].Y, farCorners[j].Z);
+							GL.Vertex3(farCorners[(j + 1) % 4].X, farCorners[(j + 1) % 4].Y, farCorners[(j + 1) % 4].Z);
+						}
+						// near quad
+						for (int j = 0; j < 4; j++)
+						{
+							GL.Vertex3(nearCorners[j].X, nearCorners[j].Y, nearCorners[j].Z);
+							GL.Vertex3(nearCorners[(j + 1) % 4].X, nearCorners[(j + 1) % 4].Y, nearCorners[(j + 1) % 4].Z);
+						}
+						GL.End();
+					}
+					GL.LineWidth(1.0f);
+				}
+
+				GL.PopMatrix();
+				GL.MatrixMode(MatrixMode.Projection);
+				GL.PopMatrix();
+			}
+
             // render overlays
             DefaultShader.Deactivate();
 
@@ -607,6 +743,10 @@ namespace RouteViewer
 						keys = new[] { new[] { "P" } };
 						Keys.Render(Screen.Width - (int)(20 * scaleFactor), 124, 16, Fonts.SmallFont, keys);
 					}
+
+					OpenGlString.Draw(Fonts.SmallFont, "Virtual Cameras:", new Vector2(Screen.Width - (32 * scaleFactor), 144), TextAlignment.TopRight, Color128.White, true);
+					keys = new[] { new[] { "V" } };
+					Keys.Render(Screen.Width - (int)(20 * scaleFactor), 144, 16, Fonts.SmallFont, keys);
 
 
                     keys = new[] { new[] { "F10" } };
