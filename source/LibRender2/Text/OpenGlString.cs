@@ -199,6 +199,8 @@ namespace LibRender2.Text
 			renderer.CurrentShader = Shader;
 			Shader.SetCurrentProjectionMatrix(renderer.CurrentProjectionMatrix);
 			Shader.SetCurrentModelViewMatrix(renderer.CurrentViewMatrix);
+			Shader.SetTexture(0);
+			Shader.SetAlphaTest(false);
 
 			for (int i = 0; i < text.Length; i++)
 			{

@@ -604,6 +604,7 @@ namespace LibRender2
 		{
 			GL.Enable(EnableCap.CullFace);
 			GL.CullFace(CullFaceMode.Front);
+			GL.ActiveTexture(TextureUnit.Texture0);
 			SetBlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 			UnsetBlendFunc();
 			GL.Enable(EnableCap.DepthTest);
@@ -1165,11 +1166,6 @@ namespace LibRender2
 			if (!ReShadeInUse)
 			{
 				lastError = GL.GetError();
-
-				if (lastError != ErrorCode.NoError)
-				{
-					throw new InvalidOperationException($"OpenGL Error: {lastError}");
-				}
 			}
 #endif
 

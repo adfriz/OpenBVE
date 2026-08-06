@@ -93,6 +93,7 @@ namespace LibRender2.OIT
 		private int oitModeLocation;
 		private int opaqueDepthLocation;
 		private CompositeProgram compositeShader;
+		private DepthResolveProgram depthResolveProgram;
 
 		// Occlusion query for peel early-exit
 		private int peelQuery;
@@ -145,6 +146,7 @@ namespace LibRender2.OIT
 						GL.ProgramUniform1(tailShader.Handle, opaqueDepthLocation, 3);
 					}
 					compositeShader = new CompositeProgram();
+					depthResolveProgram = new DepthResolveProgram();
 					whiteTex = CreateWhiteTexture();
 				}
 				catch
@@ -753,16 +755,34 @@ namespace LibRender2.OIT
 			GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
 		}
 
+		/// <summary>Resolves the multisampled scene depth into the single-sample opaque depth
+		/// texture. glBlitFramebuffer cannot copy depth between framebuffers with different
+		/// multisample counts (GL_INVALID_OPERATION), so the depth is resolved with a fullscreen
+		/// pass writing gl_FragDepth from the nearest multisample (see depthresolve.frag).</summary>
 		private void CopyOpaqueDepth()
 		{
-			if (sceneFbo == 0 || opaqueDepthFbo == 0)
+			if (sceneFbo == 0 || opaqueDepthFbo == 0 || depthResolveProgram == null || renderer.dummyVao == null)
 			{
 				return;
 			}
-			GL.BindFramebuffer(FramebufferTarget.ReadFramebuffer, sceneFbo);
-			GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, opaqueDepthFbo);
+			GL.BindFramebuffer(FramebufferTarget.Framebuffer, opaqueDepthFbo);
 			GL.DrawBuffer(DrawBufferMode.None);
-			GL.BlitFramebuffer(0, 0, width, height, 0, 0, width, height, ClearBufferMask.DepthBufferBit, BlitFramebufferFilter.Nearest);
+			GL.ReadBuffer(ReadBufferMode.None);
+			GL.Disable(EnableCap.DepthTest);
+			GL.Disable(EnableCap.CullFace);
+			GL.Disable(EnableCap.Blend);
+			GL.DepthMask(true);
+			depthResolveProgram.Use();
+			GL.ActiveTexture(TextureUnit.Texture0);
+			GL.BindTexture(TextureTarget.Texture2DMultisample, sceneDepthTex);
+			depthResolveProgram.SetSampleCount(samples);
+			renderer.dummyVao.Bind();
+			GL.DrawArrays(PrimitiveType.TriangleStrip, 0, 6);
+			depthResolveProgram.Unuse();
+			GL.ActiveTexture(TextureUnit.Texture0);
+			GL.BindTexture(TextureTarget.Texture2DMultisample, 0);
+			GL.Enable(EnableCap.DepthTest);
+			GL.DepthFunc(DepthFunction.Lequal);
 			GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
 		}
 
@@ -801,6 +821,11 @@ namespace LibRender2.OIT
 				compositeShader.Dispose();
 				compositeShader = null;
 			}
+			if (depthResolveProgram != null)
+			{
+				depthResolveProgram.Dispose();
+				depthResolveProgram = null;
+			}
 		}
 
 		private static void DeleteTexture(ref int texture)
@@ -822,6 +847,24 @@ namespace LibRender2.OIT
 		}
 
 		#endregion
+
+		/// <summary>Compiles a shader stage, throwing a descriptive exception on failure.
+		/// Shared by the composite and depth resolve programs</summary>
+		private static int CompileShader(ShaderType type, string source, string name)
+		{
+			int shader = GL.CreateShader(type);
+			GL.ShaderSource(shader, source);
+			GL.CompileShader(shader);
+			int status;
+			GL.GetShader(shader, ShaderParameter.CompileStatus, out status);
+			if (status == 0)
+			{
+				string log = GL.GetShaderInfoLog(shader);
+				GL.DeleteShader(shader);
+				throw new InvalidOperationException("Compiling the " + name + " shader failed: " + log);
+			}
+			return shader;
+		}
 
 		/// <summary>Small dedicated program for the fullscreen composite passes</summary>
 		private sealed class CompositeProgram : IDisposable
@@ -857,8 +900,8 @@ namespace LibRender2.OIT
 						fragmentSource = reader.ReadToEnd();
 					}
 				}
-				int vertexShader = CompileShader(ShaderType.VertexShader, vertexSource);
-				int fragmentShader = CompileShader(ShaderType.FragmentShader, fragmentSource);
+				int vertexShader = CompileShader(ShaderType.VertexShader, vertexSource, "composite");
+				int fragmentShader = CompileShader(ShaderType.FragmentShader, fragmentSource, "composite");
 				handle = GL.CreateProgram();
 				GL.AttachShader(handle, vertexShader);
 				GL.AttachShader(handle, fragmentShader);
@@ -879,22 +922,6 @@ namespace LibRender2.OIT
 				GL.ProgramUniform1(handle, GL.GetUniformLocation(handle, "uOpaqueDepth"), 4);
 				uModeLocation = GL.GetUniformLocation(handle, "uMode");
 				GL.ProgramUniform1(handle, uModeLocation, 0);
-			}
-
-			private static int CompileShader(ShaderType type, string source)
-			{
-				int shader = GL.CreateShader(type);
-				GL.ShaderSource(shader, source);
-				GL.CompileShader(shader);
-				int status;
-				GL.GetShader(shader, ShaderParameter.CompileStatus, out status);
-				if (status == 0)
-				{
-					string log = GL.GetShaderInfoLog(shader);
-					GL.DeleteShader(shader);
-					throw new InvalidOperationException("Compiling the composite shader failed: " + log);
-				}
-				return shader;
 			}
 
 			internal void Use()
@@ -940,6 +967,89 @@ namespace LibRender2.OIT
 			{
 				GL.ActiveTexture(TextureUnit.Texture4);
 				GL.BindTexture(TextureTarget.Texture2D, texture);
+			}
+
+			public void Dispose()
+			{
+				if (!disposed)
+				{
+					GL.DeleteProgram(handle);
+					GC.SuppressFinalize(this);
+					disposed = true;
+				}
+			}
+		}
+
+		/// <summary>Dedicated program for resolving the multisampled scene depth into the
+		/// single-sample opaque depth texture (see depthresolve.frag)</summary>
+		private sealed class DepthResolveProgram : IDisposable
+		{
+			private readonly int handle;
+			private readonly int uSampleCountLocation;
+			private bool disposed;
+
+			internal DepthResolveProgram()
+			{
+				Assembly assembly = Assembly.GetExecutingAssembly();
+				string vertexSource;
+				string fragmentSource;
+				using (Stream stream = assembly.GetManifestResourceStream("LibRender2.depthresolve.vert"))
+				{
+					if (stream == null)
+					{
+						throw new InvalidOperationException("The embedded shader resource LibRender2.depthresolve.vert is missing");
+					}
+					using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
+					{
+						vertexSource = reader.ReadToEnd();
+					}
+				}
+				using (Stream stream = assembly.GetManifestResourceStream("LibRender2.depthresolve.frag"))
+				{
+					if (stream == null)
+					{
+						throw new InvalidOperationException("The embedded shader resource LibRender2.depthresolve.frag is missing");
+					}
+					using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
+					{
+						fragmentSource = reader.ReadToEnd();
+					}
+				}
+				int vertexShader = CompileShader(ShaderType.VertexShader, vertexSource, "depth resolve");
+				int fragmentShader = CompileShader(ShaderType.FragmentShader, fragmentSource, "depth resolve");
+				handle = GL.CreateProgram();
+				GL.AttachShader(handle, vertexShader);
+				GL.AttachShader(handle, fragmentShader);
+				GL.DeleteShader(vertexShader);
+				GL.DeleteShader(fragmentShader);
+				GL.LinkProgram(handle);
+				int status;
+				GL.GetProgram(handle, GetProgramParameterName.LinkStatus, out status);
+				if (status == 0)
+				{
+					throw new InvalidOperationException("Linking the depth resolve shader failed: " + GL.GetProgramInfoLog(handle));
+				}
+				GL.ProgramUniform1(handle, GL.GetUniformLocation(handle, "uSceneDepth"), 0);
+				uSampleCountLocation = GL.GetUniformLocation(handle, "uSampleCount");
+				GL.ProgramUniform1(handle, uSampleCountLocation, 1);
+			}
+
+			internal void Use()
+			{
+				GL.UseProgram(handle);
+			}
+
+			internal void Unuse()
+			{
+				GL.UseProgram(0);
+			}
+
+			internal void SetSampleCount(int count)
+			{
+				if (uSampleCountLocation >= 0)
+				{
+					GL.ProgramUniform1(handle, uSampleCountLocation, count);
+				}
 			}
 
 			public void Dispose()

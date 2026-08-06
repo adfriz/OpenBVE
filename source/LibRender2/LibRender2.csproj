@@ -147,6 +147,8 @@
     <EmbeddedResource Include="..\..\assets\Shaders\composite.frag" />
     <EmbeddedResource Include="..\..\assets\Shaders\oit.vert" />
     <EmbeddedResource Include="..\..\assets\Shaders\oit.frag" />
+    <EmbeddedResource Include="..\..\assets\Shaders\depthresolve.vert" />
+    <EmbeddedResource Include="..\..\assets\Shaders\depthresolve.frag" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\OpenBveApi\OpenBveApi.csproj">

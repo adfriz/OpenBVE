@@ -275,6 +275,7 @@ namespace ObjectViewer.Graphics
 
 			DefaultShader.Deactivate();
 			lastVAO = -1;
+			CurrentShader = DefaultShader;
 
             // render overlays
             ResetOpenGlState();
