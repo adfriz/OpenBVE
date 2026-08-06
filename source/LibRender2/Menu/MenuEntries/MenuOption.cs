@@ -172,6 +172,9 @@ namespace LibRender2.Menu
 				case OptionType.ShadowFilterCascades:
 					CurrentlySelectedOption = BaseMenu.CurrentOptions.ShadowFilterCascades ? 0 : 1;
 					return;
+				case OptionType.TransparencyMode:
+					CurrentlySelectedOption = (int)BaseMenu.CurrentOptions.TransparencyMode;
+					return;
 			}
 			CurrentlySelectedOption = 0;
 		}
@@ -321,6 +324,12 @@ namespace LibRender2.Menu
 					break;
 				case OptionType.ShadowFilterCascades:
 					BaseMenu.CurrentOptions.ShadowFilterCascades = !BaseMenu.CurrentOptions.ShadowFilterCascades;
+					break;
+				case OptionType.TransparencyMode:
+					// n.b. Transparency mode only affects face classification at object-insertion time
+					// (ObjectLibrary.ShowObject), so already-visible objects are not re-classified
+					// until they leave and re-enter the viewing distance.
+					BaseMenu.CurrentOptions.TransparencyMode = (TransparencyMode)CurrentlySelectedOption;
 					break;
 
 			}

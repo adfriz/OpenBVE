@@ -1468,6 +1468,14 @@
 						<ns0:source>Smooth</ns0:source>
 						<ns0:target state="translated">Smidig</ns0:target>
 					</ns0:trans-unit>
+					<ns0:trans-unit id="quality_interpolation_transparency_intermediate">
+						<ns0:source>Intermediate</ns0:source>
+						<ns0:target>Intermediate</ns0:target>
+					</ns0:trans-unit>
+					<ns0:trans-unit id="quality_interpolation_transparency_orderindependent">
+						<ns0:source>Order Independent</ns0:source>
+						<ns0:target>Order Independent</ns0:target>
+					</ns0:trans-unit>
 					<ns0:trans-unit id="quality_distance">
 						<ns0:source>Distance effects</ns0:source>
 						<ns0:target state="translated">Avståndseffekter</ns0:target>

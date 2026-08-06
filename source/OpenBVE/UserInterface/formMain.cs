@@ -732,7 +732,7 @@ namespace OpenBve {
 			labelAntiAliasing.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_interpolation_antialiasing_level"});
 			labelTransparency.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_interpolation_transparency"});
 			labelTransparencyPerformance.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_interpolation_transparency_sharp"});
-			labelTransparencyQuality.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_interpolation_transparency_smooth"});
+			labelTransparencyQuality.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_interpolation_transparency_orderindependent"});
 			groupboxDistance.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_distance"});
 			//Viewing distance and motion blur
 			labelDistance.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","quality_distance_viewingdistance"});

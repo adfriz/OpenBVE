@@ -1980,7 +1980,7 @@ namespace OpenBve {
             this.labelTransparencyQuality.Name = "labelTransparencyQuality";
             this.labelTransparencyQuality.Size = new System.Drawing.Size(76, 16);
             this.labelTransparencyQuality.TabIndex = 9;
-            this.labelTransparencyQuality.Text = "Smooth";
+            this.labelTransparencyQuality.Text = "Order Independent";
             this.labelTransparencyQuality.TextAlign = System.Drawing.ContentAlignment.TopRight;
             // 
             // labelTransparencyPerformance
@@ -2060,7 +2060,7 @@ namespace OpenBve {
             // 
             this.trackbarTransparency.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.trackbarTransparency.Location = new System.Drawing.Point(156, 88);
-            this.trackbarTransparency.Maximum = 2;
+            this.trackbarTransparency.Maximum = 3;
             this.trackbarTransparency.Name = "trackbarTransparency";
             this.trackbarTransparency.Size = new System.Drawing.Size(152, 45);
             this.trackbarTransparency.TabIndex = 7;

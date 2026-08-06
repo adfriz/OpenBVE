@@ -199,6 +199,8 @@ namespace OpenBve.Graphics.Renderers
 				"renderer type: openGL 4 (new)",
 				"opaque faces: " + Program.Renderer.VisibleObjects.OpaqueFaces.Count.ToString(Culture),
 				"alpha faces: " + Program.Renderer.VisibleObjects.AlphaFaces.Count.ToString(Culture),
+				"additive faces: " + Program.Renderer.VisibleObjects.AdditiveAlphaFaces.Count.ToString(Culture),
+				(Program.Renderer.OIT != null && Program.Renderer.OIT.IsSupported && Interface.CurrentOptions.TransparencyMode == TransparencyMode.OrderIndependent ? "OIT peels: " + Program.Renderer.OIT.PeelsPerformed.ToString(Culture) : string.Empty),
 				"overlay opaque faces: " + Program.Renderer.VisibleObjects.OverlayOpaqueFaces.Count.ToString(Culture),
 				"overlay alpha faces: " + Program.Renderer.VisibleObjects.OverlayAlphaFaces.Count.ToString(Culture),
 				"textures loaded: " + renderer.TextureManager.GetNumberOfLoadedTextures().ToString(Culture) + " static, " + renderer.TextureManager.GetNumberOfLoadedAnimatedTextures() + " animated / " + texturesRegistered.ToString(Culture) + " total",

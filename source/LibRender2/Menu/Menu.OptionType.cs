@@ -48,6 +48,8 @@ namespace LibRender2.Menu
 		/// <summary>Sets the shadow quality</summary>
 		ShadowQuality,
 		/// <summary>Sets whether shadow casters are filtered per cascade</summary>
-		ShadowFilterCascades
+		ShadowFilterCascades,
+		/// <summary>Sets the transparency mode</summary>
+		TransparencyMode
 	}
 }

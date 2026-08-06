@@ -1453,6 +1453,14 @@
 						<source>Smooth</source>
 						<target>平滑</target>
 					</trans-unit>
+					<trans-unit id="quality_interpolation_transparency_intermediate">
+						<source>Intermediate</source>
+						<target>Intermediate</target>
+					</trans-unit>
+					<trans-unit id="quality_interpolation_transparency_orderindependent">
+						<source>Order Independent</source>
+						<target>Order Independent</target>
+					</trans-unit>
 					<trans-unit id="quality_distance">
 						<source>Distance effects</source>
 						<target>視覺效果</target>
