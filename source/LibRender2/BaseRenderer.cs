@@ -281,6 +281,22 @@ namespace LibRender2
 
 		private Color32 lastColor;
 
+		/// <summary>The shader the per-face uniform cache below was last applied with; uniform state is per-program,
+		/// so whenever the active draw shader changes, the cached values are invalidated</summary>
+		private Shader lastUniformShader;
+
+		/// <summary>Last opacity uploaded to the current shader; -1 forces a re-upload</summary>
+		private float lastOpacity = -1.0f;
+
+		/// <summary>Last material flags uploaded to the current shader; -1 forces a re-upload</summary>
+		private int lastMaterialFlags = -1;
+
+		/// <summary>Last texture translation matrix uploaded to the current shader</summary>
+		private Matrix4D lastTextureMatrix;
+
+		/// <summary>Whether lastTextureMatrix holds a valid value for lastUniformShader</summary>
+		private bool lastTextureMatrixValid;
+
 		/// <summary>Holds the handle of the last VAO bound by openGL</summary>
 		public int lastVAO;
 
@@ -1128,6 +1144,17 @@ namespace LibRender2
 			CurrentProjectionMatrix = Matrix4D.CreatePerspectiveFieldOfView(Camera.VerticalViewingAngle, Screen.AspectRatio, nearClip, currentOptions.ViewingDistance);
 		}
 
+		/// <summary>Forces the per-face uniform cache to be re-populated on the next face.
+		/// Called whenever code outside RenderFace may have written the cached uniforms directly
+		/// (e.g. the background, particle and text renderers), so a cached value can never be
+		/// stale relative to the actual shader state</summary>
+		private void InvalidateUniformCache()
+		{
+			lastOpacity = -1.0f;
+			lastMaterialFlags = -1;
+			lastTextureMatrixValid = false;
+		}
+
 		public void ResetShader(Shader shader)
 		{
 #if DEBUG
@@ -1164,6 +1191,8 @@ namespace LibRender2
 			shader.SetOpacity(1.0f);
 			shader.SetObjectIndex(0);
 			shader.SetAlphaTest(false);
+			lastUniformShader = shader;
+			InvalidateUniformCache();
 		}
 
 		public void SetBlendFunc()
@@ -1176,6 +1205,7 @@ namespace LibRender2
 			blendEnabled = true;
 			blendSrcFactor = srcFactor;
 			blendDestFactor = destFactor;
+			InvalidateUniformCache(); // other renderers write the cached uniforms directly around these calls
 			GL.Enable(EnableCap.Blend);
 			GL.BlendFunc(srcFactor, destFactor);
 		}
@@ -1183,6 +1213,7 @@ namespace LibRender2
 		public void UnsetBlendFunc()
 		{
 			blendEnabled = false;
+			InvalidateUniformCache(); // other renderers write the cached uniforms directly around these calls
 			GL.Disable(EnableCap.Blend);
 		}
 
@@ -1213,6 +1244,7 @@ namespace LibRender2
 			alphaTestEnabled = true;
 			alphaFuncComparison = comparison;
 			alphaFuncValue = value;
+			InvalidateUniformCache(); // other renderers write the cached uniforms directly around these calls
 			CurrentShader.SetAlphaTest(true);
 			CurrentShader.SetAlphaFunction(comparison, value);
         }
@@ -1221,6 +1253,7 @@ namespace LibRender2
 		public void UnsetAlphaFunc()
 		{
 			alphaTestEnabled = false;
+			InvalidateUniformCache(); // other renderers write the cached uniforms directly around these calls
 			CurrentShader.SetAlphaTest(false);
         }
 
@@ -1290,6 +1323,13 @@ namespace LibRender2
 			MeshMaterial material = state.Prototype.Mesh.Materials[face.Material];
 			VertexArrayObject VAO = (VertexArrayObject)state.Prototype.Mesh.VAO;
 
+			if (shader != lastUniformShader)
+			{
+				// The shader program changed: uniform state is per-program, so the cached values are stale
+				lastUniformShader = shader;
+				InvalidateUniformCache();
+			}
+
 			if (lastVAO != VAO.handle)
 			{
 				VAO.Bind();
@@ -1322,7 +1362,12 @@ namespace LibRender2
 			if (sendToShader)
 			{
 				shader.SetCurrentModelViewMatrix(lastModelViewMatrix);
-				shader.SetCurrentTextureMatrix(state.TextureTranslation);
+				if (!lastTextureMatrixValid || state.TextureTranslation != lastTextureMatrix)
+				{
+					shader.SetCurrentTextureMatrix(state.TextureTranslation);
+					lastTextureMatrix = state.TextureTranslation;
+					lastTextureMatrixValid = true;
+				}
 				sendToShader = false;
 			}
 			
@@ -1332,7 +1377,11 @@ namespace LibRender2
 			}
 			
 			// lighting
-			shader.SetMaterialFlags(material.Flags);
+			if ((int)material.Flags != lastMaterialFlags)
+			{
+				shader.SetMaterialFlags(material.Flags);
+				lastMaterialFlags = (int)material.Flags;
+			}
 			if (OptionLighting)
 			{
 				if (material.Color != lastColor)
@@ -1440,7 +1489,12 @@ namespace LibRender2
 					alphaFactor *= 1.0f - blendFactor;
 				}
 
-				shader.SetOpacity(inv255 * material.Color.A * alphaFactor);
+				float faceOpacity = inv255 * material.Color.A * alphaFactor;
+				if (faceOpacity != lastOpacity)
+				{
+					shader.SetOpacity(faceOpacity);
+					lastOpacity = faceOpacity;
+				}
 
 				// render polygon
 				VAO.Draw(drawMode, face.IboStartIndex, face.Vertices.Length);
@@ -1460,13 +1514,23 @@ namespace LibRender2
 				GL.Enable(EnableCap.Blend);
 
 				// alpha test
-				shader.SetAlphaTest(true);
-				shader.SetAlphaFunction(AlphaFunction.Greater, 0.0f);
+				// Only upload when the currently-applied alpha function differs; the uniform is
+				// already (Greater, 0.0f) when alpha testing was left enabled with those values
+				if (!(alphaTestEnabled && alphaFuncComparison == AlphaFunction.Greater && alphaFuncValue == 0.0f))
+				{
+					shader.SetAlphaTest(true);
+					shader.SetAlphaFunction(AlphaFunction.Greater, 0.0f);
+				}
 				
 				// blend mode
 				float alphaFactor = distanceFactor * blendFactor;
 
-				shader.SetOpacity(inv255 * material.Color.A * alphaFactor);
+				float nightOpacity = inv255 * material.Color.A * alphaFactor;
+				if (nightOpacity != lastOpacity)
+				{
+					shader.SetOpacity(nightOpacity);
+					lastOpacity = nightOpacity;
+				}
 
 				// render polygon
 				VAO.Draw(drawMode, face.IboStartIndex, face.Vertices.Length);
@@ -1481,6 +1545,7 @@ namespace LibRender2
 				shader.DisableTexturing();
 				shader.SetBrightness(1.0f);
 				shader.SetOpacity(1.0f);
+				lastOpacity = 1.0f; // keep the cache in sync with the directly-set uniform
 				Mesh normalsMesh = state.Prototype.Mesh;
 				if (normalsMesh.NormalsVAO == null)
 				{
