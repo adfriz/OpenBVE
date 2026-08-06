@@ -221,7 +221,7 @@ namespace LibRender2.ShadowMapping
 				DepthShader.SetTextureMatrix(state.TextureTranslation);
 
 				var material = face.Object.Prototype.Mesh.Materials[face.Face.Material];
-				if ((material.Flags & MaterialFlags.NoShadow) != 0 || material.BlendMode == MeshMaterialBlendMode.Additive)
+				if ((material.Flags & MaterialFlags.NoShadow) != 0 || material.BlendMode == MeshMaterialBlendMode.Additive || face.AlphaClass == FaceAlphaClass.SmoothAlpha || face.AlphaClass == FaceAlphaClass.Glow)
 				{
 					continue;
 				}
