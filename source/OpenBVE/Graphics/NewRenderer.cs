@@ -1,6 +1,7 @@
 using LibRender2;
 using LibRender2.MotionBlurs;
 using LibRender2.Objects;
+using LibRender2.OIT;
 using LibRender2.Overlays;
 using LibRender2.Screens;
 using LibRender2.Shaders;
@@ -19,6 +20,7 @@ using OpenBveApi.Textures;
 using OpenTK.Graphics.OpenGL;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using TrainManager.Trains;
 using Vector3 = OpenBveApi.Math.Vector3;
@@ -36,13 +38,30 @@ namespace OpenBve.Graphics
 		internal bool DebugTouchMode = false;
 
 		internal Shader pickingShader;
+		/// <summary>The hybrid order-independent transparency renderer; null or IsSupported == false when unavailable</summary>
+		internal OitRenderer OIT;
+		private bool oitUnsupportedLogged;
+		private int oitLastWidth = -1;
+		private int oitLastHeight = -1;
 		private Events events;
 		private Overlays overlays;
+		private readonly List<FaceState> drawOpaqueFaces = new List<FaceState>();
+		private readonly List<FaceState> drawOverlayOpaqueFaces = new List<FaceState>();
 		internal Touch Touch;
 
 		public override void Initialize()
 		{
 			base.Initialize();
+			if (OIT == null)
+			{
+				OIT = new OitRenderer(this);
+				if (OIT.IsSupported && Screen.Width > 0 && Screen.Height > 0)
+				{
+					OIT.Setup(Screen.Width, Screen.Height);
+					oitLastWidth = Screen.Width;
+					oitLastHeight = Screen.Height;
+				}
+			}
 			try
 			{
 				if (pickingShader == null)
@@ -76,6 +95,13 @@ namespace OpenBve.Graphics
 			Screen.Height = height;
 			GL.Viewport(0, 0, Screen.Width, Screen.Height);
 
+			if (OIT != null && OIT.IsSupported && width > 0 && height > 0 && (width != oitLastWidth || height != oitLastHeight))
+			{
+				OIT.Setup(width, height);
+				oitLastWidth = width;
+				oitLastHeight = height;
+			}
+
 			Screen.AspectRatio = Screen.Width / (double)Screen.Height;
 			Camera.HorizontalViewingAngle = 2.0 * Math.Atan(Math.Tan(0.5 * Camera.VerticalViewingAngle) * Screen.AspectRatio);
 
@@ -100,6 +126,20 @@ namespace OpenBve.Graphics
 			ReleaseResources();
 			// initialize
 			ResetOpenGlState();
+
+			bool useOit = false;
+			if (Interface.CurrentOptions.TransparencyMode == TransparencyMode.OrderIndependent)
+			{
+				if (OIT != null && OIT.IsSupported)
+				{
+					useOit = true;
+				}
+				else if (!oitUnsupportedLogged)
+				{
+					oitUnsupportedLogged = true;
+					Interface.AddMessage(MessageType.Error, false, "Order-independent transparency is not supported by this graphics card or OpenGL driver- Falling back to the quality transparency mode.");
+				}
+			}
 
 			if (OptionWireFrame)
 			{
@@ -132,6 +172,14 @@ namespace OpenBve.Graphics
 			UpdateViewport(ViewportChangeMode.ChangeToScenery);
 
 			PerformCSMShadowPass();
+
+			if (useOit)
+			{
+				// Bind and clear the multisampled scene target; the background and opaque
+				// passes render into it, and the peel / tail / composite passes below run
+				// in the alpha pass slot.
+				OIT.BeginScene();
+			}
 
             if (Lighting.ShouldInitialize)
 			{
@@ -214,75 +262,116 @@ namespace OpenBve.Graphics
             DefaultShader.SetCurrentProjectionMatrix(CurrentProjectionMatrix);
 
             ResetOpenGlState();
-			List<FaceState> opaqueFaces, alphaFaces, overlayOpaqueFaces, overlayAlphaFaces;
+			List<FaceState> alphaFaces, overlayAlphaFaces;
+			ReadOnlyCollection<FaceState> additiveFaces, overlayAdditiveFaces;
 			lock (VisibleObjects.LockObject)
 			{
-				opaqueFaces = VisibleObjects.OpaqueFaces.ToList();
+				drawOpaqueFaces.Clear();
+				drawOpaqueFaces.AddRange(VisibleObjects.OpaqueFaces);
 				alphaFaces = VisibleObjects.GetSortedPolygons();
-				overlayOpaqueFaces = VisibleObjects.OverlayOpaqueFaces.ToList();
+				drawOverlayOpaqueFaces.Clear();
+				drawOverlayOpaqueFaces.AddRange(VisibleObjects.OverlayOpaqueFaces);
 				overlayAlphaFaces = VisibleObjects.GetSortedPolygons(true);
+				additiveFaces = VisibleObjects.AdditiveAlphaFaces;
+				overlayAdditiveFaces = VisibleObjects.OverlayAdditiveFaces;
 			}
 
-			foreach (FaceState face in opaqueFaces)
+			foreach (FaceState face in drawOpaqueFaces)
 			{
 				face.Draw();
 			}
 
 			// alpha face
-			ResetOpenGlState();
-			
-			if (Interface.CurrentOptions.TransparencyMode == TransparencyMode.Performance)
+			if (useOit)
 			{
-				SetBlendFunc();
+				// Hybrid order-independent transparency: depth-peel the front two transparent
+				// layers exactly, accumulate the remaining layers with weighted blending, then
+				// composite the result over the opaque scene. The peel and tail passes are both
+				// drawn with the sorted alpha list; with OIT the drawing order does not matter.
+				OIT.EndOpaquePass();
 				SetAlphaFunc(AlphaFunction.Greater, 0.0f);
-				GL.DepthMask(false);
-
+				for (int i = 0; i < 2; i++)
+				{
+					OIT.BeginPeelPass(i == 0);
+					OIT.BeginPeelQuery();
+					foreach (FaceState face in alphaFaces)
+					{
+						face.Draw();
+					}
+					OIT.EndPeelPassAndComposite();
+					if (i >= 1 && !OIT.PeelsRemaining())
+					{
+						break;
+					}
+				}
+				OIT.BeginTailPass();
 				foreach (FaceState face in alphaFaces)
+				{
+					face.Draw();
+				}
+				OIT.EndTailPass();
+				OIT.Composite();
+				// additive faces are order-independent and are drawn on top of the composite result
+				SetBlendFunc();
+				UnsetAlphaFunc();
+				GL.DepthMask(false);
+				foreach (FaceState face in additiveFaces)
 				{
 					face.Draw();
 				}
 			}
 			else
 			{
-				UnsetBlendFunc();
-				SetAlphaFunc(AlphaFunction.Equal, 1.0f);
-				GL.DepthMask(true);
-
-				foreach (FaceState face in alphaFaces)
+				ResetOpenGlState();
+				
+				if (Interface.CurrentOptions.TransparencyMode == TransparencyMode.Performance)
 				{
-					if (face.Object.Prototype.Mesh.Materials[face.Face.Material].BlendMode == MeshMaterialBlendMode.Normal && face.Object.Prototype.Mesh.Materials[face.Face.Material].GlowAttenuationData == 0)
+					SetBlendFunc();
+					SetAlphaFunc(AlphaFunction.Greater, 0.0f);
+					GL.DepthMask(false);
+
+					foreach (FaceState face in alphaFaces)
 					{
-						if (face.Object.Prototype.Mesh.Materials[face.Face.Material].Color.A == 255)
-						{
-							face.Draw();
-						}
+						face.Draw();
+					}
+
+					UnsetAlphaFunc();
+					foreach (FaceState face in additiveFaces)
+					{
+						face.Draw();
 					}
 				}
-
-				SetBlendFunc();
-				SetAlphaFunc(AlphaFunction.Less, 1.0f);
-				GL.DepthMask(false);
-				bool additive = false;
-
-				foreach (FaceState face in alphaFaces)
+				else
 				{
-					if (face.Object.Prototype.Mesh.Materials[face.Face.Material].BlendMode == MeshMaterialBlendMode.Additive)
+					UnsetBlendFunc();
+					SetAlphaFunc(AlphaFunction.Equal, 1.0f);
+					GL.DepthMask(true);
+
+					foreach (FaceState face in alphaFaces)
 					{
-						if (!additive)
+						if (face.Object.Prototype.Mesh.Materials[face.Face.Material].BlendMode == MeshMaterialBlendMode.Normal && face.Object.Prototype.Mesh.Materials[face.Face.Material].GlowAttenuationData == 0)
 						{
-							UnsetAlphaFunc();
-							additive = true;
+							if (face.Object.Prototype.Mesh.Materials[face.Face.Material].Color.A == 255)
+							{
+								face.Draw();
+							}
 						}
 					}
-					else
+
+					SetBlendFunc();
+					SetAlphaFunc(AlphaFunction.Less, 1.0f);
+					GL.DepthMask(false);
+
+					foreach (FaceState face in alphaFaces)
 					{
-						if (additive)
-						{
-							SetAlphaFunc();
-							additive = false;
-						}
+						face.Draw();
 					}
-					face.Draw();
+
+					UnsetAlphaFunc();
+					foreach (FaceState face in additiveFaces)
+					{
+						face.Draw();
+					}
 				}
 			}
 
@@ -373,7 +462,7 @@ namespace OpenBve.Graphics
 				DefaultShader.SetLightModel(Lighting.LightModel);
 
                 // overlay opaque face
-                foreach (FaceState face in overlayOpaqueFaces)
+                foreach (FaceState face in drawOverlayOpaqueFaces)
 				{
 					face.Draw();
 				}
@@ -387,6 +476,12 @@ namespace OpenBve.Graphics
 					GL.DepthMask(false);
 
 					foreach (FaceState face in overlayAlphaFaces)
+					{
+						face.Draw();
+					}
+
+					UnsetAlphaFunc();
+					foreach (FaceState face in overlayAdditiveFaces)
 					{
 						face.Draw();
 					}
@@ -411,26 +506,15 @@ namespace OpenBve.Graphics
 					SetBlendFunc();
 					SetAlphaFunc(AlphaFunction.Less, 1.0f);
 					GL.DepthMask(false);
-					bool additive = false;
 
 					foreach (FaceState face in overlayAlphaFaces)
 					{
-						if (face.Object.Prototype.Mesh.Materials[face.Face.Material].BlendMode == MeshMaterialBlendMode.Additive)
-						{
-							if (!additive)
-							{
-								UnsetAlphaFunc();
-								additive = true;
-							}
-						}
-						else
-						{
-							if (additive)
-							{
-								SetAlphaFunc();
-								additive = false;
-							}
-						}
+						face.Draw();
+					}
+
+					UnsetAlphaFunc();
+					foreach (FaceState face in overlayAdditiveFaces)
+					{
 						face.Draw();
 					}
 				}
@@ -454,6 +538,10 @@ namespace OpenBve.Graphics
 				GL.Disable(EnableCap.DepthTest);
 				GL.DepthMask(false);
 				foreach (FaceState face in overlayAlphaFaces)
+				{
+					face.Draw();
+				}
+				foreach (FaceState face in overlayAdditiveFaces)
 				{
 					face.Draw();
 				}

@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
 using LibRender2;
 using LibRender2.Objects;
+using LibRender2.OIT;
 using LibRender2.Primitives;
 using LibRender2.Screens;
 using LibRender2.Viewports;
@@ -32,6 +34,14 @@ namespace ObjectViewer.Graphics
 		internal bool OptionCoordinateSystem = false;
 		internal bool OptionInterface = true;
 
+		private readonly List<FaceState> drawOpaqueFaces = new List<FaceState>();
+
+		/// <summary>The hybrid order-independent transparency renderer; null or IsSupported == false when unavailable</summary>
+		internal OitRenderer OIT;
+		private bool oitUnsupportedLogged;
+		private int oitLastWidth = -1;
+		private int oitLastHeight = -1;
+
 		// background color
 		internal const int MaxBackgroundColor = 4;
 
@@ -42,19 +52,45 @@ namespace ObjectViewer.Graphics
 		public override void Initialize()
 		{
 			base.Initialize();
+			if (OIT == null)
+			{
+				OIT = new OitRenderer(this);
+				if (OIT.IsSupported && Screen.Width > 0 && Screen.Height > 0)
+				{
+					OIT.Setup(Screen.Width, Screen.Height);
+					oitLastWidth = Screen.Width;
+					oitLastHeight = Screen.Height;
+				}
+			}
 			redAxisVAO = new Cube(this, Color128.Red);
 			greenAxisVAO = new Cube(this, Color128.Green);
 			blueAxisVAO = new Cube(this, Color128.Blue);
         }
 
+		protected override void UpdateViewport(int Width, int Height)
+		{
+			base.UpdateViewport(Width, Height);
+
+			if (OIT != null && OIT.IsSupported && Width > 0 && Height > 0 && (Width != oitLastWidth || Height != oitLastHeight))
+			{
+				OIT.Setup(Width, Height);
+				oitLastWidth = Width;
+				oitLastHeight = Height;
+			}
+		}
+
 		internal void ApplyBackgroundColor()
 		{
 			GL.ClearColor(Interface.CurrentOptions.BackgroundColor.R * inv255, Interface.CurrentOptions.BackgroundColor.G * inv255, Interface.CurrentOptions.BackgroundColor.B * inv255, 1.0f);
+			// The OIT scene target is cleared with currentOptions.ClearColor, so mirror the
+			// viewer's background color option onto it for consistent clears in the OIT path.
+			Interface.CurrentOptions.ClearColor = Interface.CurrentOptions.BackgroundColor;
 		}
 
 		internal void ApplyBackgroundColor(byte red, byte green, byte blue)
 		{
 			GL.ClearColor(red / 255.0f, green / 255.0f, blue / 255.0f, 1.0f);
+			Interface.CurrentOptions.ClearColor = new Color24(red, green, blue);
 		}
 
 		// render scene
@@ -65,6 +101,20 @@ namespace ObjectViewer.Graphics
             ReleaseResources();
 			// initialize
 			ResetOpenGlState();
+
+			bool useOit = false;
+			if (Interface.CurrentOptions.TransparencyMode == TransparencyMode.OrderIndependent)
+			{
+				if (OIT != null && OIT.IsSupported)
+				{
+					useOit = true;
+				}
+				else if (!oitUnsupportedLogged)
+				{
+					oitUnsupportedLogged = true;
+					Interface.AddMessage(MessageType.Error, false, "Order-independent transparency is not supported by this graphics card or OpenGL driver- Falling back to the quality transparency mode.");
+				}
+			}
 
 			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 			UpdateViewport(ViewportChangeMode.ChangeToScenery);
@@ -81,17 +131,27 @@ namespace ObjectViewer.Graphics
 
 			Fog.Enabled = false;
 
+            // opaque face
+            PerformCSMShadowPass();
+
+			if (useOit)
+			{
+				// Bind and clear the multisampled scene target; the opaque
+				// pass renders into it, and the peel / tail / composite passes below run
+				// in the alpha pass slot.
+				OIT.BeginScene();
+			}
+
 			if (OptionCoordinateSystem)
 			{
+				// Drawn after the shadow pass and the OIT scene target clear so the axes
+				// are part of the OIT scene and survive the final composite.
 				UnsetAlphaFunc();
 				DefaultShader.SetShadowEnabled(false);
 				redAxisVAO.Draw(Vector3.Zero, Vector3.Forward, Vector3.Down, Vector3.Right, new Vector3(100.0, 0.01, 0.01), Camera.AbsolutePosition, null);
 				greenAxisVAO.Draw(Vector3.Zero, Vector3.Forward, Vector3.Down, Vector3.Right, new Vector3(0.01, 100.0, 0.01), Camera.AbsolutePosition, null);
 				blueAxisVAO.Draw(Vector3.Zero, Vector3.Forward, Vector3.Down, Vector3.Right, new Vector3(0.01, 0.01, 100.0), Camera.AbsolutePosition, null);
             }
-            // opaque face
-            PerformCSMShadowPass();
-
             //Setup the shader for rendering the scene
             DefaultShader.Activate();
             BindCSMToDefaultShader();
@@ -107,14 +167,17 @@ namespace ObjectViewer.Graphics
             DefaultShader.SetTexture(0);
             DefaultShader.SetCurrentProjectionMatrix(CurrentProjectionMatrix);
             ResetOpenGlState();
-			List<FaceState> opaqueFaces, alphaFaces;
+			List<FaceState> alphaFaces;
+			ReadOnlyCollection<FaceState> additiveFaces;
 			lock (VisibleObjects.LockObject)
 			{
-				opaqueFaces = VisibleObjects.OpaqueFaces.ToList();
+				drawOpaqueFaces.Clear();
+				drawOpaqueFaces.AddRange(VisibleObjects.OpaqueFaces);
 				alphaFaces = VisibleObjects.GetSortedPolygons();
+				additiveFaces = VisibleObjects.AdditiveAlphaFaces;
 			}
 
-			foreach (FaceState face in opaqueFaces)
+			foreach (FaceState face in drawOpaqueFaces)
 			{
 				face.Draw();
 			}
@@ -122,13 +185,57 @@ namespace ObjectViewer.Graphics
 			// alpha face
 			ResetOpenGlState();
 
-			if (Interface.CurrentOptions.TransparencyMode == TransparencyMode.Performance)
+			if (useOit)
+			{
+				// Hybrid order-independent transparency: depth-peel the front two transparent
+				// layers exactly, accumulate the remaining layers with weighted blending, then
+				// composite the result over the opaque scene. The peel and tail passes are both
+				// drawn with the sorted alpha list; with OIT the drawing order does not matter.
+				OIT.EndOpaquePass();
+				SetAlphaFunc(AlphaFunction.Greater, 0.0f);
+				for (int i = 0; i < 2; i++)
+				{
+					OIT.BeginPeelPass(i == 0);
+					OIT.BeginPeelQuery();
+					foreach (FaceState face in alphaFaces)
+					{
+						face.Draw();
+					}
+					OIT.EndPeelPassAndComposite();
+					if (i >= 1 && !OIT.PeelsRemaining())
+					{
+						break;
+					}
+				}
+				OIT.BeginTailPass();
+				foreach (FaceState face in alphaFaces)
+				{
+					face.Draw();
+				}
+				OIT.EndTailPass();
+				OIT.Composite();
+				// additive faces are order-independent and are drawn on top of the composite result
+				SetBlendFunc();
+				UnsetAlphaFunc();
+				GL.DepthMask(false);
+				foreach (FaceState face in additiveFaces)
+				{
+					face.Draw();
+				}
+			}
+			else if (Interface.CurrentOptions.TransparencyMode == TransparencyMode.Performance)
 			{
 				SetBlendFunc();
 				SetAlphaFunc(AlphaFunction.Greater, 0.0f);
 				GL.DepthMask(false);
 
 				foreach (FaceState face in alphaFaces)
+				{
+					face.Draw();
+				}
+
+				UnsetAlphaFunc();
+				foreach (FaceState face in additiveFaces)
 				{
 					face.Draw();
 				}
@@ -153,26 +260,15 @@ namespace ObjectViewer.Graphics
 				SetBlendFunc();
 				SetAlphaFunc(AlphaFunction.Less, 1.0f);
 				GL.DepthMask(false);
-				bool additive = false;
 
 				foreach (FaceState face in alphaFaces)
 				{
-					if (face.Object.Prototype.Mesh.Materials[face.Face.Material].BlendMode == MeshMaterialBlendMode.Additive)
-					{
-						if (!additive)
-						{
-							UnsetAlphaFunc();
-							additive = true;
-						}
-					}
-					else
-					{
-						if (additive)
-						{
-							SetAlphaFunc();
-							additive = false;
-						}
-					}
+					face.Draw();
+				}
+
+				UnsetAlphaFunc();
+				foreach (FaceState face in additiveFaces)
+				{
 					face.Draw();
 				}
 			}

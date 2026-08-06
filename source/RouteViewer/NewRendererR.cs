@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
 using LibRender2;
 using LibRender2.Objects;
+using LibRender2.OIT;
 using LibRender2.Screens;
 using OpenBveApi;
 using OpenBveApi.Colors;
@@ -35,6 +37,14 @@ namespace RouteViewer
 		internal bool OptionEvents = false;
 		internal bool OptionPaths = false;
 
+		private readonly List<FaceState> drawOpaqueFaces = new List<FaceState>();
+
+		/// <summary>The hybrid order-independent transparency renderer; null or IsSupported == false when unavailable</summary>
+		internal OitRenderer OIT;
+		private bool oitUnsupportedLogged;
+		private int oitLastWidth = -1;
+		private int oitLastHeight = -1;
+
 		// textures
 		private Texture BrightnessChangeTexture;
 		private Texture BackgroundChangeTexture;
@@ -54,6 +64,16 @@ namespace RouteViewer
 		public override void Initialize()
 		{
 			base.Initialize();
+			if (OIT == null)
+			{
+				OIT = new OitRenderer(this);
+				if (OIT.IsSupported && Screen.Width > 0 && Screen.Height > 0)
+				{
+					OIT.Setup(Screen.Width, Screen.Height);
+					oitLastWidth = Screen.Width;
+					oitLastHeight = Screen.Height;
+				}
+			}
 
 			string Folder = Path.CombineDirectory(Program.FileSystem.GetDataFolder(), "RouteViewer");
 			TextureManager.RegisterTexture(Path.CombineFile(Folder, "background.png"), out BackgroundChangeTexture);
@@ -72,6 +92,18 @@ namespace RouteViewer
 			TextureManager.RegisterTexture(Path.CombineFile(Folder, "weather.png"), out WeatherEventTexture);
 		}
 
+		protected override void UpdateViewport(int Width, int Height)
+		{
+			base.UpdateViewport(Width, Height);
+
+			if (OIT != null && OIT.IsSupported && Width > 0 && Height > 0 && (Width != oitLastWidth || Height != oitLastHeight))
+			{
+				OIT.Setup(Width, Height);
+				oitLastWidth = Width;
+				oitLastHeight = Height;
+			}
+		}
+
 		// render scene
 		internal void RenderScene(double timeElapsed)
 		{
@@ -79,6 +111,20 @@ namespace RouteViewer
 			ReleaseResources();
 			// initialize
 			ResetOpenGlState();
+
+			bool useOit = false;
+			if (Interface.CurrentOptions.TransparencyMode == TransparencyMode.OrderIndependent)
+			{
+				if (OIT != null && OIT.IsSupported)
+				{
+					useOit = true;
+				}
+				else if (!oitUnsupportedLogged)
+				{
+					oitUnsupportedLogged = true;
+					Interface.AddMessage(MessageType.Error, false, "Order-independent transparency is not supported by this graphics card or OpenGL driver- Falling back to the quality transparency mode.");
+				}
+			}
 
 			if (OptionWireFrame)
 			{
@@ -143,6 +189,15 @@ namespace RouteViewer
 			}
 
 			PerformCSMShadowPass();
+
+			if (useOit)
+			{
+				// Bind and clear the multisampled scene target; the background and opaque
+				// passes render into it, and the peel / tail / composite passes below run
+				// in the alpha pass slot.
+				OIT.BeginScene();
+			}
+
 			DefaultShader.Activate();
 			BindCSMToDefaultShader();
 
@@ -187,14 +242,17 @@ namespace RouteViewer
             DefaultShader.SetTexture(0);
             DefaultShader.SetCurrentProjectionMatrix(CurrentProjectionMatrix);
             ResetOpenGlState();
-			List<FaceState> opaqueFaces, alphaFaces;
+			List<FaceState> alphaFaces;
+			ReadOnlyCollection<FaceState> additiveFaces;
 			lock (VisibleObjects.LockObject)
 			{
-				opaqueFaces = VisibleObjects.OpaqueFaces.ToList();
+				drawOpaqueFaces.Clear();
+				drawOpaqueFaces.AddRange(VisibleObjects.OpaqueFaces);
 				alphaFaces = VisibleObjects.GetSortedPolygons();
+				additiveFaces = VisibleObjects.AdditiveAlphaFaces;
 			}
 			
-			foreach (FaceState face in opaqueFaces)
+			foreach (FaceState face in drawOpaqueFaces)
 			{
 				face.Draw();
 			}
@@ -202,13 +260,61 @@ namespace RouteViewer
 			// alpha face
 			ResetOpenGlState();
 
-			if (Interface.CurrentOptions.TransparencyMode == TransparencyMode.Performance)
+			if (useOit)
+			{
+				// Hybrid order-independent transparency: depth-peel the front two transparent
+				// layers exactly, accumulate the remaining layers with weighted blending, then
+				// composite the result over the opaque scene. The peel and tail passes are both
+				// drawn with the sorted alpha list; with OIT the drawing order does not matter.
+				OIT.EndOpaquePass();
+				SetAlphaFunc(AlphaFunction.Greater, 0.0f);
+				for (int i = 0; i < 2; i++)
+				{
+					OIT.BeginPeelPass(i == 0);
+					OIT.BeginPeelQuery();
+					foreach (FaceState face in alphaFaces)
+					{
+						face.Draw();
+					}
+					OIT.EndPeelPassAndComposite();
+					if (i >= 1 && !OIT.PeelsRemaining())
+					{
+						break;
+					}
+				}
+				OIT.BeginTailPass();
+				foreach (FaceState face in alphaFaces)
+				{
+					face.Draw();
+				}
+				OIT.EndTailPass();
+				OIT.Composite();
+				// additive faces are order-independent and are drawn on top of the composite result
+				SetBlendFunc();
+				UnsetAlphaFunc();
+				GL.DepthMask(false);
+				foreach (FaceState face in additiveFaces)
+				{
+					face.Draw();
+				}
+				// The composite fullscreen quad has depth-masked the default framebuffer's depth
+				// buffer with a near-plane value, so re-clear it before the remaining per-frame
+				// drawing (event markers, rail paths) which still depth-tests against it.
+				GL.Clear(ClearBufferMask.DepthBufferBit);
+			}
+			else if (Interface.CurrentOptions.TransparencyMode == TransparencyMode.Performance)
 			{
 				SetBlendFunc();
 				SetAlphaFunc(AlphaFunction.Greater, 0.0f);
 				GL.DepthMask(false);
 
 				foreach (FaceState face in alphaFaces)
+				{
+					face.Draw();
+				}
+
+				UnsetAlphaFunc();
+				foreach (FaceState face in additiveFaces)
 				{
 					face.Draw();
 				}
@@ -233,26 +339,15 @@ namespace RouteViewer
 				SetBlendFunc();
 				SetAlphaFunc(AlphaFunction.Less, 1.0f);
 				GL.DepthMask(false);
-				bool additive = false;
 
 				foreach (FaceState face in alphaFaces)
 				{
-					if (face.Object.Prototype.Mesh.Materials[face.Face.Material].BlendMode == MeshMaterialBlendMode.Additive)
-					{
-						if (!additive)
-						{
-							UnsetAlphaFunc();
-							additive = true;
-						}
-					}
-					else
-					{
-						if (additive)
-						{
-							SetAlphaFunc();
-							additive = false;
-						}
-					}
+					face.Draw();
+				}
+
+				UnsetAlphaFunc();
+				foreach (FaceState face in additiveFaces)
+				{
 					face.Draw();
 				}
 			}
