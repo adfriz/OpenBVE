@@ -16,6 +16,7 @@ namespace LibRender2
 	public class VertexArrayObject : IDisposable
 	{
 		internal readonly int handle;
+		private readonly BaseRenderer renderer;
 		private VertexBufferObject vbo;
 		private IndexBufferObject ibo;
 		private bool disposed;
@@ -23,8 +24,10 @@ namespace LibRender2
 		/// <summary>
 		/// Constructor
 		/// </summary>
-		public VertexArrayObject()
+		/// <param name="renderer">The renderer, used to keep the last bound VAO cache accurate</param>
+		public VertexArrayObject(BaseRenderer renderer)
 		{
+			this.renderer = renderer;
 			GL.GenVertexArrays(1, out handle);
 			if (handle == 0)
 			{
@@ -38,6 +41,7 @@ namespace LibRender2
 		public void Bind()
 		{
 			GL.BindVertexArray(handle);
+			renderer.lastVAO = handle;
 		}
 
 		/// <summary>
@@ -140,6 +144,7 @@ namespace LibRender2
 			GL.BindVertexArray(0);
 			GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
 			GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
+			renderer.lastVAO = -1;
 		}
 
 		/// <summary>
@@ -241,7 +246,7 @@ namespace LibRender2
 			VAO?.UnBind();
 			VAO?.Dispose();
 
-			VAO = new VertexArrayObject();
+			VAO = new VertexArrayObject(renderer);
 			VAO.Bind();
 			VAO.SetVBO(new VertexBufferObject(vertexData.ToArray(), hint));
 			if (indexData.Count > 65530)
@@ -362,7 +367,7 @@ namespace LibRender2
 				NormalsVAO?.UnBind();
 				NormalsVAO?.Dispose();
 
-				NormalsVAO = new VertexArrayObject();
+				NormalsVAO = new VertexArrayObject(renderer);
 				NormalsVAO.Bind();
 				NormalsVAO.SetVBO(new VertexBufferObject(normalsVertexData.ToArray(), hint));
 				// Position + Normal + Colour: UV/matrix omitted so the shader cannot sample any texture,
@@ -498,7 +503,7 @@ namespace LibRender2
 				VAO?.UnBind();
 				VAO?.Dispose();
 
-				VAO = new VertexArrayObject();
+				VAO = new VertexArrayObject(renderer);
 				VAO.Bind();
 				VAO.SetVBO(new VertexBufferObject(vertexData.ToArray(), BufferUsageHint.StaticDraw));
 				VAO.SetIBO(new IndexBufferObjectUS(indexData.ToArray(), BufferUsageHint.StaticDraw));

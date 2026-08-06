@@ -417,7 +417,7 @@ namespace LibRender2
 				DefaultShader.SetMaterialSpecular(Color32.White);
 				lastColor = Color32.White;
 				DefaultShader.Deactivate();
-				dummyVao = new VertexArrayObject();
+				dummyVao = new VertexArrayObject(this);
 			}
 			catch
 			{
@@ -591,6 +591,10 @@ namespace LibRender2
 				}
 				iboToDelete.Clear();
 			}
+			// Deleted VAOs may have been the last bound ones (or the same handle may have been
+			// reused by a new VAO): force a rebind on the next draw to avoid drawing with a
+			// stale or invalid binding.
+			lastVAO = -1;
 		}
 
 		/// <summary>

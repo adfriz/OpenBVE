@@ -76,7 +76,7 @@ namespace LibRender2.Primitives
 							}
 						};
 
-						particlesVAO[i * 4 + j] = new VertexArrayObject();
+						particlesVAO[i * 4 + j] = new VertexArrayObject(renderer);
 						particlesVAO[i * 4 + j].Bind();
 						particlesVAO[i * 4 + j].SetVBO(new VertexBufferObject(vertexData, BufferUsageHint.StaticDraw));
 						particlesVAO[i * 4 + j].SetIBO(new IndexBufferObjectUS(Enumerable.Range(0, vertexData.Length).Select(x => (ushort)x).ToArray(), BufferUsageHint.StaticDraw));
