@@ -301,7 +301,8 @@ namespace ObjectViewer
             this.TransparencyQuality.Items.AddRange(new object[] {
             "Sharp",
             "Intermediate",
-            "Smooth"});
+            "Smooth",
+            "Order Independent"});
             this.TransparencyQuality.Location = new System.Drawing.Point(160, 106);
             this.TransparencyQuality.Name = "TransparencyQuality";
             this.TransparencyQuality.Size = new System.Drawing.Size(121, 21);

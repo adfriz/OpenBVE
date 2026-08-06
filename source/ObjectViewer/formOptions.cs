@@ -25,7 +25,7 @@ namespace ObjectViewer
 			{
 				labelNearClip.Text = Translations.GetInterfaceString(OpenBveApi.Hosts.HostApplication.OpenBve, new[] { "options", "quality_distance_nearclip" });
 			}
-			TransparencyQuality.SelectedIndex = Interface.CurrentOptions.TransparencyMode == TransparencyMode.Performance ? 0 : 2;
+			TransparencyQuality.SelectedIndex = (int) Interface.CurrentOptions.TransparencyMode;
 			width.Value = Program.Renderer.Screen.Width;
 			height.Value = Program.Renderer.Screen.Height;
 			comboBoxNewXParser.SelectedIndex = (int) Interface.CurrentOptions.CurrentXParser;
@@ -195,15 +195,7 @@ namespace ObjectViewer
 			}
 
 			//Transparency quality
-			switch (TransparencyQuality.SelectedIndex)
-			{
-				case 0:
-					Interface.CurrentOptions.TransparencyMode = TransparencyMode.Performance;
-					break;
-				default:
-					Interface.CurrentOptions.TransparencyMode = TransparencyMode.Quality;
-					break;
-			}
+			Interface.CurrentOptions.TransparencyMode = (TransparencyMode) TransparencyQuality.SelectedIndex;
 
 			//Set width and height
 			if (Program.Renderer.Screen.Width != width.Value || Program.Renderer.Screen.Height != height.Value)
