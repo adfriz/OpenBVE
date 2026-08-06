@@ -55,6 +55,10 @@ uniform float             uShadowNormalBias3;
 
 uniform vec2              uAlphaTest;
 uniform sampler2D uTexture;
+uniform int uOitMode;
+// Resolved opaque scene depth (screen space), bound by the hybrid OIT tail pass
+// (LibRender2.OIT.OitRenderer) so fragments occluded by opaque geometry are discarded.
+uniform sampler2D uOpaqueDepth;
 
 struct Light
 {
@@ -82,6 +86,11 @@ uniform vec3  uFogColor;
 uniform float uFogDensity;
 uniform bool uFogIsLinear;
 out vec4 fragColor;
+// Additional fragment outputs used by the hybrid OIT tail pass (LibRender2.OIT.OitRenderer).
+// When no draw buffer is enabled for locations 1/2 (default framebuffer, single-attachment
+// FBOs) the driver discards these writes, so the normal rendering path is unaffected.
+layout(location = 1) out vec4 oitAccum;
+layout(location = 2) out vec4 oitReveal;
 
 /// Samples a single cascade using hardware PCF.
 float GetCascadeShadowFactor(sampler2DShadow shadowMap, vec4 posLightSpace, float bias, float normalBias)
@@ -279,4 +288,36 @@ void main(void)
 	}
 
 	fragColor = vec4(mix(uFogColor, finalColor.rgb, fogFactor), finalColor.a);
+
+	/*
+	 * Hybrid OIT support (LibRender2.OIT.OitRenderer):
+	 * When uOitMode is 1 this program is used for the weighted blended OIT tail pass and
+	 * writes the depth-weighted accumulation into location 0 (the uAccum texture) and the
+	 * revealage factor into location 1 (the uReveal texture) of the dual-drawbuffer
+	 * accumulation framebuffer, using the weight function from:
+	 * Morgan McGuire & Louis Bavoil, "Weighted Blended Order-Independent Transparency",
+	 * Journal of Computer Graphics Techniques, Vol. 2, No. 2, 2013.
+	 * When uOitMode is 0 the extra outputs are simply discarded by the driver.
+	 */
+	if (uOitMode == 1)
+	{
+		// Discard fragments occluded by opaque geometry: the resolved opaque scene depth is
+		// compared against the fragment's own depth. The guard only discards when the opaque
+		// depth is meaningfully less than 1.0, so transparents in front of the background
+		// (where no opaque geometry exists) always render.
+		float oitOpaqueDepth = texture(uOpaqueDepth, gl_FragCoord.xy / vec2(textureSize(uOpaqueDepth, 0))).r;
+		if (oitOpaqueDepth < 0.9999 && gl_FragCoord.z > oitOpaqueDepth)
+		{
+			discard;
+		}
+		float viewZ = abs(oViewPos.z);
+		float weight = finalColor.a * clamp(0.03 / (1e-5 + pow(viewZ / 200.0, 4.0)), 0.01, 3000.0);
+		oitAccum = vec4(fragColor.rgb * fragColor.a, fragColor.a) * weight;
+		oitReveal = vec4(fragColor.a);
+	}
+	else
+	{
+		oitAccum = vec4(0.0);
+		oitReveal = vec4(0.0);
+	}
 }

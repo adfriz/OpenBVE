@@ -13,6 +13,8 @@ namespace OpenBveApi.Graphics
 		/// <summary>Textures using color-key transparency are considered partially transparent. All partially transparent faces are rendered in two passes, the first rendering only opaque pixels with z-buffer writes enabled, and the second rendering only partially transparent pixels with z-buffer writes disabled, producing best quality but worse performance.</summary>
 		Quality = 2,
 		/// <summary>Textures using color-key transparency are considered partially transparent. All partially transparent faces are rendered in two passes, the first rendering only opaque pixels with z-buffer writes enabled, and the second rendering only partially transparent pixels with z-buffer writes disabled, producing best quality but worse performance.</summary>
-		Smooth = 2
+		Smooth = 2,
+		/// <summary>Textures using color-key transparency are considered partially transparent. All partially transparent faces are rendered using a hybrid order-independent transparency pipeline, the front depth-peeled layers being composited exactly over the opaque scene and the remaining layers using depth-weighted blending, producing correct results independent of polygon sorting order.</summary>
+		OrderIndependent = 3
 	}
 }
