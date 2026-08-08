@@ -198,7 +198,7 @@ namespace LibRender2.Objects
 							alpha = true;
 							break;
 						case FaceAlphaClass.Partial:
-							alpha = renderer.currentOptions.TransparencyMode == TransparencyMode.Quality;
+							alpha = renderer.currentOptions.TransparencyMode == TransparencyMode.Quality || renderer.currentOptions.TransparencyMode == TransparencyMode.OrderIndependent;
 							break;
 						case FaceAlphaClass.Opaque:
 						default:

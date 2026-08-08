@@ -394,6 +394,8 @@ namespace LibRender2.OIT
 			renderer.dummyVao.Bind();
 			GL.DrawArrays(PrimitiveType.TriangleStrip, 0, 6);
 			compositeShader.Unuse();
+			GL.ActiveTexture(TextureUnit.Texture0);
+			renderer.LastBoundTexture = null;
 			GL.Enable(EnableCap.DepthTest);
 			GL.DepthFunc(DepthFunction.Greater);
 			GL.DepthMask(true);
@@ -521,6 +523,8 @@ namespace LibRender2.OIT
 			renderer.dummyVao.Bind();
 			GL.DrawArrays(PrimitiveType.TriangleStrip, 0, 6);
 			compositeShader.Unuse();
+			GL.ActiveTexture(TextureUnit.Texture0);
+			renderer.LastBoundTexture = null;
 			GL.Enable(EnableCap.DepthTest);
 			GL.DepthFunc(DepthFunction.Lequal);
 			GL.DepthMask(true);
