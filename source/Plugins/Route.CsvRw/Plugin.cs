@@ -123,8 +123,17 @@ namespace CsvRwRouteParser
 		    FileSystem.AppendToLogFile("Route file format is: " + (isRw ? "RW" : "CSV"));
 		    try
 		    {
-				Parser parser = new Parser(this, isRw);
-				parser.ParseRoute(path, textEncoding, trainPath, objectPath, soundPath, PreviewOnly);
+				const bool UseNewParser = true; // flip to false to revert to the legacy verbatim-copy parser
+				if (UseNewParser)
+				{
+					New.RouteParser parser = new New.RouteParser(this, isRw);
+					parser.ParseRoute(path, textEncoding, trainPath, objectPath, soundPath, PreviewOnly);
+				}
+				else
+				{
+					Parser parser = new Parser(this, isRw);
+					parser.ParseRoute(path, textEncoding, trainPath, objectPath, soundPath, PreviewOnly);
+				}
 				IsLoading = false;
 				CurrentOptions.ClearColor = new Color24(170, 170, 170);
 			    return true;

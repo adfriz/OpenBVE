@@ -112,6 +112,34 @@
     <Compile Include="XML\DynamicLight.cs" />
     <Compile Include="XML\MarkerScript.cs" />
     <Compile Include="XML\StationXml.cs" />
+    <Compile Include="NewParser\CsvRwRouteParser.cs" />
+    <Compile Include="NewParser\CsvRwRouteParser.Functions.cs" />
+    <Compile Include="NewParser\CsvRwRouteParser.Preprocess.cs" />
+    <Compile Include="NewParser\CsvRwRouteParser.PreprocessOptions.cs" />
+    <Compile Include="NewParser\CsvRwRouteParser.ApplyRouteData.cs" />
+    <Compile Include="NewParser\CsvRwRouteParser.CompatibilityObjects.cs" />
+    <Compile Include="NewParser\ArgumentTokenizer.cs" />
+    <Compile Include="NewParser\CommandTables.cs" />
+    <Compile Include="NewParser\RouteToken.cs" />
+    <Compile Include="NewParser\RouteParser.Preprocess.cs" />
+    <Compile Include="NewParser\RouteParser.Dispatch.cs" />
+    <Compile Include="NewParser\DuplicateKeyComparer.cs" />
+    <Compile Include="NewParser\Namespaces\NameSpaces.cs" />
+    <Compile Include="NewParser\Namespaces\Track\Track.cs" />
+    <Compile Include="NewParser\Namespaces\Track\Track.Functions.cs" />
+    <Compile Include="NewParser\Namespaces\Track\Track.Commands.cs" />
+    <Compile Include="NewParser\Namespaces\NonTrack\Options.cs" />
+    <Compile Include="NewParser\Namespaces\NonTrack\Options.Commands.cs" />
+    <Compile Include="NewParser\Namespaces\NonTrack\Route.cs" />
+    <Compile Include="NewParser\Namespaces\NonTrack\Route.Commands.cs" />
+    <Compile Include="NewParser\Namespaces\NonTrack\Structure.cs" />
+    <Compile Include="NewParser\Namespaces\NonTrack\Structure.Commands.cs" />
+    <Compile Include="NewParser\Namespaces\NonTrack\Signal.cs" />
+    <Compile Include="NewParser\Namespaces\NonTrack\Train.cs" />
+    <Compile Include="NewParser\Namespaces\NonTrack\Train.Commands.cs" />
+    <Compile Include="NewParser\Namespaces\NonTrack\Cycle.cs" />
+    <Compile Include="NewParser\Namespaces\NonTrack\Cycle.Commands.cs" />
+    <Compile Include="NewParser\Namespaces\NonTrack\Control.Commands.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\OpenBveApi\OpenBveApi.csproj">
