@@ -53,6 +53,8 @@ namespace Object.Wavefront
 		Map_Kd,
 		/// <summary>Sets the emissive light-map texture for the material</summary>
 		Map_Ke,
+		/// <summary>Sets the opacity/dissolution map texture for the material</summary>
+		Map_D,
 		/// <summary>Sets the illumination mode for the material</summary>
 		Illum
 	}

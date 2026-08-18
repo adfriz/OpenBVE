@@ -105,7 +105,7 @@ namespace AssimpNET.Obj
 		}
 
 		/// @brief  Constructor with data array.
-		public ObjFileParser(string[] lines, string modelName, string originalObjFileName, string objFilePath)
+		public ObjFileParser(IEnumerable<string> lines, string modelName, string originalObjFileName, string objFilePath)
 		{
 			Model = null;
 			Line = 0;
@@ -125,7 +125,7 @@ namespace AssimpNET.Obj
 		}
 
 		/// Parse the loaded file
-		protected void ParseFile(string[] lines)
+		protected void ParseFile(IEnumerable<string> lines)
 		{
 			foreach (string buffer in lines)
 			{
@@ -139,18 +139,22 @@ namespace AssimpNET.Obj
 				}
 				int hash = buffer.IndexOf('#');
 				int eq = buffer.IndexOf('=');
-				if (buffer.IndexOf("SketchUp", StringComparison.InvariantCultureIgnoreCase) != -1)
+				// only search for exporter keywords until one is found (avoids repeated case-insensitive scans on every line)
+				if (Model.Exporter == ModelExporter.Unknown)
 				{
-					Model.Exporter = ModelExporter.SketchUp;
-				}
+					if (buffer.IndexOf("SketchUp", StringComparison.InvariantCultureIgnoreCase) != -1)
+					{
+						Model.Exporter = ModelExporter.SketchUp;
+					}
 
-				if (buffer.IndexOf("BlockBench", StringComparison.InvariantCultureIgnoreCase) != -1)
-				{
-					Model.Exporter = ModelExporter.BlockBench;
-				}
-				if (buffer.IndexOf("Blender", StringComparison.InvariantCultureIgnoreCase) != -1)
-				{
-					Model.Exporter = ModelExporter.Blender;
+					if (Model.Exporter == ModelExporter.Unknown && buffer.IndexOf("BlockBench", StringComparison.InvariantCultureIgnoreCase) != -1)
+					{
+						Model.Exporter = ModelExporter.BlockBench;
+					}
+					if (Model.Exporter == ModelExporter.Unknown && buffer.IndexOf("Blender", StringComparison.InvariantCultureIgnoreCase) != -1)
+					{
+						Model.Exporter = ModelExporter.Blender;
+					}
 				}
 				if(hash != -1)
 				{
@@ -428,15 +432,6 @@ namespace AssimpNET.Obj
 					{
 						Debug.WriteLine("Obj: Separator unexpected in point statement");
 					}
-					if (iPos == 0)
-					{
-						//if there are no texture coordinates in the file, but normals
-						if (!vt && vn)
-						{
-							iPos = 1;
-							iStep++;
-						}
-					}
 					iPos++;
 				}
 				else if (IsSpaceOrNewLine(DataIt))
@@ -457,6 +452,11 @@ namespace AssimpNET.Obj
 					while ((tmp /= 10) != 0)
 					{
 						++iStep;
+					}
+
+					if (iPos == 1 && !vt && vn)
+					{
+						iPos = 2; // skip texture coords for normals if there are no tex coords
 					}
 
 					if (iVal > 0)
@@ -534,7 +534,7 @@ namespace AssimpNET.Obj
 			// Store the face
 			Model.CurrentMesh.Faces.Add(face);
 			Model.CurrentMesh.NumIndices += (uint)face.Vertices.Count;
-			Model.CurrentMesh.UVCoordinates[0] += (uint)face.TexturCoords.Count;
+			Model.CurrentMesh.UVCoordinates += (uint)face.TexturCoords.Count;
 			// Skip the rest of the line
 			DataIt = SkipLine(DataIt, DataEnd, ref Line);
 		}

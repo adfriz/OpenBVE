@@ -46,6 +46,7 @@ namespace Plugin
 	    {
 		    if (parserType is ObjParsers)
 		    {
+			    CurrentHost?.AddMessage(MessageType.Error, false, "SetObjectParser: " + (ObjParsers)parserType);
 			    currentObjParser = (ObjParsers) parserType;
 		    }
 	    }
@@ -59,32 +60,45 @@ namespace Plugin
 		    return path.EndsWith(".obj", StringComparison.InvariantCultureIgnoreCase);
 	    }
 
-	    public override bool LoadObject(string path, System.Text.Encoding textEncoding, out UnifiedObject unifiedObject)
-	    {
+    public override bool LoadObject(string path, System.Text.Encoding textEncoding, out UnifiedObject unifiedObject)
+    {
 
-		    if (currentObjParser == ObjParsers.Assimp)
-		    {
-			    try
-			    {
-				    unifiedObject = AssimpObjParser.ReadObject(path);
-				    return true;
-			    }
-			    catch (Exception ex)
-			    {
-				    CurrentHost.AddMessage(MessageType.Error, false, "The new Obj parser raised the following exception: " + ex);
-			    }
-		    }
+	    if (currentObjParser == ObjParsers.Assimp)
+	    {
 		    try
-		    {   
-			    unifiedObject = WavefrontObjParser.ReadObject(path, textEncoding);
+		    {
+			    CurrentHost.AddMessage(MessageType.Error, false, "Loading OBJ with AssimpObjParser: " + path);
+			    unifiedObject = AssimpObjParser.ReadObject(path);
+			    if (unifiedObject == null)
+			    {
+				    CurrentHost.AddMessage(MessageType.Error, false, "AssimpObjParser returned null for: " + path);
+			    }
+			    else
+			    {
+				    CurrentHost.AddMessage(MessageType.Error, false, "AssimpObjParser succeeded for: " + path);
+			    }
 			    return true;
 		    }
-		    catch
+		    catch (Exception ex)
 		    {
-			    unifiedObject = null;
-			    CurrentHost.AddMessage(MessageType.Error, false, "An unexpected error occured whilst attempting to load the following object: " + path);
+			    CurrentHost.AddMessage(MessageType.Error, false, "The new Obj parser raised the following exception: " + ex);
 		    }
-		    return false;
 	    }
+	    else
+	    {
+		    CurrentHost.AddMessage(MessageType.Error, false, "Loading OBJ with WavefrontObjParser: " + path);
+	    }
+	    try
+	    {   
+		    unifiedObject = WavefrontObjParser.ReadObject(path, textEncoding);
+		    return true;
+	    }
+	    catch
+	    {
+		    unifiedObject = null;
+		    CurrentHost.AddMessage(MessageType.Error, false, "An unexpected error occured whilst attempting to load the following object: " + path);
+	    }
+	    return false;
+    }
     }
 }

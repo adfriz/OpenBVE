@@ -35,6 +35,56 @@ namespace Plugin
 {
 	internal static class WavefrontObjParser
 	{
+		/// <summary>Parses an integer from the given range of a string without allocating a substring.</summary>
+		/// <param name="s">The string to parse from.</param>
+		/// <param name="start">The first character index to parse.</param>
+		/// <param name="length">The number of characters to parse.</param>
+		/// <param name="value">The parsed value.</param>
+		/// <returns>Whether the parse succeeded.</returns>
+		private static bool TryParseInt(string s, int start, int length, out int value)
+		{
+			value = 0;
+			if (length <= 0)
+			{
+				return false;
+			}
+			int i = start;
+			int end = start + length;
+			bool negative = false;
+			if (s[i] == '-')
+			{
+				negative = true;
+				i++;
+			}
+			else if (s[i] == '+')
+			{
+				i++;
+			}
+			if (i == end)
+			{
+				return false;
+			}
+			long result = 0;
+			for (; i < end; i++)
+			{
+				char c = s[i];
+				if (c < '0' || c > '9')
+				{
+					return false;
+				}
+				result = result * 10 + (c - '0');
+			}
+			if (negative)
+			{
+				result = -result;
+			}
+			if (result < int.MinValue || result > int.MaxValue)
+			{
+				return false;
+			}
+			value = (int)result;
+			return true;
+		}
 		/// <summary>Loads a Wavefront object from a file.</summary>
 		/// <param name="fileName">The text file to load the object from. Must be an absolute file name.</param>
 		/// <param name="encoding">The encoding the file is saved in.</param>
@@ -53,6 +103,8 @@ namespace Plugin
 			List<Vector3> tempNormals = new List<Vector3>();
 			List<Vector2> tempCoords = new List<Vector2>();
 			Dictionary<string, Material> tempMaterials = new Dictionary<string, Material>();
+			//Caches material reference -> index to avoid a linear scan per face
+			Dictionary<Material, int> materialIndexCache = new Dictionary<Material, int>();
 			//Stores the current material
 			string currentMaterial = string.Empty;
 
@@ -69,19 +121,23 @@ namespace Plugin
 				{
 					int hash = lines[i].IndexOf('#');
 					int eq = lines[i].IndexOf('=');
-					if(lines[i].IndexOf("SketchUp", StringComparison.InvariantCultureIgnoreCase) != -1)
+					// only search for exporter keywords until one is found (avoids repeated case-insensitive scans on every line)
+					if (modelExporter == ModelExporter.Unknown)
 					{
-						modelExporter = ModelExporter.SketchUp;
-					}
+						if (lines[i].IndexOf("SketchUp", StringComparison.InvariantCultureIgnoreCase) != -1)
+						{
+							modelExporter = ModelExporter.SketchUp;
+						}
 
-					if (lines[i].IndexOf("BlockBench", StringComparison.InvariantCultureIgnoreCase) != -1)
-					{
-						modelExporter = ModelExporter.BlockBench;
-					}
+						if (modelExporter == ModelExporter.Unknown && lines[i].IndexOf("BlockBench", StringComparison.InvariantCultureIgnoreCase) != -1)
+						{
+							modelExporter = ModelExporter.BlockBench;
+						}
 
-					if (lines[i].IndexOf("Blender", StringComparison.InvariantCultureIgnoreCase) != -1)
-					{
-						modelExporter = ModelExporter.Blender;
+						if (modelExporter == ModelExporter.Unknown && lines[i].IndexOf("Blender", StringComparison.InvariantCultureIgnoreCase) != -1)
+						{
+							modelExporter = ModelExporter.Blender;
+						}
 					}
 					if(hash != -1 && eq != -1)
 					{
@@ -113,16 +169,8 @@ namespace Plugin
 					lines[i] = lines[i].Substring(0, c);
 				}
 				// collect arguments
-				List<string> arguments = new List<string>(lines[i].Split(new[] { ' ', '\t' }, StringSplitOptions.None));
-				for (int j = arguments.Count -1; j >= 0; j--)
-				{
-					arguments[j] = arguments[j].Trim(new char[] { });
-					if (arguments[j] == string.Empty)
-					{
-						arguments.RemoveAt(j);
-					}
-				}
-				if (arguments.Count == 0)
+				string[] arguments = lines[i].Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+				if (arguments.Length == 0)
 				{
 					continue;
 				}
@@ -183,13 +231,15 @@ namespace Plugin
 					case WavefrontObjCommands.F:
 						//Create the temp list to hook out the vertices 
 						
-						MeshFaceVertex[] meshVerticies = new MeshFaceVertex[arguments.Count - 1];
-						for (int f = 1; f < arguments.Count; f++)
+						MeshFaceVertex[] meshVerticies = new MeshFaceVertex[arguments.Length - 1];
+						for (int f = 1; f < arguments.Length; f++)
 						{
 							Vertex newVertex = new Vertex();
-							string[] faceArguments = arguments[f].Split(new[] {'/'} , StringSplitOptions.None);
+							string token = arguments[f];
+							int firstSlash = token.IndexOf('/');
+							int secondSlash = firstSlash >= 0 ? token.IndexOf('/', firstSlash + 1) : -1;
 							int idx;
-							if (!int.TryParse(faceArguments[0], out idx))
+							if (!TryParseInt(token, 0, firstSlash >= 0 ? firstSlash : token.Length, out idx))
 							{
 								Plugin.CurrentHost.AddMessage(MessageType.Warning, false, "Invalid Vertex index in Face " + f + " at Line " + i);
 								continue;
@@ -218,11 +268,13 @@ namespace Plugin
 							}
 
 							
-							if (faceArguments.Length > 1)
+							if (firstSlash >= 0 && secondSlash != firstSlash + 1)
 							{
-								if (!int.TryParse(faceArguments[1], out idx))
+								int vtStart = firstSlash + 1;
+								int vtEnd = secondSlash >= 0 ? secondSlash : token.Length;
+								if (!TryParseInt(token, vtStart, vtEnd - vtStart, out idx))
 								{
-									if (!string.IsNullOrEmpty(faceArguments[1]))
+									if (vtEnd - vtStart > 0)
 									{
 										Plugin.CurrentHost.AddMessage(MessageType.Warning, false, "Invalid Texture Co-ordinate index in Face " + f + " at Line " + i);
 									}
@@ -265,11 +317,13 @@ namespace Plugin
 								}
 							}
 							Vector3 vertexNormal = new Vector3();
-							if (faceArguments.Length > 2)
+							if (secondSlash >= 0)
 							{
-								if (!int.TryParse(faceArguments[2], out idx))
+								int vnStart = secondSlash + 1;
+								int vnLen = token.Length - vnStart;
+								if (!TryParseInt(token, vnStart, vnLen, out idx))
 								{
-									if (!string.IsNullOrEmpty(faceArguments[2]))
+									if (vnLen > 0)
 									{
 										Plugin.CurrentHost.AddMessage(MessageType.Warning, false, "Invalid Vertex Normal index in Face " + f + " at Line " + i);
 									}
@@ -303,14 +357,19 @@ namespace Plugin
 						}
 						
 						int materialIndex = -1;
-						if (currentMaterial != string.Empty)
+						Material currentMat = null;
+						if (currentMaterial != string.Empty && tempMaterials.TryGetValue(currentMaterial, out currentMat))
 						{
-							for (int m = 0; m < meshBuilder.Materials.Length; m++)
+							if (!materialIndexCache.TryGetValue(currentMat, out materialIndex))
 							{
-								if (meshBuilder.Materials[m] == tempMaterials[currentMaterial])
+								for (int m = 0; m < meshBuilder.Materials.Length; m++)
 								{
-									materialIndex = m;
-									break;
+									if (meshBuilder.Materials[m] == currentMat)
+									{
+										materialIndex = m;
+										materialIndexCache[currentMat] = m;
+										break;
+									}
 								}
 							}
 						}
@@ -329,6 +388,10 @@ namespace Plugin
 								{
 									meshBuilder.Materials[materialIndex] = new Material();
 								}
+								if (currentMaterial != string.Empty && tempMaterials.TryGetValue(currentMaterial, out currentMat))
+								{
+									materialIndexCache[currentMat] = materialIndex;
+								}
 							}
 						}
 						if (modelExporter >= ModelExporter.UnknownLeftHanded)
@@ -344,6 +407,7 @@ namespace Plugin
 					case WavefrontObjCommands.G:
 						meshBuilder.Apply(ref parsedObject);
 						meshBuilder = new MeshBuilder(Plugin.CurrentHost);
+						materialIndexCache.Clear();
 						break;
 					case WavefrontObjCommands.S:
 						/* 
@@ -379,6 +443,7 @@ namespace Plugin
 						{
 							meshBuilder.Apply(ref parsedObject);
 							meshBuilder = new MeshBuilder(Plugin.CurrentHost);
+							materialIndexCache.Clear();
 						}
 						break;
 					default:
@@ -405,15 +470,7 @@ namespace Plugin
 					lines[i] = lines[i].Substring(0, c);
 				}
 				// collect arguments
-				List<string> arguments = new List<string>(lines[i].Split(new[] { ' ', '\t' }, StringSplitOptions.None));
-				for (int j = arguments.Count - 1; j >= 0; j--)
-				{
-					arguments[j] = arguments[j].Trim();
-					if (arguments[j] == string.Empty)
-					{
-						arguments.RemoveAt(j);
-					}
-				}
+				List<string> arguments = new List<string>(lines[i].Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries));
 				if (arguments.Count == 0)
 				{
 					continue;
@@ -515,9 +572,28 @@ namespace Plugin
 						}
 						break;
 					
-					case WavefrontMtlCommands.Map_Ke:
+				case WavefrontMtlCommands.Map_Ke:
 					case WavefrontMtlCommands.Illum:
 						// Not yet supported
+						break;
+					case WavefrontMtlCommands.Map_D:
+						if (arguments.Count < 2)
+						{
+							break;
+						}
+						if (Path.IsPathRooted(arguments[arguments.Count - 1]))
+						{
+							arguments[arguments.Count - 1] = Path.GetFileName(arguments[arguments.Count - 1]);
+						}
+						string opacityPath = OpenBveApi.Path.CombineFile(Path.GetDirectoryName(fileName), arguments[arguments.Count - 1]);
+						if (File.Exists(opacityPath))
+						{
+							materials[currentKey].TransparencyTexture = opacityPath;
+						}
+						else
+						{
+							Plugin.CurrentHost.AddMessage(MessageType.Warning, false, "Opacity texture file " + arguments[arguments.Count - 1] + " was not found.");
+						}
 						break;
 				}
 			}

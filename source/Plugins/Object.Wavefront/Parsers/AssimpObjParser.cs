@@ -23,6 +23,7 @@
 //SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
+using System.Collections.Generic;
 using OpenBveApi.Colors;
 using OpenBveApi.Interface;
 using OpenBveApi.Math;
@@ -37,33 +38,59 @@ namespace Plugin
 	internal class AssimpObjParser
 	{
 		private static string currentFolder;
+		private static int materialGroupIndex;
 
 		internal static StaticObject ReadObject(string fileName)
 		{
 			currentFolder = Path.GetDirectoryName(fileName);
 			try
 			{
-				ObjFileParser parser = new ObjFileParser(System.IO.File.ReadAllLines(fileName), null, System.IO.Path.GetFileNameWithoutExtension(fileName), fileName);
+				ObjFileParser parser = new ObjFileParser(System.IO.File.ReadLines(fileName), null, System.IO.Path.GetFileNameWithoutExtension(fileName), fileName);
 				Model model = parser.GetModel();
 
 				StaticObject obj = new StaticObject(Plugin.CurrentHost);
 				MeshBuilder builder = new MeshBuilder(Plugin.CurrentHost);
 				Material lastMaterial = null;
+				// caches (position + texture co-ordinates) -> builder vertex index to avoid
+				// storing one heap Vertex object per face-vertex (many faces share the same vertex)
+				Dictionary<Vertex, int> vertexCache = new Dictionary<Vertex, int>();
+				int faceCountInGroup = 0;
+				materialGroupIndex = 0;
+				int totalMeshes = model.Meshes.Count;
+				Plugin.CurrentHost.AddMessage(MessageType.Information, false, "AssimpObjParser: " + totalMeshes + " meshes, " + model.Vertices.Count + " vertices, " + model.MaterialMap.Count + " materials");
+
+				// log material map
+				foreach (var kvp in model.MaterialMap)
+				{
+					string tex = kvp.Value.Texture ?? "(none)";
+					string texOp = kvp.Value.TextureOpacity ?? "(none)";
+					Plugin.CurrentHost.AddMessage(MessageType.Information, false, "  Material \"" + kvp.Key + "\": Texture=" + tex + " Opacity=" + texOp + " d=" + kvp.Value.Alpha);
+				}
 
 				foreach (Mesh mesh in model.Meshes)
 				{
-					//mesh.Faces.GroupBy(x => x.Material).OrderByDescending(g => g.Count()).SelectMany(x => x).ToList();
+					Plugin.CurrentHost.AddMessage(MessageType.Information, false, "AssimpObjParser: Mesh #" + mesh.MaterialIndex + " has " + mesh.Faces.Count + " faces, MaterialIndex=" + mesh.MaterialIndex);
 					foreach (Face face in mesh.Faces)
 					{
-						if (face.Material != lastMaterial)
+					if (face.Material != lastMaterial)
+					{
+						if (builder.Faces.Count > 0)
 						{
-							builder.Apply(ref obj);
-							builder = new MeshBuilder(Plugin.CurrentHost);
-							uint materialIndex = mesh.MaterialIndex;
-							if (materialIndex != Mesh.NoMaterial)
-							{
-								Material material = model.MaterialMap[model.MaterialLib[(int)materialIndex]];
-								builder.Materials[0].Color = new Color32(material.Diffuse);
+							Plugin.CurrentHost.AddMessage(MessageType.Information, false, "  MaterialGroup #" + materialGroupIndex + ": " + builder.Faces.Count + " faces");
+						}
+						builder.Apply(ref obj);
+						builder = new MeshBuilder(Plugin.CurrentHost);
+						vertexCache.Clear();
+						faceCountInGroup = 0;
+						materialGroupIndex++;
+						Material material = face.Material;
+						if (material != null)
+						{
+							string matName = material.MaterialName ?? "(null)";
+							string texPath = material.Texture ?? "(none)";
+							string texOpPath = material.TextureOpacity ?? "(none)";
+							Plugin.CurrentHost.AddMessage(MessageType.Information, false, "  MaterialGroup #" + materialGroupIndex + " start: \"" + matName + "\" Texture=" + texPath + " Opacity=" + texOpPath + " d=" + material.Alpha);
+							builder.Materials[0].Color = new Color32(material.Diffuse);
 								// apply alpha from MTL 'd' command (fixes missing transparent faces e.g. leaves)
 								builder.Materials[0].Color.A = (byte)(material.Alpha * 255);
 #pragma warning disable 0219
@@ -83,15 +110,28 @@ namespace Plugin
 									builder.Materials[0].Flags |= MaterialFlags.TransparentColor;
 								}
 
-								if (material.Texture != null)
+							if (material.Texture != null)
+							{
+								builder.Materials[0].DaytimeTexture = Path.CombineFile(currentFolder, material.Texture);
+								if (!System.IO.File.Exists(builder.Materials[0].DaytimeTexture))
 								{
-									builder.Materials[0].DaytimeTexture = Path.CombineFile(currentFolder, material.Texture);
-									if (!System.IO.File.Exists(builder.Materials[0].DaytimeTexture))
-									{
-										Plugin.CurrentHost.AddMessage(MessageType.Error, true, "Texture " + builder.Materials[0].DaytimeTexture + " was not found in file " + fileName);
-										builder.Materials[0].DaytimeTexture = null;
-									}
+									Plugin.CurrentHost.AddMessage(MessageType.Error, true, "Texture " + builder.Materials[0].DaytimeTexture + " was not found in file " + fileName);
+									builder.Materials[0].DaytimeTexture = null;
 								}
+							}
+
+							// apply the opacity map (OBJ 'map_d') as the material's transparency texture.
+							// This is what actually defines the leaf cutout for many exporters; without it
+							// transparent faces such as foliage can fail to show their proper shape.
+							if (material.TextureOpacity != null)
+							{
+								builder.Materials[0].TransparencyTexture = Path.CombineFile(currentFolder, material.TextureOpacity);
+								if (!System.IO.File.Exists(builder.Materials[0].TransparencyTexture))
+								{
+									Plugin.CurrentHost.AddMessage(MessageType.Error, true, "Opacity texture " + builder.Materials[0].TransparencyTexture + " was not found in file " + fileName);
+									builder.Materials[0].TransparencyTexture = null;
+								}
+							}
 							}
 						}
 						
@@ -99,10 +139,10 @@ namespace Plugin
 						{
 							throw new Exception("nVertices must be greater than zero");
 						}
-						int startingVertex = builder.Vertices.Count;
+int[] faceIndices = new int[face.Vertices.Count];
 						for (int i = 0; i < face.Vertices.Count; i++)
 						{
-							VertexTemplate v = new Vertex(model.Vertices[(int)face.Vertices[i]] * model.ScaleFactor);
+							Vertex v = new Vertex(model.Vertices[(int)face.Vertices[i]] * model.ScaleFactor);
 							
 							if (model.TextureCoord.Count > 0 && face.TexturCoords.Count > 0 && i < face.TexturCoords.Count)
 							{
@@ -126,15 +166,23 @@ namespace Plugin
 								}
 							}
 							
-							builder.Vertices.Add(v);
-							
-						}
+							int vertexIndex;
+							if (!vertexCache.TryGetValue(v, out vertexIndex))
+							{
+								vertexIndex = builder.Vertices.Count;
+								builder.Vertices.Add(v);
+								vertexCache.Add(v, vertexIndex);
+							}
+						faceIndices[i] = vertexIndex;
+					}
 
-						MeshFace f = new MeshFace(face.Vertices.Count);
+					faceCountInGroup++;
+
+					MeshFace f = new MeshFace(face.Vertices.Count);
 						
 						for (int i = 0; i < face.Vertices.Count; i++)
 						{
-							f.Vertices[i].Index = startingVertex + i;
+							f.Vertices[i].Index = faceIndices[i];
 							if (face.Normals.Count > i)
 							{
 								f.Vertices[i].Normal = model.Normals[(int)face.Normals[i]];
@@ -143,6 +191,10 @@ namespace Plugin
 						
 						f.Material = 0;
 						f.Flags |= FaceFlags.Face2Mask;
+						if (face.Vertices.Count == 3)
+						{
+							f.Flags |= FaceFlags.Triangles;
+						}
 						builder.Faces.Add(f);
 						
 						if (model.Exporter >= ModelExporter.UnknownLeftHanded)
@@ -152,6 +204,16 @@ namespace Plugin
 						lastMaterial = face.Material;
 					}
 				}
+				// log final group
+				if (builder.Faces.Count > 0)
+				{
+					Plugin.CurrentHost.AddMessage(MessageType.Information, false, "  MaterialGroup #" + materialGroupIndex + ": " + builder.Faces.Count + " faces");
+				}
+				Plugin.CurrentHost.AddMessage(MessageType.Information, false, "AssimpObjParser: total " + materialGroupIndex + " material groups built");
+
+				// allow the intermediate parsed model to be collected before final mesh assembly
+				model = null;
+				parser = null;
 				builder.Apply(ref obj);
 				obj.Mesh.CreateNormals();
 				return obj;

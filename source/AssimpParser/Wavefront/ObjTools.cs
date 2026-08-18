@@ -195,7 +195,7 @@ namespace AssimpNET.Obj
 				{
 					end_of_definition = true;
 				}
-				if (!SkipSpaces(ref tmp))
+				if (!SkipSpaces(ref tmp) || Buffer[tmp] == '#')
 				{
 					break;
 				}
@@ -235,11 +235,12 @@ namespace AssimpNET.Obj
 				DataIt += 2;
 				DataIt = GetNextWord(DataIt, DataEnd);
 			}
+			int wordStart = DataIt;
 			while (DataIt != DataEnd && !IsSpaceOrNewLine(DataIt))
 			{
-				result += Buffer[DataIt];
 				++DataIt;
 			}
+			result = Buffer.Substring(wordStart, DataIt - wordStart);
 		}
 
 		protected void GetFloat(out float result)
@@ -391,27 +392,17 @@ namespace AssimpNET.Obj
 				throw new InvalidDataException("Cannot parse string as real number: does not start with digit or decimal point followed by digit.");
 			}
 
-			string tmp = string.Empty;
-			while (!IsLineEnd(position))
+			int result = 0;
+			while (!IsLineEnd(position) && char.IsDigit(Buffer[position]))
 			{
-				if (char.IsDigit(Buffer[position]))
-				{
-					tmp += Buffer[position];
-					++position;
-				}
-				else
-				{
-					break;
-				}
+				result = result * 10 + (Buffer[position] - '0');
+				++position;
 			}
-
-			int i = int.Parse(tmp, NumberStyles.Number, CultureInfo.InvariantCulture);
-
 			if (inv)
 			{
-				i = -i;
+				result = -result;
 			}
-			return i;
+			return result;
 		}
 	}
 }

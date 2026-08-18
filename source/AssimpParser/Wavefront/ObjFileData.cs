@@ -78,12 +78,11 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System.Collections.Generic;
-using System.Linq;
-using OpenBveApi.Colors;
-using OpenBveApi.Math;
-using OpenBveApi.Objects;
-using IndexArray = System.Collections.Generic.List<uint>;
-using GroupMap = System.Collections.Generic.SortedDictionary<string, System.Collections.Generic.List<uint>>;
+	using OpenBveApi.Colors;
+	using OpenBveApi.Math;
+	using OpenBveApi.Objects;
+	using IndexArray = System.Collections.Generic.List<uint>;
+	using GroupMap = System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<uint>>;
 
 #pragma warning disable IDE0052
 
@@ -178,7 +177,7 @@ namespace AssimpNET.Obj
 			TextureDispType,
 			TextureTypeCount
 		};
-		public bool[] Clamp = Enumerable.Repeat(false, (int)TextureType.TextureTypeCount).ToArray();
+		public bool[] Clamp = new bool[(int)TextureType.TextureTypeCount];
 
 		//! Ambient color
 		public Color96 Ambient;
@@ -213,8 +212,6 @@ namespace AssimpNET.Obj
 	// ------------------------------------------------------------------------------------------------
 	public class Mesh
 	{
-		private const uint AI_MAX_NUMBER_OF_TEXTURECOORDS = 0x8;
-
 		public const uint NoMaterial = ~0u;
 		/// The name for the mesh
 		readonly string Name;
@@ -225,7 +222,7 @@ namespace AssimpNET.Obj
 		/// Number of stored indices.
 		public uint NumIndices = 0;
 		/// Number of UV
-		public uint[] UVCoordinates = Enumerable.Repeat(0u, (int)AI_MAX_NUMBER_OF_TEXTURECOORDS).ToArray();
+		public uint UVCoordinates = 0;
 		/// Material index.
 		public uint MaterialIndex = NoMaterial;
 		/// True, if vertex colors are stored.
@@ -277,7 +274,7 @@ namespace AssimpNET.Obj
 		//! Vector with stored meshes
 		public List<Mesh> Meshes = new List<Mesh>();
 		//! Material map
-		public SortedDictionary<string, Material> MaterialMap = new SortedDictionary<string, Material>();
+		public Dictionary<string, Material> MaterialMap = new Dictionary<string, Material>();
 		/// <summary>Whether the file uses the top-left texture co-ordinate system</summary>
 		public ModelExporter Exporter;
 		/// <summary>The scaling factor to be applied</summary>
