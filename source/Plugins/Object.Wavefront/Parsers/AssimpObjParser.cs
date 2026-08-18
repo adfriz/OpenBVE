@@ -64,14 +64,19 @@ namespace Plugin
 							{
 								Material material = model.MaterialMap[model.MaterialLib[(int)materialIndex]];
 								builder.Materials[0].Color = new Color32(material.Diffuse);
+								// apply alpha from MTL 'd' command (fixes missing transparent faces e.g. leaves)
+								builder.Materials[0].Color.A = (byte)(material.Alpha * 255);
 #pragma warning disable 0219
 								//Current openBVE renderer does not support specular color
 								// ReSharper disable once UnusedVariable
 								Color24 mSpecular = new Color24(material.Specular);
 #pragma warning restore 0219
-								// Wrap Color24 in Color32 for RGBA support; alpha defaults to 255 (opaque)
 								builder.Materials[0].EmissiveColor = new Color32(new Color24(material.Emissive));
-								builder.Materials[0].Flags |= MaterialFlags.Emissive; //TODO: Check exact behaviour
+								// only set emissive flag when non-black (avoids unlit rendering on normal materials)
+								if (material.Emissive.R != 0 || material.Emissive.G != 0 || material.Emissive.B != 0)
+								{
+									builder.Materials[0].Flags |= MaterialFlags.Emissive;
+								}
 								if (material.TransparentUsed)
 								{
 									builder.Materials[0].TransparentColor = new Color24(material.Transparent);
@@ -99,21 +104,26 @@ namespace Plugin
 						{
 							VertexTemplate v = new Vertex(model.Vertices[(int)face.Vertices[i]] * model.ScaleFactor);
 							
-							if (model.TextureCoord.Count > 0 && i <= model.TextureCoord.Count && face.TexturCoords.Count > 0 && i <= face.TexturCoords.Count)
+							if (model.TextureCoord.Count > 0 && face.TexturCoords.Count > 0 && i < face.TexturCoords.Count)
 							{
-								Vector2 textureCoordinate = new Vector2(model.TextureCoord[i].X, model.TextureCoord[i].Y);
-								switch (model.Exporter)
+								// use face's texcoord index, not loop index i (fixes wrong UV mapping)
+								int texCoordIndex = (int)face.TexturCoords[i];
+								if (texCoordIndex < model.TextureCoord.Count)
 								{
-									case ModelExporter.SketchUp:
-										textureCoordinate.X *= -1.0;
-										textureCoordinate.Y *= -1.0;
-										break;
-									case ModelExporter.Blender:
-									case ModelExporter.BlockBench:
-										textureCoordinate.Y *= -1.0;
-										break;
+									Vector2 textureCoordinate = new Vector2(model.TextureCoord[texCoordIndex].X, model.TextureCoord[texCoordIndex].Y);
+									switch (model.Exporter)
+									{
+										case ModelExporter.SketchUp:
+											textureCoordinate.X *= -1.0;
+											textureCoordinate.Y *= -1.0;
+											break;
+										case ModelExporter.Blender:
+										case ModelExporter.BlockBench:
+											textureCoordinate.Y *= -1.0;
+											break;
+									}
+									v.TextureCoordinates = textureCoordinate;
 								}
-								v.TextureCoordinates = textureCoordinate;
 							}
 							
 							builder.Vertices.Add(v);
