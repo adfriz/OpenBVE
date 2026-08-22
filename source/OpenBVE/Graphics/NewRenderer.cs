@@ -74,8 +74,7 @@ namespace OpenBve.Graphics
 			}
 			catch
 			{
-				Interface.AddMessage(MessageType.Error, false, "Initializing the touch shader failed- Falling back to legacy openGL.");
-				Interface.CurrentOptions.IsUseNewRenderer = false;
+				Interface.AddMessage(MessageType.Error, false, "Initializing the touch shader failed.");
 			}
 
             events = new Events(this);

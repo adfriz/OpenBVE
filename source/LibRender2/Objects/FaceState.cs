@@ -41,7 +41,7 @@ namespace LibRender2.Objects
 			Renderer = renderer;
 			if (Object.Prototype.Mesh.VAO == null)
 			{
-				VAOExtensions.CreateVAO(Object.Prototype.Mesh, Object.Prototype.Dynamic, Renderer.DefaultShader.VertexLayout, Renderer);
+				VAOExtensions.CreateOrUpdateVAO(Object.Prototype.Mesh, Object.Prototype.Dynamic, Renderer.DefaultShader.VertexLayout, Renderer);
 			}
 
 			MeshMaterial material = Object.Prototype.Mesh.Materials[face.Material];

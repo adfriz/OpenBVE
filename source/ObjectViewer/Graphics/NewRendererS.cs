@@ -42,9 +42,6 @@ namespace ObjectViewer.Graphics
 		private int oitLastWidth = -1;
 		private int oitLastHeight = -1;
 
-		// background color
-		internal const int MaxBackgroundColor = 4;
-
 		private Cube redAxisVAO;
 		private Cube greenAxisVAO;
 		private Cube blueAxisVAO;
@@ -364,7 +361,7 @@ namespace ObjectViewer.Graphics
 				else
 				{
 					OpenGlString.Draw(Fonts.SmallFont, $"Position: {Camera.AbsolutePosition.X.ToString("0.00", culture)}, {Camera.AbsolutePosition.Y.ToString("0.00", culture)}, {Camera.AbsolutePosition.Z.ToString("0.00", culture)}", new Vector2((int)(0.5 * Screen.Width - 88), 4), TextAlignment.TopLeft, Interface.CurrentOptions.TextColor);
-					OpenGlString.Draw(Fonts.SmallFont, $"Renderer: New (GL 4)", new Vector2((int)(0.5 * Screen.Width - 88), 24), TextAlignment.TopLeft, Color128.White);
+					OpenGlString.Draw(Fonts.SmallFont, "Renderer: New (GL 4)", new Vector2((int)(0.5 * Screen.Width - 88), 24), TextAlignment.TopLeft, Color128.White);
 
 					int errorPos;
 					if (Program.CurrentHost.Platform == HostPlatform.AppleOSX && IntPtr.Size != 4)
@@ -379,7 +376,7 @@ namespace ObjectViewer.Graphics
 					else
 					{
 						OpenGlString.Draw(Fonts.SmallFont, $"Position: {Camera.AbsolutePosition.X.ToString("0.00", culture)}, {Camera.AbsolutePosition.Y.ToString("0.00", culture)}, {Camera.AbsolutePosition.Z.ToString("0.00", culture)}", new Vector2((int)(0.5 * Screen.Width - 88), 4), TextAlignment.TopLeft, Interface.CurrentOptions.TextColor);
-						OpenGlString.Draw(Fonts.SmallFont, $"Renderer: New (GL 4)", new Vector2((int)(0.5 * Screen.Width - 88), 24), TextAlignment.TopLeft, Color128.White);
+						OpenGlString.Draw(Fonts.SmallFont, "Renderer: New (GL 4)", new Vector2((int)(0.5 * Screen.Width - 88), 24), TextAlignment.TopLeft, Color128.White);
 						keys = new[] { new[] { "F5" }, new[] { "F7" }, new[] { "del" }, new[] { "F8" }, new[] { "F10" } };
 						Keys.Render(4, 4, 24, Fonts.SmallFont, keys);
 						OpenGlString.Draw(Fonts.SmallFont, "Reload the currently open objects", new Vector2(32 * scaleFactor, 4), TextAlignment.TopLeft, Interface.CurrentOptions.TextColor);

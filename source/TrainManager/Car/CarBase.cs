@@ -70,8 +70,6 @@ namespace TrainManager.Car
 		public Windscreen Windscreen;
 		/// <summary>The hold brake for this car</summary>
 		public CarHoldBrake HoldBrake;
-		/// <summary>The constant speed device for this car</summary>
-		public CarConstSpeed ConstSpeed;
 		/// <summary>The readhesion device for this car</summary>
 		public AbstractReAdhesionDevice ReAdhesionDevice;
 		/// <summary>The position of the beacon receiver within the car</summary>
@@ -858,7 +856,7 @@ namespace TrainManager.Car
 			CarSection.Groups[GroupIndex].Elements[ElementIndex].Update(baseTrain, Index, FrontAxle.Follower.TrackPosition - FrontAxle.Position, p, Direction, Up, Side, updatefunctions, Show, timeDelta, EnableDamping, false, CarSection.Type == ObjectType.Overlay ? TrainManagerBase.Renderer.Camera : null);
 			if (CarSection.Groups[GroupIndex].Elements[ElementIndex].UpdateVAO)
 			{
-				VAOExtensions.CreateVAO(CarSection.Groups[GroupIndex].Elements[ElementIndex].internalObject.Prototype.Mesh, true, TrainManagerBase.Renderer.DefaultShader.VertexLayout, TrainManagerBase.Renderer);
+				VAOExtensions.CreateOrUpdateVAO(CarSection.Groups[GroupIndex].Elements[ElementIndex].internalObject.Prototype.Mesh, true, TrainManagerBase.Renderer.DefaultShader.VertexLayout, TrainManagerBase.Renderer);
 			}
 		}
 
@@ -906,7 +904,7 @@ namespace TrainManager.Car
 			CarSection.Groups[GroupIndex].TouchElements[ElementIndex].Element.Update(baseTrain, Index, FrontAxle.Follower.TrackPosition - FrontAxle.Position, p, Direction, Up, Side, updatefunctions, Show, timeDelta, EnableDamping, true, CarSection.Type == ObjectType.Overlay ? TrainManagerBase.Renderer.Camera : null);
 			if (CarSection.Groups[GroupIndex].TouchElements[ElementIndex].Element.UpdateVAO)
 			{
-				VAOExtensions.CreateVAO(CarSection.Groups[GroupIndex].TouchElements[ElementIndex].Element.internalObject.Prototype.Mesh, true, TrainManagerBase.Renderer.DefaultShader.VertexLayout, TrainManagerBase.Renderer);
+				VAOExtensions.CreateOrUpdateVAO(CarSection.Groups[GroupIndex].TouchElements[ElementIndex].Element.internalObject.Prototype.Mesh, true, TrainManagerBase.Renderer.DefaultShader.VertexLayout, TrainManagerBase.Renderer);
 			}
 		}
 
@@ -1286,9 +1284,11 @@ namespace TrainManager.Car
 						}
 
 						TractionModel.MaximumCurrentAcceleration = a;
-						// Update constant speed device
-						ConstSpeed?.Update(ref a);
-
+						if (SafetySystems.TryGetTypedValue(SafetySystem.ConstantSpeedDevice, out CarConstSpeed constantSpeed))
+						{
+							constantSpeed.Update(ref a);
+						}
+						
 						// finalize
 						if (wheelspin != 0.0) a = 0.0;
 					}

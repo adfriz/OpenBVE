@@ -458,7 +458,7 @@ namespace RouteViewer
 				double p = Program.CurrentRoute.Tracks[railIndex].Elements[i].StartingTrackPosition;
 				double d = p -CameraTrackFollower.TrackPosition;
 
-				if (d >= da & d <= db)
+				if (d >= da && d <= db)
 				{
 					foreach (GeneralEvent e in Program.CurrentRoute.Tracks[railIndex].Elements[i].Events)
 					{
@@ -599,7 +599,7 @@ namespace RouteViewer
 			{
 				double d = stop.TrackPosition - Program.Renderer.CameraTrackFollower.TrackPosition;
 
-				if (d >= da & d <= db)
+				if (d >= da && d <= db)
 				{
 					const double dy = 2.5;
 					const double s = 0.25;
