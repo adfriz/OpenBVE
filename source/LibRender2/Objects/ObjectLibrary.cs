@@ -344,23 +344,30 @@ namespace LibRender2.Objects
 
 			public int CompareTo(SortKey other)
 			{
-				// Primary: plane distance (ascending — more negative = farther = render first)
-				int c = Distance.CompareTo(other.Distance);
-				if (c != 0)
+				// Primary: plane distance with epsilon tolerance for intersecting faces
+				double diff = Distance - other.Distance;
+				int c;
+				if (diff > 0.1)
 				{
-					return c;
+					c = 1;
+				}
+				else if (diff < -0.1)
+				{
+					c = -1;
+				}
+				else
+				{
+					// Distances are very close (intersecting edges) — use tiebreaker instead
+					c = IntersectTiebreaker.CompareTo(other.IntersectTiebreaker);
+					if (c != 0)
+					{
+						return c;
+					}
+
+					return Index.CompareTo(other.Index);
 				}
 
-				// Secondary: intersect tiebreaker — faces whose normals face the camera
-				// sort AFTER faces whose normals face away, resolving intersecting-edge ambiguity
-				c = IntersectTiebreaker.CompareTo(other.IntersectTiebreaker);
-				if (c != 0)
-				{
-					return c;
-				}
-
-				// Tertiary: deterministic index order
-				return Index.CompareTo(other.Index);
+				return c;
 			}
 		}
 	}
