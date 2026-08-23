@@ -108,8 +108,8 @@ namespace ObjectViewer.Graphics
 			lock (VisibleObjects.LockObject)
 			{
 				opaqueFaces = VisibleObjects.OpaqueFaces.ToList();
-				alphaFaces = VisibleObjects.GetSortedPolygons();
 			}
+			alphaFaces = VisibleObjects.GetSortedPolygons();
 
 			foreach (FaceState face in opaqueFaces)
 			{

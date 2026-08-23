@@ -210,10 +210,10 @@ namespace OpenBve.Graphics
 			lock (VisibleObjects.LockObject)
 			{
 				opaqueFaces = VisibleObjects.OpaqueFaces.ToList();
-				alphaFaces = VisibleObjects.GetSortedPolygons();
 				overlayOpaqueFaces = VisibleObjects.OverlayOpaqueFaces.ToList();
-				overlayAlphaFaces = VisibleObjects.GetSortedPolygons(true);
 			}
+			alphaFaces = VisibleObjects.GetSortedPolygons();
+			overlayAlphaFaces = VisibleObjects.GetSortedPolygons(true);
 
 			foreach (FaceState face in opaqueFaces)
 			{

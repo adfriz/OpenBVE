@@ -281,52 +281,87 @@ namespace LibRender2.Objects
 
 		public List<FaceState> GetSortedPolygons(bool overlay = false)
 		{
-			if (overlay)
+			/*
+			 * Snapshot the face list while holding the lock, then release it before
+			 * doing the (comparatively expensive) distance calculation and sort.
+			 * Holding the lock throughout previously stalled ShowObject/HideObject
+			 * calls from the background visibility thread every frame.
+			 */
+			FaceState[] faces;
+			lock (LockObject)
 			{
-				myOverlayAlphaFaces = GetSortedPolygons(myOverlayAlphaFaces.AsReadOnly());
-				OverlayAlphaFaces = myOverlayAlphaFaces.AsReadOnly();
-				return OverlayAlphaFaces.ToList();
+				faces = (overlay ? myOverlayAlphaFaces : myAlphaFaces).ToArray();
 			}
-			return GetSortedPolygons(AlphaFaces);
+
+			int count = faces.Length;
+			SortKey[] keys = new SortKey[count];
+			Vector3 cameraPosition = renderer.Camera.AbsolutePosition;
+			Vector3 cameraDirection = renderer.Camera.AbsoluteDirection;
+
+			if (count >= 256)
+			{
+				Parallel.For(0, count, i =>
+				{
+					keys[i] = new SortKey(faces[i].GetSortDistance(cameraPosition, cameraDirection), faces[i].GetIntersectTiebreaker(cameraDirection), i);
+				});
+			}
+			else
+			{
+				for (int i = 0; i < count; i++)
+				{
+					keys[i] = new SortKey(faces[i].GetSortDistance(cameraPosition, cameraDirection), faces[i].GetIntersectTiebreaker(cameraDirection), i);
+				}
+			}
+
+			// back-to-front (ascending distance: more negative = farther)
+			Array.Sort(keys);
+
+			List<FaceState> result = new List<FaceState>(count);
+			foreach (SortKey key in keys)
+			{
+				result.Add(faces[key.Index]);
+			}
+
+			return result;
 		}
 
-		private List<FaceState> GetSortedPolygons(ReadOnlyCollection<FaceState> faces)
+		/// <summary>Depth sorting key for alpha faces.
+		/// Primary: squared signed camera-to-face-plane distance (more negative = farther).
+		/// Secondary: face-normal-vs-camera-direction tiebreaker that resolves ambiguous ordering
+		/// at intersecting edges by pushing the face whose normal points toward the camera later in the sort.</summary>
+		private struct SortKey : IComparable<SortKey>
 		{
-			// calculate distance
-			double[] distances = new double[faces.Count];
+			public readonly double Distance;
+			public readonly double IntersectTiebreaker;
+			public readonly int Index;
 
-			Parallel.For(0, faces.Count, i =>
+			public SortKey(double distance, double intersectTiebreaker, int index)
 			{
-				if (faces[i].Face.Vertices.Length >= 3)
-				{
-					Vector4 v0 = new Vector4(faces[i].Object.Prototype.Mesh.Vertices[faces[i].Face.Vertices[0].Index].Coordinates, 1.0);
-					Vector4 v1 = new Vector4(faces[i].Object.Prototype.Mesh.Vertices[faces[i].Face.Vertices[1].Index].Coordinates, 1.0);
-					Vector4 v2 = new Vector4(faces[i].Object.Prototype.Mesh.Vertices[faces[i].Face.Vertices[2].Index].Coordinates, 1.0);
-					Vector4 w1 = v1 - v0;
-					Vector4 w2 = v2 - v0;
-					v0.Z *= -1.0;
-					w1.Z *= -1.0;
-					w2.Z *= -1.0;
-					v0 = Vector4.Transform(v0, faces[i].Object.ModelMatrix);
-					w1 = Vector4.Transform(w1, faces[i].Object.ModelMatrix);
-					w2 = Vector4.Transform(w2, faces[i].Object.ModelMatrix);
-					v0.Z *= -1.0;
-					w1.Z *= -1.0;
-					w2.Z *= -1.0;
-					Vector3 d = Vector3.Cross(w1.Xyz, w2.Xyz);
-					double t = d.Norm();
+				Distance = distance;
+				IntersectTiebreaker = intersectTiebreaker;
+				Index = index;
+			}
 
-					if (t != 0.0)
-					{
-						d /= t;
-						Vector3 w0 = v0.Xyz - renderer.Camera.AbsolutePosition;
-						t = Vector3.Dot(d, w0);
-						distances[i] = -t * t;
-					}
+			public int CompareTo(SortKey other)
+			{
+				// Primary: plane distance (ascending — more negative = farther = render first)
+				int c = Distance.CompareTo(other.Distance);
+				if (c != 0)
+				{
+					return c;
 				}
-			});
-			// sort
-			return faces.Select((face, index) => new { Face = face, Distance = distances[index] }).OrderBy(list => list.Distance).Select(list => list.Face).ToList();
+
+				// Secondary: intersect tiebreaker — faces whose normals face the camera
+				// sort AFTER faces whose normals face away, resolving intersecting-edge ambiguity
+				c = IntersectTiebreaker.CompareTo(other.IntersectTiebreaker);
+				if (c != 0)
+				{
+					return c;
+				}
+
+				// Tertiary: deterministic index order
+				return Index.CompareTo(other.Index);
+			}
 		}
 	}
 }
