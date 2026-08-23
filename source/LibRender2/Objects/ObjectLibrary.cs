@@ -344,20 +344,20 @@ namespace LibRender2.Objects
 
 			public int CompareTo(SortKey other)
 			{
-				// Primary: plane distance with epsilon tolerance for intersecting faces
+				// Primary: plane distance with epsilon for floating-point precision at intersection edges
 				double diff = Distance - other.Distance;
 				int c;
-				if (diff > 0.1)
+				if (diff > 1e-10)
 				{
 					c = 1;
 				}
-				else if (diff < -0.1)
+				else if (diff < -1e-10)
 				{
 					c = -1;
 				}
 				else
 				{
-					// Distances are very close (intersecting edges) — use tiebreaker instead
+					// Distances are essentially equal (floating-point tie) — use tiebreaker
 					c = IntersectTiebreaker.CompareTo(other.IntersectTiebreaker);
 					if (c != 0)
 					{
