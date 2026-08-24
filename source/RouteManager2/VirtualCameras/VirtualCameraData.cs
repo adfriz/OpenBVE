@@ -38,6 +38,8 @@ namespace RouteManager2.VirtualCameras
 		public double ActivationDistance;
 		/// <summary>The maximum number of times per second the camera feed is rendered (0 or unset defaults to 24)</summary>
 		public int FeedFPS;
+		/// <summary>An optional descriptive label for this camera</summary>
+		public string Label;
 		/// <summary>Whether this camera is attached to a train car rather than fixed in the route</summary>
 		public bool AttachedToTrain;
 		/// <summary>The index of the car this camera is attached to</summary>

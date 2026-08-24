@@ -3877,7 +3877,7 @@ namespace CsvRwRouteParser
 				{
 					if (!PreviewOnly)
 					{
-						// Track.VirtualCamera Index;X;Y;TrackPos;Yaw;Pitch;Roll;FOV;ResW;ResH;ActiveMode;ActivationDistance;FeedFPS
+						// Track.VirtualCamera Index;X;Y;TrackPos;Yaw;Pitch;Roll;FOV;ResW;ResH;ActiveMode;ActivationDistance;FeedFPS;Label
 						if (Arguments.Length < 1)
 						{
 							Plugin.CurrentHost.AddMessage(MessageType.Error, false, "Track.VirtualCamera requires at least the camera index at line " + Expression.Line.ToString(Culture) + ", column " + Expression.Column.ToString(Culture) + " in file " + Expression.File);
@@ -3902,13 +3902,19 @@ namespace CsvRwRouteParser
 						}
 
 						// Check for duplicate index
+						bool duplicate = false;
 						for (int v = 0; v < Data.VirtualCameras.Count; v++)
 						{
 							if (Data.VirtualCameras[v].Index == cam.Index)
 							{
 								Plugin.CurrentHost.AddMessage(MessageType.Error, false, "VirtualCamera Index " + cam.Index + " is already defined in Track.VirtualCamera at line " + Expression.Line.ToString(Culture) + ", column " + Expression.Column.ToString(Culture) + " in file " + Expression.File);
+								duplicate = true;
 								break;
 							}
+						}
+						if (duplicate)
+						{
+							break;
 						}
 
 						// Arg 1: X position
@@ -4085,6 +4091,12 @@ namespace CsvRwRouteParser
 						else
 						{
 							cam.FeedFPS = 24;
+						}
+
+						// Arg 13: Label (optional, informational only)
+						if (Arguments.Length >= 14 && Arguments[13].Length > 0)
+						{
+							cam.Label = Arguments[13].Trim();
 						}
 
 						Data.VirtualCameras.Add(cam);
