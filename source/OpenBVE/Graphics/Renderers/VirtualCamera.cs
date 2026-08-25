@@ -1,4 +1,4 @@
-//Simplified BSD License (BSD-2-Clause)
+﻿//Simplified BSD License (BSD-2-Clause)
 //
 //Copyright (c) 2026, The OpenBVE Project
 //
@@ -17,10 +17,10 @@
 //DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
 //ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
 //(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-//LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-//ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-//(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-//SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//LOSS OF USE, DATA, OR PROFITS; HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+//WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+//ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+//POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
@@ -41,11 +41,37 @@ using Vector3 = OpenBveApi.Math.Vector3;
 namespace OpenBve.Graphics.Renderers
 {
 	/// <summary>Renders the world as seen by virtual cameras defined in the route, and applies the result as textures onto materials marked as camera receivers.</summary>
+	/// <remarks>
+	/// All currently relevant camera feeds are packed into sub-tiles of a single shared atlas framebuffer using a shelf packer,
+	/// so that receivers sample their feed directly from one large texture. The atlas auto-scales from 1024 upwards (2048, 4096)
+	/// only when the active feeds do not fit, and shrinks back down when possible. Only cameras which are active (Always /
+	/// StopOnly / Distance) AND referenced by at least one visible receiver occupy atlas space, so distant CCTV costs nothing.
+	/// </remarks>
 	internal class VirtualCameraRenderer
 	{
+		/// <summary>The side length of the smallest atlas created</summary>
+		private const int MinimumAtlasSize = 1024;
+		/// <summary>The side length of the largest atlas created</summary>
+		private const int MaximumAtlasSize = 4096;
+
 		private readonly BaseRenderer renderer;
 		private readonly List<CameraFeed> feeds = new List<CameraFeed>();
-		private VirtualCameraData[] lastCameras;
+
+		// Shared camera atlas render target
+		private int atlasFramebuffer;
+		private int atlasColorTexture;
+		private int atlasDepthBuffer;
+		private int atlasSize;
+		/// <summary>Whether an atlas currently exists</summary>
+		private bool atlasCreated;
+		/// <summary>The feeds packed into the current atlas layout</summary>
+		private readonly List<CameraFeed> packedFeeds = new List<CameraFeed>();
+		/// <summary>A hash of the indices and resolutions of the packed feeds, used to detect layout changes cheaply</summary>
+		private long packedSignature;
+
+		/// <summary>The texture wrapper handed to receiver materials; points at the shared atlas texture</summary>
+		private Texture atlasTexture;
+
 		private Texture blackTexture;
 
 		// Reusable temporary collections (to avoid per-frame allocations)
@@ -53,6 +79,21 @@ namespace OpenBve.Graphics.Renderers
 		private readonly List<FaceState> opaqueFaces = new List<FaceState>();
 		private readonly List<FaceState> alphaFaces = new List<FaceState>();
 		private readonly Dictionary<MeshMaterial[], HashSet<int>> receiverMaterials = new Dictionary<MeshMaterial[], HashSet<int>>();
+		/// <summary>Every receiver material ever seen, so that stale feeds can be reset before rendering into the atlas (avoids read/write feedback)</summary>
+		private readonly Dictionary<MeshMaterial[], HashSet<int>> allReceiverMaterials = new Dictionary<MeshMaterial[], HashSet<int>>();
+		/// <summary>The feeds required for the current frame (reused list)</summary>
+		private readonly List<CameraFeed> requiredFeeds = new List<CameraFeed>();
+		/// <summary>The receiver indexes referenced by visible faces (reused set)</summary>
+		private readonly HashSet<int> receiverIndexes = new HashSet<int>();
+		/// <summary>Scratch storage for the merged camera set (reused list)</summary>
+		private readonly List<VirtualCameraData> mergedScratch = new List<VirtualCameraData>();
+		/// <summary>Object pool for merged camera data instances</summary>
+		private readonly List<VirtualCameraData> dataPool = new List<VirtualCameraData>();
+		/// <summary>The number of pool entries used by the current frame's merged set</summary>
+		/// <summary>Reusable draw buffers specification for framebuffer rendering</summary>
+		private static readonly DrawBuffersEnum[] ColorAttachment0 = new[] { DrawBuffersEnum.ColorAttachment0 };
+		/// <summary>Scratch array for saving the current viewport</summary>
+		private readonly int[] viewportScratch = new int[4];
 
 		internal VirtualCameraRenderer(BaseRenderer renderer)
 		{
@@ -62,18 +103,42 @@ namespace OpenBve.Graphics.Renderers
 		/// <summary>Releases all OpenGL resources held by this renderer.</summary>
 		internal void Reset()
 		{
-			foreach (CameraFeed feed in feeds)
-			{
-				feed.Dispose();
-			}
 			feeds.Clear();
-			lastCameras = null;
+
+			packedFeeds.Clear();
+			packedSignature = 0;
+			DisposeAtlas();
 			if (blackTexture != null && blackTexture.OpenGlTextures.Length > 0 && blackTexture.OpenGlTextures[0].Valid)
 			{
 				GL.DeleteTexture(blackTexture.OpenGlTextures[0].Name);
 				blackTexture.OpenGlTextures[0].Valid = false;
 			}
 			blackTexture = null;
+			renderer.CameraAtlasRects.Clear();
+			allReceiverMaterials.Clear();
+			receiverIndexes.Clear();
+		}
+
+		/// <summary>Disposes the shared atlas framebuffer and texture.</summary>
+		private void DisposeAtlas()
+		{
+			if (atlasFramebuffer != 0)
+			{
+				GL.DeleteFramebuffer(atlasFramebuffer);
+				atlasFramebuffer = 0;
+			}
+			if (atlasColorTexture != 0)
+			{
+				GL.DeleteTexture(atlasColorTexture);
+				atlasColorTexture = 0;
+			}
+			if (atlasDepthBuffer != 0)
+			{
+				GL.DeleteRenderbuffer(atlasDepthBuffer);
+				atlasDepthBuffer = 0;
+			}
+			atlasTexture = null;
+			atlasCreated = false;
 		}
 
 		/// <summary>Evaluates which cameras are active, renders their feeds and applies them to the visible receiver materials.</summary>
@@ -85,45 +150,52 @@ namespace OpenBve.Graphics.Renderers
 		internal void Update(VirtualCameraData[] cameras, TrainBase playerTrain, double trainTrackPosition, bool stoppedAtStation, double timeElapsed)
 		{
 			// Build the merged camera set for this frame: route cameras plus any cameras attached to the player train.
-			// A camera attached to the train overrides a route camera with the same index.
-			VirtualCameraData[] merged = MergeCameras(cameras, playerTrain);
+			// A camera attached to the train overrides a route camera with the same index. Fills mergedScratch.
+			int mergedCount = MergeCameras(cameras, playerTrain);
 
-			if (merged == null || merged.Length == 0)
+			if (mergedCount == 0)
 			{
-				if (feeds.Count > 0)
+				if (feeds.Count > 0 || atlasCreated)
 				{
-					foreach (CameraFeed feed in feeds)
-					{
-						feed.Dispose();
-					}
 					feeds.Clear();
-					lastCameras = null;
+						packedFeeds.Clear();
+					packedSignature = 0;
+					DisposeAtlas();
+					renderer.CameraAtlasRects.Clear();
 				}
 				return;
 			}
 
-			// Recreate the render targets if the camera set has changed (e.g. a new route was loaded, or the train changed)
-			if (!CameraSetsEqual(lastCameras, merged))
+			// Rebuild the feed entries if the camera set has changed (e.g. a new route was loaded, or the train changed)
+			bool sameSet = feeds.Count == mergedCount;
+			if (sameSet)
 			{
-				foreach (CameraFeed feed in feeds)
+				for (int i = 0; i < mergedCount; i++)
 				{
-					feed.Dispose();
+					VirtualCameraData m = mergedScratch[i];
+					if (feeds[i].Index != m.Index || feeds[i].TileWidth != Math.Max(1, m.RenderWidth) || feeds[i].TileHeight != Math.Max(1, m.RenderHeight))
+					{
+						sameSet = false;
+						break;
+					}
 				}
+			}
+			if (!sameSet)
+			{
 				feeds.Clear();
-				foreach (VirtualCameraData camera in merged)
+				packedFeeds.Clear();
+				packedSignature = 0;
+				for (int i = 0; i < mergedCount; i++)
 				{
-					CameraFeed feed = new CameraFeed(camera);
-					feed.Create(this);
-					feeds.Add(feed);
+					feeds.Add(new CameraFeed(mergedScratch[i]));
 				}
-				lastCameras = merged;
 			}
 			else
 			{
 				// Refresh the camera data in place so that attached cameras track the current car position and orientation
-				for (int i = 0; i < feeds.Count && i < merged.Length; i++)
+				for (int i = 0; i < feeds.Count && i < mergedCount; i++)
 				{
-					feeds[i].Camera = merged[i];
+					feeds[i].Camera = mergedScratch[i];
 				}
 			}
 
@@ -144,7 +216,6 @@ namespace OpenBve.Graphics.Renderers
 			}
 
 			receiverMaterials.Clear();
-			HashSet<int> receiverIndexes = new HashSet<int>();
 			foreach (FaceState face in visibleFaces)
 			{
 				if (face.Object == null || face.Object.Prototype == null || face.Object.Prototype.Mesh == null)
@@ -168,43 +239,100 @@ namespace OpenBve.Graphics.Renderers
 					if (indices.Add(faceData.Material))
 					{
 						receiverIndexes.Add(material.CameraReceiverIndex);
+						// Also track it persistently so it can be reset on frames where it is not visible
+						if (!allReceiverMaterials.TryGetValue(materials, out HashSet<int> allIndices))
+						{
+							allIndices = new HashSet<int>();
+							allReceiverMaterials.Add(materials, allIndices);
+						}
+						allIndices.Add(faceData.Material);
 					}
 				}
 			}
 
-			if (receiverMaterials.Count == 0)
-			{
-				return;
-			}
-
-			// Evaluate which cameras are active
-			bool[] active = new bool[feeds.Count];
-			for (int i = 0; i < feeds.Count; i++)
-			{
-				active[i] = EvaluateActivity(feeds[i].Camera, trainTrackPosition, stoppedAtStation);
-			}
-
-			// Render a feed for every active camera that is used by at least one visible receiver,
-			// throttled by the camera's FeedFPS setting. When a feed is not updated this frame it
-			// still displays its most recently rendered image.
+			// Determine the feeds actually required this frame: active cameras referenced by at least one visible receiver.
+			// Everything else occupies no atlas space and costs no render time.
+			requiredFeeds.Clear();
 			for (int i = 0; i < feeds.Count; i++)
 			{
 				feeds[i].Active = false;
-				if (active[i] && receiverIndexes.Contains(feeds[i].Index))
+				if (EvaluateActivity(feeds[i].Camera, trainTrackPosition, stoppedAtStation) && receiverIndexes.Contains(feeds[i].Index))
 				{
-					feeds[i].SecondsSinceLastRender += Math.Max(0.0, timeElapsed);
-					double interval = 1.0 / (double)Math.Max(1, feeds[i].Camera.FeedFPS);
-					if (feeds[i].SecondsSinceLastRender >= interval)
-					{
-						RenderCameraView(feeds[i]);
-						feeds[i].SecondsSinceLastRender = feeds[i].SecondsSinceLastRender - interval;
-					}
-					feeds[i].Active = true;
+					requiredFeeds.Add(feeds[i]);
 				}
 			}
 
-			// Apply the feeds to the receiver materials
+			// Nothing to render this frame: release the atlas entirely so the feature costs nothing
+			if (requiredFeeds.Count == 0)
+			{
+				if (atlasCreated || packedFeeds.Count > 0)
+				{
+					packedFeeds.Clear();
+					packedSignature = 0;
+					DisposeAtlas();
+					renderer.CameraAtlasRects.Clear();
+				}
+				return;
+			}
+
+			// Reset every known receiver material to black BEFORE touching the atlas.
+			// Receiver textures point at the atlas itself once applied, so they must never be bound
+			// while the atlas framebuffer is active (read/write feedback loop).
 			Texture off = GetBlackTexture();
+			foreach (KeyValuePair<MeshMaterial[], HashSet<int>> pair in allReceiverMaterials)
+			{
+				MeshMaterial[] materials = pair.Key;
+				foreach (int materialIndex in pair.Value)
+				{
+					MeshMaterial material = materials[materialIndex];
+					material.DaytimeTexture = off;
+					material.NighttimeTexture = off;
+					materials[materialIndex] = material;
+				}
+			}
+
+			// While rendering the camera views, no receiver may remap its UVs onto the atlas
+			renderer.CameraAtlasRects.Clear();
+
+			// Re-pack the atlas if the set of required feeds has changed
+			long signature = ComputeSignature(requiredFeeds);
+			if (signature != packedSignature)
+			{
+				PackAtlas(requiredFeeds, signature);
+			}
+
+			// Render every packed feed, throttled by the camera's FeedFPS setting. When a feed is not updated
+			// this frame it still displays its most recently rendered image.
+			for (int i = 0; i < packedFeeds.Count; i++)
+			{
+				CameraFeed feed = packedFeeds[i];
+				if (!feed.Packed)
+				{
+					continue;
+				}
+				feed.SecondsSinceLastRender += Math.Max(0.0, timeElapsed);
+				double interval = 1.0 / (double)Math.Max(1, feed.Camera.FeedFPS);
+				if (feed.SecondsSinceLastRender >= interval)
+				{
+					RenderCameraView(feed);
+					feed.SecondsSinceLastRender = feed.SecondsSinceLastRender - interval;
+				}
+				feed.Active = true;
+			}
+
+			// Unbind the shared atlas framebuffer before the main scene is rendered
+			GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+
+			// Publish the atlas sub-rectangles of the packed feeds so that receiver faces
+			// sample their own tile of the shared atlas texture
+			renderer.CameraAtlasRects.Clear();
+			for (int i = 0; i < packedFeeds.Count; i++)
+			{
+				renderer.CameraAtlasRects[packedFeeds[i].Index] = packedFeeds[i].AtlasRect;
+			}
+
+			// Apply the atlas texture to the receiver materials of required feeds that are actually packed;
+			// feeds dropped due to atlas overflow stay black
 			foreach (KeyValuePair<MeshMaterial[], HashSet<int>> pair in receiverMaterials)
 			{
 				MeshMaterial[] materials = pair.Key;
@@ -212,11 +340,11 @@ namespace OpenBve.Graphics.Renderers
 				{
 					MeshMaterial material = materials[materialIndex];
 					Texture texture = off;
-					for (int j = 0; j < feeds.Count; j++)
+					for (int j = 0; j < requiredFeeds.Count; j++)
 					{
-						if (feeds[j].Index == material.CameraReceiverIndex && feeds[j].Active)
+						if (requiredFeeds[j].Index == material.CameraReceiverIndex && requiredFeeds[j].Packed)
 						{
-							texture = feeds[j].DaytimeTexture;
+							texture = atlasTexture;
 							break;
 						}
 					}
@@ -225,6 +353,182 @@ namespace OpenBve.Graphics.Renderers
 					materials[materialIndex] = material;
 				}
 			}
+		}
+
+		/// <summary>Computes a cheap order-independent hash over the indices and resolutions of the supplied feeds.</summary>
+		private static long ComputeSignature(List<CameraFeed> list)
+		{
+			ulong hash = 14695981039346656037UL;
+			for (int i = 0; i < list.Count; i++)
+			{
+				unchecked
+				{
+					hash ^= (ulong)((long)list[i].Index * 397L + list[i].TileWidth * 31L + list[i].TileHeight);
+					hash *= 1099511628211UL;
+				}
+			}
+			return unchecked((long)hash);
+		}
+
+		/// <summary>Packs the supplied feeds into the smallest suitable atlas (1024, 2048 or 4096 px squared) using a shelf packer.</summary>
+		/// <remarks>Tiles are placed in rows sorted by descending height, which keeps wasted space minimal. When the feeds
+		/// cannot fit into the maximum atlas size, the largest tiles are dropped until the remainder fits.</remarks>
+		private void PackAtlas(List<CameraFeed> list, long signature)
+		{
+			// Mark everything unpacked first
+			for (int i = 0; i < packedFeeds.Count; i++)
+			{
+				packedFeeds[i].Packed = false;
+				packedFeeds[i].Active = false;
+			}
+			packedFeeds.Clear();
+
+			// Sort a working copy by tile height (descending), the order the shelf packer consumes
+			List<CameraFeed> sorted = new List<CameraFeed>(list);
+			sorted.Sort((a, b) =>
+			{
+				int result = b.TileHeight.CompareTo(a.TileHeight);
+				return result != 0 ? result : b.TileWidth.CompareTo(a.TileWidth);
+			});
+
+			int size = MinimumAtlasSize;
+			bool fits = false;
+			while (!fits)
+			{
+				fits = TryPack(sorted, size);
+				if (!fits)
+				{
+					if (size >= MaximumAtlasSize)
+						{
+							// Drop the largest remaining tile and retry within the maximum atlas size,
+							// so that the numerous small feeds are preserved
+							if (sorted.Count > 1)
+							{
+								sorted.RemoveAt(0);
+							}
+							else
+							{
+								break;
+							}
+						}
+					else
+					{
+						size *= 2;
+					}
+				}
+			}
+
+			// Recreate the render target only when the atlas dimensions actually change
+			if (!atlasCreated || atlasSize != size)
+			{
+				DisposeAtlas();
+				CreateRenderTarget(size);
+			}
+
+			// Clear the whole atlas so stale pixels from the previous layout never leak into new tiles,
+			// then force an immediate re-render of every packed feed
+			GL.BindFramebuffer(FramebufferTarget.Framebuffer, atlasFramebuffer);
+			GL.ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+			GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+
+			double defaultInterval = 1.0 / 24.0;
+			foreach (CameraFeed feed in packedFeeds)
+			{
+				feed.Packed = true;
+				feed.SecondsSinceLastRender = defaultInterval;
+			}
+
+			packedSignature = signature;
+		}
+
+		/// <summary>Attempts to shelf-pack the sorted feeds into an atlas of the given size. On success the tile assignments are stored.</summary>
+		private bool TryPack(List<CameraFeed> sorted, int size)
+		{
+			int x = 0, y = 0, rowHeight = 0;
+			foreach (CameraFeed feed in sorted)
+			{
+				if (feed.TileWidth > size || feed.TileHeight > size)
+				{
+					return false;
+				}
+				if (x + feed.TileWidth > size)
+				{
+					x = 0;
+					y += rowHeight;
+					rowHeight = 0;
+				}
+				if (y + feed.TileHeight > size)
+				{
+					return false;
+				}
+				x += feed.TileWidth;
+				if (feed.TileHeight > rowHeight)
+				{
+					rowHeight = feed.TileHeight;
+				}
+			}
+
+			// The layout fits: commit the placements
+			x = 0;
+			y = 0;
+			rowHeight = 0;
+			const double inset = 0.5;
+			foreach (CameraFeed feed in sorted)
+			{
+				if (x + feed.TileWidth > size)
+				{
+					x = 0;
+					y += rowHeight;
+					rowHeight = 0;
+				}
+				feed.TileX = x;
+				feed.TileY = y;
+				feed.AtlasRect = new Vector4(
+					(x + inset) / size,
+					(y + inset) / size,
+					(feed.TileWidth - 2 * inset) / size,
+					(feed.TileHeight - 2 * inset) / size);
+				x += feed.TileWidth;
+				if (feed.TileHeight > rowHeight)
+				{
+					rowHeight = feed.TileHeight;
+				}
+				packedFeeds.Add(feed);
+			}
+			atlasSize = size;
+			return true;
+		}
+
+		/// <summary>Creates the shared atlas render target of the given size.</summary>
+		private void CreateRenderTarget(int size)
+		{
+			atlasSize = size;
+			GL.GenFramebuffers(1, out atlasFramebuffer);
+			GL.BindFramebuffer(FramebufferTarget.Framebuffer, atlasFramebuffer);
+
+			GL.GenTextures(1, out atlasColorTexture);
+			GL.BindTexture(TextureTarget.Texture2D, atlasColorTexture);
+			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
+			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
+			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
+			GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba8, size, size, 0, OpenTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, IntPtr.Zero);
+			GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, TextureTarget.Texture2D, atlasColorTexture, 0);
+
+			GL.GenRenderbuffers(1, out atlasDepthBuffer);
+			GL.BindRenderbuffer(RenderbufferTarget.Renderbuffer, atlasDepthBuffer);
+			GL.RenderbufferStorage(RenderbufferTarget.Renderbuffer, RenderbufferStorage.DepthComponent24, size, size);
+			GL.FramebufferRenderbuffer(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment, RenderbufferTarget.Renderbuffer, atlasDepthBuffer);
+
+			GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+
+			// The texture wrapper handed to receiver materials points at the shared atlas image
+			byte[] black = new byte[] { 0, 0, 0, 255 };
+			atlasTexture = new Texture(size, size, OpenBveApi.Textures.PixelFormat.RGBAlpha, black, null);
+			BindGlTextureName(atlasTexture, atlasColorTexture);
+
+			atlasCreated = true;
 		}
 
 		/// <summary>Determines whether a camera should render a feed in the current state.</summary>
@@ -244,27 +548,26 @@ namespace OpenBve.Graphics.Renderers
 			}
 		}
 
-		/// <summary>Merges the route cameras with the cameras attached to the player's train. Attached cameras override route cameras with the same index.</summary>
-		private VirtualCameraData[] MergeCameras(VirtualCameraData[] cameras, TrainBase playerTrain)
+		/// <summary>Merges the route cameras with the cameras attached to the player's train into mergedScratch. Attached cameras override route cameras with the same index.</summary>
+		/// <returns>The number of merged cameras.</returns>
+		private int MergeCameras(VirtualCameraData[] cameras, TrainBase playerTrain)
 		{
-			List<VirtualCameraData> attached = BuildAttachedCameras(playerTrain);
-			if ((cameras == null || cameras.Length == 0) && (attached == null || attached.Count == 0))
+			mergedScratch.Clear();
+			int attachedCount = BuildAttachedCameras(playerTrain);
+			bool hasRoute = cameras != null && cameras.Length > 0;
+			if (!hasRoute && attachedCount == 0)
 			{
-				return null;
+				return 0;
 			}
-			if (attached == null || attached.Count == 0)
+			if (hasRoute)
 			{
-				return cameras;
-			}
-			List<VirtualCameraData> merged = new List<VirtualCameraData>();
-			if (cameras != null)
-			{
-				foreach (VirtualCameraData camera in cameras)
+				for (int i = 0; i < cameras.Length; i++)
 				{
+					VirtualCameraData camera = cameras[i];
 					bool overridden = false;
-					foreach (VirtualCameraData a in attached)
+					for (int j = 0; j < attachedCount; j++)
 					{
-						if (a.Index == camera.Index)
+						if (mergedScratch[j].Index == camera.Index)
 						{
 							overridden = true;
 							break;
@@ -272,22 +575,22 @@ namespace OpenBve.Graphics.Renderers
 					}
 					if (!overridden)
 					{
-						merged.Add(camera);
+						mergedScratch.Add(camera);
 					}
 				}
 			}
-			merged.AddRange(attached);
-			return merged.ToArray();
+			return mergedScratch.Count;
 		}
 
-		/// <summary>Collects the virtual cameras defined in the player train's car sections, computing their world position and orientation for the current frame.</summary>
-		private List<VirtualCameraData> BuildAttachedCameras(TrainBase playerTrain)
+		/// <summary>Collects the virtual cameras defined in the player train's car sections into mergedScratch, computing their world position and orientation for the current frame. Pooled, allocation-free.</summary>
+		/// <returns>The number of attached cameras added to mergedScratch.</returns>
+		private int BuildAttachedCameras(TrainBase playerTrain)
 		{
 			if (playerTrain == null || playerTrain.Cars == null)
 			{
-				return null;
+				return 0;
 			}
-			List<VirtualCameraData> attached = null;
+			int count = 0;
 			for (int c = 0; c < playerTrain.Cars.Length; c++)
 			{
 				CarBase car = playerTrain.Cars[c];
@@ -313,63 +616,42 @@ namespace OpenBve.Graphics.Renderers
 						car.CreateWorldCoordinates(vcam.Offset, out Vector3 position, out Vector3 direction);
 						double worldYaw = Math.Atan2(direction.X, direction.Z);
 						double worldPitch = Math.Asin(Math.Max(-1.0, Math.Min(1.0, direction.Y)));
-						VirtualCameraData data = new VirtualCameraData
+						VirtualCameraData data;
+						if (count < dataPool.Count)
 						{
-							Index = vcam.Index,
-							Position = position,
-							Yaw = worldYaw + vcam.Yaw,
-							Pitch = worldPitch + vcam.Pitch,
-							Roll = vcam.Roll,
-							FieldOfView = vcam.FieldOfView,
-							RenderWidth = vcam.RenderWidth,
-							RenderHeight = vcam.RenderHeight,
-							ActiveMode = (VirtualCameraActiveMode)vcam.ActiveMode,
-							ActivationDistance = vcam.ActivationDistance,
-							FeedFPS = vcam.FeedFPS,
-							AttachedToTrain = true,
-							CarIndex = c,
-							Offset = vcam.Offset,
-							TrackPosition = car.TrackPosition
-						};
-						if (attached == null)
-						{
-							attached = new List<VirtualCameraData>();
+							data = dataPool[count];
 						}
-						attached.Add(data);
+						else
+						{
+							data = new VirtualCameraData();
+							dataPool.Add(data);
+						}
+						count++;
+						data.Index = vcam.Index;
+						data.Position = position;
+						data.Yaw = worldYaw + vcam.Yaw;
+						data.Pitch = worldPitch + vcam.Pitch;
+						data.Roll = vcam.Roll;
+						data.FieldOfView = vcam.FieldOfView;
+						data.RenderWidth = vcam.RenderWidth;
+						data.RenderHeight = vcam.RenderHeight;
+						data.ActiveMode = (VirtualCameraActiveMode)vcam.ActiveMode;
+						data.ActivationDistance = vcam.ActivationDistance;
+						data.FeedFPS = vcam.FeedFPS;
+						data.AttachedToTrain = true;
+						data.CarIndex = c;
+						data.Offset = vcam.Offset;
+						data.TrackPosition = car.TrackPosition;
+						mergedScratch.Add(data);
 					}
 				}
 			}
-			return attached;
+			return count;
 		}
 
-		/// <summary>Determines whether two camera sets share the same indices and render resolutions, meaning the render targets can be reused.</summary>
-		private bool CameraSetsEqual(VirtualCameraData[] a, VirtualCameraData[] b)
-		{
-			if (ReferenceEquals(a, b))
-			{
-				return true;
-			}
-			if (a == null || b == null || a.Length != b.Length)
-			{
-				return false;
-			}
-			for (int i = 0; i < a.Length; i++)
-			{
-				if (a[i] == null || b[i] == null || a[i].Index != b[i].Index || a[i].RenderWidth != b[i].RenderWidth || a[i].RenderHeight != b[i].RenderHeight)
-				{
-					return false;
-				}
-			}
-			return true;
-		}
-
-		/// <summary>Renders the world as seen by a single virtual camera into its framebuffer.</summary>
+		/// <summary>Renders the world as seen by a single virtual camera into its tile of the shared atlas framebuffer.</summary>
 		private void RenderCameraView(CameraFeed feed)
 		{
-			if (!feed.FramebufferComplete)
-			{
-				return;
-			}
 			VirtualCameraData camera = feed.Camera;
 
 			// Compute the camera orientation from yaw / pitch / roll (all in radians)
@@ -395,7 +677,7 @@ namespace OpenBve.Graphics.Renderers
 			Matrix4D savedProjection = renderer.CurrentProjectionMatrix;
 			Matrix4D savedView = renderer.CurrentViewMatrix;
 			Matrix4D savedTranslation = renderer.Camera.TranslationMatrix;
-			int[] savedViewport = new int[4];
+			int[] savedViewport = viewportScratch;
 			GL.GetInteger(GetPName.Viewport, savedViewport);
 
 			// Apply the virtual camera state
@@ -408,10 +690,10 @@ namespace OpenBve.Graphics.Renderers
 			double aspect = (double)camera.RenderWidth / (double)camera.RenderHeight;
 			renderer.CurrentProjectionMatrix = Matrix4D.CreatePerspectiveFieldOfView(camera.FieldOfView, aspect, 0.05, 1000.0);
 
-			// Bind the framebuffer and clear it
-			GL.BindFramebuffer(FramebufferTarget.Framebuffer, feed.Framebuffer);
-			GL.DrawBuffers(1, new[] { DrawBuffersEnum.ColorAttachment0 });
-			GL.Viewport(0, 0, feed.Width, feed.Height);
+			// Bind the shared atlas framebuffer and clear this camera's tile
+			GL.BindFramebuffer(FramebufferTarget.Framebuffer, atlasFramebuffer);
+			GL.DrawBuffers(1, ColorAttachment0);
+			GL.Viewport(feed.TileX, feed.TileY, feed.TileWidth, feed.TileHeight);
 			GL.ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
@@ -458,7 +740,6 @@ namespace OpenBve.Graphics.Renderers
 			renderer.UnsetBlendFunc();
 
 			// Restore the renderer state
-			GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
 			GL.Viewport(savedViewport[0], savedViewport[1], savedViewport[2], savedViewport[3]);
 			renderer.CurrentProjectionMatrix = savedProjection;
 			renderer.CurrentViewMatrix = savedView;
@@ -498,80 +779,33 @@ namespace OpenBve.Graphics.Renderers
 			}
 		}
 
-		/// <summary>Represents a single camera feed render target.</summary>
-		private sealed class CameraFeed : IDisposable
+		/// <summary>Represents a single virtual camera feed occupying one tile of the shared camera atlas.</summary>
+		private sealed class CameraFeed
 		{
 			internal VirtualCameraData Camera;
+			/// <summary>The unique index of the underlying camera</summary>
 			internal readonly int Index;
-			internal readonly int Width;
-			internal readonly int Height;
+			/// <summary>The width of this feed's tile in pixels</summary>
+			internal readonly int TileWidth;
+			/// <summary>The height of this feed's tile in pixels</summary>
+			internal readonly int TileHeight;
+			/// <summary>The tile origin within the atlas, in pixels</summary>
+			internal int TileX;
+			internal int TileY;
+			/// <summary>The normalized sub-rectangle of this feed within the atlas (xy = offset, zw = scale)</summary>
+			internal Vector4 AtlasRect;
+			/// <summary>Whether this feed currently occupies a slot in the atlas</summary>
+			internal bool Packed;
 			internal double SecondsSinceLastRender;
-			internal int Framebuffer;
-			internal int ColorTexture;
-			internal int DepthBuffer;
-			internal bool FramebufferComplete;
-			internal Texture DaytimeTexture;
-			internal Texture NighttimeTexture;
 			internal bool Active;
-			private bool disposed;
 
 			internal CameraFeed(VirtualCameraData camera)
 			{
 				Camera = camera;
 				Index = camera.Index;
-				Width = camera.RenderWidth;
-				Height = camera.RenderHeight;
-			}
-
-			internal void Create(VirtualCameraRenderer owner)
-			{
-				GL.GenFramebuffers(1, out Framebuffer);
-				GL.BindFramebuffer(FramebufferTarget.Framebuffer, Framebuffer);
-
-				GL.GenTextures(1, out ColorTexture);
-				GL.BindTexture(TextureTarget.Texture2D, ColorTexture);
-				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
-				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
-				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
-				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
-				GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba8, Width, Height, 0, OpenTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, IntPtr.Zero);
-				GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, TextureTarget.Texture2D, ColorTexture, 0);
-
-				GL.GenRenderbuffers(1, out DepthBuffer);
-				GL.BindRenderbuffer(RenderbufferTarget.Renderbuffer, DepthBuffer);
-				GL.RenderbufferStorage(RenderbufferTarget.Renderbuffer, RenderbufferStorage.DepthComponent24, Width, Height);
-				GL.FramebufferRenderbuffer(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment, RenderbufferTarget.Renderbuffer, DepthBuffer);
-
-				FramebufferComplete = GL.CheckFramebufferStatus(FramebufferTarget.Framebuffer) == FramebufferErrorCode.FramebufferComplete;
-				GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
-
-				// The texture wrappers are kept per camera so that the renderer's LastBoundTexture
-				// caching remains stable across frames; the actual image is updated in place each frame.
-				byte[] black = new byte[] { 0, 0, 0, 255 };
-				DaytimeTexture = new Texture(1, 1, OpenBveApi.Textures.PixelFormat.RGBAlpha, black, null);
-				NighttimeTexture = new Texture(1, 1, OpenBveApi.Textures.PixelFormat.RGBAlpha, black, null);
-				owner.BindGlTextureName(DaytimeTexture, ColorTexture);
-				owner.BindGlTextureName(NighttimeTexture, ColorTexture);
-			}
-
-			public void Dispose()
-			{
-				if (!disposed)
-				{
-					if (ColorTexture != 0)
-					{
-						GL.DeleteTexture(ColorTexture);
-					}
-					if (DepthBuffer != 0)
-					{
-						GL.DeleteRenderbuffer(DepthBuffer);
-					}
-					if (Framebuffer != 0)
-					{
-						GL.DeleteFramebuffer(Framebuffer);
-					}
-					disposed = true;
-				}
+				TileWidth = Math.Max(1, camera.RenderWidth);
+				TileHeight = Math.Max(1, camera.RenderHeight);
+				AtlasRect = new Vector4(0.0, 0.0, 1.0, 1.0);
 			}
 		}
 	}

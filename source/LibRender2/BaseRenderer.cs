@@ -73,6 +73,11 @@ namespace LibRender2
 		/// <summary>A dummy VAO used when working with procedural data within the shader</summary>
 		public VertexArrayObject dummyVao;
 
+		/// <summary>Maps an active virtual camera feed index to its sub-rectangle within the camera atlas texture (xy = offset, zw = scale)</summary>
+		public readonly Dictionary<int, OpenBveApi.Math.Vector4> CameraAtlasRects = new Dictionary<int, OpenBveApi.Math.Vector4>();
+		/// <summary>The last camera atlas rect sent to the default shader</summary>
+		private OpenBveApi.Math.Vector4 lastCameraAtlasRectSent;
+
 		public Screen Screen;
 
 		/// <summary>The track follower for the main camera</summary>
@@ -1289,6 +1294,18 @@ namespace LibRender2
 
 			MeshMaterial material = state.Prototype.Mesh.Materials[face.Material];
 			VertexArrayObject VAO = (VertexArrayObject)state.Prototype.Mesh.VAO;
+
+			// Camera feed atlas: remap UVs onto the camera's sub-rectangle of the shared atlas texture
+			OpenBveApi.Math.Vector4 atlasRect = new OpenBveApi.Math.Vector4(0.0, 0.0, 1.0, 1.0);
+			if (material.CameraReceiverIndex > 0 && !CameraAtlasRects.TryGetValue(material.CameraReceiverIndex, out atlasRect))
+			{
+				atlasRect = new OpenBveApi.Math.Vector4(0.0, 0.0, 1.0, 1.0);
+			}
+			if (atlasRect != lastCameraAtlasRectSent)
+			{
+				shader.SetCameraAtlasRect(atlasRect);
+				lastCameraAtlasRectSent = atlasRect;
+			}
 
 			if (lastVAO != VAO.handle)
 			{

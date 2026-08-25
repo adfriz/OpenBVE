@@ -67,6 +67,8 @@ namespace LibRender2.Shaders
 		private readonly int uLightSpaceMatrix3Location;
 		private readonly int uModelMatrixLocation;
 		private readonly int uCurrentViewMatrixLocation;
+		private readonly int uCameraAtlasRectLocation;
+		private Vector4 lastCameraAtlasRect;
 
 
 		/// <summary>
@@ -103,6 +105,7 @@ namespace LibRender2.Shaders
 			uLightSpaceMatrix3Location = GL.GetUniformLocation(Handle, "uLightSpaceMatrix3");
 			uModelMatrixLocation = GL.GetUniformLocation(Handle, "uModelMatrix");
 			uCurrentViewMatrixLocation = GL.GetUniformLocation(Handle, "uCurrentViewMatrix");
+			uCameraAtlasRectLocation = GL.GetUniformLocation(Handle, "uCameraAtlasRect");
 
 			VertexLayout = GetVertexLayout();
 			UniformLayout = GetUniformLayout();
@@ -117,6 +120,9 @@ namespace LibRender2.Shaders
 			GL.ProgramUniform1(Handle, uShadowEnabledLocation, 0);
 			GL.ProgramUniform1(Handle, uShadowCascadeCountLocation, 0);
 			GL.ProgramUniform1(Handle, uShadowStrengthLocation, 1.0f);
+			// Camera feed atlas rect defaults to identity (full texture)
+			lastCameraAtlasRect = new Vector4(0.0f, 0.0f, 1.0f, 1.0f);
+			GL.ProgramUniform4(Handle, uCameraAtlasRectLocation, 0.0f, 0.0f, 1.0f, 1.0f);
 		}
 		
 		public VertexLayout GetVertexLayout()
@@ -412,6 +418,17 @@ namespace LibRender2.Shaders
 		public void SetAtlasLocation(Vector4 atlasLocation)
 		{
 			GL.ProgramUniform4(Handle, UniformLayout.AtlasLocation, (float)atlasLocation.X, (float)atlasLocation.Y, (float)atlasLocation.Z, (float)atlasLocation.W);
+		}
+
+		/// <summary>Sets the camera feed atlas sub-rectangle (xy = offset, zw = scale)</summary>
+		public void SetCameraAtlasRect(Vector4 rect)
+		{
+			if (rect == lastCameraAtlasRect)
+			{
+				return;
+			}
+			lastCameraAtlasRect = rect;
+			GL.ProgramUniform4(Handle, uCameraAtlasRectLocation, (float)rect.X, (float)rect.Y, (float)rect.Z, (float)rect.W);
 		}
 
 		public override void SetAlphaFunction(AlphaFunction alphaFunction, float alphaComparison)

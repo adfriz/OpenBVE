@@ -55,6 +55,8 @@ uniform float             uShadowNormalBias3;
 
 uniform vec2              uAlphaTest;
 uniform sampler2D uTexture;
+// Camera feed atlas: xy = sub-rect offset, zw = scale. Identity (0,0,1,1) for normal textures
+uniform vec4              uCameraAtlasRect;
 
 struct Light
 {
@@ -195,12 +197,12 @@ void main(void)
 	vec4 finalColor;
 	if((uMaterialFlags & 16) == 0)
 	{
-		finalColor = vec4(oColor.rgb, 1.0) * texture(uTexture, oUv); // NOTE: only want the RGB of the color, A is passed in as part of opacity
+		finalColor = vec4(oColor.rgb, 1.0) * texture(uTexture, oUv * uCameraAtlasRect.zw + uCameraAtlasRect.xy); // NOTE: only want the RGB of the color, A is passed in as part of opacity
 	}
 	else
 	{
 		// disable alpha channel when rendering texture (MSTS shape)
-		finalColor = vec4(oColor.rgb, 1.0) * vec4(texture(uTexture, oUv).xyz, 1.0);
+		finalColor = vec4(oColor.rgb, 1.0) * vec4(texture(uTexture, oUv * uCameraAtlasRect.zw + uCameraAtlasRect.xy).xyz, 1.0);
 	}
 
 	if((uMaterialFlags & 1) == 0 && (uMaterialFlags & 4) == 0)
