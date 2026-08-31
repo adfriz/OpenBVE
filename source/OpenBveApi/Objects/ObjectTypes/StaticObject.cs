@@ -709,42 +709,32 @@ namespace OpenBveApi.Objects
 				}
 			}
 
-			// eliminate duplicate materials (Dictionary grouping O(m+f))
+			// eliminate duplicate materials
+			for (int i = 0; i < m - 1; i++)
 			{
-				MeshMaterial[] materials = Mesh.Materials;
-				MeshFace[] faces = Mesh.Faces;
-				if (m > 1)
+				for (int j = i + 1; j < m; j++)
 				{
-					Dictionary<MeshMaterial, int> seen = new Dictionary<MeshMaterial, int>(m);
-					int[] dupRemap = new int[m];
-					MeshMaterial[] unique = new MeshMaterial[m];
-					int uniqueCount = 0;
-					for (int i = 0; i < m; i++)
+					if (Mesh.Materials[i] == Mesh.Materials[j])
 					{
-						MeshMaterial mat = materials[i];
-						if (seen.TryGetValue(mat, out int existing))
+						for (int k = 0; k < f; k++)
 						{
-							dupRemap[i] = existing;
+							if (Mesh.Faces[k].Material == j)
+							{
+								Mesh.Faces[k].Material = (ushort)i;
+							}
+							else if (Mesh.Faces[k].Material > j)
+							{
+								Mesh.Faces[k].Material--;
+							}
 						}
-						else
+
+						for (int k = j; k < m - 1; k++)
 						{
-							seen[mat] = uniqueCount;
-							dupRemap[i] = uniqueCount;
-							unique[uniqueCount] = mat;
-							uniqueCount++;
+							Mesh.Materials[k] = Mesh.Materials[k + 1];
 						}
-					}
-					if (uniqueCount != m)
-					{
-						for (int i = 0; i < f; i++)
-						{
-							faces[i].Material = (ushort)dupRemap[faces[i].Material];
-						}
-						for (int i = 0; i < uniqueCount; i++)
-						{
-							materials[i] = unique[i];
-						}
-						m = uniqueCount;
+
+						m--;
+						j--;
 					}
 				}
 			}
