@@ -98,16 +98,36 @@ namespace OpenBveApi.Objects
 			unchecked
 			{
 				// ReSharper disable NonReadonlyMemberInGetHashCode
-				var hashCode = Coordinates.X.GetHashCode();
-				hashCode = (hashCode * 397) ^ Coordinates.Y.GetHashCode();
-				hashCode = (hashCode * 397) ^ Coordinates.Z.GetHashCode();
-				hashCode = (hashCode * 397) ^ TextureCoordinates.X.GetHashCode();
-				hashCode = (hashCode * 397) ^ TextureCoordinates.Y.GetHashCode();
-				hashCode = (hashCode * 397) ^ Color.R.GetHashCode();
-				hashCode = (hashCode * 397) ^ Color.G.GetHashCode();
-				hashCode = (hashCode * 397) ^ Color.B.GetHashCode();
-				hashCode = (hashCode * 397) ^ Color.A.GetHashCode();
-				return hashCode;
+				long bx = System.BitConverter.DoubleToInt64Bits(Coordinates.X);
+				if (bx == unchecked((long)0x8000000000000000)) bx = 0;
+				long by = System.BitConverter.DoubleToInt64Bits(Coordinates.Y);
+				if (by == unchecked((long)0x8000000000000000)) by = 0;
+				long bz = System.BitConverter.DoubleToInt64Bits(Coordinates.Z);
+				if (bz == unchecked((long)0x8000000000000000)) bz = 0;
+				long tu = System.BitConverter.DoubleToInt64Bits(TextureCoordinates.X);
+				if (tu == unchecked((long)0x8000000000000000)) tu = 0;
+				long tv = System.BitConverter.DoubleToInt64Bits(TextureCoordinates.Y);
+				if (tv == unchecked((long)0x8000000000000000)) tv = 0;
+				int hash = (int)(bx ^ (bx >> 32));
+				hash = (hash * 397) ^ (int)(by ^ (by >> 32));
+				hash = (hash * 397) ^ (int)(bz ^ (bz >> 32));
+				hash = (hash * 397) ^ (int)(tu ^ (tu >> 32));
+				hash = (hash * 397) ^ (int)(tv ^ (tv >> 32));
+				// float color components: reinterpret bits, normalise -0.0f
+				int cr = System.BitConverter.ToInt32(System.BitConverter.GetBytes(Color.R), 0);
+				if (cr == unchecked((int)0x80000000)) cr = 0;
+				int cg = System.BitConverter.ToInt32(System.BitConverter.GetBytes(Color.G), 0);
+				if (cg == unchecked((int)0x80000000)) cg = 0;
+				int cb = System.BitConverter.ToInt32(System.BitConverter.GetBytes(Color.B), 0);
+				if (cb == unchecked((int)0x80000000)) cb = 0;
+				int ca = System.BitConverter.ToInt32(System.BitConverter.GetBytes(Color.A), 0);
+				if (ca == unchecked((int)0x80000000)) ca = 0;
+				hash = (hash * 397) ^ cr;
+				hash = (hash * 397) ^ cg;
+				hash = (hash * 397) ^ cb;
+				hash = (hash * 397) ^ ca;
+				hash = (hash * 397) ^ GetType().GetHashCode();
+				return hash;
 			}
 		}
 	}

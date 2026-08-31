@@ -96,16 +96,25 @@ namespace OpenBveApi.Objects
 			unchecked
 			{
 				// ReSharper disable NonReadonlyMemberInGetHashCode
-				var hashCode = Coordinates.X.GetHashCode();
-				hashCode = (hashCode * 397) ^ Coordinates.Y.GetHashCode();
-				hashCode = (hashCode * 397) ^ Coordinates.Z.GetHashCode();
-				hashCode = (hashCode * 397) ^ TextureCoordinates.X.GetHashCode();
-				hashCode = (hashCode * 397) ^ TextureCoordinates.Y.GetHashCode();
-				hashCode = (hashCode * 397) ^ MatrixChain.GetHashCode();
-				hashCode = (hashCode * 397) ^ MatrixChain.GetHashCode();
-				hashCode = (hashCode * 397) ^ MatrixChain.GetHashCode();
-				hashCode = (hashCode * 397) ^ MatrixChain.GetHashCode();
-				return hashCode;
+				long bx = System.BitConverter.DoubleToInt64Bits(Coordinates.X);
+				if (bx == unchecked((long)0x8000000000000000)) bx = 0;
+				long by = System.BitConverter.DoubleToInt64Bits(Coordinates.Y);
+				if (by == unchecked((long)0x8000000000000000)) by = 0;
+				long bz = System.BitConverter.DoubleToInt64Bits(Coordinates.Z);
+				if (bz == unchecked((long)0x8000000000000000)) bz = 0;
+				long tu = System.BitConverter.DoubleToInt64Bits(TextureCoordinates.X);
+				if (tu == unchecked((long)0x8000000000000000)) tu = 0;
+				long tv = System.BitConverter.DoubleToInt64Bits(TextureCoordinates.Y);
+				if (tv == unchecked((long)0x8000000000000000)) tv = 0;
+				int hash = (int)(bx ^ (bx >> 32));
+				hash = (hash * 397) ^ (int)(by ^ (by >> 32));
+				hash = (hash * 397) ^ (int)(bz ^ (bz >> 32));
+				hash = (hash * 397) ^ (int)(tu ^ (tu >> 32));
+				hash = (hash * 397) ^ (int)(tv ^ (tv >> 32));
+				hash = (hash * 397) ^ GetType().GetHashCode();
+				// Reference identity for matrix chain (Equals uses reference equality)
+				hash = (hash * 397) ^ (MatrixChain != null ? System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(MatrixChain) : 0);
+				return hash;
 			}
 		}
 	}
