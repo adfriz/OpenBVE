@@ -55,13 +55,7 @@ namespace OpenBveApi.Objects
 			}
 			
 			
-			for (int i = Faces.Count - 1; i >= 0; i--)
-			{
-				if (Faces[i].Vertices.Length == 0)
-				{
-					Faces.RemoveAt(i);
-				}
-			}
+			Faces.RemoveAll(f => f.Vertices.Length == 0);
 
 			if (Faces.Count != 0)
 			{
