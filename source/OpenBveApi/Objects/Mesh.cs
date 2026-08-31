@@ -81,51 +81,53 @@ namespace OpenBveApi.Objects
 				CreateNormals(i);
 			}
 
-			// create list of potential vertices (set backing array to the length of our vertices)
-			List<MeshFaceVertex> materialVerts = new List<MeshFaceVertex>(Vertices.Length);
-
 			for (int i = 0; i < Materials.Length; i++)
 			{
-				if (Materials[i].WrapMode == null)
+				if (Materials[i].WrapMode != null)
 				{
-					/*
-					 * If the object does not have a stored wrapping mode, determine it now
-					 * https://github.com/leezer3/OpenBVE/issues/971
-					 *
-					 * Unfortunately, there appear to be X objects in the wild which expect a non-default wrapping mode
-					 * which means the best fast exit we can do is to check for RepeatRepeat
-					 *
-					 * We also need to check for all faces in the mesh using this material
-					 * (as otherwise non-contiguous faces mapped to the same texture may not work as expected)
-					 */
-					for (int j = 0; j < Faces.Length; j++)
+					continue;
+				}
+				/*
+				 * If the object does not have a stored wrapping mode, determine it now
+				 * https://github.com/leezer3/OpenBVE/issues/971
+				 *
+				 * Unfortunately, there appear to be X objects in the wild which expect a non-default wrapping mode
+				 * which means the best fast exit we can do is to check for RepeatRepeat
+				 *
+				 * We also need to check for all faces in the mesh using this material
+				 * (as otherwise non-contiguous faces mapped to the same texture may not work as expected)
+				 */
+				OpenGlTextureWrapMode wrap = OpenGlTextureWrapMode.ClampClamp;
+				for (int j = 0; j < Faces.Length; j++)
+				{
+					if (Faces[j].Material != i)
 					{
-						materialVerts.AddRange(Faces[j].Vertices);
+						continue;
 					}
-
-					OpenGlTextureWrapMode wrap = OpenGlTextureWrapMode.ClampClamp;
-
-					foreach (MeshFaceVertex vertex in materialVerts)
+					MeshFaceVertex[] faceVerts = Faces[j].Vertices;
+					for (int k = 0; k < faceVerts.Length; k++)
 					{
-						if (Vertices[vertex].TextureCoordinates.X < 0.0f || Vertices[vertex].TextureCoordinates.X > 1.0f)
+						int idx = faceVerts[k].Index;
+						Vector2 tc = Vertices[idx].TextureCoordinates;
+						if (tc.X < 0.0f || tc.X > 1.0f)
 						{
 							wrap |= OpenGlTextureWrapMode.RepeatClamp;
 						}
-
-						if (Vertices[vertex.Index].TextureCoordinates.Y < 0.0f || Vertices[vertex].TextureCoordinates.Y > 1.0f)
+						if (tc.Y < 0.0f || tc.Y > 1.0f)
 						{
 							wrap |= OpenGlTextureWrapMode.ClampRepeat;
 						}
-
 						if (wrap == OpenGlTextureWrapMode.RepeatRepeat)
 						{
 							break;
 						}
 					}
-
-					Materials[i].WrapMode = wrap;
-					materialVerts.Clear();
+					if (wrap == OpenGlTextureWrapMode.RepeatRepeat)
+					{
+						break;
+					}
 				}
+				Materials[i].WrapMode = wrap;
 			}
 		}
 
