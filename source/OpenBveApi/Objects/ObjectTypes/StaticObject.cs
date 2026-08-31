@@ -603,19 +603,9 @@ namespace OpenBveApi.Objects
 				 * HACK:
 				 * A forwards compatible GL3 context (required on OS-X) only supports tris
 				 * and thus an optimized object (decomposed into tris) in all circumstances
-				 *
-				 * When in viewers, skip optimisation if above the threshold to allow
-				 * faster reload speeds.
-				 *
-				 * When in-game, force optimisation at all times for best possible performance
-				 * even though this may have an effect on load-times
 				 */
-
-				if (m >= f / 500 && f >= faceThreshold && f < 20000 && currentHost.Application != HostApplication.OpenBve)
-				{
-					return;
-				}
-				
+				// Force optimisation for both game and viewers (threshold bypass)
+				// Previously viewers could skip when m >= f/500 && f >= faceThreshold && f <20000
 			}
 
 			if (Mesh.Vertices.Length > 10000)
@@ -624,133 +614,137 @@ namespace OpenBveApi.Objects
 				preserveVerticies = true;
 			}
 
-			// eliminate invalid faces and reduce incomplete faces
-			for (int i = 0; i < f; i++)
+			// eliminate invalid faces and reduce incomplete faces (2-pointer compaction)
 			{
-				FaceFlags type = Mesh.Faces[i].Flags & FaceFlags.FaceTypeMask;
-				bool keep;
-				switch (type)
+				MeshFace[] faces = Mesh.Faces;
+				int write = 0;
+				for (int i = 0; i < f; i++)
 				{
-					case FaceFlags.Triangles:
-						keep = Mesh.Faces[i].Vertices.Length >= 3;
-						if (keep)
-						{
-							int n = (Mesh.Faces[i].Vertices.Length / 3) * 3;
-							if (Mesh.Faces[i].Vertices.Length != n)
-							{
-								Array.Resize(ref Mesh.Faces[i].Vertices, n);
-							}
-						}
-						break;
-					case FaceFlags.Quads:
-						keep = Mesh.Faces[i].Vertices.Length >= 4;
-						if (keep)
-						{
-							int n = Mesh.Faces[i].Vertices.Length & ~3;
-							if (Mesh.Faces[i].Vertices.Length != n)
-							{
-								Array.Resize(ref Mesh.Faces[i].Vertices, n);
-							}
-						}
-						break;
-					case FaceFlags.QuadStrip:
-						keep = Mesh.Faces[i].Vertices.Length >= 4;
-						if (keep)
-						{
-							int n = Mesh.Faces[i].Vertices.Length & ~1;
-							if (Mesh.Faces[i].Vertices.Length != n)
-							{
-								Array.Resize(ref Mesh.Faces[i].Vertices, n);
-							}
-						}
-						break;
-					default:
-						keep = Mesh.Faces[i].Vertices.Length >= 3;
-						break;
-				}
-
-				if (!keep)
-				{
-					for (int j = i; j < f - 1; j++)
+					FaceFlags type = faces[i].Flags & FaceFlags.FaceTypeMask;
+					bool keep;
+					switch (type)
 					{
-						Mesh.Faces[j] = Mesh.Faces[j + 1];
+						case FaceFlags.Triangles:
+							keep = faces[i].Vertices.Length >= 3;
+							if (keep)
+							{
+								int n = (faces[i].Vertices.Length / 3) * 3;
+								if (faces[i].Vertices.Length != n)
+								{
+									Array.Resize(ref faces[i].Vertices, n);
+								}
+							}
+							break;
+						case FaceFlags.Quads:
+							keep = faces[i].Vertices.Length >= 4;
+							if (keep)
+							{
+								int n = faces[i].Vertices.Length & ~3;
+								if (faces[i].Vertices.Length != n)
+								{
+									Array.Resize(ref faces[i].Vertices, n);
+								}
+							}
+							break;
+						case FaceFlags.QuadStrip:
+							keep = faces[i].Vertices.Length >= 4;
+							if (keep)
+							{
+								int n = faces[i].Vertices.Length & ~1;
+								if (faces[i].Vertices.Length != n)
+								{
+									Array.Resize(ref faces[i].Vertices, n);
+								}
+							}
+							break;
+						default:
+							keep = faces[i].Vertices.Length >= 3;
+							break;
 					}
+					if (!keep) continue;
+					if (write != i) faces[write] = faces[i];
+					write++;
+				}
+				f = write;
+			}
 
-					f--;
-					i--;
+			// eliminate unused materials (compaction + single-pass remap)
+			{
+				MeshFace[] faces = Mesh.Faces;
+				MeshMaterial[] materials = Mesh.Materials;
+				bool[] materialUsed = new bool[m];
+				for (int i = 0; i < f; i++)
+				{
+					materialUsed[faces[i].Material] = true;
+				}
+				int[] remap = new int[m];
+				int newM = 0;
+				for (int i = 0; i < m; i++)
+				{
+					if (materialUsed[i])
+					{
+						remap[i] = newM++;
+					}
+					else
+					{
+						remap[i] = -1;
+					}
+				}
+				if (newM != m)
+				{
+					int w = 0;
+					for (int i = 0; i < m; i++)
+					{
+						if (materialUsed[i])
+						{
+							if (w != i) materials[w] = materials[i];
+							w++;
+						}
+					}
+					for (int i = 0; i < f; i++)
+					{
+						faces[i].Material = (ushort)remap[faces[i].Material];
+					}
+					m = newM;
 				}
 			}
 
-			// eliminate unused materials
-			bool[] materialUsed = new bool[m];
-			for (int i = 0; i < f; i++)
+			// eliminate duplicate materials (Dictionary grouping O(m+f))
 			{
-				/*
-				if (Mesh.Faces[i].Material < m - 1)
+				MeshMaterial[] materials = Mesh.Materials;
+				MeshFace[] faces = Mesh.Faces;
+				if (m > 1)
 				{
-					/*
-					 * Our material is out of range
-					 * Rather than crashing, add a new blank material
-					 
-					Array.Resize(ref Mesh.Materials, m + 1);
-					Mesh.Materials[m] = new MeshMaterial();
-					Mesh.Faces[i].Material = (ushort)m;
-					m++;
-					Array.Resize(ref materialUsed, m + 1);
-				}
-			*/
-				materialUsed[Mesh.Faces[i].Material] = true;
-			}
-
-			for (int i = 0; i < m; i++)
-			{
-				if (!materialUsed[i])
-				{
-					for (int j = 0; j < f; j++)
+					Dictionary<MeshMaterial, int> seen = new Dictionary<MeshMaterial, int>(m);
+					int[] dupRemap = new int[m];
+					MeshMaterial[] unique = new MeshMaterial[m];
+					int uniqueCount = 0;
+					for (int i = 0; i < m; i++)
 					{
-						if (Mesh.Faces[j].Material > i)
+						MeshMaterial mat = materials[i];
+						if (seen.TryGetValue(mat, out int existing))
 						{
-							Mesh.Faces[j].Material--;
+							dupRemap[i] = existing;
+						}
+						else
+						{
+							seen[mat] = uniqueCount;
+							dupRemap[i] = uniqueCount;
+							unique[uniqueCount] = mat;
+							uniqueCount++;
 						}
 					}
-
-					for (int j = i; j < m - 1; j++)
+					if (uniqueCount != m)
 					{
-						Mesh.Materials[j] = Mesh.Materials[j + 1];
-						materialUsed[j] = materialUsed[j + 1];
-					}
-
-					m--;
-					i--;
-				}
-			}
-
-			// eliminate duplicate materials
-			for (int i = 0; i < m - 1; i++)
-			{
-				for (int j = i + 1; j < m; j++)
-				{
-					if (Mesh.Materials[i] == Mesh.Materials[j])
-					{
-						for (int k = 0; k < f; k++)
+						for (int i = 0; i < f; i++)
 						{
-							if (Mesh.Faces[k].Material == j)
-							{
-								Mesh.Faces[k].Material = (ushort) i;
-							}
-							else if (Mesh.Faces[k].Material > j)
-							{
-								Mesh.Faces[k].Material--;
-							}
+							faces[i].Material = (ushort)dupRemap[faces[i].Material];
 						}
-
-						for (int k = j; k < m - 1; k++)
+						for (int i = 0; i < uniqueCount; i++)
 						{
-							Mesh.Materials[k] = Mesh.Materials[k + 1];
+							materials[i] = unique[i];
 						}
-
-						m--;
-						j--;
+						m = uniqueCount;
 					}
 				}
 			}
@@ -759,18 +753,25 @@ namespace OpenBveApi.Objects
 			// Replaced old very slow OrderedDictionary implementation with generic Dictionary.
 			if (!preserveVerticies && vertexCulling)
 			{
-				Dictionary<VertexTemplate, int> uniqueVertices = new Dictionary<VertexTemplate, int>();
-				VertexTemplate[] newVertices = new VertexTemplate[Mesh.Vertices.Length];
+				MeshFace[] faces = Mesh.Faces;
+				VertexTemplate[] vertices = Mesh.Vertices;
+				int vLen = vertices.Length;
+				int capacity = vLen;
+				int est = f * 3;
+				if (est > capacity) capacity = est;
+				Dictionary<VertexTemplate, int> uniqueVertices = new Dictionary<VertexTemplate, int>(capacity);
+				VertexTemplate[] newVertices = new VertexTemplate[vLen];
 				int count = 0;
 
 				// Iterate through all referenced vertices in the faces.
 				// This automatically ignores and culls unreferenced 'garbage' vertices in the original Mesh.Vertices array.
-				for (int i = 0; i < Mesh.Faces.Length; i++)
+				for (int i = 0; i < f; i++)
 				{
-					for (int j = 0; j < Mesh.Faces[i].Vertices.Length; j++)
+					MeshFaceVertex[] fv = faces[i].Vertices;
+					for (int j = 0; j < fv.Length; j++)
 					{
-						int oldIndex = Mesh.Faces[i].Vertices[j];
-						VertexTemplate vertex = Mesh.Vertices[oldIndex];
+						int oldIndex = fv[j].Index;
+						VertexTemplate vertex = vertices[oldIndex];
 
 						// If the exact same vertex structure hasn't been cached yet, cache it and add it to our new array.
 						if (!uniqueVertices.TryGetValue(vertex, out int newIndex))
@@ -782,176 +783,151 @@ namespace OpenBveApi.Objects
 						}
 
 						// Update the face to point to the new, deduplicated vertex index.
-						Mesh.Faces[i].Vertices[j].Index = newIndex;
+						fv[j].Index = newIndex;
 					}
 				}
 
-				// Copy the unique vertices back into the mesh
-				Mesh.Vertices = new VertexTemplate[count];
-				Array.Copy(newVertices, 0, Mesh.Vertices, 0, count);
+				// Copy the unique vertices back into the mesh (only count, not full length)
+				if (count == vLen)
+				{
+					Mesh.Vertices = newVertices;
+				}
+				else
+				{
+					Mesh.Vertices = new VertexTemplate[count];
+					Array.Copy(newVertices, 0, Mesh.Vertices, 0, count);
+				}
 			}
 
 			// structure optimization
-			// Triangularize all polygons and quads into triangles
-			for (int i = 0; i < f; ++i)
+			// Triangularize all polygons and quads into triangles (alloc once, no Clone/Resize)
 			{
-				FaceFlags type = Mesh.Faces[i].Flags & FaceFlags.FaceTypeMask;
-				// Only transform quads and polygons
-				if (type == FaceFlags.Quads || type == FaceFlags.Polygon)
+				MeshFace[] faces = Mesh.Faces;
+				for (int i = 0; i < f; ++i)
 				{
-					int startingVertexCount = Mesh.Faces[i].Vertices.Length;
-
-					// One triangle for the first three points, then one for each vertex
-					// Wind order is maintained.
-					// Ex: 0, 1, 2; 0, 2, 3; 0, 3, 4; 0, 4, 5; 
-					int triCount = (startingVertexCount - 2);
-					int vertexCount = triCount * 3;
-
-					// Copy old array for use as we work
-					MeshFaceVertex[] originalPoly = (MeshFaceVertex[]) Mesh.Faces[i].Vertices.Clone();
-
-					// Resize new array
-					Array.Resize(ref Mesh.Faces[i].Vertices, vertexCount);
-
-					// Reference to output vertices
-					MeshFaceVertex[] outVerts = Mesh.Faces[i].Vertices;
-
-					// Triangularize
-					for (int triIndex = 0, vertIndex = 0, oldVert = 2; triIndex < triCount; ++triIndex, ++oldVert)
+					FaceFlags type = faces[i].Flags & FaceFlags.FaceTypeMask;
+					if (type == FaceFlags.Quads || type == FaceFlags.Polygon)
 					{
-						// First vertex is always the 0th
-						outVerts[vertIndex] = originalPoly[0];
-						vertIndex += 1;
-
-						// Second vertex is one behind the current working vertex
-						outVerts[vertIndex] = originalPoly[oldVert - 1];
-						vertIndex += 1;
-
-						// Third vertex is current working vertex
-						outVerts[vertIndex] = originalPoly[oldVert];
-						vertIndex += 1;
+						MeshFaceVertex[] src = faces[i].Vertices;
+						int startingVertexCount = src.Length;
+						int triCount = startingVertexCount - 2;
+						int vertexCount = triCount * 3;
+						MeshFaceVertex[] dst = new MeshFaceVertex[vertexCount];
+						for (int triIndex = 0, vertIndex = 0, oldVert = 2; triIndex < triCount; ++triIndex, ++oldVert)
+						{
+							dst[vertIndex++] = src[0];
+							dst[vertIndex++] = src[oldVert - 1];
+							dst[vertIndex++] = src[oldVert];
+						}
+						faces[i].Vertices = dst;
+						faces[i].Flags &= ~FaceFlags.FaceTypeMask;
+						faces[i].Flags |= FaceFlags.Triangles;
 					}
-
-					// Mark as triangle
-					Mesh.Faces[i].Flags &=  ~FaceFlags.FaceTypeMask;
-					Mesh.Faces[i].Flags |= FaceFlags.Triangles;
 				}
 			}
 
-			// decomposite TRIANGLES and QUADS
-			for (int i = 0; i < f; i++)
+			// decomposite TRIANGLES and QUADS (precompute capacity, single resize)
 			{
-				FaceFlags type = Mesh.Faces[i].Flags & FaceFlags.FaceTypeMask;
-				int faceCount = 0;
-				FaceFlags faceBit = 0;
-				if (type == FaceFlags.Triangles)
+				MeshFace[] faces = Mesh.Faces;
+				int extra = 0;
+				for (int i = 0; i < f; i++)
 				{
-					faceCount = 3;
-					faceBit = FaceFlags.Triangles;
-				}
-				else if (type == FaceFlags.Quads)
-				{
-					faceCount = 4;
-					faceBit = FaceFlags.Triangles;
-				}
-
-				if (faceCount == 3 || faceCount == 4)
-				{
-					if (Mesh.Faces[i].Vertices.Length > faceCount)
+					FaceFlags type = faces[i].Flags & FaceFlags.FaceTypeMask;
+					int faceCount = 0;
+					if (type == FaceFlags.Triangles) faceCount = 3;
+					else if (type == FaceFlags.Quads) faceCount = 4;
+					if ((faceCount == 3 || faceCount == 4) && faces[i].Vertices.Length > faceCount)
 					{
-						int n = (Mesh.Faces[i].Vertices.Length - faceCount) / faceCount;
-						while (f + n > Mesh.Faces.Length)
-						{
-							Array.Resize(ref Mesh.Faces, Mesh.Faces.Length << 1);
-						}
-
+						extra += (faces[i].Vertices.Length - faceCount) / faceCount;
+					}
+				}
+				if (extra > 0)
+				{
+					if (f + extra > faces.Length)
+					{
+						Array.Resize(ref Mesh.Faces, f + extra);
+						faces = Mesh.Faces;
+					}
+				}
+				for (int i = 0; i < f; i++)
+				{
+					FaceFlags type = faces[i].Flags & FaceFlags.FaceTypeMask;
+					int faceCount = 0;
+					FaceFlags faceBit = 0;
+					if (type == FaceFlags.Triangles)
+					{
+						faceCount = 3;
+						faceBit = FaceFlags.Triangles;
+					}
+					else if (type == FaceFlags.Quads)
+					{
+						faceCount = 4;
+						faceBit = FaceFlags.Triangles;
+					}
+					if ((faceCount == 3 || faceCount == 4) && faces[i].Vertices.Length > faceCount)
+					{
+						int n = (faces[i].Vertices.Length - faceCount) / faceCount;
+						MeshFaceVertex[] srcVerts = faces[i].Vertices;
+						FaceFlags origFlags = faces[i].Flags;
 						for (int j = 0; j < n; j++)
 						{
-							Mesh.Faces[f + j].Vertices = new MeshFaceVertex[faceCount];
-							for (int k = 0; k < faceCount; k++)
-							{
-								Mesh.Faces[f + j].Vertices[k] = Mesh.Faces[i].Vertices[faceCount + faceCount * j + k];
-							}
-
-							Mesh.Faces[f + j].Material = Mesh.Faces[i].Material;
-							Mesh.Faces[f + j].Flags = Mesh.Faces[i].Flags;
-							Mesh.Faces[i].Flags &= ~FaceFlags.FaceTypeMask;
-							Mesh.Faces[i].Flags |= faceBit;
+							faces[f + j].Vertices = new MeshFaceVertex[faceCount];
+							Array.Copy(srcVerts, faceCount + faceCount * j, faces[f + j].Vertices, 0, faceCount);
+							faces[f + j].Material = faces[i].Material;
+							faces[f + j].Flags = (j == 0) ? origFlags : (FaceFlags)((origFlags & ~FaceFlags.FaceTypeMask) | faceBit);
 						}
-
-						Array.Resize(ref Mesh.Faces[i].Vertices, faceCount);
+						faces[i].Flags = (FaceFlags)((origFlags & ~FaceFlags.FaceTypeMask) | faceBit);
+						Array.Resize(ref faces[i].Vertices, faceCount);
 						f += n;
 					}
 				}
 			}
 
-			// Squish faces that have the same material.
+			// Squish faces that have the same material (Dictionary grouping O(f))
 			{
-				bool[] canMerge = new bool[f];
-				for (int i = 0; i < f - 1; ++i)
+				MeshFace[] faces = Mesh.Faces;
+				if (f > 1)
 				{
-					int mergeVertices = 0;
-
-					// Type of current face
-					FaceFlags type = Mesh.Faces[i].Flags & FaceFlags.FaceTypeMask;
-					FaceFlags face = Mesh.Faces[i].Flags & FaceFlags.Face2Mask;
-
-					// Find faces that can be merged
-					for (int j = i + 1; j < f; ++j)
+					Dictionary<(ushort mat, FaceFlags flags), List<int>> groups = new Dictionary<(ushort, FaceFlags), List<int>>(f);
+					for (int i = 0; i < f; i++)
 					{
-						FaceFlags type2 = Mesh.Faces[j].Flags & FaceFlags.FaceTypeMask;
-						FaceFlags face2 = Mesh.Faces[j].Flags & FaceFlags.Face2Mask;
-
-						// Conditions for face merger
-						bool mergeable = (type == FaceFlags.Triangles) &&
-						                 (type == type2) &&
-						                 (face == face2) &&
-						                 (Mesh.Faces[i].Material == Mesh.Faces[j].Material);
-
-						canMerge[j] = mergeable;
-						mergeVertices += mergeable ? Mesh.Faces[j].Vertices.Length : 0;
-					}
-
-					if (mergeVertices == 0)
-					{
-						continue;
-					}
-
-					// Current end of array index
-					int lastVertexIt = Mesh.Faces[i].Vertices.Length;
-
-					// Resize current face's vertices to have enough room
-					Array.Resize(ref Mesh.Faces[i].Vertices, lastVertexIt + mergeVertices);
-
-					// Merge faces
-					for (int j = i + 1; j < f; ++j)
-					{
-						if (canMerge[j])
+						FaceFlags type = faces[i].Flags & FaceFlags.FaceTypeMask;
+						if (type != FaceFlags.Triangles) continue;
+						var key = (faces[i].Material, faces[i].Flags);
+						if (!groups.TryGetValue(key, out var list))
 						{
-							// Copy vertices
-							Mesh.Faces[j].Vertices.CopyTo(Mesh.Faces[i].Vertices, lastVertexIt);
-
-							// Adjust index
-							lastVertexIt += Mesh.Faces[j].Vertices.Length;
+							list = new List<int>();
+							groups[key] = list;
 						}
+						list.Add(i);
 					}
-
-					// Remove now unused faces
-					int jump = 0;
-					for (int j = i + 1; j < f; ++j)
+					bool[] toRemove = new bool[f];
+					foreach (var kvp in groups)
 					{
-						if (canMerge[j])
+						List<int> list = kvp.Value;
+						if (list.Count <= 1) continue;
+						int firstIdx = list[0];
+						int totalVerts = 0;
+						for (int k = 0; k < list.Count; k++) totalVerts += faces[list[k]].Vertices.Length;
+						MeshFaceVertex[] merged = new MeshFaceVertex[totalVerts];
+						int pos = 0;
+						for (int k = 0; k < list.Count; k++)
 						{
-							jump += 1;
+							MeshFaceVertex[] src = faces[list[k]].Vertices;
+							Array.Copy(src, 0, merged, pos, src.Length);
+							pos += src.Length;
 						}
-						else if (jump > 0)
-						{
-							Mesh.Faces[j - jump] = Mesh.Faces[j];
-						}
+						faces[firstIdx].Vertices = merged;
+						for (int k = 1; k < list.Count; k++) toRemove[list[k]] = true;
 					}
-
-					// Remove faces removed from face count
-					f -= jump;
+					int write = 0;
+					for (int i = 0; i < f; i++)
+					{
+						if (toRemove[i]) continue;
+						if (write != i) faces[write] = faces[i];
+						write++;
+					}
+					f = write;
 				}
 			}
 			// finalize arrays
@@ -966,6 +942,7 @@ namespace OpenBveApi.Objects
 				Array.Resize(ref Mesh.Faces, f);
 			}
 		}
+
 	}
 }
 
