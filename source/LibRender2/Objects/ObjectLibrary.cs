@@ -267,36 +267,59 @@ namespace LibRender2.Objects
 
 		private List<FaceState> GetSortedPolygons(ReadOnlyCollection<FaceState> faces)
 		{
-			// calculate distance
+			// calculate distance - for merged faces (many triangles) use centroid distance, not just first triangle
 			double[] distances = new double[faces.Count];
 
 			Parallel.For(0, faces.Count, i =>
 			{
-				if (faces[i].Face.Vertices.Length >= 3)
+				MeshFace face = faces[i].Face;
+				if (face.Vertices.Length >= 3)
 				{
-					Vector4 v0 = new Vector4(faces[i].Object.Prototype.Mesh.Vertices[faces[i].Face.Vertices[0]].Coordinates, 1.0);
-					Vector4 v1 = new Vector4(faces[i].Object.Prototype.Mesh.Vertices[faces[i].Face.Vertices[1]].Coordinates, 1.0);
-					Vector4 v2 = new Vector4(faces[i].Object.Prototype.Mesh.Vertices[faces[i].Face.Vertices[2]].Coordinates, 1.0);
-					Vector4 w1 = v1 - v0;
-					Vector4 w2 = v2 - v0;
-					v0.Z *= -1.0;
-					w1.Z *= -1.0;
-					w2.Z *= -1.0;
-					v0 = Vector4.Transform(v0, faces[i].Object.ModelMatrix);
-					w1 = Vector4.Transform(w1, faces[i].Object.ModelMatrix);
-					w2 = Vector4.Transform(w2, faces[i].Object.ModelMatrix);
-					v0.Z *= -1.0;
-					w1.Z *= -1.0;
-					w2.Z *= -1.0;
-					Vector3 d = Vector3.Cross(w1.Xyz, w2.Xyz);
-					double t = d.Norm();
-
-					if (t != 0.0)
+					// For merged mega-faces (squished), average all triangles for correct sorting
+					// Previous code used only first triangle -> incorrect for merged transparent faces
+					if (face.Vertices.Length == 3)
 					{
-						d /= t;
-						Vector3 w0 = v0.Xyz - renderer.Camera.AbsolutePosition;
-						t = Vector3.Dot(d, w0);
-						distances[i] = -t * t;
+						Vector4 v0 = new Vector4(faces[i].Object.Prototype.Mesh.Vertices[face.Vertices[0]].Coordinates, 1.0);
+						Vector4 v1 = new Vector4(faces[i].Object.Prototype.Mesh.Vertices[face.Vertices[1]].Coordinates, 1.0);
+						Vector4 v2 = new Vector4(faces[i].Object.Prototype.Mesh.Vertices[face.Vertices[2]].Coordinates, 1.0);
+						Vector4 w1 = v1 - v0;
+						Vector4 w2 = v2 - v0;
+						v0.Z *= -1.0;
+						w1.Z *= -1.0;
+						w2.Z *= -1.0;
+						v0 = Vector4.Transform(v0, faces[i].Object.ModelMatrix);
+						w1 = Vector4.Transform(w1, faces[i].Object.ModelMatrix);
+						w2 = Vector4.Transform(w2, faces[i].Object.ModelMatrix);
+						v0.Z *= -1.0;
+						w1.Z *= -1.0;
+						w2.Z *= -1.0;
+						Vector3 d = Vector3.Cross(w1.Xyz, w2.Xyz);
+						double t = d.Norm();
+						if (t != 0.0)
+						{
+							d /= t;
+							Vector3 w0 = v0.Xyz - renderer.Camera.AbsolutePosition;
+							t = Vector3.Dot(d, w0);
+							distances[i] = -t * t;
+						}
+					}
+					else
+					{
+						// Merged face: compute centroid distance for stable sorting
+						Vector3 centroid = Vector3.Zero;
+						int count = face.Vertices.Length;
+						for (int j = 0; j < count; j++)
+						{
+							Vector3 c = faces[i].Object.Prototype.Mesh.Vertices[face.Vertices[j]].Coordinates;
+							c.Z *= -1.0;
+							Vector4 vt = new Vector4(c, 1.0);
+							vt = Vector4.Transform(vt, faces[i].Object.ModelMatrix);
+							vt.Z *= -1.0;
+							centroid += vt.Xyz;
+						}
+						centroid /= count;
+						Vector3 diff = centroid - renderer.Camera.AbsolutePosition;
+						distances[i] = -Vector3.NormSquared(diff);
 					}
 				}
 			});
