@@ -19,6 +19,7 @@ using Path = OpenBveApi.Path;
 namespace ObjectViewer {
 	/// <summary>Represents the host application.</summary>
 	internal class Host : HostInterface {
+		internal static long TextureRegistrationTime;
 		
 		// --- functions ---
 		
@@ -161,6 +162,7 @@ namespace ObjectViewer {
 		}
 
 		public override bool RegisterTexture(string path, TextureParameters parameters, out Texture handle, bool loadTexture = false, int timeout = 1000) {
+			System.Diagnostics.Stopwatch sw = System.Diagnostics.Stopwatch.StartNew();
 			if (File.Exists(path) || Directory.Exists(path)) {
 				if (Program.Renderer.TextureManager.RegisterTexture(path, parameters, out Texture data)) {
 					handle = data;
@@ -168,12 +170,14 @@ namespace ObjectViewer {
 					{
 						LoadTexture(ref data, OpenGlTextureWrapMode.ClampClamp);
 					}
+					TextureRegistrationTime += sw.ElapsedMilliseconds;
 					return true;
 				}
 			} else {
 				ReportProblem(ProblemType.PathNotFound, path);
 			}
 			handle = null;
+			TextureRegistrationTime += sw.ElapsedMilliseconds;
 			return false;
 		}
 

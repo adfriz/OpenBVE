@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
@@ -320,6 +321,13 @@ namespace ObjectViewer {
 
 	    internal static void RefreshObjects(bool autoReload = false)
 	    {
+		    if (Files.Count == 0)
+		    {
+			    return;
+		    }
+		    Stopwatch reloadTimer = Stopwatch.StartNew();
+		    Host.TextureRegistrationTime = 0;
+		    LibRender2.Textures.TextureManager.TextureDecodeTime = 0;
 		    LightingRelative = -1.0;
 			
 			// Prune cache to allow actual reloading of modified files
@@ -346,6 +354,7 @@ namespace ObjectViewer {
 			Renderer.Reset();
 		    Game.Reset();
 			formTrain.Instance?.DisableUI();
+			Stopwatch loadTimer = Stopwatch.StartNew();
 			foreach (string currentFile in Files)
 			{
 			    try
@@ -432,15 +441,20 @@ namespace ObjectViewer {
 			    }
 		    }
 
+		    loadTimer.Stop();
 		    AutoReloadFailureCounter = 0;
 
+		    Stopwatch setupTimer = Stopwatch.StartNew();
 			NearestTrain.UpdateSpecs();
 			NearestTrain.Apply();
 			formTrain.Instance?.EnableUI();
+		    setupTimer.Stop();
 
+		    Stopwatch visibilityTimer = Stopwatch.StartNew();
 		    Renderer.InitializeVisibility();
 		    Renderer.UpdateViewingDistances(600);
 		    Renderer.UpdateVisibility(true);
+		    visibilityTimer.Stop();
 		    ObjectManager.UpdateAnimatedWorldObjects(0.01, true);
 		    Program.TrainManager.UpdateTrainObjects(0.0, true);
 		    Renderer.ApplyBackgroundColor();
@@ -453,6 +467,12 @@ namespace ObjectViewer {
 		    {
 			    Renderer.GameWindow.Title = "Object Viewer";
 		    }
+		    reloadTimer.Stop();
+		    Interface.AddMessage(MessageType.Information, false,
+			    (autoReload ? "Objects reloaded" : "Objects loaded") + " in " + reloadTimer.ElapsedMilliseconds + " ms (" + Files.Count + " file(s))" +
+			    " | parser: " + loadTimer.ElapsedMilliseconds + " ms" +
+			    " | textures: " + Host.TextureRegistrationTime + " ms (decode: " + LibRender2.Textures.TextureManager.TextureDecodeTime + " ms)" +
+			    " | setup: " + setupTimer.ElapsedMilliseconds + " ms, visibility: " + visibilityTimer.ElapsedMilliseconds + " ms");
 		    LastReloadTime = DateTime.UtcNow;
 			UpdateWatchers();
 	    }
@@ -479,7 +499,7 @@ namespace ObjectViewer {
 		            }
 		            if (System.IO.File.GetLastWriteTimeUtc(currentFile) > LastReloadTime)
 		            {
-			            RefreshObjects();
+			            RefreshObjects(true);
 			            return;
 		            }
 				}
