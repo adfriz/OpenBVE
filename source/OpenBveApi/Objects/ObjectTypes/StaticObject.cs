@@ -884,8 +884,6 @@ namespace OpenBveApi.Objects
 					{
 						FaceFlags type = faces[i].Flags & FaceFlags.FaceTypeMask;
 						if (type != FaceFlags.Triangles) continue;
-						var mat = Mesh.Materials[faces[i].Material];
-						if (mat.Color.A != 255 || mat.BlendMode == MeshMaterialBlendMode.Additive || mat.GlowAttenuationData != 0) continue;
 						var key = (faces[i].Material, faces[i].Flags);
 						if (!groups.TryGetValue(key, out var list))
 						{
