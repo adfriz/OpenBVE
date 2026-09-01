@@ -906,6 +906,9 @@ namespace OpenBveApi.Objects
 					{
 						List<int> list = kvp.Value;
 						if (list.Count <= 1) continue;
+						// Skip squish for transparent materials (alpha, additive, glow, color-key) - keeps per-triangle sorting
+						var mat = Mesh.Materials[faces[list[0]].Material];
+						if (mat.Color.A != 255 || mat.BlendMode == MeshMaterialBlendMode.Additive || mat.GlowAttenuationData != 0 || (mat.Flags & MaterialFlags.TransparentColor) != 0) continue;
 						int firstIdx = list[0];
 						int totalVerts = 0;
 						for (int k = 0; k < list.Count; k++) totalVerts += faces[list[k]].Vertices.Length;
