@@ -58,11 +58,6 @@ namespace Route.Bve5
 
 			System.Text.Encoding Encoding = Text.DetermineBVE5FileEncoding(StructureListPath);
 			string[] Lines = File.ReadAllLines(StructureListPath, Encoding).Select(Line => Line.Trim('"').Trim()).ToArray();
-			if (StructureListPath.IndexOf("Tn_E235", StringComparison.InvariantCultureIgnoreCase) != -1 || StructureListPath.IndexOf("TSLSeoul4", StringComparison.InvariantCultureIgnoreCase) != -1 || StructureListPath.IndexOf("Uchibo20", StringComparison.InvariantCultureIgnoreCase) != -1)
-			{
-				// Some routes with badly optimized objects- Use a much lower threshold to avoid killing the renderer
-				Plugin.CurrentOptions.ObjectOptimizationBasicThreshold = 2000;
-			}
 			for (int i = 1; i < Lines.Length; i++)
 			{
 				//Cycle through the list of objects

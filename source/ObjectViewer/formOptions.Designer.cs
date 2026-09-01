@@ -30,8 +30,6 @@ namespace ObjectViewer
         {
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPageOptions = new System.Windows.Forms.TabPage();
-            this.comboBoxOptimizeObjects = new System.Windows.Forms.ComboBox();
-            this.labelOptimizeObjects = new System.Windows.Forms.Label();
             this.labelNearClip = new System.Windows.Forms.Label();
             this.nearClip = new System.Windows.Forms.NumericUpDown();
             this.comboBoxNewObjParser = new System.Windows.Forms.ComboBox();
@@ -166,12 +164,10 @@ namespace ObjectViewer
                     { this.comboBoxNewXParser, 1, 11 },
                     { this.labelUseNewObjParser, 0, 12 },
                     { this.comboBoxNewObjParser, 1, 12 },
-                    { this.labelOptimizeObjects, 0, 13 },
-                    { this.comboBoxOptimizeObjects, 1, 13 },
-                    { this.labelNearClip, 0, 14 },
-                    { this.nearClip, 1, 14 },
-                    { this.labelAutoReloadChanged, 0, 15 },
-                    { this.checkBoxAutoReload, 1, 15 }
+                    { this.labelNearClip, 0, 13 },
+                    { this.nearClip, 1, 13 },
+                    { this.labelAutoReloadChanged, 0, 14 },
+                    { this.checkBoxAutoReload, 1, 14 }
                 }
             };
             tlpOptions.SetColumnSpan(this.labelInterpolationSettings, 2);
@@ -186,28 +182,6 @@ namespace ObjectViewer
             this.tabPageOptions.TabIndex = 0;
             this.tabPageOptions.Text = "Options";
             this.tabPageOptions.UseVisualStyleBackColor = true;
-            // 
-            // comboBoxOptimizeObjects
-            // 
-            this.comboBoxOptimizeObjects.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.comboBoxOptimizeObjects.FormattingEnabled = true;
-            this.comboBoxOptimizeObjects.Items.AddRange(new object[] {
-            "None",
-            "Low",
-            "High"});
-            this.comboBoxOptimizeObjects.Location = new System.Drawing.Point(160, 301);
-            this.comboBoxOptimizeObjects.Name = "comboBoxOptimizeObjects";
-            this.comboBoxOptimizeObjects.Size = new System.Drawing.Size(121, 21);
-            this.comboBoxOptimizeObjects.TabIndex = 47;
-            // 
-            // labelOptimizeObjects
-            // 
-            this.labelOptimizeObjects.AutoSize = true;
-            this.labelOptimizeObjects.Location = new System.Drawing.Point(10, 301);
-            this.labelOptimizeObjects.Name = "labelOptimizeObjects";
-            this.labelOptimizeObjects.Size = new System.Drawing.Size(131, 13);
-            this.labelOptimizeObjects.TabIndex = 46;
-            this.labelOptimizeObjects.Text = "Object Optimization Mode:";
             // 
             // labelNearClip
             // 
@@ -1054,8 +1028,6 @@ namespace ObjectViewer
 
 		private System.Windows.Forms.TabControl tabControl1;
 		private System.Windows.Forms.TabPage tabPageOptions;
-		private System.Windows.Forms.ComboBox comboBoxOptimizeObjects;
-		private System.Windows.Forms.Label labelOptimizeObjects;
 		private System.Windows.Forms.ComboBox comboBoxNewObjParser;
 		private System.Windows.Forms.Label labelUseNewObjParser;
 		private System.Windows.Forms.ComboBox comboBoxNewXParser;

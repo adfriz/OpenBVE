@@ -360,7 +360,7 @@ namespace RouteViewer
 									{
 										if (unifiedObject is StaticObject staticObject)
 										{
-											staticObject.OptimizeObject(PreserveVertices, Interface.CurrentOptions.ObjectOptimizationBasicThreshold, true);
+											staticObject.OptimizeObject(PreserveVertices, 0, true);
 											Object = staticObject;
 											StaticObjectCache.Add(ValueTuple.Create(path.ToLowerInvariant(), PreserveVertices, File.GetLastWriteTime(path)), Object);
 											return true;
@@ -431,7 +431,7 @@ namespace RouteViewer
 										{
 											continue;
 										}
-										obj.OptimizeObject(false, Interface.CurrentOptions.ObjectOptimizationBasicThreshold, true);
+										obj.OptimizeObject(false, 0, true);
 										Object = obj;
 
 										if (Object is StaticObject staticObject)

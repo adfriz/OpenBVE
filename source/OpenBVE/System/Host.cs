@@ -359,7 +359,7 @@ namespace OpenBve {
 									if (Program.CurrentHost.Plugins[i].Object.LoadObject(path, Encoding, out var unifiedObject)) {
 										if (unifiedObject is StaticObject staticObject)
 										{
-											staticObject.OptimizeObject(PreserveVertices, Interface.CurrentOptions.ObjectOptimizationBasicThreshold, Interface.CurrentOptions.ObjectOptimizationVertexCulling);
+											staticObject.OptimizeObject(PreserveVertices, 0, false);
 											Object = staticObject;
 											StaticObjectCache.Add(ValueTuple.Create(path.ToLowerInvariant(), PreserveVertices, File.GetLastWriteTime(path)), Object);
 											return true;
@@ -424,7 +424,7 @@ namespace OpenBve {
 										{
 											continue;
 										}
-										obj.OptimizeObject(false, Interface.CurrentOptions.ObjectOptimizationBasicThreshold, true);
+										obj.OptimizeObject(false, 0, false);
 										Object = obj;
 
 										if (Object is StaticObject staticObject)

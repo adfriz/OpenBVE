@@ -48,7 +48,6 @@ namespace CsvRwRouteParser
 		{
 			FileFormat = RoutefileFormat.Hmmsim;
 			Plugin.CurrentOptions.ObjectDisposalMode = ObjectDisposalMode.Accurate;
-			Plugin.CurrentOptions.ObjectOptimizationBasicThreshold = 2000;
 			// from observation
 			if (BlockInterval == 25)
 			{

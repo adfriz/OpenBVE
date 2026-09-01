@@ -109,7 +109,6 @@
     <Compile Include="InterfaceR.cs" />
     <Compile Include="NewRendererR.cs" />
     <Compile Include="Options.cs" />
-    <Compile Include="ObjectOptimizationMode.cs" />
     <Compile Include="ObjectManager.cs" />
     <Compile Include="Audio\Sounds.Update.cs" />
     <Compile Include="System\Gamewindow.cs" />

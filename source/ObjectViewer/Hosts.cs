@@ -285,7 +285,7 @@ namespace ObjectViewer {
 										{
 											continue;
 										}
-										obj.OptimizeObject(false, Interface.CurrentOptions.ObjectOptimizationBasicThreshold, true);
+										obj.OptimizeObject(false, 0, true);
 										Object = obj;
 
 										if (Object is StaticObject staticObject)

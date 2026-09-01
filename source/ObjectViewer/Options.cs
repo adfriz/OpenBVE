@@ -15,8 +15,6 @@ namespace ObjectViewer
 	/// <summary>Holds the program specific options</summary>
 	internal class Options : BaseOptions
 	{
-		private ObjectOptimizationMode objectOptimizationMode;
-
 		internal int FPSLimit;
 
 		internal string ObjectSearchDirectory;
@@ -37,36 +35,10 @@ namespace ObjectViewer
 
 		internal Color32 TextColor;
 
-		/// <summary>
-		/// The mode of optimization to be performed on an object
-		/// </summary>
-		internal ObjectOptimizationMode ObjectOptimizationMode
-		{
-			get => objectOptimizationMode;
-			set
-			{
-				objectOptimizationMode = value;
-
-				switch (value)
-				{
-					case ObjectOptimizationMode.None:
-						ObjectOptimizationBasicThreshold = 0;
-						break;
-					case ObjectOptimizationMode.Low:
-						ObjectOptimizationBasicThreshold = 1000;
-						break;
-					case ObjectOptimizationMode.High:
-						ObjectOptimizationBasicThreshold = 10000;
-						break;
-				}
-			}
-		}
-
 		internal Options()
 		{
 			VerticalSynchronization = true;
 			FPSLimit = 0;
-			ObjectOptimizationMode = ObjectOptimizationMode.Low;
 			// Shadow settings use synced base defaults
 		}
 
@@ -108,9 +80,6 @@ namespace ObjectViewer
 				Builder.AppendLine("[Parsers]");
 				Builder.AppendLine("xObject = " + CurrentXParser);
 				Builder.AppendLine("objObject = " + CurrentObjParser);
-				Builder.AppendLine();
-				Builder.AppendLine("[objectOptimization]");
-				Builder.AppendLine($"mode = {ObjectOptimizationMode}");
 				Builder.AppendLine();
 				Builder.AppendLine("[Folders]");
 				Builder.AppendLine($"objectsearch = {ObjectSearchDirectory}");
@@ -209,10 +178,6 @@ namespace ObjectViewer
 							block.GetEnumValue(OptionsKey.XObject, out Interface.CurrentOptions.CurrentXParser);
 							block.GetEnumValue(OptionsKey.ObjObject, out Interface.CurrentOptions.CurrentObjParser);
 							block.GetValue(OptionsKey.GDIPlus, out Interface.CurrentOptions.UseGDIDecoders);
-							break;
-						case OptionsSection.ObjectOptimization:
-							block.GetEnumValue(OptionsKey.Mode, out ObjectOptimizationMode mode);
-							Interface.CurrentOptions.ObjectOptimizationMode = mode; // can't set an accessor value directly
 							break;
 						case OptionsSection.Folders:
 							block.GetValue(OptionsKey.ObjectSearch, out string folder);

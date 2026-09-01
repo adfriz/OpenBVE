@@ -1,7 +1,6 @@
 using System;
 using System.Windows.Forms;
 using LibRender2.Viewports;
-using ObjectViewer.Graphics;
 using OpenBveApi;
 using OpenBveApi.Graphics;
 using OpenBveApi.Interface;
@@ -30,7 +29,6 @@ namespace ObjectViewer
 			height.Value = Program.Renderer.Screen.Height;
 			comboBoxNewXParser.SelectedIndex = (int) Interface.CurrentOptions.CurrentXParser;
 			comboBoxNewObjParser.SelectedIndex = (int) Interface.CurrentOptions.CurrentObjParser;
-			comboBoxOptimizeObjects.SelectedIndex = (int)Interface.CurrentOptions.ObjectOptimizationMode;
 			
 			// Loading current shadow settings
 			switch (Interface.CurrentOptions.ShadowResolution)
@@ -259,7 +257,6 @@ namespace ObjectViewer
 			}
 			
 
-			Interface.CurrentOptions.ObjectOptimizationMode = (ObjectOptimizationMode)comboBoxOptimizeObjects.SelectedIndex;
 			Interface.CurrentOptions.CameraMoveLeft = (Key)comboBoxLeft.SelectedItem;
 			Interface.CurrentOptions.CameraMoveRight = (Key)comboBoxRight.SelectedItem;
 			Interface.CurrentOptions.CameraMoveUp = (Key)comboBoxUp.SelectedItem;

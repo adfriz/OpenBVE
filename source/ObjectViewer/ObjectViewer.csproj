@@ -100,7 +100,6 @@
     <Compile Include="Game\Menu.cs" />
     <Compile Include="Game\Menu.SingleMenu.cs" />
     <Compile Include="Graphics\NewRendererS.cs" />
-    <Compile Include="Graphics\ObjectOptimizationMode.cs" />
     <Compile Include="Hosts.cs" />
     <Compile Include="Options.cs" />
     <Compile Include="System\GameWindow.cs" />

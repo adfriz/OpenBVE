@@ -70,12 +70,6 @@ namespace OpenBveApi
 		public string CurrentCompatibilitySignalSet;
 		/// <summary>Allows a forwards compatible context to be forced</summary>
 		public bool ForceForwardsCompatibleContext;
-		/*
-		 * Note: Object optimisation takes time whilst loading, but may increase the render performance of an
-		 * object by checking for duplicate vertices etc.
-		 */
-		/// <summary>The minimum number of vertices for basic optimisation to be performed on an object</summary>
-		public int ObjectOptimizationBasicThreshold;
 		/// <summary>The maximum number of sounds playing at any one time</summary>
 		public int SoundNumber;
 		/// <summary>Shadow map resolution per cascade. Off disables shadows.</summary>

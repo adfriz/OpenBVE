@@ -26,8 +26,6 @@ namespace OpenBve
 			internal int TimeAccelerationFactor;
 			///// <summary>The current type of motion blur</summary>
 			internal MotionBlurMode MotionBlur;
-			/// <summary>Whether duplicate vertices are culled during loading</summary>
-			internal bool ObjectOptimizationVertexCulling;
 			/// <summary>Whether collisions between trains are enabled</summary>
 			internal bool Collisions;
 			/// <summary>Whether the black-box data logger is enabled</summary>
@@ -145,8 +143,6 @@ namespace OpenBve
 				SoundNumber = 16;
 				ShowWarningMessages = true;
 				ShowErrorMessages = true;
-				ObjectOptimizationBasicThreshold = 10000;
-				ObjectOptimizationVertexCulling = false;
 				RouteFolder = "";
 				TrainFolder = "";
 				RecentlyUsedRoutes = new string[] { };
@@ -321,10 +317,6 @@ namespace OpenBve
 				Builder.AppendLine("shadownormalbias = " + ShadowNormalBias.ToString(Culture));
 				Builder.AppendLine("shadowfiltercascades = " + (ShadowFilterCascades ? "true" : "false"));
 				Builder.AppendLine("fpslimit = " + FPSLimit.ToString(Culture));
-				Builder.AppendLine();
-				Builder.AppendLine("[objectOptimization]");
-				Builder.AppendLine("basicThreshold = " + ObjectOptimizationBasicThreshold.ToString(Culture));
-				Builder.AppendLine("vertexCulling = " + ObjectOptimizationVertexCulling.ToString(Culture));
 				Builder.AppendLine();
 				Builder.AppendLine("[simulation]");
 				Builder.AppendLine("toppling = " + (Toppling ? "true" : "false"));
@@ -537,12 +529,6 @@ namespace OpenBve
 								CurrentOptions.FPSLimit = 0; // n.b. 0 is unlimited
 							}
 
-							break;
-						}
-						case OptionsSection.ObjectOptimization:
-						{
-							block.GetValue(OptionsKey.BasicThreshold, out CurrentOptions.ObjectOptimizationBasicThreshold);
-							block.GetValue(OptionsKey.VertexCulling, out CurrentOptions.ObjectOptimizationVertexCulling);
 							break;
 						}
 						case OptionsSection.Simulation:
