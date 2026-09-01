@@ -873,7 +873,8 @@ namespace OpenBveApi.Objects
 				}
 			}
 
-			// Squish faces that have the same material (Dictionary grouping O(f))
+			// Vertex cache optimization per material group before squish.
+			// Each face is a single triangle (3 indices) at this point.
 			{
 				MeshFace[] faces = Mesh.Faces;
 				if (f > 1)
@@ -892,6 +893,15 @@ namespace OpenBveApi.Objects
 							groups[key] = list;
 						}
 						list.Add(i);
+					}
+					// Reorder each material batch for vertex cache efficiency
+					foreach (var kvp in groups)
+					{
+						List<int> list = kvp.Value;
+						if (list.Count > 1)
+						{
+							ReorderFacesForVertexCache(faces, list, Mesh.Vertices.Length);
+						}
 					}
 					bool[] toRemove = new bool[f];
 					foreach (var kvp in groups)
@@ -922,6 +932,12 @@ namespace OpenBveApi.Objects
 					f = write;
 				}
 			}
+			// Vertex fetch optimization: reorder vertex buffer by first use
+			// Skip when preserveVerticies is true (large meshes >10k) to respect original flag.
+			if (!preserveVerticies && f > 0 && Mesh.Vertices.Length > 0)
+			{
+				OptimizeVertexFetch(Mesh, f);
+			}
 			// finalize arrays
 
 			if (m != Mesh.Materials.Length)
@@ -933,6 +949,229 @@ namespace OpenBveApi.Objects
 			{
 				Array.Resize(ref Mesh.Faces, f);
 			}
+		}
+
+		private static float ComputeVertexScore(int cachePos, int liveTriCount)
+		{
+			if (liveTriCount == 0) return -1.0f;
+			float score = 0.0f;
+			if (cachePos < 0)
+			{
+				// not in cache
+			}
+			else if (cachePos < 3)
+			{
+				score = 0.75f;
+			}
+			else
+			{
+				const float scaler = 1.0f / (32 - 3);
+				float p = 1.0f - (cachePos - 3) * scaler;
+				score = (float)System.Math.Pow(p, 1.5);
+			}
+			// valence boost
+			float valenceBoost = (float)System.Math.Pow(liveTriCount, -0.5);
+			score += 2.0f * valenceBoost;
+			return score;
+		}
+
+		// Reorders face indices list for vertex cache efficiency (per material group)
+		private static void ReorderFacesForVertexCache(MeshFace[] faces, List<int> indices, int vertexCount)
+		{
+			int triCount = indices.Count;
+			if (triCount <= 1 || vertexCount == 0) return;
+
+			// Build live count and adjacency
+			int[] liveCounts = new int[vertexCount];
+			List<int>[] vertTris = new List<int>[vertexCount];
+			for (int i = 0; i < triCount; i++)
+			{
+				int fi = indices[i];
+				MeshFaceVertex[] fv = faces[fi].Vertices;
+				// Only handle triangles (3 verts) - skip others
+				if (fv.Length != 3) continue;
+				for (int k = 0; k < 3; k++)
+				{
+					int vi = fv[k].Index;
+					if (vi < 0 || vi >= vertexCount) continue;
+					liveCounts[vi]++;
+					if (vertTris[vi] == null) vertTris[vi] = new List<int>(4);
+					vertTris[vi].Add(i);
+				}
+			}
+
+			float[] vertScores = new float[vertexCount];
+			float[] triScores = new float[triCount];
+			bool[] triEmitted = new bool[triCount];
+
+			for (int v = 0; v < vertexCount; v++)
+			{
+				if (vertTris[v] != null)
+					vertScores[v] = ComputeVertexScore(-1, liveCounts[v]);
+			}
+			for (int i = 0; i < triCount; i++)
+			{
+				int fi = indices[i];
+				MeshFaceVertex[] fv = faces[fi].Vertices;
+				if (fv.Length != 3) { triScores[i] = 0; continue; }
+				float s = 0;
+				for (int k = 0; k < 3; k++) s += vertScores[fv[k].Index];
+				triScores[i] = s;
+			}
+
+			int[] cache = new int[32];
+			int[] cachePos = new int[vertexCount];
+			for (int i = 0; i < 32; i++) cache[i] = -1;
+			for (int i = 0; i < vertexCount; i++) cachePos[i] = -1;
+			int cacheCount = 0;
+
+			int[] newOrder = new int[triCount];
+			int outPos = 0;
+
+			while (outPos < triCount)
+			{
+				int best = -1;
+				float bestScore = -1.0f;
+				for (int i = 0; i < triCount; i++)
+				{
+					if (!triEmitted[i] && triScores[i] > bestScore)
+					{
+						bestScore = triScores[i];
+						best = i;
+					}
+				}
+				if (best == -1)
+				{
+					for (int i = 0; i < triCount; i++) if (!triEmitted[i]) { best = i; break; }
+				}
+				triEmitted[best] = true;
+				newOrder[outPos++] = best;
+
+				int fiBest = indices[best];
+				MeshFaceVertex[] fvBest = faces[fiBest].Vertices;
+				if (fvBest.Length != 3) continue;
+				int v0 = fvBest[0].Index;
+				int v1 = fvBest[1].Index;
+				int v2 = fvBest[2].Index;
+
+				// Decrement live counts
+				if (v0 >= 0 && v0 < vertexCount) liveCounts[v0]--;
+				if (v1 >= 0 && v1 < vertexCount) liveCounts[v1]--;
+				if (v2 >= 0 && v2 < vertexCount) liveCounts[v2]--;
+
+				// Update cache
+				int[] triVerts = new int[3] { v0, v1, v2 };
+				System.Collections.Generic.HashSet<int> affectedVerts = new System.Collections.Generic.HashSet<int>();
+				foreach (int v in triVerts)
+				{
+					if (v < 0 || v >= vertexCount) continue;
+					int pos = cachePos[v];
+					if (pos != -1)
+					{
+						for (int i = pos; i > 0; i--) cache[i] = cache[i - 1];
+						cache[0] = v;
+						for (int i = 0; i < cacheCount; i++) cachePos[cache[i]] = i;
+					}
+					else
+					{
+						int evicted = -1;
+						if (cacheCount == 32)
+						{
+							evicted = cache[31];
+							if (evicted != -1) cachePos[evicted] = -1;
+							for (int i = 31; i > 0; i--) cache[i] = cache[i - 1];
+							cache[0] = v;
+							for (int i = 0; i < 32; i++) cachePos[cache[i]] = i;
+							if (evicted != -1) affectedVerts.Add(evicted);
+						}
+						else
+						{
+							for (int i = cacheCount; i > 0; i--) cache[i] = cache[i - 1];
+							cache[0] = v;
+							cacheCount++;
+							for (int i = 0; i < cacheCount; i++) cachePos[cache[i]] = i;
+						}
+					}
+				}
+				for (int i = 0; i < cacheCount; i++) affectedVerts.Add(cache[i]);
+				// Ensure tri verts are considered (already in cache but may have live count change)
+				foreach (int v in triVerts) if (v >= 0 && v < vertexCount) affectedVerts.Add(v);
+
+				System.Collections.Generic.HashSet<int> affectedTris = new System.Collections.Generic.HashSet<int>();
+				foreach (int v in affectedVerts)
+				{
+					float oldScore = vertScores[v];
+					float newScore = ComputeVertexScore(cachePos[v], liveCounts[v]);
+					if (oldScore != newScore)
+					{
+						vertScores[v] = newScore;
+						List<int> adj = vertTris[v];
+						if (adj != null)
+						{
+							foreach (int t in adj) if (!triEmitted[t]) affectedTris.Add(t);
+						}
+					}
+				}
+				foreach (int t in affectedTris)
+				{
+					int fi = indices[t];
+					MeshFaceVertex[] fv = faces[fi].Vertices;
+					if (fv.Length != 3) continue;
+					float s = vertScores[fv[0].Index] + vertScores[fv[1].Index] + vertScores[fv[2].Index];
+					triScores[t] = s;
+				}
+			}
+
+			// Apply reordered list
+			int[] copy = indices.ToArray();
+			indices.Clear();
+			for (int i = 0; i < triCount; i++) indices.Add(copy[newOrder[i]]);
+		}
+
+		// Vertex fetch optimization: reorder vertices by first use
+		private static void OptimizeVertexFetch(Mesh mesh, int faceCount)
+		{
+			int vCount = mesh.Vertices.Length;
+			if (vCount == 0 || faceCount == 0) return;
+			int[] remap = new int[vCount];
+			for (int i = 0; i < vCount; i++) remap[i] = -1;
+			System.Collections.Generic.List<VertexTemplate> newVerts = new System.Collections.Generic.List<VertexTemplate>(vCount);
+			int next = 0;
+			for (int i = 0; i < faceCount; i++)
+			{
+				MeshFaceVertex[] fv = mesh.Faces[i].Vertices;
+				for (int k = 0; k < fv.Length; k++)
+				{
+					int old = fv[k].Index;
+					if (old < 0 || old >= vCount) continue;
+					if (remap[old] == -1)
+					{
+						remap[old] = next++;
+						newVerts.Add(mesh.Vertices[old]);
+					}
+				}
+			}
+			// Preserve any unreferenced vertices at end
+			for (int i = 0; i < vCount; i++)
+			{
+				if (remap[i] == -1)
+				{
+					remap[i] = next++;
+					newVerts.Add(mesh.Vertices[i]);
+				}
+			}
+			// Remap indices
+			for (int i = 0; i < faceCount; i++)
+			{
+				MeshFaceVertex[] fv = mesh.Faces[i].Vertices;
+				for (int k = 0; k < fv.Length; k++)
+				{
+					int old = fv[k].Index;
+					if (old >= 0 && old < vCount)
+						mesh.Faces[i].Vertices[k].Index = remap[old];
+				}
+			}
+			mesh.Vertices = newVerts.ToArray();
 		}
 
 	}
