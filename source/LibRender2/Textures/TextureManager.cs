@@ -36,9 +36,30 @@ namespace LibRender2.Textures
 		public static long UploadMs;
 
 		private static Dictionary<TextureOrigin, Texture> animatedTextures;
-		// Reused buffer for paletted GIF to avoid per-frame new byte[] leak (Can get StackOverflow in glTexSubImage2D)
+		// Reused buffer for paletted uploads to avoid per-frame allocations.
 		private static byte[] _palettedExpandBuffer;
 		private static readonly object _expandLock = new object();
+
+		private static byte[] ExpandPaletted(byte[] src, OpenBveApi.Colors.Color32[] pal, int pixels, bool withAlpha)
+		{
+			byte[] dst = new byte[pixels * (withAlpha ? 4 : 3)];
+			for (int p = 0; p < pixels; p++)
+			{
+				var c = pal != null && (src[p] & 0xFF) < pal.Length ? pal[src[p] & 0xFF] : new OpenBveApi.Colors.Color32(0, 0, 0, 255);
+				dst[p * (withAlpha ? 4 : 3)] = c.R;
+				dst[p * (withAlpha ? 4 : 3) + 1] = c.G;
+				dst[p * (withAlpha ? 4 : 3) + 2] = c.B;
+				if (withAlpha)
+					dst[p * 4 + 3] = c.A;
+			}
+			return dst;
+		}
+
+		private static void Upload(int w, int h, PixelInternalFormat internalFormat, OpenTK.Graphics.OpenGL.PixelFormat format, byte[] bytes, int align)
+		{
+			GL.PixelStore(PixelStoreParameter.UnpackAlignment, align);
+			GL.TexImage2D(TextureTarget.Texture2D, 0, internalFormat, w, h, 0, format, PixelType.UnsignedByte, bytes);
+		}
 
 		/// <summary>Holds the registered path-based textures, indexed by path.</summary>
 		private static readonly Dictionary<string, List<Texture>> RegisteredTextureLookup = new Dictionary<string, List<Texture>>(StringComparer.OrdinalIgnoreCase);
@@ -287,64 +308,38 @@ namespace LibRender2.Textures
 					{
 						// Reuse same GL name across frames, update existing texture
 						GL.BindTexture(TextureTarget.Texture2D, handle.OpenGlTextures[(int)wrap].Name);
-						byte[] subBytes = texture.Bytes; // current frame's bytes (paletted or RGBA)
-						// For paletted, expand via reused static buffer to avoid per-frame new byte[] GC pressure. (I think this how web browser do frame discarding)
+						byte[] subBytes = texture.Bytes;
 						if (texture.PixelFormat == PixelFormat.Paletted)
 						{
 							bool opaque = texture.GetTransparencyType() == TextureTransparencyType.Opaque;
 							int need = texture.Width * texture.Height * (opaque ? 3 : 4);
-							// Hold the lock across fill + upload: the static buffer is shared, so releasing
-							// the lock before TexSubImage2D would let a concurrent upload corrupt the data.
-							lock (_expandLock)
+							lock (_expandLock) // hold across fill + upload, buffer is shared
 							{
-								if (_palettedExpandBuffer == null || _palettedExpandBuffer.Length < need) _palettedExpandBuffer = new byte[need];
+								if (_palettedExpandBuffer == null || _palettedExpandBuffer.Length < need)
+									_palettedExpandBuffer = new byte[need];
 								byte[] pooled = _palettedExpandBuffer;
 								var pal = texture.Palette32;
-								if (opaque)
+								int channels = opaque ? 3 : 4;
+								for (int p = 0; p < texture.Width * texture.Height; p++)
 								{
-									for (int p = 0; p < texture.Width * texture.Height; p++)
-									{
-										int idx = subBytes[p] & 0xFF;
-										var c = pal != null && idx < pal.Length ? pal[idx] : new OpenBveApi.Colors.Color32(0,0,0,255);
-										pooled[p*3] = c.R; pooled[p*3+1] = c.G; pooled[p*3+2] = c.B;
-									}
-									GL.PixelStore(PixelStoreParameter.UnpackAlignment, 1);
-									GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, texture.Width, texture.Height, OpenTK.Graphics.OpenGL.PixelFormat.Rgb, PixelType.UnsignedByte, pooled);
+									var c = pal != null && (subBytes[p] & 0xFF) < pal.Length ? pal[subBytes[p] & 0xFF] : new OpenBveApi.Colors.Color32(0, 0, 0, 255);
+									pooled[p * channels] = c.R;
+									pooled[p * channels + 1] = c.G;
+									pooled[p * channels + 2] = c.B;
+									if (!opaque)
+										pooled[p * 4 + 3] = c.A;
 								}
-								else
-								{
-									for (int p = 0; p < texture.Width * texture.Height; p++)
-									{
-										int idx = subBytes[p] & 0xFF;
-										var c = pal != null && idx < pal.Length ? pal[idx] : new OpenBveApi.Colors.Color32(0,0,0,255);
-										pooled[p*4] = c.R; pooled[p*4+1] = c.G; pooled[p*4+2] = c.B; pooled[p*4+3] = c.A;
-									}
-									GL.PixelStore(PixelStoreParameter.UnpackAlignment, 4);
-									GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, texture.Width, texture.Height, OpenTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, pooled);
-								}
+								GL.PixelStore(PixelStoreParameter.UnpackAlignment, opaque ? 1 : 4);
+								GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, texture.Width, texture.Height, opaque ? OpenTK.Graphics.OpenGL.PixelFormat.Rgb : OpenTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, pooled);
 							}
-							GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
 						}
 						else
 						{
-							// RGB/RGBA direct – no expansion
-							if (texture.PixelFormat == PixelFormat.RGBAlpha || texture.GetTransparencyType() != TextureTransparencyType.Opaque)
-							{
-								GL.PixelStore(PixelStoreParameter.UnpackAlignment, 4);
-								GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, texture.Width, texture.Height, OpenTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, subBytes);
-							}
-							else if (texture.PixelFormat == PixelFormat.RGB)
-							{
-								GL.PixelStore(PixelStoreParameter.UnpackAlignment, 1);
-								GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, texture.Width, texture.Height, OpenTK.Graphics.OpenGL.PixelFormat.Rgb, PixelType.UnsignedByte, subBytes);
-							}
-							else
-							{
-								GL.PixelStore(PixelStoreParameter.UnpackAlignment, 4);
-								GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, texture.Width, texture.Height, OpenTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, subBytes);
-							}
-							GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+							bool rgb = texture.PixelFormat == PixelFormat.RGB && texture.GetTransparencyType() == TextureTransparencyType.Opaque;
+							GL.PixelStore(PixelStoreParameter.UnpackAlignment, rgb ? 1 : 4);
+							GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, texture.Width, texture.Height, rgb ? OpenTK.Graphics.OpenGL.PixelFormat.Rgb : OpenTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, subBytes);
 						}
+						GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
 						// Keep the stable handle in sync without swapping identity: the handle keeps
 						// its origin so the animated cache keeps hitting every tick (swapping to the
 						// decoded texture gives it a fresh ByteArrayOrigin and the cache never hits again)
@@ -509,137 +504,55 @@ namespace LibRender2.Textures
 					
 					bool noLuminanceChannel = currentHost.Platform == HostPlatform.AppleOSX || renderer.currentOptions.ForceForwardsCompatibleContext;
 					
-					if (handle.Transparency == TextureTransparencyType.Opaque)
+					bool opaque = handle.Transparency == TextureTransparencyType.Opaque;
+					switch (texture.PixelFormat)
 					{
-						switch (texture.PixelFormat)
-						{
-							case PixelFormat.Paletted:
-								{
-									// Expand indexed to RGB (alpha discarded for opaque)
-									byte[] expanded = new byte[texture.Width * texture.Height * 3];
-									var pal = texture.Palette32;
-									for (int p = 0; p < texture.Width * texture.Height; p++)
-									{
-										int idx = textureBytes[p] & 0xFF;
-										var c = pal != null && idx < pal.Length ? pal[idx] : new OpenBveApi.Colors.Color32(0,0,0,255);
-										expanded[p*3] = c.R; expanded[p*3+1] = c.G; expanded[p*3+2] = c.B;
-									}
-									GL.PixelStore(PixelStoreParameter.UnpackAlignment, 1);
-									GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgb8, texture.Width, texture.Height, 0, OpenTK.Graphics.OpenGL.PixelFormat.Rgb, PixelType.UnsignedByte, expanded);
-									break;
-								}
-							case PixelFormat.Grayscale:
-								// send as is to the luminance channel [NOTE: deprecated in GL4, so use Red channel instead]
-								// n.b. Make sure to set the unpack alignment as otherwise we corrupt textures where stride > width
-								GL.PixelStore(PixelStoreParameter.UnpackAlignment, 1);
-								GL.TexImage2D(TextureTarget.Texture2D, 0,
-									noLuminanceChannel ? PixelInternalFormat.R8 : PixelInternalFormat.Luminance,
-									texture.Width, texture.Height, 0,
-									noLuminanceChannel ? OpenTK.Graphics.OpenGL.PixelFormat.Red : OpenTK.Graphics.OpenGL.PixelFormat.Luminance,
-									PixelType.UnsignedByte, textureBytes);
-								
-								if (noLuminanceChannel)
-								{
-									// small cheat: Use GL_RED (6403) to swizzle our R channel when called by the shader
-									GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureSwizzleRgba, new[] { 6403, 6403, 6403, 1});
-								}
-								break;
-							case PixelFormat.RGB:
-								// send as is
-								// n.b. Make sure to set the unpack alignment as otherwise we corrupt textures where stride > width
-								GL.PixelStore(PixelStoreParameter.UnpackAlignment, 1);
-								GL.TexImage2D(TextureTarget.Texture2D, 0,
-									PixelInternalFormat.Rgb8,
-									texture.Width, texture.Height, 0,
-									OpenTK.Graphics.OpenGL.PixelFormat.Rgb,
-									PixelType.UnsignedByte, textureBytes);
-								break;
-							case PixelFormat.RGBAlpha:
-								/*
-								 * Opaque texture, so the alpha channel is discarded by the RGB8 internal format.
-								 * Upload the RGBA data directly rather than stripping it CPU-side.
-								 */
-								GL.PixelStore(PixelStoreParameter.UnpackAlignment, 4);
-								GL.TexImage2D(TextureTarget.Texture2D, 0,
-									PixelInternalFormat.Rgb8,
-									texture.Width, texture.Height, 0,
-									OpenTK.Graphics.OpenGL.PixelFormat.Rgba,
-									PixelType.UnsignedByte, textureBytes);
-								break;
-						}
-					}
-					else
-					{
-						switch (texture.PixelFormat)
-						{
 						case PixelFormat.Paletted:
-							{
-								byte[] expanded = new byte[texture.Width * texture.Height * 4];
-								var pal = texture.Palette32;
-								for (int p = 0; p < texture.Width * texture.Height; p++)
-								{
-									int idx = textureBytes[p] & 0xFF;
-									var c = pal != null && idx < pal.Length ? pal[idx] : new OpenBveApi.Colors.Color32(0,0,0,255);
-									expanded[p*4] = c.R; expanded[p*4+1] = c.G; expanded[p*4+2] = c.B; expanded[p*4+3] = c.A;
-								}
-								GL.PixelStore(PixelStoreParameter.UnpackAlignment, 4);
-								GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba8, texture.Width, texture.Height, 0, OpenTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, expanded);
-								break;
-							}
+							byte[] expanded = ExpandPaletted(textureBytes, texture.Palette32, texture.Width * texture.Height, !opaque);
+							if (opaque)
+								Upload(texture.Width, texture.Height, PixelInternalFormat.Rgb8, OpenTK.Graphics.OpenGL.PixelFormat.Rgb, expanded, 1);
+							else
+								Upload(texture.Width, texture.Height, PixelInternalFormat.Rgba8, OpenTK.Graphics.OpenGL.PixelFormat.Rgba, expanded, 4);
+							break;
+						case PixelFormat.Grayscale:
+							if (!opaque)
+								goto case PixelFormat.GrayscaleAlpha;
+							Upload(texture.Width, texture.Height, noLuminanceChannel ? PixelInternalFormat.R8 : PixelInternalFormat.Luminance, noLuminanceChannel ? OpenTK.Graphics.OpenGL.PixelFormat.Red : OpenTK.Graphics.OpenGL.PixelFormat.Luminance, textureBytes, 1);
+							if (noLuminanceChannel)
+								GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureSwizzleRgba, new[] { 6403, 6403, 6403, 1 }); // swizzle R -> RGB
+							break;
 						case PixelFormat.GrayscaleAlpha:
-							// NOTE: LuminanceAlpha is deprecated in GL4, so just upconvert to RGBA
 							if (noLuminanceChannel)
 							{
 								int stride = (4 * (texture.Width + 1) >> 2) << 2;
 								byte[] newBytes = new byte[stride * texture.Height];
 								int i = 0, j = 0;
-
 								for (int y = 0; y < texture.Height; y++)
 								{
 									for (int x = 0; x < texture.Width; x++)
 									{
-										newBytes[j + 0] = textureBytes[i + 0];
-										newBytes[j + 1] = textureBytes[i + 0];
-										newBytes[j + 2] = textureBytes[i + 0];
+										newBytes[j] = newBytes[j + 1] = newBytes[j + 2] = textureBytes[i];
 										newBytes[j + 3] = textureBytes[i + 1];
 										i += 2;
 										j += 4;
 									}
-
 									j += stride - 4 * texture.Width;
 								}
-								GL.PixelStore(PixelStoreParameter.UnpackAlignment, 4);
-								GL.TexImage2D(TextureTarget.Texture2D, 0,
-									PixelInternalFormat.Rgba8,
-									texture.Width, texture.Height, 0,
-									OpenTK.Graphics.OpenGL.PixelFormat.Rgba,
-									PixelType.UnsignedByte, newBytes);
+								Upload(texture.Width, texture.Height, PixelInternalFormat.Rgba8, OpenTK.Graphics.OpenGL.PixelFormat.Rgba, newBytes, 4);
 							}
 							else
-							{
-								GL.PixelStore(PixelStoreParameter.UnpackAlignment, 1);
-								GL.TexImage2D(TextureTarget.Texture2D, 0,
-									PixelInternalFormat.LuminanceAlpha,
-									texture.Width, texture.Height, 0,
-									OpenTK.Graphics.OpenGL.PixelFormat.LuminanceAlpha,
-									PixelType.UnsignedByte, textureBytes);
-							}
+								Upload(texture.Width, texture.Height, PixelInternalFormat.LuminanceAlpha, OpenTK.Graphics.OpenGL.PixelFormat.LuminanceAlpha, textureBytes, 1);
 							break;
-							case PixelFormat.RGBAlpha:
-								/*
-								* The texture uses its alpha channel, so send the bitmap data
-								* in 32-bits per channel as-is.
-								* */
-								// n.b. Must reset the unpack alignment in case of changes
-								GL.PixelStore(PixelStoreParameter.UnpackAlignment, 4);
-								GL.TexImage2D(TextureTarget.Texture2D, 0,
-									PixelInternalFormat.Rgba8,
-									texture.Width, texture.Height, 0,
-									OpenTK.Graphics.OpenGL.PixelFormat.Rgba,
-									PixelType.UnsignedByte, textureBytes);
-								break;
-						}
-						
+						case PixelFormat.RGB:
+							Upload(texture.Width, texture.Height, PixelInternalFormat.Rgb8, OpenTK.Graphics.OpenGL.PixelFormat.Rgb, textureBytes, 1);
+							break;
+						case PixelFormat.RGBAlpha:
+							// Opaque uploads as Rgb8 (alpha discarded by GL), transparent as Rgba8.
+							if (opaque)
+								Upload(texture.Width, texture.Height, PixelInternalFormat.Rgb8, OpenTK.Graphics.OpenGL.PixelFormat.Rgba, textureBytes, 4);
+							else
+								Upload(texture.Width, texture.Height, PixelInternalFormat.Rgba8, OpenTK.Graphics.OpenGL.PixelFormat.Rgba, textureBytes, 4);
+							break;
 					}
 					GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
                     handle.OpenGlTextures[(int)wrap].Valid = true;
@@ -782,36 +695,32 @@ namespace LibRender2.Textures
 
 			for (int i = 0; i < RegisteredTexturesCount; i++)
 			{
-				/*
-				 * On a route reload, preserve textures whose source file is unchanged,
-				 * so that the first frame after the reload does not re-upload every texture.
-				 */
-				if (currentlyReloading && RegisteredTextures[i] != null && !RegisteredTextures[i].MultipleFrames && TextureFileUnchanged(RegisteredTextures[i].Origin))
-				{
+				// On reload keep unchanged textures to avoid re-uploading everything.
+				var registered = RegisteredTextures[i];
+				if (currentlyReloading && registered != null && !registered.MultipleFrames && TextureFileUnchanged(registered.Origin))
 					continue;
-				}
 				UnloadTexture(ref RegisteredTextures[i], currentlyReloading);
+				registered = RegisteredTextures[i];
+				if (!currentlyReloading && registered?.DecodedTexture != null && registered.Origin != null)
+					RegisteredTextures[i] = new Texture(registered.Origin); // drop decode, re-upload lazily
 			}
-			if (currentlyReloading)
+			lock (TextureLookupLock)
 			{
-				lock (TextureLookupLock)
+				if (currentlyReloading)
 				{
 					foreach (TextureOrigin origin in textureCache.Keys.ToList())
 					{
 						if (origin is PathOrigin && !TextureFileUnchanged(origin))
-						{
 							textureCache.Remove(origin);
-						}
 					}
 				}
-			}
-			else
-			{
-				lock (TextureLookupLock)
+				else
 				{
 					textureCache.Clear();
 				}
 			}
+			if (!currentlyReloading)
+				_palettedExpandBuffer = null;
 
 			/*
 			 * Rebuild the registration lookup table from the surviving textures,
