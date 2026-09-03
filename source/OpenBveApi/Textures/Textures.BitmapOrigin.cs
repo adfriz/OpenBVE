@@ -56,53 +56,38 @@ namespace OpenBveApi.Textures
 				}
 			}
 
+			// Caller owns this.Bitmap; only converted is disposed.
+			Bitmap source = bitmap;
+			Bitmap converted = null;
 			if (bitmap.PixelFormat != System.Drawing.Imaging.PixelFormat.Format32bppArgb)
 			{
-				Bitmap compatibleBitmap = new Bitmap(bitmap.Width, bitmap.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-				System.Drawing.Graphics graphics = System.Drawing.Graphics.FromImage(compatibleBitmap);
-				graphics.DrawImage(bitmap, rect, rect, GraphicsUnit.Pixel);
-				graphics.Dispose();
-				bitmap = compatibleBitmap;
+				converted = new Bitmap(bitmap.Width, bitmap.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+				using (System.Drawing.Graphics graphics = System.Drawing.Graphics.FromImage(converted))
+					graphics.DrawImage(bitmap, rect, rect, GraphicsUnit.Pixel);
+				source = converted;
 			}
 
-			/*
-			 * Extract the raw bitmap data.
-			 * */
-			BitmapData data = bitmap.LockBits(rect, ImageLockMode.ReadOnly, bitmap.PixelFormat);
-			if (data.Stride == 4 * data.Width)
+			BitmapData data = source.LockBits(rect, ImageLockMode.ReadOnly, source.PixelFormat);
+			try
 			{
-				/*
-				 * Copy the data from the bitmap
-				 * to the array in BGRA format.
-				 * */
-				byte[] raw = new byte[data.Stride * data.Height];
-				System.Runtime.InteropServices.Marshal.Copy(data.Scan0, raw, 0, data.Stride * data.Height);
-				bitmap.UnlockBits(data);
-				int width = bitmap.Width;
-				int height = bitmap.Height;
-				/*
-				 * Change the byte order from BGRA to RGBA.
-				 * */
-				for (int i = 0; i < raw.Length; i += 4)
+				if (data.Stride != 4 * data.Width)
 				{
-					(raw[i], raw[i + 2]) = (raw[i + 2], raw[i]);
+					texture = null;
+					return false;
 				}
-
-				texture = new Texture(width, height, PixelFormat.RGBAlpha, raw, p);
-				texture = texture.ApplyParameters(this.Parameters);
+				byte[] raw = new byte[data.Stride * data.Height];
+				System.Runtime.InteropServices.Marshal.Copy(data.Scan0, raw, 0, raw.Length);
+				for (int i = 0; i < raw.Length; i += 4)
+					(raw[i], raw[i + 2]) = (raw[i + 2], raw[i]); // BGRA -> RGBA
+				texture = new Texture(source.Width, source.Height, PixelFormat.RGBAlpha, raw, p).ApplyParameters(this.Parameters);
 				return true;
 			}
-
-			/*
-				   * The stride is invalid. This indicates that the
-				   * CLI either does not implement the conversion to
-				   * 32-bit BGRA correctly, or that the CLI has
-				   * applied additional padding that we do not
-				   * support.
-				   * */
-			bitmap.UnlockBits(data);
-			texture = null;
-			return false;
+			finally
+			{
+				source.UnlockBits(data);
+				if (converted != null)
+					converted.Dispose();
+			}
 		}
 	}
 }
