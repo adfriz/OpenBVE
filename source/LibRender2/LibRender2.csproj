@@ -89,6 +89,7 @@
     <Compile Include="openGL\VertexBufferObject.cs" />
     <Compile Include="Clustering\ClusterEngine.cs" />
     <Compile Include="Clustering\ClusterGrid.cs" />
+    <Compile Include="Clustering\ClusterHelper.cs" />
     <Compile Include="Clustering\ClusterCullingShader.cs" />
     <Compile Include="Clustering\GpuTypes.cs" />
     <Compile Include="openGL\ShaderStorageBufferObject.cs" />

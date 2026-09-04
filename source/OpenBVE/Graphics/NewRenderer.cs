@@ -55,8 +55,7 @@ namespace OpenBve.Graphics
 			}
 			catch
 			{
-				Interface.AddMessage(MessageType.Error, false, "Initializing the touch shader failed- Falling back to legacy openGL.");
-				Interface.CurrentOptions.IsUseNewRenderer = false;
+				Interface.AddMessage(MessageType.Error, false, "Initializing the touch shader failed.");
 			}
 
             events = new Events(this);
@@ -132,7 +131,6 @@ namespace OpenBve.Graphics
 			UpdateViewport(ViewportChangeMode.ChangeToScenery);
 
 			PerformCSMShadowPass();
-			PerformCFRCullAndUpload();
 
             if (Lighting.ShouldInitialize)
 			{
@@ -216,6 +214,8 @@ namespace OpenBve.Graphics
             {
 	            DefaultShader.SetDynamicLights(new List<SceneLight>(), CurrentViewMatrix, 0);
             }
+            PerformCFRCullAndUpload();
+            BindCFRToDefaultShader();
             Fog.Set();
             DefaultShader.SetTexture(0);
             DefaultShader.SetCurrentProjectionMatrix(CurrentProjectionMatrix);

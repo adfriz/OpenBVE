@@ -91,7 +91,6 @@ namespace ObjectViewer.Graphics
             }
             // opaque face
             PerformCSMShadowPass();
-            PerformCFRCullAndUpload();
 
             //Setup the shader for rendering the scene
             DefaultShader.Activate();
@@ -111,6 +110,8 @@ namespace ObjectViewer.Graphics
             {
 	            DefaultShader.SetDynamicLights(new List<SceneLight>(), CurrentViewMatrix, 0);
             }
+            PerformCFRCullAndUpload();
+            BindCFRToDefaultShader();
             DefaultShader.SetTexture(0);
             DefaultShader.SetCurrentProjectionMatrix(CurrentProjectionMatrix);
             ResetOpenGlState();

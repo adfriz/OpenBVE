@@ -154,7 +154,7 @@ namespace LibRender2
 #pragma warning restore 0219, CS0169
 
 		/// <summary>The current shader in use</summary>
-		protected internal AbstractShader CurrentShader;
+		public AbstractShader CurrentShader;
 
 		public Shader DefaultShader;
 		
@@ -375,7 +375,7 @@ namespace LibRender2
 				 * On the Linux SLD2 backend, this crashes when attempting to get the list of supported screen resolutions
 				 * As we don't care about fullscreen here, just don't bother with this constructor
 				 */
-				Screen = new Screen();
+				Screen = new Screen(this);
 			}
 			Camera = new CameraProperties(this);
 			Lighting = new Lighting(this);
@@ -451,7 +451,7 @@ namespace LibRender2
 			StaticObjectStates = new List<ObjectState>();
 			DynamicObjectStates = new List<ObjectState>();
 			VisibleObjects = new VisibleObjectLibrary(this);
-			whitePixel = new Texture(new Texture(1, 1, PixelFormat.RGBAlpha, new byte[] {255, 255, 255, 255}, null));
+			whitePixel = new Texture(new Texture(1, 1, PixelFormat.RGBAlpha, new byte[] {255, 255, 255, 255}, (OpenBveApi.Colors.Color24[])null));
 			nullDepthMap = GL.GenTexture();
 			GL.BindTexture(TextureTarget.Texture2D, nullDepthMap);
 			GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent16, 1, 1, 0, OpenTK.Graphics.OpenGL.PixelFormat.DepthComponent, PixelType.Float, IntPtr.Zero);
@@ -800,7 +800,7 @@ namespace LibRender2
 		{
 			for (int i = 0; i < StaticObjectStates.Count; i++)
 			{
-				VAOExtensions.CreateVAO(StaticObjectStates[i].Prototype.Mesh, false, DefaultShader.VertexLayout, this);
+				VAOExtensions.CreateOrUpdateVAO(StaticObjectStates[i].Prototype.Mesh, false, DefaultShader.VertexLayout, this);
 				/*
 				 * n.b.
 				 * Only create the actual matrix buffer at first frame render time
@@ -812,7 +812,7 @@ namespace LibRender2
 			}
 			for (int i = 0; i < DynamicObjectStates.Count; i++)
 			{
-				VAOExtensions.CreateVAO(DynamicObjectStates[i].Prototype.Mesh, false, DefaultShader.VertexLayout, this);
+				VAOExtensions.CreateOrUpdateVAO(DynamicObjectStates[i].Prototype.Mesh, false, DefaultShader.VertexLayout, this);
 			}
             ObjectsSortedByStart = StaticObjectStates.Select((x, i) => new { Index = i, Distance = x.StartingDistance }).OrderBy(x => x.Distance).Select(x => x.Index).ToArray();
 			ObjectsSortedByEnd = StaticObjectStates.Select((x, i) => new { Index = i, Distance = x.EndingDistance }).OrderBy(x => x.Distance).Select(x => x.Index).ToArray();
