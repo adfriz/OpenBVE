@@ -92,6 +92,10 @@ namespace LibRender2.Shaders
 		private readonly int uClusterNumXLocation;
 		private readonly int uClusterNumYLocation;
 		private readonly int uClusterNumZLocation;
+		private readonly int uClusterTileSizeLocation;
+		private readonly int uClusterDataBlockIndex;
+		/// <summary>UBO binding point for the uClusterData block (0 is reserved for animation matrices).</summary>
+		public const int ClusterDataBindingPoint = 1;
 
 		/// <summary>
 		/// Constructor
@@ -168,6 +172,11 @@ namespace LibRender2.Shaders
 			uClusterNumXLocation        = GL.GetUniformLocation(Handle, "uClusterNumX");
 			uClusterNumYLocation        = GL.GetUniformLocation(Handle, "uClusterNumY");
 			uClusterNumZLocation        = GL.GetUniformLocation(Handle, "uClusterNumZ");
+			uClusterTileSizeLocation    = GL.GetUniformLocation(Handle, "uTileSize");
+			// Cluster UBO block index (single uClusterData block, 410-compatible, no SSBO)
+			uClusterDataBlockIndex      = GL.GetUniformBlockIndex(Handle, "uClusterData");
+			// Bind uClusterData to its UBO binding point (no `binding=` in GLSL for 410 compat)
+			LinkClusterBlocks(ClusterDataBindingPoint);
 			// Default: clustering disabled
 			GL.ProgramUniform1(Handle, uClusteringEnabledLocation, 0);
 		}
@@ -661,6 +670,32 @@ namespace LibRender2.Shaders
 		}
 
 		/// <summary>
+		/// Binds the uClusterData uniform block to a UBO binding point.
+		/// Must be called once after linking (also called from ctor with default).
+		/// Binding 0 is reserved for uAnimationMatricies; default is 1.
+		/// </summary>
+		/// <param name="bindingPoint">UBO binding point for uClusterData.</param>
+		public void LinkClusterBlocks(int bindingPoint = ClusterDataBindingPoint)
+		{
+			if (uClusterDataBlockIndex != -1 && uClusterDataBlockIndex != unchecked((int)0xFFFFFFFF))
+			{
+				GL.UniformBlockBinding(Handle, uClusterDataBlockIndex, bindingPoint);
+			}
+		}
+
+		/// <summary>Returns the uniform block index for uClusterData (-1 if not found).</summary>
+		public int GetClusterDataBlockIndex()
+		{
+			return uClusterDataBlockIndex;
+		}
+
+		/// <summary>Sets the tile size in pixels used by getTileIdx().</summary>
+		public void SetClusterTileSize(float tileSize)
+		{
+			GL.ProgramUniform1(Handle, uClusterTileSizeLocation, tileSize);
+		}
+
+		/// <summary>
 		/// Sets the cluster grid parameters needed by the fragment shader for cluster index calculation.
 		/// </summary>
 		public void SetClusteringParams(float near, float far, int screenW, int screenH, int numX, int numY, int numZ)
@@ -672,6 +707,21 @@ namespace LibRender2.Shaders
 			GL.ProgramUniform1(Handle, uClusterNumXLocation,         numX);
 			GL.ProgramUniform1(Handle, uClusterNumYLocation,         numY);
 			GL.ProgramUniform1(Handle, uClusterNumZLocation,         numZ);
+			// Back-compat: derive square tile size so getTileIdx() works even when
+			// the caller uses this legacy overload without an explicit tile size.
+			if (numX > 0 && screenW > 0)
+			{
+				GL.ProgramUniform1(Handle, uClusterTileSizeLocation, (float)screenW / numX);
+			}
+		}
+
+		/// <summary>
+		/// Overload with explicit tile size (square tiles, pixels).
+		/// </summary>
+		public void SetClusteringParams(float near, float far, int screenW, int screenH, int numX, int numY, int numZ, float tileSize)
+		{
+			SetClusteringParams(near, far, screenW, screenH, numX, numY, numZ);
+			SetClusterTileSize(tileSize);
 		}
 
 		#endregion

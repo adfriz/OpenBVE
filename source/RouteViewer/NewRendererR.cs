@@ -143,7 +143,6 @@ namespace RouteViewer
 			}
 
 			PerformCSMShadowPass();
-			PerformCFRCullAndUpload();
 			DefaultShader.Activate();
 			BindCSMToDefaultShader();
 			BindCFRToDefaultShader();
@@ -189,6 +188,8 @@ namespace RouteViewer
             {
 	            DefaultShader.SetDynamicLights(new List<SceneLight>(), CurrentViewMatrix, 0);
             }
+            PerformCFRCullAndUpload();
+            BindCFRToDefaultShader();
 
             Fog.Set();
             DefaultShader.SetTexture(0);

@@ -243,7 +243,7 @@ namespace LibRender2.ShadowMapping
 				if (state.Matricies != null && state.Matricies.Length > 0)
 				{
 					DepthShader.SetCurrentAnimationMatricies(state);
-					GL.BindBufferBase(BufferTarget.UniformBuffer, 0, state.MatrixBufferIndex);
+					GL.BindBufferBase(BufferRangeTarget.UniformBuffer, 0, state.MatrixBufferIndex);
 				}
 
 				VertexArrayObject vao = (VertexArrayObject)face.Object.Prototype.Mesh.VAO;
