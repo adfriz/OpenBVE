@@ -1,6 +1,7 @@
 using System;
 using System.Windows.Forms;
 using LibRender2.Overlays;
+using OpenBveApi;
 using OpenBveApi.Graphics;
 using OpenBveApi.Hosts;
 using OpenBveApi.Interface;
@@ -91,6 +92,117 @@ namespace OpenBve {
 		private void updownShadowNormalBias_ValueChanged(object sender, EventArgs e)
 		{
 			Interface.CurrentOptions.ShadowNormalBias = (double)updownShadowNormalBias.Value;
+		}
+
+			// Post-processing live (no restart): mirror shadowEnabled pattern, update options immediately.
+		private void checkboxPostEnabled_CheckedChanged(object sender, EventArgs e)
+		{
+			try
+			{
+				Interface.CurrentOptions.EnablePostProcessing = checkboxPostEnabled.Checked;
+				UpdatePostControlsEnabled();
+				SyncPostChain();
+			}
+			catch
+			{
+				// ignored
+			}
+		}
+
+		private void comboboxAoMode_SelectedIndexChanged(object sender, EventArgs e)
+		{
+			try
+			{
+				Interface.CurrentOptions.AoMode = AoModeMapper.FromSelectedIndex(comboboxAoMode.SelectedIndex);
+				// Selecting a mode auto-enables master so the effect is visible immediately.
+				if (Interface.CurrentOptions.AoMode != AmbientOcclusionMode.Off && checkboxPostEnabled != null && !checkboxPostEnabled.Checked)
+				{
+					checkboxPostEnabled.Checked = true;
+					Interface.CurrentOptions.EnablePostProcessing = true;
+				}
+				UpdatePostControlsEnabled();
+				SyncPostChain();
+			}
+			catch
+			{
+				// ignored
+			}
+		}
+
+		private void PostEffectCheckboxChanged(object sender, EventArgs e)
+		{
+			try
+			{
+				if (checkboxPostFxaa == null) return;
+				Interface.CurrentOptions.PostFxaa = checkboxPostFxaa.Checked;
+				Interface.CurrentOptions.PostSharpen = checkboxPostSharpen.Checked;
+				Interface.CurrentOptions.PostVignette = checkboxPostVignette.Checked;
+				SyncPostChain();
+			}
+			catch
+			{
+				// ignored
+			}
+		}
+
+		private void AoNumericChanged(object sender, EventArgs e)
+		{
+			try
+			{
+				if (updownAoRadius == null) return;
+				Interface.CurrentOptions.AoRadius = (float)updownAoRadius.Value;
+				Interface.CurrentOptions.AoIntensity = (float)updownAoIntensity.Value;
+				Interface.CurrentOptions.AoPower = (float)updownAoPower.Value;
+				Interface.CurrentOptions.AoBias = (float)updownAoBias.Value;
+				if (updownGtaoFalloff != null)
+				{
+					Interface.CurrentOptions.GtaoFalloffRange = (float)updownGtaoFalloff.Value;
+				}
+				if (updownAoBlurSharpness != null)
+				{
+					Interface.CurrentOptions.AoBlurSharpness = (float)updownAoBlurSharpness.Value;
+				}
+				if (comboboxAoResolution != null)
+				{
+					switch (comboboxAoResolution.SelectedIndex)
+					{
+						case 0: Interface.CurrentOptions.AoResolutionScale = 0.25f; break;
+						case 2: Interface.CurrentOptions.AoResolutionScale = 1.0f; break;
+						default: Interface.CurrentOptions.AoResolutionScale = 0.5f; break;
+					}
+				}
+				if (checkboxAoAffectCab3D != null)
+				{
+					Interface.CurrentOptions.AoAffectCab3D = checkboxAoAffectCab3D.Checked;
+				}
+				if (checkboxAoDebugView != null)
+				{
+					Interface.CurrentOptions.AoDebugView = checkboxAoDebugView.Checked ? 1 : 0;
+				}
+				SyncPostChain();
+			}
+			catch
+			{
+				// ignored
+			}
+		}
+
+		private void buttonAoPresetLow_Click(object sender, EventArgs e)
+		{
+			// Fast: SAO 3x2 (mirrored), GTAO 3x2
+			ApplyAoPreset(3, 3, 2);
+		}
+
+		private void buttonAoPresetBalanced_Click(object sender, EventArgs e)
+		{
+			// Balanced: SAO 5x2 (mirrored), GTAO 4x3
+			ApplyAoPreset(5, 4, 3);
+		}
+
+		private void buttonAoPresetQuality_Click(object sender, EventArgs e)
+		{
+			// Quality: SAO 12x2 (mirrored), GTAO 6x4
+			ApplyAoPreset(12, 6, 4);
 		}
 
 		

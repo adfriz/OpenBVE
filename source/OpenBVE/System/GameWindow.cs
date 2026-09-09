@@ -51,36 +51,25 @@ namespace OpenBve
 		private double RenderTimeElapsed;
 		private double RenderRealTimeElapsed;
 		//We need to explicitly specify the default constructor
-		public OpenBVEGame(int width, int height, GraphicsMode currentGraphicsMode, GameWindowFlags @default): base(width, height, currentGraphicsMode, Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"program","title"}), @default)
+		public OpenBVEGame(int width, int height, GraphicsMode currentGraphicsMode, GameWindowFlags @default): this(width, height, currentGraphicsMode, @default, GraphicsContextFlags.Default, 3, 3)
 		{
-			Program.FileSystem.AppendToLogFile("Creating game window with standard context.");
-			if (Program.CurrentHost.Platform == HostPlatform.AppleOSX && IntPtr.Size != 4)
-			{
-				return;
-			}
+		}
+
+		public OpenBVEGame(int width, int height, GraphicsMode currentGraphicsMode, GameWindowFlags @default, GraphicsContextFlags flags): this(width, height, currentGraphicsMode, @default, flags, 3, 3)
+		{
+		}
+
+		public OpenBVEGame(int width, int height, GraphicsMode currentGraphicsMode, GameWindowFlags @default, GraphicsContextFlags flags, int major, int minor): base(width, height, currentGraphicsMode, Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"program","title"}), @default, DisplayDevice.Default, major, minor, flags)
+		{
+			Program.FileSystem.AppendToLogFile($"Creating game window with GL {major}.{minor} context.");
+			InitIcon();
+		}
+
+		private void InitIcon()
+		{
 			try
 			{
 				string assemblyFolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-				Icon ico = new Icon(OpenBveApi.Path.CombineFile(OpenBveApi.Path.CombineDirectory(assemblyFolder, "Data"), "icon.ico"));
-				Icon = ico;
-			}
-			catch
-			{
-				//it's only an icon
-			}
-		}
-
-		public OpenBVEGame(int width, int height, GraphicsMode currentGraphicsMode, GameWindowFlags @default, GraphicsContextFlags flags): base(width, height, currentGraphicsMode, Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"program","title"}), @default, DisplayDevice.Default, 3,3, flags)
-		{
-			Program.FileSystem.AppendToLogFile("Creating game window with forwards-compatible context.");
-			if (Program.CurrentHost.Platform == HostPlatform.AppleOSX && IntPtr.Size != 4)
-			{
-				Interface.CurrentOptions.ForceForwardsCompatibleContext = true;
-				return;
-			}
-			try
-			{
-				var assemblyFolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 				Icon ico = new Icon(OpenBveApi.Path.CombineFile(OpenBveApi.Path.CombineDirectory(assemblyFolder, "Data"), "icon.ico"));
 				Icon = ico;
 			}

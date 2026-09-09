@@ -85,6 +85,20 @@ namespace OpenBve.Graphics
 			}
 
 			Touch.UpdateViewport();
+
+			// Forward to the post chain (mirrors the base virtual): without this
+			// SceneFBO/ping/AO keep stale sizes after a resize (stretch/black bars).
+			try
+			{
+				if (PostProcessor != null)
+				{
+					PostProcessor.Resize(width, height);
+				}
+			}
+			catch
+			{
+				// ignored: resize must never break the frame
+			}
 		}
 		
 		internal void RenderScene(double TimeElapsed, double RealTimeElapsed)
@@ -92,6 +106,20 @@ namespace OpenBve.Graphics
 			ReleaseResources();
 			// initialize
 			ResetOpenGlState();
+
+			// Cheap per-frame post sync (uniforms only, no recompile) for live UI/menu without restart.
+			// OFF keeps PostProcessor in bypass so the frame below stays pixel-identical.
+			try
+			{
+				if (PostProcessor != null)
+				{
+					PostProcessor.SyncFromOptions(Interface.CurrentOptions);
+				}
+			}
+			catch
+			{
+				// ignored: sync must never break the frame
+			}
 
 			if (OptionWireFrame)
 			{
@@ -157,6 +185,15 @@ namespace OpenBve.Graphics
 			else
 			{
 				Program.CurrentRoute.CurrentFog = Program.CurrentRoute.PreviousFog;
+			}
+
+			// Scenery layer: route through SceneFBO + AO/chain only when enabled.
+			// OFF = BeginPostLayer returns false, rendering stays direct (pixel-identical).
+			// Shadow pass above always renders to the shadow map, never to the SceneFBO.
+			bool sceneryPost = BeginPostLayer();
+			if (sceneryPost)
+			{
+				GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 			}
 
 			DefaultShader.Activate();
@@ -332,6 +369,15 @@ namespace OpenBve.Graphics
 				}
 			}
 
+			// Composite scenery layer to screen. No-op when sceneryPost is false (OFF bypass).
+			// MotionBlur above stays inside the layer on purpose (legacy path untouched, operates on FBO when active).
+			// Cab-2D / Touch / overlay / HUD / menu below always render direct (never post-processed).
+			if (sceneryPost)
+			{
+				EndPostLayer();
+				sceneryPost = false;
+			}
+
 			// overlay (cab / interior) layer
 			Fog.Enabled = false;
 			UpdateViewport(ViewportChangeMode.ChangeToCab);
@@ -346,6 +392,14 @@ namespace OpenBve.Graphics
 
             CurrentViewMatrix = Matrix4D.LookAt(Vector3.Zero, new Vector3(Camera.AbsoluteDirection.X, Camera.AbsoluteDirection.Y, -Camera.AbsoluteDirection.Z), new Vector3(Camera.AbsoluteUp.X, Camera.AbsoluteUp.Y, -Camera.AbsoluteUp.Z));
 			
+			// Cab-3D layer: separate pass when 3D cab. AO honours AffectCab3D itself,
+			// other effects still run. OFF / 2D cab / Touch / HUD stay direct.
+			bool isCab3D = Camera.CurrentRestriction == CameraRestrictionMode.NotAvailable || Camera.CurrentRestriction == CameraRestrictionMode.Restricted3D;
+			bool cabPost = false;
+			if (isCab3D)
+			{
+				cabPost = BeginPostCabLayer();
+			}
 			if (Camera.CurrentRestriction == CameraRestrictionMode.NotAvailable || Camera.CurrentRestriction == CameraRestrictionMode.Restricted3D)
 			{
 				ResetOpenGlState(); // TODO: inserted
@@ -430,9 +484,16 @@ namespace OpenBve.Graphics
 				Lighting.OptionAmbientColor = prevOptionAmbientColor;
 				Lighting.OptionDiffuseColor = prevOptionDiffuseColor;
 				Lighting.Initialize();
+				// Composite cab-3D layer. No-op when cabPost is false.
+				if (cabPost)
+				{
+					EndPostLayer();
+					cabPost = false;
+				}
 			}
 			else
 			{
+				// 2D cab never uses post (stays direct, pixel-identical).
 				/*
                  * Render 2D Cab
                  * This is actually an animated object generated on the fly and held in memory

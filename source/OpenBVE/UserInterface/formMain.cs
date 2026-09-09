@@ -514,6 +514,8 @@ namespace OpenBve {
 			trackbarShadowStrength.Enabled = shadowEnabled;
 			updownShadowBias.Enabled = shadowEnabled;
 			updownShadowNormalBias.Enabled = shadowEnabled;
+				// Post-processing + AO (programmatic groupboxes, order via options.cfg)
+			InitializePostProcessingUI();
 			checkboxBlackBox.Checked = Interface.CurrentOptions.BlackBox;
 			checkBoxLoadingSway.Checked = Interface.CurrentOptions.LoadingSway;
 			checkBoxTransparencyFix.Checked = Interface.CurrentOptions.OldTransparencyMode;
@@ -788,6 +790,8 @@ namespace OpenBve {
 			comboboxShadowCascades.Items[0] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "shadows_cascades_2" });
 			comboboxShadowCascades.Items[1] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "shadows_cascades_3" });
 			comboboxShadowCascades.Items[2] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "shadows_cascades_4" });
+				// Post-processing + AO language (fallback to English when missing)
+			ApplyPostLanguage();
 			//Simulation
 			groupboxSimulation.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","misc_simulation"});
 			groupboxCamera.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","camera"});
@@ -1312,6 +1316,8 @@ namespace OpenBve {
 			Interface.CurrentOptions.ShadowBias = (double)updownShadowBias.Value;
 			Interface.CurrentOptions.ShadowNormalBias = (double)updownShadowNormalBias.Value;
 			Interface.CurrentOptions.ShadowFilterCascades = checkboxShadowFilterCascades.Checked;
+				// Post-processing + AO
+			SavePostProcessingUI();
 			Interface.CurrentOptions.GameMode = (GameMode)comboboxMode.SelectedIndex;
 			Interface.CurrentOptions.BlackBox = checkboxBlackBox.Checked;
 			Interface.CurrentOptions.LoadingSway = checkBoxLoadingSway.Checked;

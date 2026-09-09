@@ -1207,6 +1207,60 @@
 					<trans-unit id="shadows_bias">
 						<source>Shadow Bias:</source>
 					</trans-unit>
+					<trans-unit id="postprocessing_header">
+						<source>Post-Processing</source>
+					</trans-unit>
+					<trans-unit id="postprocessing_enabled">
+						<source>Enable post-processing</source>
+					</trans-unit>
+					<trans-unit id="postprocessing_fxaa">
+						<source>FXAA</source>
+					</trans-unit>
+					<trans-unit id="postprocessing_sharpen">
+						<source>Sharpen</source>
+					</trans-unit>
+					<trans-unit id="postprocessing_vignette">
+						<source>Vignette</source>
+					</trans-unit>
+					<trans-unit id="postprocessing_order_info">
+						<source>Order via options.cfg PostEffectOrder CSV (TODO: reorder UI).</source>
+					</trans-unit>
+					<trans-unit id="ao_header">
+						<source>Ambient Occlusion</source>
+					</trans-unit>
+					<trans-unit id="ao_mode">
+						<source>Mode:</source>
+					</trans-unit>
+					<trans-unit id="ao_radius">
+						<source>Radius (m):</source>
+					</trans-unit>
+					<trans-unit id="ao_intensity">
+						<source>Intensity:</source>
+					</trans-unit>
+					<trans-unit id="ao_power">
+						<source>Power:</source>
+					</trans-unit>
+					<trans-unit id="ao_bias">
+						<source>Bias:</source>
+					</trans-unit>
+					<trans-unit id="ao_resolution">
+						<source>Resolution:</source>
+					</trans-unit>
+					<trans-unit id="ao_affectcab3d">
+						<source>Affect 3D cab</source>
+					</trans-unit>
+					<trans-unit id="ao_debugview">
+						<source>AO-only debug view</source>
+					</trans-unit>
+					<trans-unit id="ao_preset_low">
+						<source>Fast</source>
+					</trans-unit>
+					<trans-unit id="ao_preset_balanced">
+						<source>Balanced</source>
+					</trans-unit>
+					<trans-unit id="ao_preset_quality">
+						<source>Quality</source>
+					</trans-unit>
 					<trans-unit id="misc">
 						<source>Miscellaneous</source>
 					</trans-unit>

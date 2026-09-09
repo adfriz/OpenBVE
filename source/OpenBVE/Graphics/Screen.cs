@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Windows.Forms;
 using LibRender2;
+using LibRender2.PostProcessing;
 using LibRender2.Viewports;
 using OpenBveApi.Hosts;
 using OpenTK;
@@ -15,6 +16,19 @@ namespace OpenBve
 {
 	internal static class Screen
 	{
+		/// <summary>Creates a game window, trying GL 4.3 then falling back to 3.3 on Win/Linux.</summary>
+		private static OpenBVEGame CreateGameWindow(int width, int height, GraphicsMode mode, GameWindowFlags flags, bool wantForwardCompatible)
+		{
+			if (wantForwardCompatible)
+			{
+				Program.FileSystem.AppendToLogFile("Requesting OpenGL 3.3 forward-compatible context.");
+				return new OpenBVEGame(width, height, mode, flags, GraphicsContextFlags.ForwardCompatible);
+			}
+			// Win/Linux: try 4.3 -> fallback 3.3, without ForwardCompatible (compatibility profile)
+			Program.FileSystem.AppendToLogFile("Requesting OpenGL 4.3 compatibility context (fallback 3.3).");
+			return GlContextFactory.CreateWithFallback((major, minor) => new OpenBVEGame(width, height, mode, flags, GraphicsContextFlags.Default, major, minor));
+		}
+
 		/// <summary>Initializes the default values of the screen.</summary>
 		internal static void Initialize()
 		{
@@ -38,28 +52,11 @@ namespace OpenBve
 						try
 						{
 							DisplayDevice.Default.ChangeResolution(currentResolution);
-							if ((Program.CurrentHost.Platform == HostPlatform.AppleOSX && IntPtr.Size != 4 || Interface.CurrentOptions.ForceForwardsCompatibleContext))
-							{
-								/*
-								 * OS-X is a fickle beast
-								 * In order to get a functioning GL3 context, we appear to need to be running as 64-bit & explicitly specify the forwards compatible flag
-								 */
-								Program.Renderer.GameWindow = new OpenBVEGame(currentResolution.Width, currentResolution.Height, Program.Renderer.GraphicsMode,
-									GameWindowFlags.Default, GraphicsContextFlags.ForwardCompatible)
-								{
-									Visible = true,
-									WindowState = WindowState.Fullscreen
-								};
-							}
-							else
-							{
-								Program.Renderer.GameWindow = new OpenBVEGame(currentResolution.Width, currentResolution.Height, Program.Renderer.GraphicsMode,
-									GameWindowFlags.Default)
-								{
-									Visible = true,
-									WindowState = WindowState.Fullscreen
-								};	
-							}
+							bool wantForwardCompatible = GlContextFactory.WantForwardCompatible(Program.CurrentHost.Platform, Interface.CurrentOptions.ForceForwardsCompatibleContext);
+							Program.Renderer.GameWindow = CreateGameWindow(currentResolution.Width, currentResolution.Height, Program.Renderer.GraphicsMode,
+								GameWindowFlags.Default, wantForwardCompatible);
+							Program.Renderer.GameWindow.Visible = true;
+							Program.Renderer.GameWindow.WindowState = WindowState.Fullscreen;
 							
 							resolutionFound = true;
 							break;
@@ -89,26 +86,10 @@ namespace OpenBve
 			{
 				try
 				{
-					if ((Program.CurrentHost.Platform == HostPlatform.AppleOSX && IntPtr.Size != 4 || Interface.CurrentOptions.ForceForwardsCompatibleContext))
-					{
-						/*
-						 * OS-X is a fickle beast
-						 * In order to get a functioning GL3 context, we appear to need to be running as 64-bit & explicitly specify the forwards compatible flag
-						 */
-						Program.Renderer.GameWindow = new OpenBVEGame(Interface.CurrentOptions.WindowWidth,
-							Interface.CurrentOptions.WindowHeight, Program.Renderer.GraphicsMode, GameWindowFlags.Default, GraphicsContextFlags.ForwardCompatible)
-						{
-							Visible = true
-						};
-					}
-					else
-					{
-						Program.Renderer.GameWindow = new OpenBVEGame(Interface.CurrentOptions.WindowWidth,
-							Interface.CurrentOptions.WindowHeight, Program.Renderer.GraphicsMode, GameWindowFlags.Default)
-						{
-							Visible = true
-						};
-					}
+					bool wantForwardCompatible = GlContextFactory.WantForwardCompatible(Program.CurrentHost.Platform, Interface.CurrentOptions.ForceForwardsCompatibleContext);
+					Program.Renderer.GameWindow = CreateGameWindow(Interface.CurrentOptions.WindowWidth,
+						Interface.CurrentOptions.WindowHeight, Program.Renderer.GraphicsMode, GameWindowFlags.Default, wantForwardCompatible);
+					Program.Renderer.GameWindow.Visible = true;
 					
 				}
 				catch
