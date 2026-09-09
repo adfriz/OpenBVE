@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Text;
 using OpenBveApi.Colors;
 using OpenBveApi.Graphics;
 using OpenBveApi.Objects;
@@ -93,6 +97,53 @@ namespace OpenBveApi
 		/// <summary>Whether to filter shadow casters per cascade to improve performance.</summary>
 		public bool ShadowFilterCascades = true;
 
+		/// <summary>Master switch for the stackable post-processing chain. Default OFF so existing output is untouched.</summary>
+		public bool EnablePostProcessing = false;
+		/// <summary>Default effect order when options.cfg has no PostEffectOrder key.</summary>
+		public const string DefaultPostEffectOrder = "AmbientOcclusion,FXAA,Sharpen,Vignette";
+		/// <summary>Comma-separated effect order, e.g. "AmbientOcclusion,FXAA,Sharpen,Vignette".</summary>
+		public string PostEffectOrder = DefaultPostEffectOrder;
+		/// <summary>Whether the FXAA effect is enabled.</summary>
+		public bool PostFxaa = false;
+		/// <summary>Whether the Sharpen effect is enabled.</summary>
+		public bool PostSharpen = false;
+		/// <summary>Whether the Vignette effect is enabled.</summary>
+		public bool PostVignette = false;
+		/// <summary>Ambient occlusion mode. Off disables AO.</summary>
+		public AmbientOcclusionMode AoMode = AmbientOcclusionMode.Off;
+		/// <summary>AO sampling radius in meters. Range 0.1-5.</summary>
+		public float AoRadius = 1.2f;
+		/// <summary>AO strength multiplier. Range 0-2.</summary>
+		public float AoIntensity = 1.0f;
+		/// <summary>AO contrast curve exponent. Range 0.5-3.</summary>
+		public float AoPower = 1.5f;
+		/// <summary>AO depth bias factor (x radius). RETIRED by CACAO port; kept for cfg compat.</summary>
+		public float AoBias = 0.05f;
+		/// <summary>AO render resolution scale. One of 0.25 / 0.5 / 1.0.</summary>
+		public float AoResolutionScale = 0.5f;
+		/// <summary>AO bilateral blur radius.</summary>
+		public int AoBlurRadius = 3;
+		/// <summary>AO bilateral depth sharpness.</summary>
+		public float AoBlurSharpness = 0.01f;
+		/// <summary>Whether AO also affects the 3D cab layer (2D cab and HUD are always sterile).</summary>
+		public bool AoAffectCab3D = true;
+		/// <summary>AO debug view. 0 = composite, 1 = AO-only.</summary>
+		public int AoDebugView = 0;
+		/// <summary>SAO pattern tap count (each = 2 mirrored samples). Tiers 3 / 5 / 12.</summary>
+		public int SaoSamples = 5;
+		/// <summary>SAO spiral turns. RETIRED by CACAO port; kept for cfg compat.</summary>
+		public int SaoSpiralTurns = 7;
+		/// <summary>SAO horizon-angle threshold (CACAO). Range 0-0.2.</summary>
+		public float AoHorizonThreshold = 0.06f;
+		/// <summary>SAO detail-AO strength from immediate neighbors (CACAO). Range 0-5.</summary>
+		public float AoDetailStrength = 0.5f;
+		/// <summary>GTAO slice count. Default 4 = Balanced tier (matches effect ctor).</summary>
+		public int GtaoSlices = 4;
+		/// <summary>GTAO steps per side. Default 3 = Balanced tier (matches effect ctor).</summary>
+		public int GtaoSteps = 3;
+		/// <summary>GTAO falloff range.</summary>
+		public float GtaoFalloffRange = 0.4f;
+
 
 		/// <summary>The sun azimuth in degrees</summary>
 		public double LightAzimuth = -26.57;
@@ -143,6 +194,84 @@ namespace OpenBveApi
 		/// <summary>The color used by the renderer when issuing GL.Clear()</summary>
 		/// <remarks>Not saved</remarks>
 		public Color24 ClearColor = new Color24(170, 170, 170);
+
+		/// <summary>Normalizes a PostEffectOrder CSV via Parse (trimmed, deduped, order-preserved; empty -&gt; default).</summary>
+		public static string NormalizePostEffectOrder(string csv)
+		{
+			var ids = ParsePostEffectOrder(csv);
+			if (ids.Count == 0)
+			{
+				return DefaultPostEffectOrder;
+			}
+			return string.Join(",", ids.ToArray());
+		}
+
+		/// <summary>Parses a PostEffectOrder CSV into ordered ids (trimmed, deduped case-insensitively, order-preserved).</summary>
+		public static List<string> ParsePostEffectOrder(string csv)
+		{
+			var ids = new List<string>();
+			if (string.IsNullOrEmpty(csv))
+			{
+				return ids;
+			}
+			string[] parts = csv.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+			for (int i = 0; i < parts.Length; i++)
+			{
+				string id = parts[i].Trim();
+				if (id.Length == 0)
+				{
+					continue;
+				}
+				bool dup = false;
+				for (int j = 0; j < ids.Count; j++)
+				{
+					if (string.Equals(ids[j], id, StringComparison.OrdinalIgnoreCase))
+					{
+						dup = true;
+						break;
+					}
+				}
+				if (!dup)
+				{
+					ids.Add(id);
+				}
+			}
+			return ids;
+		}
+
+		/// <summary>Appends the shared [postprocessing] section.</summary>
+		protected void AppendPostProcessingSection(StringBuilder builder)
+		{
+			builder.AppendLine("[postprocessing]");
+			builder.AppendLine("enablepostprocessing = " + (EnablePostProcessing ? "true" : "false"));
+			builder.AppendLine("posteffectorder = " + PostEffectOrder);
+			builder.AppendLine("postfxaa = " + (PostFxaa ? "true" : "false"));
+			builder.AppendLine("postsharpen = " + (PostSharpen ? "true" : "false"));
+			builder.AppendLine("postvignette = " + (PostVignette ? "true" : "false"));
+		}
+
+		/// <summary>Appends the shared [ambientocclusion] section.</summary>
+		protected void AppendAmbientOcclusionSection(StringBuilder builder, CultureInfo culture)
+		{
+			builder.AppendLine("[ambientocclusion]");
+			builder.AppendLine("aomode = " + AoMode);
+			builder.AppendLine("aoradius = " + AoRadius.ToString(culture));
+			builder.AppendLine("aointensity = " + AoIntensity.ToString(culture));
+			builder.AppendLine("aopower = " + AoPower.ToString(culture));
+			builder.AppendLine("aobias = " + AoBias.ToString(culture));
+			builder.AppendLine("aoresolutionscale = " + AoResolutionScale.ToString(culture));
+			builder.AppendLine("aoblurradius = " + AoBlurRadius.ToString(culture));
+			builder.AppendLine("aoblursharpness = " + AoBlurSharpness.ToString(culture));
+			builder.AppendLine("aoaffectcab3d = " + (AoAffectCab3D ? "true" : "false"));
+			builder.AppendLine("aodebugview = " + AoDebugView.ToString(culture));
+			builder.AppendLine("saosamples = " + SaoSamples.ToString(culture));
+			builder.AppendLine("saospiralturns = " + SaoSpiralTurns.ToString(culture));
+			builder.AppendLine("aohorizonthreshold = " + AoHorizonThreshold.ToString(culture));
+			builder.AppendLine("aodetailstrength = " + AoDetailStrength.ToString(culture));
+			builder.AppendLine("gtaoslices = " + GtaoSlices.ToString(culture));
+			builder.AppendLine("gtaosteps = " + GtaoSteps.ToString(culture));
+			builder.AppendLine("gtaofalloffrange = " + GtaoFalloffRange.ToString(culture));
+		}
 
 		/// <summary>Saves the options to the specified filename</summary>
 		/// <param name="fileName">The filename to save the options to</param>

@@ -44,6 +44,10 @@
 		/// <summary>Contains touch control options</summary>
 		Touch = 18,
 		/// <summary>Contains loading related options</summary>
-		Loading = 19
+		Loading = 19,
+		/// <summary>Contains stackable post-processing options</summary>
+		PostProcessing = 20,
+		/// <summary>Contains ambient occlusion options</summary>
+		AmbientOcclusion = 21
 	}
 }
