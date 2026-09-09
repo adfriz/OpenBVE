@@ -148,6 +148,9 @@ namespace Formats.OpenBve
 					value = true;
 					return true;
 				}
+				// Key existed: "0"/"false"/anything else means false, but still consumed.
+				value = false;
+				return true;
 			}
 			value = false;
 			return false;
