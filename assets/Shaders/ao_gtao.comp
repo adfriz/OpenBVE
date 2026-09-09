@@ -1,0 +1,206 @@
+#version 430
+
+// GTAO horizon-based estimator.
+// Core math follows Algorithm 1 of the published GTAO paper (Jimenez et al.)
+// the way Intel XeGTAO implements it (https://github.com/GameTechDev/XeGTAO,
+// MIT-licensed): view-orthogonalized slice frame, SIGNED gamma, horizons
+// starting at the tangent, linear falloff weight lerped toward the tangent,
+// R1 step jitter, 1.3px minimum step:
+//   - per-pixel view-ray cosine horizons per slice side
+//   - acos + signed-gamma analytic integration over the normal hemisphere
+// Only observable behavior is matched; the surrounding scaffolding (compute
+// dispatch, half-res linear-depth + normal-from-depth inputs, sky handling,
+// power curve, uniform-driven presets) is our own:
+//   - sky (depth ~= far) -> AO=1
+//   - hierarchical-z fetch: ideally a min-depth MIP chain (XeGTAO prefilters
+//     5 weighted MIPs in one groupshared pass). None exists yet, so the base
+//     level is sampled (texel-snapped) for now. Follow-up: weighted MIP
+//     chain, then mip = clamp(log2(offset)-3.3).
+//   - temporal accumulation: XeGTAO converges few slices over frames via
+//     Hilbert-R2 noise rotation. No history/motion-vector path exists here
+//     (forward renderer), so every slice runs single-frame with static
+//     Hilbert-R2 noise, and the edge-aware denoise pass stands in for the
+//     spatiotemporal denoise.
+//   - normals/edges come from depth (4-tap cross + edge weighting), not from
+//     a G-buffer, so the gamma frame is noisier than the reference; the
+//     denoise pass absorbs it.
+//   - fp16 fast_acos/fast_sqrt skipped: desktop GL acos is fast enough.
+// Presets via uniform, no recompile (max 8x8):
+//   Fast 3x2 / Balanced 4x3 (default) / Quality 6x4.
+//   steps = per side (total fetches per pixel = slices*steps*2).
+
+#include "common_ao.glsl"
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+uniform sampler2D uLinearDepthTex; // half-res positive view-Z (from ao_depth), unit 4
+uniform sampler2D uNormalTex;      // half-res normal encoded 0..1 (from ao_depth), unit 5
+uniform float uNear;
+uniform float uFar;
+uniform float uRadius;       // meters, 0.1..5 (default 0.8); drives the pixel sampling radius
+uniform float uPower;        // exponent 0.5..3 (default 2.0)
+uniform mat4 uProj;
+uniform mat4 uInvProj;
+uniform vec2 uResolution;    // half-res target
+uniform int uSlices;         // 1..8 (default 4 = Balanced)
+uniform int uSteps;          // 1..8 per side (default 3 = Balanced)
+uniform float uFalloffRange; // full weight inside, meters (default 0.4); linear falloff to zero at uRadius
+
+layout(binding = 2, r16f) writeonly uniform image2D uAoImg; // half-res raw AO 0..1
+
+const int MAX_SLICES = 8;
+const int MAX_STEPS = 8;
+const float PI_HALF = 1.57079632679;
+
+// Slice visibility is integrated inline below (gamma-clamped Riemann sum).
+
+void main()
+{
+	ivec2 px = ivec2(gl_GlobalInvocationID.xy);
+	ivec2 outSize = imageSize(uAoImg);
+	if (px.x >= outSize.x || px.y >= outSize.y)
+	{
+		return;
+	}
+
+	vec2 halfRes = uResolution;
+	vec2 uv = (vec2(px) + vec2(0.5)) / max(halfRes, vec2(1.0));
+	uv = clamp(uv, vec2(0.0), vec2(1.0));
+
+	float centerDepth = texture(uLinearDepthTex, uv).r;
+	// Keep uNear live + sanitize, then pull slightly toward the camera:
+	// depth-precision acne guard (Intel shape; R16F linear likes 0.9992).
+	if (centerDepth < uNear)
+	{
+		centerDepth = uNear;
+	}
+	centerDepth *= 0.9992;
+	// Sky -> AO=1 (clean sky, never occluded).
+	if (IsSkyLinear(centerDepth, uFar))
+	{
+		imageStore(uAoImg, px, vec4(1.0, 0.0, 0.0, 1.0));
+		return;
+	}
+
+	vec3 nEnc = texture(uNormalTex, uv).rgb;
+	vec3 N = DecodeNormal(nEnc);
+
+	vec3 P = ViewPosFromLinear(uv, centerDepth, uInvProj);
+
+	// World radius -> half-res pixel radius: r_px = R * (proj11*H/2) / viewZ.
+	float radiusPix = ComputeRadiusPix(uRadius, uProj, halfRes, centerDepth);
+	if (radiusPix < 2.0)
+	{
+		// Sub-pixel kernel: no geometric signal at this distance, only
+		// quantization noise (R16F linear + texel staircase) that the
+		// edge-blocked denoise cannot smooth. Store open and skip the taps
+		// (also a perf win for far pixels). Meets the composite distance
+		// fade (~0.3x viewing distance) at the same boundary.
+		imageStore(uAoImg, px, vec4(1.0, 0.0, 0.0, 1.0));
+		return;
+	}
+	radiusPix = max(radiusPix, float(MAX_STEPS)); // minimum spread keeps the tap pattern well-formed just above the early-out
+
+	// Hilbert+R2 pixel noise (Intel shape; static here, temporal rotation
+	// parked at 0 until a TAA/history path exists).
+	vec2 stNoise = R2Noise(HilbertIndex(uint(px.x), uint(px.y)));
+	int nSlices = clamp(uSlices, 1, MAX_SLICES);
+	int nSteps = clamp(uSteps, 1, MAX_STEPS);
+	vec3 vdir = normalize(-P); // per-pixel view ray: horizons are measured from here
+
+	float visSum = 0.0;
+	for (int i = 0; i < MAX_SLICES; ++i)
+	{
+		if (i >= nSlices)
+		{
+			break;
+		}
+		// Slice stratum + paper-faithful frame (Intel Algorithm 1 order):
+		// direction, view-orthogonalized direction, slice axis, projected
+		// normal, SIGNED gamma. Horizons start at the tangent (low-weight
+		// target), never at -1.
+		float sliceK = (float(i) + stNoise.x) / float(max(nSlices, 1));
+		float phi = sliceK * PI; // two-way slices: PI suffices, not 2PI
+		vec3 directionVec = vec3(cos(phi), sin(phi), 0.0);
+		vec3 orthoDirectionVec = directionVec - dot(directionVec, vdir) * vdir;
+		vec3 axisVec = normalize(cross(orthoDirectionVec, vdir));
+		vec3 projectedNormalVec = N - axisVec * dot(N, axisVec);
+		float projLen = length(projectedNormalVec);
+		if (projLen < 1e-4)
+		{
+			visSum += 1.0;
+			continue; // normal perpendicular to the slice plane: never darken silhouettes
+		}
+		float signNorm = sign(dot(orthoDirectionVec, projectedNormalVec));
+		float cosNorm = clamp(dot(projectedNormalVec, vdir) / projLen, 0.0, 1.0);
+		float gam = signNorm * acos(cosNorm);
+		float lowCos0 = cos(gam + PI_HALF);
+		float lowCos1 = cos(gam - PI_HALF);
+		vec2 horizons = vec2(lowCos0, lowCos1);
+		for (int s = -1; s <= 1; s += 2)
+		{
+			for (int j = 0; j < MAX_STEPS; ++j)
+			{
+				if (j >= nSteps)
+				{
+					break;
+				}
+				// s^2 distribution + 1.3px minimum step (never self-samples);
+				// R1 step jitter indexed by slice AND step (Intel shape).
+				float stepNoise = fract(stNoise.y + float(i + j * nSlices) * (PHI - 1.0));
+				float sN = (float(j) + stepNoise) / float(max(nSteps, 1));
+				float currstep = 1.3 + sN * sN * radiusPix;
+				vec2 offPix = directionVec.xy * (currstep * float(s));
+				vec2 suv = uv + offPix / max(halfRes, vec2(1.0));
+				if (suv.x < 0.0 || suv.y < 0.0 || suv.x > 1.0 || suv.y > 1.0)
+				{
+					continue;
+				}
+				// Snap to texel centers (avoids half-texel shimmer).
+				suv = (floor(suv * halfRes) + vec2(0.5)) / max(halfRes, vec2(1.0));
+				suv = clamp(suv, vec2(0.0), vec2(1.0));
+				// Hierarchical-z: ideally a min-depth MIP. Base level for now.
+				float sDepth = texture(uLinearDepthTex, suv).r;
+				if (IsSkyLinear(sDepth, uFar))
+				{
+					continue; // sky sample is not an occluder
+				}
+				vec3 S = ViewPosFromLinear(suv, sDepth, uInvProj);
+				vec3 sampleDelta = S - P; // keep fp32: Intel warns lpfloat precision issues here
+				float sampleDist = length(sampleDelta);
+				if (sampleDist < 1e-5)
+				{
+					continue; // same texel: no direction, no occlusion
+				}
+				vec3 sampleHorizonVec = sampleDelta / sampleDist;
+				// Linear falloff weight lerped toward the tangent (Intel
+				// shape): full weight inside uFalloffRange, zero at uRadius.
+				float fallW = clamp(1.0 - (sampleDist - uFalloffRange) / max(uRadius - uFalloffRange, 1e-6), 0.0, 1.0);
+				float shc = dot(sampleHorizonVec, vdir);
+				if (s < 0)
+				{
+					horizons.y = max(horizons.y, mix(lowCos1, shc, fallW));
+				}
+				else
+				{
+					horizons.x = max(horizons.x, mix(lowCos0, shc, fallW));
+				}
+			}
+		}
+		// Paper lines ~27-28, unrolled (Intel shape; real acos kept, their
+		// fast_acos is a GCN tuning unneeded on GL).
+		float h0 = -acos(clamp(horizons.y, -1.0, 1.0));
+		float h1 = acos(clamp(horizons.x, -1.0, 1.0));
+		float sinGam = sin(gam);
+		float iarc0 = (cosNorm + 2.0 * h0 * sinGam - cos(2.0 * h0 - gam)) * 0.25;
+		float iarc1 = (cosNorm + 2.0 * h1 * sinGam - cos(2.0 * h1 - gam)) * 0.25;
+		projLen = mix(projLen, 1.0, 0.05); // Intel slope-overdarkening fudge: kept tiny, stays honest
+		visSum += projLen * (iarc0 + iarc1);
+	}
+
+	float ao = visSum / float(max(nSlices, 1));
+	ao = clamp(ao, 0.0, 1.0);
+	ao = pow(ao, clamp(uPower, 0.1, 8.0));
+
+	imageStore(uAoImg, px, vec4(ao, 0.0, 0.0, 1.0));
+}

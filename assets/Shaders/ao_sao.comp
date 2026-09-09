@@ -1,0 +1,173 @@
+#version 430
+
+// CACAO-style SAO (AMD FidelityFX CACAO, MIT, modifikasi Intel ASSAO):
+// pola tap cermin + weightMod per-tap, akumulasi ternormalisasi bobot
+// (tiap tap selalu menyumbang bobot -> tanpa pengenceran /n), horizon-angle
+// threshold ganti bias-gate absolut, Detail AO dari 4 tetangga langsung.
+// Hanya rumus yang diadopsi; kode ditulis ulang ke GLSL (bukan salin HLSL).
+// Copyright (c) 2016, Intel Corporation / Modifications Copyright 2021 AMD.
+// Lisensi MIT: pemberitahuan copyright ini dipertahankan sesuai syarat lisensi.
+//
+// Perilaku:
+//   - tap pola 3 / 5 / 12 via uniform uSampleCount (tiap tap = 2 sampel cermin)
+//   - power, sky (depth ~= far) -> AO=1, center ditarik 0.9995 (presisi depth)
+//   - tanpa min-depth MIP chain (single-level); mip-select = backlog
+
+#include "common_ao.glsl"
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+uniform sampler2D uLinearDepthTex; // half-res positive view-Z (from ao_depth), unit 4
+uniform sampler2D uNormalTex;      // half-res normal encoded 0..1 (from ao_depth), unit 5
+uniform float uNear;
+uniform float uFar;
+uniform float uRadius;       // meters, 0.1..5 (default 1.2, CACAO)
+uniform float uPower;        // exponent 0.5..3 (default 1.5, CACAO)
+uniform float uHorizonThreshold; // 0..0.2 (default 0.06, CACAO): min elevation
+uniform float uDetailStrength;   // 0..5 (default 0.5, CACAO detail AO)
+uniform mat4 uProj;
+uniform mat4 uInvProj;
+uniform vec2 uResolution;    // half-res target
+uniform int uSampleCount;    // pattern taps 3 / 5 / 12 (default 5), each = 2 mirrored samples
+
+layout(binding = 2, r16f) writeonly uniform image2D uAoImg; // half-res raw AO 0..1
+
+const int MAX_TAPS = 32;
+
+// CACAO sampling pattern (xy = disk offset, z = density weightMod).
+// Transcribed values, GLSL rewrite; rotation applied per-pixel via HashRot01.
+const vec3 PATTERN[32] = vec3[32](
+	vec3(0.78488064, 0.56661671, 1.50), vec3(0.26022232, -0.29575172, 1.50),
+	vec3(0.10459357, 0.08372527, 1.11), vec3(-0.68286800, 0.04963045, 1.09),
+	vec3(-0.13570161, -0.64190155, 1.25), vec3(-0.26193795, -0.08205118, 0.67),
+	vec3(-0.61177456, 0.66664219, 0.71), vec3(0.43675563, 0.25119025, 0.61),
+	vec3(0.07884444, 0.86618668, 0.64), vec3(-0.12790935, -0.29869005, 0.60),
+	vec3(-0.04031125, 0.02413622, 0.60), vec3(0.16201244, -0.52851415, 0.79),
+	vec3(-0.70991218, 0.47301072, 0.64), vec3(0.03277707, -0.22349690, 0.60),
+	vec3(0.68921727, 0.36800742, 0.63), vec3(0.29251814, 0.37775412, 0.61),
+	vec3(-0.12224089, 0.96582592, 0.60), vec3(0.11071457, -0.16131058, 0.60),
+	vec3(0.46562141, -0.59747696, 0.60), vec3(-0.51548797, 0.11804193, 0.60),
+	vec3(0.89141309, -0.42090443, 0.60), vec3(-0.32402530, -0.01591529, 0.60),
+	vec3(0.60771245, 0.41635221, 0.60), vec3(0.02379565, -0.08239821, 0.60),
+	vec3(0.48951152, -0.23657045, 0.60), vec3(-0.17611565, -0.81696892, 0.60),
+	vec3(-0.33930185, -0.20732205, 0.60), vec3(-0.91974425, 0.05403209, 0.60),
+	vec3(-0.15064627, -0.14949332, 0.60), vec3(0.53180975, -0.35210401, 0.60),
+	vec3(0.41487166, 0.81442589, 0.60), vec3(-0.24106961, -0.32721516, 0.60));
+
+// CACAO per-sample obscurance: elevation above tangent plane minus horizon
+// threshold, times spherical falloff. Never hard-rejects (far samples fall
+// to zero naturally), so every tap contributes weight (no /n dilution).
+float SaoObscurance(vec3 N, vec3 d, float range, float fallMulSq, float horizon)
+{
+	float nDotD = dot(d / max(range, 1e-6), N);
+	float fall = max(0.0, range * range * fallMulSq + 1.0);
+	return max(0.0, nDotD - horizon) * fall;
+}
+
+void main()
+{
+	ivec2 px = ivec2(gl_GlobalInvocationID.xy);
+	ivec2 outSize = imageSize(uAoImg);
+	if (px.x >= outSize.x || px.y >= outSize.y)
+	{
+		return;
+	}
+
+	vec2 halfRes = uResolution;
+	vec2 uv = (vec2(px) + vec2(0.5)) / max(halfRes, vec2(1.0));
+	uv = clamp(uv, vec2(0.0), vec2(1.0));
+
+	float centerDepth = texture(uLinearDepthTex, uv).r;
+	// Keep uNear live + sanitize.
+	if (centerDepth < uNear)
+	{
+		centerDepth = uNear;
+	}
+	// Sky -> AO=1 (clean sky, never occluded).
+	if (IsSkyLinear(centerDepth, uFar))
+	{
+		imageStore(uAoImg, px, vec4(1.0, 0.0, 0.0, 1.0));
+		return;
+	}
+
+	vec3 nEnc = texture(uNormalTex, uv).rgb;
+	vec3 N = DecodeNormal(nEnc);
+
+	vec3 P = ViewPosFromLinear(uv, centerDepth, uInvProj);
+	P *= 0.9995; // pull center toward camera vs depth precision (CACAO DepthPrecisionOffsetMod)
+
+	// World radius -> half-res pixel radius, pattern fitted inside 85% (CACAO).
+	float radiusPix = 0.85 * ComputeRadiusPix(uRadius, uProj, halfRes, centerDepth);
+
+	float rot = HashRot01(px) * PI2;
+	float cr = cos(rot);
+	float sr = sin(rot);
+	int n = clamp(uSampleCount, 1, MAX_TAPS);
+	float horizon = clamp(uHorizonThreshold, 0.0, 0.2);
+	float fallMulSq = -1.0 / max(uRadius * uRadius, 1e-6);
+	vec2 texel = vec2(1.0) / max(halfRes, vec2(1.0));
+
+	float occ = 0.0;
+	float wsum = 0.0;
+	for (int i = 0; i < MAX_TAPS; ++i)
+	{
+		if (i >= n)
+		{
+			break;
+		}
+		vec3 pat = PATTERN[i];
+		vec2 offPix = vec2(pat.x * cr - pat.y * sr, pat.x * sr + pat.y * cr) * radiusPix;
+		offPix = round(offPix); // snap to pixel center (CACAO: more correct math)
+		// Mirrored pair: two symmetrical depth samples per tap (CACAO).
+		for (int k = 0; k < 2; ++k)
+		{
+			vec2 suv = uv + ((k == 0) ? offPix : -offPix) / max(halfRes, vec2(1.0));
+			suv = clamp(suv, vec2(0.0), vec2(1.0)); // clamp sampler, no reject (CACAO)
+			// No min-depth MIP chain exists (single-level texture), so sample base level directly.
+			float sDepth = texture(uLinearDepthTex, suv).r;
+			// NO sky skip: far depth yields ~zero obscurance naturally (CACAO).
+			vec3 S = ViewPosFromLinear(suv, sDepth, uInvProj);
+			vec3 d = S - P;
+			float range = length(d);
+			float o = 0.0;
+			if (range > 1e-6)
+			{
+				o = SaoObscurance(N, d, range, fallMulSq, horizon);
+			}
+			occ += o * pat.z;
+			wsum += pat.z;
+		}
+	}
+
+	// Detail AO: 4 immediate neighbors with 4x falloff, continuity-gated
+	// (CACAO detailShadowStrength; reuses no extra textures).
+	{
+		float fallDetail = 4.0 * fallMulSq;
+		float detail = 0.0;
+		for (int j = 0; j < 4; ++j)
+		{
+			vec2 stepOff = (j == 0) ? vec2(1.0, 0.0) : (j == 1) ? vec2(-1.0, 0.0) : (j == 2) ? vec2(0.0, 1.0) : vec2(0.0, -1.0);
+			vec2 suv = clamp(uv + stepOff * texel, vec2(0.0), vec2(1.0));
+			float z = texture(uLinearDepthTex, suv).r;
+			vec3 S = ViewPosFromLinear(suv, z, uInvProj);
+			vec3 d = S - P;
+			float range = length(d);
+			float o = 0.0;
+			if (range > 1e-6)
+			{
+				float nDotD = dot(d / range, N);
+				float fall = max(0.0, range * range * fallDetail + 1.0);
+				o = max(0.0, nDotD - horizon) * fall;
+			}
+			float gate = clamp(1.3 - abs(z - centerDepth) / max(centerDepth * 0.04, 1e-6), 0.0, 1.0);
+			detail += o * gate;
+		}
+		occ += clamp(uDetailStrength, 0.0, 5.0) * detail; // strength only, no weight (CACAO)
+	}
+
+	float ao = 1.0 - occ / max(wsum, 1e-6); // weight-normalized: no /n dilution
+	ao = clamp(ao, 0.0, 1.0);
+	ao = pow(ao, clamp(uPower, 0.1, 8.0)); // before store (precision, CACAO note)
+
+	imageStore(uAoImg, px, vec4(ao, 0.0, 0.0, 1.0));
+}

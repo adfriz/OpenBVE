@@ -1,0 +1,129 @@
+#version 430
+
+// AO depth linearize + normal-from-depth.
+// Derived from the published SAO paper math (McGuire et al.), not a copy of
+// any reference repo. Only observable behavior is matched:
+//   - non-linear depth -> precise viewspace-Z (SAO paper S2.1, per-layer near/far)
+//   - 4-tap cross normal-from-depth
+//   - sky (depth ~= far) -> downstream AO=1 path (writes far + up normal here)
+// Full-res depth (DepthComponent24 sampler) -> half-res linear R16F + normal RGBA16F.
+//
+// TODO (hierarchical-z): no min-depth MIP chain exists yet; SAO samples
+//   base level directly. Follow-up: generate a min-depth chain, then fetch
+//   mip = clamp(log2(offset)-const).
+
+#include "common_ao.glsl"
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+uniform sampler2D uDepthTex;   // full-res scene depth (DepthComponent24), unit 1
+uniform float uNear;           // this layer's near plane (scenery 0.5 / cab 0.025)
+uniform float uFar;            // this layer's viewing distance
+uniform mat4 uInvProj;         // this layer's inverse projection
+uniform vec2 uResolution;      // half-res target (width, height)
+
+layout(binding = 2, r16f) writeonly uniform image2D uLinearImg;   // half-res positive view-Z
+layout(binding = 3, rgba16f) writeonly uniform image2D uNormalImg; // half-res view-space normal (encoded 0..1)
+layout(binding = 7, r8) writeonly uniform image2D uEdgesImg;       // half-res packed depth edges LRTB (Intel shape)
+
+vec3 ReconstructViewPos(vec2 uv, float depth01)
+{
+	vec4 clip = vec4(uv * 2.0 - 1.0, depth01 * 2.0 - 1.0, 1.0);
+	vec4 view = uInvProj * clip;
+	float w = abs(view.w) > 1e-6 ? view.w : 1e-6;
+	return view.xyz / w;
+}
+
+void main()
+{
+	ivec2 px = ivec2(gl_GlobalInvocationID.xy);
+	ivec2 outSize = imageSize(uLinearImg);
+	if (px.x >= outSize.x || px.y >= outSize.y)
+	{
+		return;
+	}
+
+	vec2 halfRes = uResolution;
+	vec2 uv = (vec2(px) + vec2(0.5)) / halfRes;
+	uv = clamp(uv, vec2(0.0), vec2(1.0));
+
+	float d = texture(uDepthTex, uv).r;
+
+	// Clean sky: depth ~= 1 (far) -> write far + up normal.
+	// Downstream SAO returns AO=1 for these texels; composite never darkens them.
+	if (IsSkyDepth01(d))
+	{
+		imageStore(uLinearImg, px, vec4(uFar, 0.0, 0.0, 1.0));
+		// Up view-space normal (0,0,1) encoded 0..1 -> (0.5,0.5,1.0).
+		imageStore(uNormalImg, px, vec4(0.5, 0.5, 1.0, 1.0));
+		imageStore(uEdgesImg, px, vec4(1.0, 0.0, 0.0, 1.0)); // sky: no edges
+		return;
+	}
+
+	float viewDist = LinearizeDepth01(d, uNear, uFar);
+	viewDist = clamp(viewDist, uNear, uFar);
+	imageStore(uLinearImg, px, vec4(viewDist, 0.0, 0.0, 1.0));
+
+	// 4-tap cross normal-from-depth at half resolution (one half-texel each way).
+	vec2 halfTexel = vec2(1.0) / max(halfRes, vec2(1.0));
+	vec2 uvL = clamp(uv - vec2(halfTexel.x, 0.0), vec2(0.0), vec2(1.0));
+	vec2 uvR = clamp(uv + vec2(halfTexel.x, 0.0), vec2(0.0), vec2(1.0));
+	vec2 uvD = clamp(uv - vec2(0.0, halfTexel.y), vec2(0.0), vec2(1.0));
+	vec2 uvU = clamp(uv + vec2(0.0, halfTexel.y), vec2(0.0), vec2(1.0));
+
+	float dL = texture(uDepthTex, uvL).r;
+	float dR = texture(uDepthTex, uvR).r;
+	float dD = texture(uDepthTex, uvD).r;
+	float dU = texture(uDepthTex, uvU).r;
+	// Sky neighbors reuse the center depth so normals never bleed into the sky.
+	if (IsSkyDepth01(dL)) { dL = d; uvL = uv; }
+	if (IsSkyDepth01(dR)) { dR = d; uvR = uv; }
+	if (IsSkyDepth01(dD)) { dD = d; uvD = uv; }
+	if (IsSkyDepth01(dU)) { dU = d; uvU = uv; }
+
+	vec3 pL = ReconstructViewPos(uvL, dL);
+	vec3 pR = ReconstructViewPos(uvR, dR);
+	vec3 pD = ReconstructViewPos(uvD, dD);
+	vec3 pU = ReconstructViewPos(uvU, dU);
+	vec3 pC = ReconstructViewPos(uv, d); // center for the edge-weighted normal
+
+	// Depth-discontinuity edges from the same taps (Intel shape): gate the
+	// normal average below AND the denoise pass. Cyclic order L->U->R->D->L
+	// matches GL orientation (the DX reference cycles L->T->R->B).
+	vec4 edgesLRTB = ComputeEdges(viewDist, -pL.z, -pR.z, -pU.z, -pD.z);
+	imageStore(uEdgesImg, px, vec4(PackEdges(edgesLRTB), 0.0, 0.0, 1.0));
+	// Edge-weighted normal: taps across discontinuities barely count, so thin
+	// geometry and silhouettes get cleaner normals than a plain cross product.
+	vec3 cL = pL - pC;
+	vec3 cR = pR - pC;
+	vec3 cU = pU - pC;
+	vec3 cD = pD - pC;
+	// Guarded normalize: sky-substituted taps coincide with the center exactly.
+	cL /= max(length(cL), 1e-6);
+	cR /= max(length(cR), 1e-6);
+	cU /= max(length(cU), 1e-6);
+	cD /= max(length(cD), 1e-6);
+	vec4 accepted = clamp(vec4(edgesLRTB.x * edgesLRTB.z, edgesLRTB.z * edgesLRTB.y, edgesLRTB.y * edgesLRTB.w, edgesLRTB.w * edgesLRTB.x) + 0.01, 0.0, 1.0);
+	vec3 n = accepted.x * cross(cL, cU) + accepted.y * cross(cU, cR)
+		+ accepted.z * cross(cR, cD) + accepted.w * cross(cD, cL);
+	float len = length(n);
+	if (len < 1e-6)
+	{
+		n = vec3(0.0, 0.0, 1.0);
+	}
+	else
+	{
+		n = n / len;
+	}
+	// Face the camera along the VIEW RAY, never the Z axis: under pitch/roll,
+	// up/down normals tilt forward/backward in Z, and a Z test flips them
+	// into the ground (black trailing side when pitched). Backfaces (Face2
+	// seen from behind) flip like two-sided lighting instead.
+	vec3 viewVecC = normalize(-pC);
+	if (dot(n, viewVecC) < 0.0)
+	{
+		n = -n;
+	}
+	vec3 enc = n * 0.5 + vec3(0.5);
+	imageStore(uNormalImg, px, vec4(enc, 1.0));
+}

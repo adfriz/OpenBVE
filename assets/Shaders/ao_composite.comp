@@ -1,0 +1,86 @@
+#version 430
+
+// AO in-place composite.
+// color.rgb *= mix(1, ao, Intensity)
+// ShadowClamp (ASSAO: crevices never go pitch black) + DistanceFade (ASSAO:
+// far AO is noise, required for 600m viewing distance) + debug AO-only
+// (uDebugView 0=composite, 1=AO-only). Sky (depth ~= 1) is always AO=1.
+// Colored multibounce below: "Practical Realtime Strategies for Accurate
+// Indirect Occlusion" coefficients, identical in URP's GTAOMultiBounce and
+// Asylum's gtaocombine.
+
+#include "common_ao.glsl"
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout(binding = 0, rgba8) uniform image2D uColorImg; // scene color in-place (read-write)
+uniform sampler2D uAoTex;    // denoised AO full-res 0..1, unit 6
+uniform sampler2D uDepthTex; // scene depth full-res 0..1, unit 1
+uniform float uIntensity;    // AoIntensity 0..2
+uniform float uShadowClamp;  // darkest allowed AO, 0..1 (0 = no clamp)
+uniform float uFadeNear;     // fade start distance (m)
+uniform float uFadeFar;      // distance where AO is fully gone (m)
+uniform float uNear;
+uniform float uFar;
+uniform vec2 uResolution;    // full-res
+uniform int uDebugView;      // 0=composite, 1=AO-only
+
+// Colored multibounce: approximates bounced light by albedo (here the lit
+// scene color, same approximation Asylum uses with base.rgb). Identity at
+// ao=1, so clean pixels stay pixel-identical.
+vec3 Multibounce(float ao, vec3 albedo)
+{
+	vec3 x = vec3(clamp(ao, 0.0, 1.0));
+	vec3 a = 2.0404 * albedo - vec3(0.3324);
+	vec3 b = -4.7951 * albedo + vec3(0.6417);
+	vec3 c = 2.7552 * albedo + vec3(0.6903);
+	return max(x, ((x * a + b) * x + c) * x);
+}
+
+void main()
+{
+	ivec2 px = ivec2(gl_GlobalInvocationID.xy);
+	ivec2 imgSize = imageSize(uColorImg);
+	if (px.x >= imgSize.x || px.y >= imgSize.y)
+	{
+		return;
+	}
+
+	vec2 fullRes = max(uResolution, vec2(1.0));
+	vec2 uv = (vec2(px) + vec2(0.5)) / fullRes;
+	uv = clamp(uv, vec2(0.0), vec2(1.0));
+
+	float ao = texture(uAoTex, uv).r;
+	ao = clamp(ao, 0.0, 1.0);
+
+	float d = texture(uDepthTex, uv).r;
+	// Clean sky: depth ~= 1 -> force AO=1.
+	if (IsSkyDepth01(d))
+	{
+		ao = 1.0;
+	}
+	else
+	{
+		// Distance fade: AO fades to 1 in the distance (ASSAO).
+		float viewDist = LinearizeDepth01(d, uNear, uFar);
+		float fade = 1.0 - smoothstep(uFadeNear, uFadeFar, viewDist);
+		ao = mix(1.0, ao, clamp(fade, 0.0, 1.0));
+	}
+
+	// Shadow clamp: AO may never go darker than the bound (reads as "expensive").
+	ao = clamp(ao, clamp(uShadowClamp, 0.0, 1.0), 1.0);
+
+	float k = clamp(uIntensity, 0.0, 2.0);
+	float aoM = mix(1.0, ao, k);
+
+	vec4 col = imageLoad(uColorImg, px);
+	if (uDebugView == 1)
+	{
+		col.rgb = vec3(aoM);
+	}
+	else
+	{
+		col.rgb *= mix(vec3(1.0), Multibounce(ao, col.rgb), k);
+	}
+	imageStore(uColorImg, px, col);
+}

@@ -1,0 +1,96 @@
+#version 430
+
+// Edge-aware isotropic denoise + optional upsample (Intel XeGTAO shape, MIT).
+// Replaces the old separable bilateral blur: separable H-then-V smoothing
+// turns depth-guided self-disabling on grazing surfaces into horizontal
+// stripe amplification. This pass is isotropic (3x3 at once), gated by the
+// precomputed packed depth edges from ao_depth (R8 LRTB, unit 7):
+//   - axial taps weighted by the center edge pointing at them
+//   - diagonal taps weighted by the product of adjacent edges (x0.425)
+//   - symmetry enforcement between mirrored neighbor edges (sharper)
+//   - small leak where 3-4 edges fire (anti-aliasing, Intel shape)
+//   - center weight 1.2 on the final (V/upsample) pass, 0.24 before it
+// uRadius is the tap stride in input pixels (0 = plain copy). The V pass
+// runs at full resolution over the half-res value with linear filtering,
+// so its stride lands relatively denser (free implicit upsample).
+
+#include "common_ao.glsl"
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+uniform sampler2D uValueTex;  // single-channel value to smooth, unit 6
+uniform sampler2D uEdgesTex;  // packed depth edges LRTB (1 = no edge), unit 7
+uniform vec2 uResolution;     // THIS pass output resolution
+uniform int uDirection;       // 0 = intermediate (soft center), 1 = final (sharp center)
+uniform int uRadius;          // tap stride in input pixels (default 3, 0 = copy)
+
+layout(binding = 2, r16f) writeonly uniform image2D uOutImg;
+
+void main()
+{
+	ivec2 px = ivec2(gl_GlobalInvocationID.xy);
+	ivec2 outSize = imageSize(uOutImg);
+	if (px.x >= outSize.x || px.y >= outSize.y)
+	{
+		return;
+	}
+
+	vec2 outRes = max(uResolution, vec2(1.0));
+	vec2 uv = (vec2(px) + vec2(0.5)) / outRes;
+	uv = clamp(uv, vec2(0.0), vec2(1.0));
+
+	float cVal = texture(uValueTex, uv).r;
+
+	int r = clamp(uRadius, 0, 8);
+	if (r == 0)
+	{
+		imageStore(uOutImg, px, vec4(clamp(cVal, 0.0, 1.0), 0.0, 0.0, 1.0));
+		return;
+	}
+
+	vec2 inSize = vec2(max(textureSize(uValueTex, 0), ivec2(1)));
+	vec2 stepUv = vec2(float(max(r, 1))) / inSize;
+
+	// 9 value taps, isotropic (clamp addressing stretches borders).
+	float vL = texture(uValueTex, clamp(uv - vec2(stepUv.x, 0.0), 0.0, 1.0)).r;
+	float vR = texture(uValueTex, clamp(uv + vec2(stepUv.x, 0.0), 0.0, 1.0)).r;
+	float vT = texture(uValueTex, clamp(uv + vec2(0.0, stepUv.y), 0.0, 1.0)).r;
+	float vB = texture(uValueTex, clamp(uv - vec2(0.0, stepUv.y), 0.0, 1.0)).r;
+	float vTL = texture(uValueTex, clamp(uv + vec2(-stepUv.x, stepUv.y), 0.0, 1.0)).r;
+	float vTR = texture(uValueTex, clamp(uv + vec2(stepUv.x, stepUv.y), 0.0, 1.0)).r;
+	float vBL = texture(uValueTex, clamp(uv + vec2(-stepUv.x, -stepUv.y), 0.0, 1.0)).r;
+	float vBR = texture(uValueTex, clamp(uv + vec2(stepUv.x, -stepUv.y), 0.0, 1.0)).r;
+
+	// Edges: center + 4 neighbors at the same stride.
+	vec4 eC = UnpackEdges(texture(uEdgesTex, uv).r);
+	vec4 eL = UnpackEdges(texture(uEdgesTex, clamp(uv - vec2(stepUv.x, 0.0), 0.0, 1.0)).r);
+	vec4 eR = UnpackEdges(texture(uEdgesTex, clamp(uv + vec2(stepUv.x, 0.0), 0.0, 1.0)).r);
+	vec4 eT = UnpackEdges(texture(uEdgesTex, clamp(uv + vec2(0.0, stepUv.y), 0.0, 1.0)).r);
+	vec4 eB = UnpackEdges(texture(uEdgesTex, clamp(uv - vec2(0.0, stepUv.y), 0.0, 1.0)).r);
+	// Symmetry enforcement: a left edge on the right pixel must match the
+	// right edge on the left pixel (slightly sharper result).
+	eC *= vec4(eL.y, eR.x, eT.w, eB.z);
+	// Leak where surrounded by edges (anti-aliasing, Intel shape).
+	float edginess = (clamp(4.0 - 2.5 - dot(eC, vec4(1.0)), 0.0, 1.0) / (4.0 - 2.5)) * 0.5;
+	eC = clamp(eC + edginess, 0.0, 1.0);
+
+	float wTL = 0.425 * (eC.x * eL.z + eC.z * eT.x);
+	float wTR = 0.425 * (eC.z * eT.y + eC.y * eR.z);
+	float wBL = 0.425 * (eC.w * eB.x + eC.x * eL.w);
+	float wBR = 0.425 * (eC.y * eR.w + eC.w * eB.y);
+
+	float blurAmount = (uDirection == 1) ? 1.2 : 0.24;
+	float sum = cVal * blurAmount;
+	float wsum = blurAmount;
+	sum += vL * eC.x; wsum += eC.x;
+	sum += vR * eC.y; wsum += eC.y;
+	sum += vT * eC.z; wsum += eC.z;
+	sum += vB * eC.w; wsum += eC.w;
+	sum += vTL * wTL; wsum += wTL;
+	sum += vTR * wTR; wsum += wTR;
+	sum += vBL * wBL; wsum += wBL;
+	sum += vBR * wBR; wsum += wBR;
+
+	float v = sum / max(wsum, 1e-6);
+	imageStore(uOutImg, px, vec4(clamp(v, 0.0, 1.0), 0.0, 0.0, 1.0));
+}
