@@ -63,6 +63,19 @@ namespace ObjectViewer.Graphics
 			// initialize
 			ResetOpenGlState();
 
+					// Cheap per-frame post sync for live viewer options. OFF = bypass (pixel-identical).
+			try
+			{
+				if (PostProcessor != null)
+				{
+					PostProcessor.SyncFromOptions(Interface.CurrentOptions);
+				}
+			}
+			catch
+			{
+				// ignored
+			}
+
 			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 			UpdateViewport(ViewportChangeMode.ChangeToScenery);
 			CurrentViewMatrix = Matrix4D.LookAt(Vector3.Zero, new Vector3(Camera.AbsoluteDirection.X, Camera.AbsoluteDirection.Y, -Camera.AbsoluteDirection.Z), new Vector3(Camera.AbsoluteUp.X, Camera.AbsoluteUp.Y, -Camera.AbsoluteUp.Z));
@@ -88,6 +101,13 @@ namespace ObjectViewer.Graphics
             }
             // opaque face
             PerformCSMShadowPass();
+
+			// Viewer scenery-only layer: SceneFBO + AO/chain when enabled, direct otherwise.
+			bool sceneryPost = BeginPostLayer();
+			if (sceneryPost)
+			{
+				GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+			}
 
             //Setup the shader for rendering the scene
             DefaultShader.Activate();
@@ -176,6 +196,12 @@ namespace ObjectViewer.Graphics
 
 			DefaultShader.Deactivate();
 			lastVAO = -1;
+
+			// Composite viewer scenery layer. Overlays below stay direct (never post-processed).
+			if (sceneryPost)
+			{
+				EndPostLayer();
+			}
 
             // render overlays
             ResetOpenGlState();
