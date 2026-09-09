@@ -251,7 +251,24 @@ namespace OpenBve
 							Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "shadows_resolution_ultra" })
 						});
 						Items[10] = new MenuOption(menu, OptionType.ShadowFilterCascades, "Per-cascade culling", new[] { "true", "false" });
-						Items[11] = new MenuCommand(menu, Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"menu","back"}), MenuTag.MenuBack, 0);
+							// Post-processing (subset, live without restart, saved on MenuBack).
+						// Master is always shown; AO entries are hidden when compute is unavailable.
+						{
+							System.Collections.Generic.List<MenuEntry> postItems = new System.Collections.Generic.List<MenuEntry>();
+							for (int k = 0; k <= 10; k++)
+							{
+								postItems.Add(Items[k]);
+							}
+							bool supportsCompute = MenuBuilder.SupportsCompute(Program.Renderer);
+							MenuBuilder.AddPostItemsDetailed(postItems, menu,
+								PostLabel("postprocessing_enabled", "Post-processing"),
+								PostLabel("ao_mode", "Ambient Occlusion"),
+								PostLabel("ao_intensity", "AO Intensity"),
+								PostLabel("ao_radius", "AO Radius"),
+								Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"menu","back"}),
+								supportsCompute);
+							Items = postItems.ToArray();
+						}
 						Align = TextAlignment.TopLeft;
 						break;
 					case MenuType.RouteList:
@@ -601,6 +618,24 @@ namespace OpenBve
 				
 				ComputeExtent(menuType, Game.Menu.MenuFont, MaxWidth, Game.Menu.LineHeight);
 				TopItem = 0;
+			}
+
+			/// <summary>Resolves a post-processing label with English fallback (other languages fall back).</summary>
+			private static string PostLabel(string key, string fallback)
+			{
+				try
+				{
+					string s = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", key });
+					if (string.IsNullOrWhiteSpace(s) || s == key)
+					{
+						return fallback;
+					}
+					return s;
+				}
+				catch
+				{
+					return fallback;
+				}
 			}
 		}
 

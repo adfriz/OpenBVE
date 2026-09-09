@@ -323,6 +323,10 @@
       <DependentUpon>formMain.cs</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="UserInterface\formMain.PostProcessing.cs">
+      <DependentUpon>formMain.cs</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="UserInterface\formMain.Review.cs">
       <DependentUpon>formMain.cs</DependentUpon>
       <SubType>Form</SubType>

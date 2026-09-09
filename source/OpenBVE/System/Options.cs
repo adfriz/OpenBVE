@@ -184,6 +184,29 @@ namespace OpenBve
 				CameraInteriorTransition = true;
 				CameraExteriorTransition = true;
 				CameraTransitionSpeed = 0.4;
+				// Post-processing + AO defaults (mirror BaseOptions initializers so old cfgs keep working)
+				EnablePostProcessing = false;
+				PostEffectOrder = DefaultPostEffectOrder;
+				PostFxaa = false;
+				PostSharpen = false;
+				PostVignette = false;
+				AoMode = OpenBveApi.Interface.AmbientOcclusionMode.Off;
+				AoRadius = 1.2f;
+				AoIntensity = 1.0f;
+				AoPower = 1.5f;
+				AoBias = 0.05f;
+				AoResolutionScale = 0.5f;
+				AoBlurRadius = 3;
+				AoBlurSharpness = 0.01f;
+				AoAffectCab3D = true;
+				AoDebugView = 0;
+				SaoSamples = 5;
+				SaoSpiralTurns = 7;
+				AoHorizonThreshold = 0.06f;
+				AoDetailStrength = 0.5f;
+				GtaoSlices = 4;
+				GtaoSteps = 3;
+				GtaoFalloffRange = 0.4f;
 				CultureInfo currentCultureInfo = CultureInfo.CurrentCulture;
 				switch (Program.CurrentHost.Platform)
 				{
@@ -321,6 +344,10 @@ namespace OpenBve
 				Builder.AppendLine("shadownormalbias = " + ShadowNormalBias.ToString(Culture));
 				Builder.AppendLine("shadowfiltercascades = " + (ShadowFilterCascades ? "true" : "false"));
 				Builder.AppendLine("fpslimit = " + FPSLimit.ToString(Culture));
+				Builder.AppendLine();
+				AppendPostProcessingSection(Builder);
+				Builder.AppendLine();
+				AppendAmbientOcclusionSection(Builder, Culture);
 				Builder.AppendLine();
 				Builder.AppendLine("[objectOptimization]");
 				Builder.AppendLine("basicThreshold = " + ObjectOptimizationBasicThreshold.ToString(Culture));
@@ -651,6 +678,101 @@ namespace OpenBve
 							block.GetValue(OptionsKey.Panel2Extended, out CurrentOptions.Panel2ExtendedMode);
 							block.GetValue(OptionsKey.Panel2ExtendedMinSize, out CurrentOptions.Panel2ExtendedMinSize);
 							break;
+						case OptionsSection.PostProcessing:
+						{
+							block.TryGetValue(OptionsKey.EnablePostProcessing, ref CurrentOptions.EnablePostProcessing);
+							if (block.TryGetValue(OptionsKey.PostEffectOrder, ref CurrentOptions.PostEffectOrder))
+							{
+								CurrentOptions.PostEffectOrder = BaseOptions.NormalizePostEffectOrder(CurrentOptions.PostEffectOrder);
+							}
+							block.TryGetValue(OptionsKey.PostFxaa, ref CurrentOptions.PostFxaa);
+							block.TryGetValue(OptionsKey.PostSharpen, ref CurrentOptions.PostSharpen);
+							block.TryGetValue(OptionsKey.PostVignette, ref CurrentOptions.PostVignette);
+							break;
+						}
+						case OptionsSection.AmbientOcclusion:
+						{
+							block.TryGetEnumValue(OptionsKey.AoMode, ref CurrentOptions.AoMode);
+							double dTmp;
+							dTmp = CurrentOptions.AoRadius;
+							if (block.TryGetValue(OptionsKey.AoRadius, ref dTmp))
+							{
+								CurrentOptions.AoRadius = (float)AoLimits.Clamp(dTmp, 0.1, 5.0);
+							}
+							dTmp = CurrentOptions.AoIntensity;
+							if (block.TryGetValue(OptionsKey.AoIntensity, ref dTmp))
+							{
+								CurrentOptions.AoIntensity = (float)AoLimits.Clamp(dTmp, 0.0, 2.0);
+							}
+							dTmp = CurrentOptions.AoPower;
+							if (block.TryGetValue(OptionsKey.AoPower, ref dTmp))
+							{
+								CurrentOptions.AoPower = (float)AoLimits.Clamp(dTmp, 0.5, 3.0);
+							}
+							dTmp = CurrentOptions.AoBias;
+							if (block.TryGetValue(OptionsKey.AoBias, ref dTmp))
+							{
+								CurrentOptions.AoBias = (float)AoLimits.Clamp(dTmp, 0.0, 1.0);
+							}
+							dTmp = CurrentOptions.AoResolutionScale;
+							if (block.TryGetValue(OptionsKey.AoResolutionScale, ref dTmp))
+							{
+								CurrentOptions.AoResolutionScale = (float)AoLimits.SnapScale(dTmp);
+							}
+							int iTmp;
+							iTmp = CurrentOptions.AoBlurRadius;
+							if (block.TryGetValue(OptionsKey.AoBlurRadius, ref iTmp))
+							{
+								CurrentOptions.AoBlurRadius = AoLimits.Clamp(iTmp, 0, 8);
+							}
+							dTmp = CurrentOptions.AoBlurSharpness;
+							if (block.TryGetValue(OptionsKey.AoBlurSharpness, ref dTmp))
+							{
+								CurrentOptions.AoBlurSharpness = (float)AoLimits.Clamp(dTmp, 0.0, 1.0);
+							}
+							block.TryGetValue(OptionsKey.AoAffectCab3D, ref CurrentOptions.AoAffectCab3D);
+							iTmp = CurrentOptions.AoDebugView;
+							if (block.TryGetValue(OptionsKey.AoDebugView, ref iTmp))
+							{
+								CurrentOptions.AoDebugView = AoLimits.Clamp(iTmp, 0, 1);
+							}
+							iTmp = CurrentOptions.SaoSamples;
+							if (block.TryGetValue(OptionsKey.SaoSamples, ref iTmp))
+							{
+								CurrentOptions.SaoSamples = AoLimits.Clamp(iTmp, 1, 32);
+							}
+							iTmp = CurrentOptions.SaoSpiralTurns;
+							if (block.TryGetValue(OptionsKey.SaoSpiralTurns, ref iTmp))
+							{
+								CurrentOptions.SaoSpiralTurns = AoLimits.Clamp(iTmp, 1, 16);
+							}
+							dTmp = CurrentOptions.AoHorizonThreshold;
+							if (block.TryGetValue(OptionsKey.AoHorizonThreshold, ref dTmp))
+							{
+								CurrentOptions.AoHorizonThreshold = (float)AoLimits.Clamp(dTmp, 0.0, 0.2);
+							}
+							dTmp = CurrentOptions.AoDetailStrength;
+							if (block.TryGetValue(OptionsKey.AoDetailStrength, ref dTmp))
+							{
+								CurrentOptions.AoDetailStrength = (float)AoLimits.Clamp(dTmp, 0.0, 5.0);
+							}
+							iTmp = CurrentOptions.GtaoSlices;
+							if (block.TryGetValue(OptionsKey.GtaoSlices, ref iTmp))
+							{
+								CurrentOptions.GtaoSlices = AoLimits.Clamp(iTmp, 1, 8);
+							}
+							iTmp = CurrentOptions.GtaoSteps;
+							if (block.TryGetValue(OptionsKey.GtaoSteps, ref iTmp))
+							{
+								CurrentOptions.GtaoSteps = AoLimits.Clamp(iTmp, 1, 8);
+							}
+							dTmp = CurrentOptions.GtaoFalloffRange;
+							if (block.TryGetValue(OptionsKey.GtaoFalloffRange, ref dTmp))
+							{
+								CurrentOptions.GtaoFalloffRange = (float)AoLimits.Clamp(dTmp, 0.05, 2.0);
+							}
+							break;
+						}
 					}
 				}
 			}
