@@ -112,6 +112,18 @@ namespace ObjectViewer
 				}
 				else
 				{
+					// Persist viewer post/AO tweaks made in the in-game Options menu.
+					if (menu.Type == MenuType.Options)
+					{
+						try
+						{
+							Interface.CurrentOptions.Save(Path.CombineFile(Program.FileSystem.SettingsFolder, "1.5.0/options_ov.cfg"));
+						}
+						catch
+						{
+							// ignored: save must never break menu navigation
+						}
+					}
 					PopMenu();
 				}
 				return;
@@ -146,6 +158,18 @@ namespace ObjectViewer
 						{
 							// menu management commands
 							case MenuTag.MenuBack: // BACK TO PREVIOUS MENU
+								// Persist viewer post/AO tweaks made in the in-game Options menu.
+								if (menu.Type == MenuType.Options)
+								{
+									try
+									{
+										Interface.CurrentOptions.Save(Path.CombineFile(Program.FileSystem.SettingsFolder, "1.5.0/options_ov.cfg"));
+									}
+									catch
+									{
+										// ignored
+									}
+								}
 								Instance.PopMenu();
 								break;
 							case MenuTag.MenuJumpToStation: // TO STATIONS MENU

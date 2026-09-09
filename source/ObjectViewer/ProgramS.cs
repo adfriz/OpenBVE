@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using LibRender2.Menu;
+using LibRender2.PostProcessing;
 using LibRender2.Screens;
 using LibRender2.Trains;
 using ObjectViewer.Graphics;
@@ -174,13 +175,21 @@ namespace ObjectViewer {
 			GameMenu.Instance = new GameMenu();
 			// initialize camera
 			Renderer.GraphicsMode = new GraphicsMode(new ColorFormat(8, 8, 8, 8), 24, 8,Interface.CurrentOptions.AntiAliasingLevel);
-	        Renderer.GameWindow = new ObjectViewer(Renderer.Screen.Width, Renderer.Screen.Height, Renderer.GraphicsMode, "Object Viewer", GameWindowFlags.Default)
-	        {
-		        Visible = true,
-		        TargetUpdateFrequency = 0,
-		        TargetRenderFrequency = 0,
-		        Title = "Object Viewer"
-	        };
+        ObjectViewer viewer;
+        // Shared pattern (LibRender2.PostProcessing.GlContextFactory): forward-compatible 3.3 on macOS/forced, else 4.3 with 3.3 fallback.
+        if (GlContextFactory.WantForwardCompatible(CurrentHost.Platform, Interface.CurrentOptions.ForceForwardsCompatibleContext))
+        {
+	        viewer = new ObjectViewer(Renderer.Screen.Width, Renderer.Screen.Height, Renderer.GraphicsMode, "Object Viewer", GameWindowFlags.Default);
+        }
+        else
+        {
+	        viewer = GlContextFactory.CreateWithFallback((major, minor) => new ObjectViewer(Renderer.Screen.Width, Renderer.Screen.Height, Renderer.GraphicsMode, "Object Viewer", GameWindowFlags.Default, GraphicsContextFlags.Default, major, minor));
+        }
+	        viewer.Visible = true;
+	        viewer.TargetUpdateFrequency = 0;
+	        viewer.TargetRenderFrequency = 0;
+	        viewer.Title = "Object Viewer";
+	        Renderer.GameWindow = viewer;
 	        Renderer.GameWindow.VSync = Interface.CurrentOptions.VerticalSynchronization ? VSyncMode.On : VSyncMode.Off;
 	        if (Interface.CurrentOptions.FPSLimit > 0)
 	        {

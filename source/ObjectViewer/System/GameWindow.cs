@@ -13,8 +13,20 @@ namespace ObjectViewer
     internal class ObjectViewer : GameWindow
     {
         //Deliberately specify the default constructor with various overrides
+        // NOTE: bases differ on purpose (default vs explicit GL version for macOS), so only the icon setup is shared.
         public ObjectViewer(int width, int height, GraphicsMode currentGraphicsMode, string windowTitle,
             GameWindowFlags @default) : base(width, height, currentGraphicsMode, windowTitle, @default)
+        {
+            InitIcon();
+        }
+
+        public ObjectViewer(int width, int height, GraphicsMode currentGraphicsMode, string windowTitle,
+            GameWindowFlags @default, GraphicsContextFlags flags, int major, int minor) : base(width, height, currentGraphicsMode, windowTitle, @default, DisplayDevice.Default, major, minor, flags)
+        {
+            InitIcon();
+        }
+
+        private void InitIcon()
         {
             try
             {

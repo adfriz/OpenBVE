@@ -73,6 +73,8 @@ namespace ObjectViewer
 			comboBoxShadowResolution.SelectedIndexChanged += comboBoxShadowResolution_SelectedIndexChanged;
 			UpdateShadowControlsEnabled();
 
+			InitializePostUI();
+
 			comboBoxLeft.DataSource = Enum.GetValues(typeof(Key));
 			comboBoxLeft.SelectedItem = Interface.CurrentOptions.CameraMoveLeft;
 			comboBoxRight.DataSource = Enum.GetValues(typeof(Key));
@@ -128,6 +130,231 @@ namespace ObjectViewer
 		{
 			UpdateShadowControlsEnabled();
 		}
+
+			// Viewer slim post UI (master + AoMode + Intensity + Radius), programmatic TabPage.
+		private System.Windows.Forms.TabPage tabPagePost;
+		private System.Windows.Forms.CheckBox checkBoxPostEnabled;
+		private System.Windows.Forms.ComboBox comboBoxAoMode;
+		private System.Windows.Forms.NumericUpDown numericAoIntensity;
+		private System.Windows.Forms.NumericUpDown numericAoRadius;
+		private System.Windows.Forms.Button buttonAoPresetLow;
+		private System.Windows.Forms.Button buttonAoPresetBalanced;
+		private System.Windows.Forms.Button buttonAoPresetQuality;
+		private System.Windows.Forms.Label labelAoPresetCurrent;
+
+		private void InitializePostUI()
+		{
+			try
+			{
+				tabPagePost = new System.Windows.Forms.TabPage("Post-Processing");
+				var tlp = new System.Windows.Forms.TableLayoutPanel
+				{
+					AutoSize = true,
+					Dock = System.Windows.Forms.DockStyle.Top,
+					Padding = new System.Windows.Forms.Padding(10),
+					ColumnCount = 2,
+					ColumnStyles =
+					{
+						new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 45F),
+						new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 55F)
+					}
+				};
+			var labelPostEnabled = new System.Windows.Forms.Label { AutoSize = true, Text = "Enable post-processing:" };
+			checkBoxPostEnabled = new System.Windows.Forms.CheckBox { AutoSize = true };
+			checkBoxPostEnabled.Checked = Interface.CurrentOptions.EnablePostProcessing;
+			checkBoxPostEnabled.CheckedChanged += checkBoxPostEnabled_CheckedChanged;
+			var labelAoMode = new System.Windows.Forms.Label { AutoSize = true, Text = "AO Mode:" };
+			comboBoxAoMode = new System.Windows.Forms.ComboBox { Dock = System.Windows.Forms.DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList };
+			comboBoxAoMode.Items.AddRange(new object[] { "Off", "SAO", "GTAO" });
+			comboBoxAoMode.SelectedIndex = AoModeMapper.ToSelectedIndex(Interface.CurrentOptions.AoMode);
+			comboBoxAoMode.SelectedIndexChanged += comboBoxAoMode_SelectedIndexChanged;
+			var labelAoIntensity = new System.Windows.Forms.Label { AutoSize = true, Text = "AO Intensity (0-2):" };
+			numericAoIntensity = new System.Windows.Forms.NumericUpDown { Dock = System.Windows.Forms.DockStyle.Fill, DecimalPlaces = 2, Increment = 0.1m, Minimum = 0, Maximum = 2 };
+			numericAoIntensity.Value = AoLimits.Clamp((decimal)Interface.CurrentOptions.AoIntensity, numericAoIntensity.Minimum, numericAoIntensity.Maximum);
+			numericAoIntensity.ValueChanged += PostNumericChanged;
+			var labelAoRadius = new System.Windows.Forms.Label { AutoSize = true, Text = "AO Radius m (0.1-5):" };
+			numericAoRadius = new System.Windows.Forms.NumericUpDown { Dock = System.Windows.Forms.DockStyle.Fill, DecimalPlaces = 2, Increment = 0.1m, Minimum = 0.1m, Maximum = 5 };
+			numericAoRadius.Value = AoLimits.Clamp((decimal)Interface.CurrentOptions.AoRadius, numericAoRadius.Minimum, numericAoRadius.Maximum);
+			numericAoRadius.ValueChanged += PostNumericChanged;
+			var labelAoPreset = new System.Windows.Forms.Label { AutoSize = true, Text = "Quality preset:" };
+			var presetFlow = new System.Windows.Forms.FlowLayoutPanel { AutoSize = true, Dock = System.Windows.Forms.DockStyle.Fill };
+			buttonAoPresetLow = new System.Windows.Forms.Button { AutoSize = true, Text = "Fast" };
+			buttonAoPresetLow.Click += buttonAoPresetLow_Click;
+			buttonAoPresetBalanced = new System.Windows.Forms.Button { AutoSize = true, Text = "Balanced" };
+			buttonAoPresetBalanced.Click += buttonAoPresetBalanced_Click;
+			buttonAoPresetQuality = new System.Windows.Forms.Button { AutoSize = true, Text = "Quality" };
+			buttonAoPresetQuality.Click += buttonAoPresetQuality_Click;
+			labelAoPresetCurrent = new System.Windows.Forms.Label { AutoSize = true };
+			presetFlow.Controls.Add(buttonAoPresetLow);
+			presetFlow.Controls.Add(buttonAoPresetBalanced);
+			presetFlow.Controls.Add(buttonAoPresetQuality);
+			presetFlow.Controls.Add(labelAoPresetCurrent);
+				tlp.Controls.Add(labelPostEnabled, 0, 0);
+				tlp.Controls.Add(checkBoxPostEnabled, 1, 0);
+				tlp.Controls.Add(labelAoMode, 0, 1);
+				tlp.Controls.Add(comboBoxAoMode, 1, 1);
+				tlp.Controls.Add(labelAoIntensity, 0, 2);
+				tlp.Controls.Add(numericAoIntensity, 1, 2);
+			tlp.Controls.Add(labelAoRadius, 0, 3);
+			tlp.Controls.Add(numericAoRadius, 1, 3);
+			tlp.Controls.Add(labelAoPreset, 0, 4);
+			tlp.Controls.Add(presetFlow, 1, 4);
+				tabPagePost.Controls.Add(tlp);
+				tabPagePost.AutoScroll = true;
+				tabControl1.Controls.Add(tabPagePost);
+				UpdatePostControlsEnabled();
+			}
+			catch
+			{
+				// ignored: post UI must never break options dialog
+			}
+		}
+
+		private void UpdatePostControlsEnabled()
+		{
+			try
+			{
+				if (comboBoxAoMode == null || checkBoxPostEnabled == null)
+				{
+					return;
+				}
+				bool supportsCompute = LibRender2.Menu.MenuBuilder.SupportsCompute(Program.Renderer);
+				if (!supportsCompute)
+				{
+					comboBoxAoMode.Enabled = false;
+					if (numericAoIntensity != null) numericAoIntensity.Enabled = false;
+					if (numericAoRadius != null) numericAoRadius.Enabled = false;
+					toolTip1.SetToolTip(comboBoxAoMode, "Requires OpenGL 4.3");
+					toolTip1.SetToolTip(tabPagePost, "Requires OpenGL 4.3");
+					return;
+				}
+		bool master = checkBoxPostEnabled.Checked;
+		bool aoOn = AoModeMapper.FromSelectedIndex(comboBoxAoMode.SelectedIndex) != AmbientOcclusionMode.Off;
+		if (numericAoIntensity != null) numericAoIntensity.Enabled = master && aoOn;
+		if (numericAoRadius != null) numericAoRadius.Enabled = master && aoOn;
+		comboBoxAoMode.Enabled = master;
+		bool presetOn = master && aoOn;
+		if (buttonAoPresetLow != null) buttonAoPresetLow.Enabled = presetOn;
+		if (buttonAoPresetBalanced != null) buttonAoPresetBalanced.Enabled = presetOn;
+		if (buttonAoPresetQuality != null) buttonAoPresetQuality.Enabled = presetOn;
+		if (labelAoPresetCurrent != null)
+		{
+			int s = Interface.CurrentOptions.SaoSamples;
+			int sl = Interface.CurrentOptions.GtaoSlices;
+			int st = Interface.CurrentOptions.GtaoSteps;
+			string tier = (s == 3 && sl == 3 && st == 2) ? "Fast"
+				: (s == 5 && sl == 4 && st == 3) ? "Balanced"
+				: (s == 12 && sl == 6 && st == 4) ? "Quality" : "Custom";
+			labelAoPresetCurrent.Text = "Current: " + tier + " (SAO " + s + "x2 / GTAO " + sl + "x" + st + ")";
+		}
+		}
+		catch
+		{
+			// ignored
+		}
+	}
+
+	// Live post/AO sync (mirrors formMain.Options + MenuOption auto-enable pattern).
+	private void checkBoxPostEnabled_CheckedChanged(object sender, EventArgs e)
+	{
+		try
+		{
+			Interface.CurrentOptions.EnablePostProcessing = checkBoxPostEnabled.Checked;
+			UpdatePostControlsEnabled();
+			SyncPostProcessor();
+		}
+		catch
+		{
+			// ignored
+		}
+	}
+
+	private void comboBoxAoMode_SelectedIndexChanged(object sender, EventArgs e)
+	{
+		try
+		{
+			Interface.CurrentOptions.AoMode = AoModeMapper.FromSelectedIndex(comboBoxAoMode.SelectedIndex);
+			// Selecting SAO/GTAO auto-enables master so the effect is visible immediately.
+			if (Interface.CurrentOptions.AoMode != AmbientOcclusionMode.Off && checkBoxPostEnabled != null && !checkBoxPostEnabled.Checked)
+			{
+				checkBoxPostEnabled.Checked = true;
+				Interface.CurrentOptions.EnablePostProcessing = true;
+			}
+			UpdatePostControlsEnabled();
+			SyncPostProcessor();
+		}
+		catch
+		{
+			// ignored
+		}
+	}
+
+	private void PostNumericChanged(object sender, EventArgs e)
+	{
+		try
+		{
+			if (numericAoIntensity != null)
+			{
+				Interface.CurrentOptions.AoIntensity = (float)AoLimits.Clamp(numericAoIntensity.Value, 0, 2);
+			}
+			if (numericAoRadius != null)
+			{
+				Interface.CurrentOptions.AoRadius = (float)AoLimits.Clamp(numericAoRadius.Value, 0.1m, 5);
+			}
+			SyncPostProcessor();
+		}
+		catch
+		{
+			// ignored
+		}
+	}
+
+	// Quality presets mirror the main app (Fast/Balanced/Quality sample counts).
+	private void buttonAoPresetLow_Click(object sender, EventArgs e)
+	{
+		ApplyAoPreset(3, 3, 2);
+	}
+
+	private void buttonAoPresetBalanced_Click(object sender, EventArgs e)
+	{
+		ApplyAoPreset(5, 4, 3);
+	}
+
+	private void buttonAoPresetQuality_Click(object sender, EventArgs e)
+	{
+		ApplyAoPreset(12, 6, 4);
+	}
+
+	private void ApplyAoPreset(int saoSamples, int gtaoSlices, int gtaoSteps)
+	{
+		try
+		{
+			Interface.CurrentOptions.SaoSamples = saoSamples;
+			Interface.CurrentOptions.GtaoSlices = gtaoSlices;
+			Interface.CurrentOptions.GtaoSteps = gtaoSteps;
+			UpdatePostControlsEnabled();
+			SyncPostProcessor();
+		}
+		catch
+		{
+			// ignored
+		}
+	}
+
+	private void SyncPostProcessor()
+	{
+		try
+		{
+			if (Program.Renderer != null && Program.Renderer.PostProcessor != null)
+			{
+				Program.Renderer.PostProcessor.SyncFromOptions(Interface.CurrentOptions);
+			}
+		}
+		catch
+		{
+			// ignored: live sync must never break the dialog
+		}
+	}
 
 		private void UpdateSunDirection()
 		{
@@ -312,6 +539,31 @@ namespace ObjectViewer
 			Interface.CurrentOptions.ShadowBias = (double)numericUpDownShadowBias.Value;
 			Interface.CurrentOptions.ShadowNormalBias = (double)numericUpDownShadowNormalBias.Value;
 			Interface.CurrentOptions.ShadowFilterCascades = checkBoxShadowFilterCascades.Checked;
+
+			// Viewer slim post save (order stays via CSV)
+			try
+			{
+				if (checkBoxPostEnabled != null)
+				{
+					Interface.CurrentOptions.EnablePostProcessing = checkBoxPostEnabled.Checked;
+				}
+				if (comboBoxAoMode != null)
+				{
+					Interface.CurrentOptions.AoMode = AoModeMapper.FromSelectedIndex(comboBoxAoMode.SelectedIndex);
+				}
+				if (numericAoIntensity != null)
+				{
+					Interface.CurrentOptions.AoIntensity = (float)AoLimits.Clamp(numericAoIntensity.Value, 0, 2);
+				}
+				if (numericAoRadius != null)
+				{
+					Interface.CurrentOptions.AoRadius = (float)AoLimits.Clamp(numericAoRadius.Value, 0.1m, 5);
+				}
+			}
+			catch
+			{
+				// ignored
+			}
 			
 			Interface.CurrentOptions.Save(Path.CombineFile(Program.FileSystem.SettingsFolder, "1.5.0/options_ov.cfg"));
 			Program.RefreshObjects();
