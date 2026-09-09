@@ -101,6 +101,7 @@ namespace LibRender2.Shaders
 		internal void LoadShader(string shaderSource, ShaderType shaderType)
 		{
 			int status;
+			shaderSource = ShaderInclude.ExpandIncludes(shaderSource);
 
 			switch (shaderType)
 			{

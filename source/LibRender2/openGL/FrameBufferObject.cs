@@ -9,6 +9,8 @@ namespace LibRender2
 		public static List<FrameBufferObject> Disposable = new List<FrameBufferObject>();
 
 		private readonly int handle;
+		/// <summary>GL framebuffer object handle.</summary>
+		public int FboHandle => handle;
 		private readonly Dictionary<int, I2dPixelArray> colorBuffers;
 		private I2dPixelArray depthBuffer;
 		private I2dPixelArray stencilBuffer;
@@ -147,7 +149,28 @@ namespace LibRender2
 			}
 		}
 
-		public void Dispose()
+		/// <summary>Returns the texture handle attached to a color slot (0 when none / not a texture).</summary>
+		public int GetColorTextureHandle(int Number = 0)
+		{
+			I2dPixelArray buffer;
+			if (colorBuffers.TryGetValue(Number, out buffer) && buffer is TextureBuffer texture)
+			{
+				return texture.handle;
+			}
+			return 0;
+		}
+
+		/// <summary>Returns the texture handle attached to depth (0 when none / not a texture).</summary>
+		public int GetDepthTextureHandle()
+		{
+			if (depthBuffer is TextureBuffer texture)
+			{
+				return texture.handle;
+			}
+			return 0;
+		}
+
+		public virtual void Dispose()
 		{
 			if (!disposed)
 			{

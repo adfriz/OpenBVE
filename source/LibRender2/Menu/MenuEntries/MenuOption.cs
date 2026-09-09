@@ -23,6 +23,8 @@
 //SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using LibRender2.Screens;
+using OpenBveApi;
+using OpenBveApi.Interface;
 using OpenTK;
 using System.Collections.Generic;
 using System.Globalization;
@@ -171,6 +173,22 @@ namespace LibRender2.Menu
 					return;
 				case OptionType.ShadowFilterCascades:
 					CurrentlySelectedOption = BaseMenu.CurrentOptions.ShadowFilterCascades ? 0 : 1;
+					return;
+				case OptionType.PostProcessingEnabled:
+					CurrentlySelectedOption = BaseMenu.CurrentOptions.EnablePostProcessing ? 0 : 1;
+					return;
+				case OptionType.AoMode:
+					CurrentlySelectedOption = AoModeMapper.ToSelectedIndex(BaseMenu.CurrentOptions.AoMode);
+					if (CurrentlySelectedOption < 0 || CurrentlySelectedOption >= Entries.Length)
+					{
+						CurrentlySelectedOption = 0;
+					}
+					return;
+				case OptionType.AoIntensity:
+					CurrentlySelectedOption = NearestFloatEntry(Entries, BaseMenu.CurrentOptions.AoIntensity);
+					return;
+				case OptionType.AoRadius:
+					CurrentlySelectedOption = NearestFloatEntry(Entries, BaseMenu.CurrentOptions.AoRadius);
 					return;
 			}
 			CurrentlySelectedOption = 0;
@@ -322,9 +340,89 @@ namespace LibRender2.Menu
 				case OptionType.ShadowFilterCascades:
 					BaseMenu.CurrentOptions.ShadowFilterCascades = !BaseMenu.CurrentOptions.ShadowFilterCascades;
 					break;
+				case OptionType.PostProcessingEnabled:
+					BaseMenu.CurrentOptions.EnablePostProcessing = CurrentlySelectedOption == 0;
+					SyncPostProcessor();
+					break;
+			case OptionType.AoMode:
+				// MenuBuilder.SupportsCompute is null-safe (renderer null -> false);
+				// BaseMenu itself is an instance field so guard it locally.
+				if (BaseMenu == null || !MenuBuilder.SupportsCompute(BaseMenu.Renderer))
+				{
+					break;
+				}
+					BaseMenu.CurrentOptions.AoMode = AoModeMapper.FromSelectedIndex(CurrentlySelectedOption);
+					// Enabling an AO mode also enables the master switch so the effect is visible immediately.
+					if (BaseMenu.CurrentOptions.AoMode != AmbientOcclusionMode.Off)
+					{
+						BaseMenu.CurrentOptions.EnablePostProcessing = true;
+					}
+					SyncPostProcessor();
+					break;
+			case OptionType.AoIntensity:
+				if (BaseMenu == null || !MenuBuilder.SupportsCompute(BaseMenu.Renderer))
+				{
+					break;
+				}
+					BaseMenu.CurrentOptions.AoIntensity = AoLimits.Clamp(ParseFloatEntry((string)CurrentOption, BaseMenu.CurrentOptions.AoIntensity), 0.0f, 2.0f);
+					SyncPostProcessor();
+					break;
+			case OptionType.AoRadius:
+				if (BaseMenu == null || !MenuBuilder.SupportsCompute(BaseMenu.Renderer))
+				{
+					break;
+				}
+					BaseMenu.CurrentOptions.AoRadius = AoLimits.Clamp(ParseFloatEntry((string)CurrentOption, BaseMenu.CurrentOptions.AoRadius), 0.1f, 5.0f);
+					SyncPostProcessor();
+					break;
 
 			}
 
+		}
+
+		private void SyncPostProcessor()
+		{
+			try
+			{
+				if (BaseMenu.Renderer != null && BaseMenu.Renderer.PostProcessor != null && BaseMenu.CurrentOptions != null)
+				{
+					BaseMenu.Renderer.PostProcessor.SyncFromOptions(BaseMenu.CurrentOptions);
+				}
+			}
+			catch
+			{
+				// ignored: live sync must never break the menu
+			}
+		}
+
+		private static int NearestFloatEntry(object[] entries, float value)
+		{
+			int best = 0;
+			float bestDist = float.MaxValue;
+			for (int i = 0; i < entries.Length; i++)
+			{
+				float parsed = ParseFloatEntry(entries[i] as string, value);
+				float dist = System.Math.Abs(parsed - value);
+				if (dist < bestDist)
+				{
+					bestDist = dist;
+					best = i;
+				}
+			}
+			return best;
+		}
+
+		private static float ParseFloatEntry(string text, float fallback)
+		{
+			if (string.IsNullOrWhiteSpace(text))
+			{
+				return fallback;
+			}
+			if (float.TryParse(text.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float result))
+			{
+				return result;
+			}
+			return fallback;
 		}
 	}
 }
