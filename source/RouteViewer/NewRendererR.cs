@@ -80,6 +80,19 @@ namespace RouteViewer
 			// initialize
 			ResetOpenGlState();
 
+					// Cheap per-frame post sync for live viewer options. OFF = bypass (pixel-identical).
+			try
+			{
+				if (PostProcessor != null)
+				{
+					PostProcessor.SyncFromOptions(Interface.CurrentOptions);
+				}
+			}
+			catch
+			{
+				// ignored
+			}
+
 			if (OptionWireFrame)
 			{
 				if (Program.CurrentRoute.CurrentFog.Start < Program.CurrentRoute.CurrentFog.End)
@@ -143,6 +156,13 @@ namespace RouteViewer
 			}
 
 			PerformCSMShadowPass();
+
+			// Viewer scenery-only layer: SceneFBO + AO/chain when enabled, direct otherwise.
+			bool sceneryPost = BeginPostLayer();
+			if (sceneryPost)
+			{
+				GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+			}
 			DefaultShader.Activate();
 			BindCSMToDefaultShader();
 
@@ -325,6 +345,11 @@ namespace RouteViewer
 			}
 
             // render overlays
+			// Composite viewer scenery layer. Overlays below stay direct (never post-processed).
+            if (sceneryPost)
+            {
+	            EndPostLayer();
+            }
             DefaultShader.Deactivate();
 
             ResetOpenGlState();

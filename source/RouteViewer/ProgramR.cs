@@ -8,6 +8,7 @@
 using LibRender2.Cameras;
 using LibRender2.Menu;
 using LibRender2.Overlays;
+using LibRender2.PostProcessing;
 using LibRender2.Screens;
 using LibRender2.Textures;
 using LibRender2.Viewports;
@@ -186,7 +187,17 @@ namespace RouteViewer
 				Renderer.Screen.Height = 768;
 			}
 			Renderer.CameraTrackFollower = new TrackFollower(CurrentHost);
-			Renderer.GameWindow = new RouteViewer(Renderer.Screen.Width, Renderer.Screen.Height, Renderer.GraphicsMode, "Route Viewer", GameWindowFlags.Default);
+		RouteViewer viewer;
+		// Shared pattern (LibRender2.PostProcessing.GlContextFactory): forward-compatible 3.3 on macOS/forced, else 4.3 with 3.3 fallback.
+		if (GlContextFactory.WantForwardCompatible(CurrentHost.Platform, Interface.CurrentOptions.ForceForwardsCompatibleContext))
+		{
+			viewer = new RouteViewer(Renderer.Screen.Width, Renderer.Screen.Height, Renderer.GraphicsMode, "Route Viewer", GameWindowFlags.Default);
+		}
+		else
+		{
+			viewer = GlContextFactory.CreateWithFallback((major, minor) => new RouteViewer(Renderer.Screen.Width, Renderer.Screen.Height, Renderer.GraphicsMode, "Route Viewer", GameWindowFlags.Default, GraphicsContextFlags.Default, major, minor));
+		}
+			Renderer.GameWindow = viewer;
 			Renderer.GameWindow.Visible = true;
 			Renderer.GameWindow.TargetUpdateFrequency = 0;
 			Renderer.GameWindow.TargetRenderFrequency = 0;

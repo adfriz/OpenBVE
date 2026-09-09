@@ -158,7 +158,21 @@ namespace RouteViewer
 						Items[4] = new MenuOption(menu, OptionType.AnisotropicLevel, Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "quality_interpolation_anisotropic_level" }), new[] { "0", "2", "4", "8", "16" });
 						Items[5] = new MenuOption(menu, OptionType.AntialiasingLevel, Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "quality_interpolation_antialiasing_level" }), new[] { "0", "2", "4", "8", "16" });
 						Items[6] = new MenuOption(menu, OptionType.ViewingDistance, Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "quality_distance_viewingdistance" }), new[] { "400", "600", "800", "1000", "1500", "2000" });
-						Items[7] = new MenuCommand(menu, Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "menu", "back" }), MenuTag.MenuBack, 0);
+						// Viewer slim menu: master + AO mode (hidden when compute unavailable).
+						{
+							System.Collections.Generic.List<MenuEntry> postItems = new System.Collections.Generic.List<MenuEntry>();
+							for (int k = 0; k <= 6; k++)
+							{
+								postItems.Add(Items[k]);
+							}
+							bool supportsCompute = MenuBuilder.SupportsCompute(Program.Renderer);
+							MenuBuilder.AddPostItems(postItems, menu,
+								ViewerPostLabel("Post-processing"),
+								ViewerPostLabel("Ambient Occlusion"),
+								Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "menu", "back" }),
+								supportsCompute);
+							Items = postItems.ToArray();
+						}
 						Align = TextAlignment.TopLeft;
 						break;
 					case MenuType.ErrorList:
@@ -189,6 +203,22 @@ namespace RouteViewer
 				ComputeExtent(menuType, Game.Menu.MenuFont, maxWidth, Game.Menu.LineHeight);
 				TopItem = 0;
 
+			}
+
+			private static string ViewerPostLabel(string fallback)
+			{
+				try
+				{
+					string s = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "postprocessing_enabled" });
+					if (!string.IsNullOrWhiteSpace(s) && s != "postprocessing_enabled" && fallback.StartsWith("Post"))
+					{
+						return s;
+					}
+				}
+				catch
+				{
+				}
+				return fallback;
 			}
 		}
 	}

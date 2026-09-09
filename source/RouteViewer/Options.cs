@@ -52,6 +52,9 @@ namespace RouteViewer
 			ObjectOptimizationMode = ObjectOptimizationMode.Low;
 			ViewingDistance = 600;
 			SoundNumber = 16;
+			// GTAO default = Balanced tier (4 slices x 3 steps), matches BaseOptions + effect ctor.
+			GtaoSlices = 4;
+			GtaoSteps = 3;
 		}
 
 		public override void Save(string fileName)
@@ -90,6 +93,10 @@ namespace RouteViewer
 				Builder.AppendLine("shadownormalbias = " + ShadowNormalBias.ToString("0.00", Culture));
 				Builder.AppendLine("lightazimuth = " + LightAzimuth.ToString(Culture));
 				Builder.AppendLine("lightelevation = " + LightElevation.ToString(Culture));
+				Builder.AppendLine();
+				AppendPostProcessingSection(Builder);
+				Builder.AppendLine();
+				AppendAmbientOcclusionSection(Builder, Culture);
 				Builder.AppendLine();
 				Builder.AppendLine("[loading]");
 				Builder.AppendLine("showlogo = " + (LoadingLogo ? "true" : "false"));
@@ -209,6 +216,101 @@ namespace RouteViewer
 								Interface.CurrentOptions.RouteSearchDirectory = folder;
 							}
 							break;
+						case OptionsSection.PostProcessing:
+						{
+							block.TryGetValue(OptionsKey.EnablePostProcessing, ref Interface.CurrentOptions.EnablePostProcessing);
+							if (block.TryGetValue(OptionsKey.PostEffectOrder, ref Interface.CurrentOptions.PostEffectOrder))
+							{
+								Interface.CurrentOptions.PostEffectOrder = BaseOptions.NormalizePostEffectOrder(Interface.CurrentOptions.PostEffectOrder);
+							}
+							block.TryGetValue(OptionsKey.PostFxaa, ref Interface.CurrentOptions.PostFxaa);
+							block.TryGetValue(OptionsKey.PostSharpen, ref Interface.CurrentOptions.PostSharpen);
+							block.TryGetValue(OptionsKey.PostVignette, ref Interface.CurrentOptions.PostVignette);
+							break;
+						}
+						case OptionsSection.AmbientOcclusion:
+						{
+							block.TryGetEnumValue(OptionsKey.AoMode, ref Interface.CurrentOptions.AoMode);
+							double dTmp;
+							dTmp = Interface.CurrentOptions.AoRadius;
+							if (block.TryGetValue(OptionsKey.AoRadius, ref dTmp))
+							{
+								Interface.CurrentOptions.AoRadius = (float)AoLimits.Clamp(dTmp, 0.1, 5.0);
+							}
+							dTmp = Interface.CurrentOptions.AoIntensity;
+							if (block.TryGetValue(OptionsKey.AoIntensity, ref dTmp))
+							{
+								Interface.CurrentOptions.AoIntensity = (float)AoLimits.Clamp(dTmp, 0.0, 2.0);
+							}
+							dTmp = Interface.CurrentOptions.AoPower;
+							if (block.TryGetValue(OptionsKey.AoPower, ref dTmp))
+							{
+								Interface.CurrentOptions.AoPower = (float)AoLimits.Clamp(dTmp, 0.5, 3.0);
+							}
+							dTmp = Interface.CurrentOptions.AoBias;
+							if (block.TryGetValue(OptionsKey.AoBias, ref dTmp))
+							{
+								Interface.CurrentOptions.AoBias = (float)AoLimits.Clamp(dTmp, 0.0, 1.0);
+							}
+							dTmp = Interface.CurrentOptions.AoResolutionScale;
+							if (block.TryGetValue(OptionsKey.AoResolutionScale, ref dTmp))
+							{
+								Interface.CurrentOptions.AoResolutionScale = (float)AoLimits.SnapScale(dTmp);
+							}
+							int iTmp;
+							iTmp = Interface.CurrentOptions.AoBlurRadius;
+							if (block.TryGetValue(OptionsKey.AoBlurRadius, ref iTmp))
+							{
+								Interface.CurrentOptions.AoBlurRadius = AoLimits.Clamp(iTmp, 0, 8);
+							}
+							dTmp = Interface.CurrentOptions.AoBlurSharpness;
+							if (block.TryGetValue(OptionsKey.AoBlurSharpness, ref dTmp))
+							{
+								Interface.CurrentOptions.AoBlurSharpness = (float)AoLimits.Clamp(dTmp, 0.0, 1.0);
+							}
+							block.TryGetValue(OptionsKey.AoAffectCab3D, ref Interface.CurrentOptions.AoAffectCab3D);
+							iTmp = Interface.CurrentOptions.AoDebugView;
+							if (block.TryGetValue(OptionsKey.AoDebugView, ref iTmp))
+							{
+								Interface.CurrentOptions.AoDebugView = AoLimits.Clamp(iTmp, 0, 1);
+							}
+							iTmp = Interface.CurrentOptions.SaoSamples;
+							if (block.TryGetValue(OptionsKey.SaoSamples, ref iTmp))
+							{
+								Interface.CurrentOptions.SaoSamples = AoLimits.Clamp(iTmp, 1, 32);
+							}
+							iTmp = Interface.CurrentOptions.SaoSpiralTurns;
+							if (block.TryGetValue(OptionsKey.SaoSpiralTurns, ref iTmp))
+							{
+								Interface.CurrentOptions.SaoSpiralTurns = AoLimits.Clamp(iTmp, 1, 16);
+							}
+							dTmp = Interface.CurrentOptions.AoHorizonThreshold;
+							if (block.TryGetValue(OptionsKey.AoHorizonThreshold, ref dTmp))
+							{
+								Interface.CurrentOptions.AoHorizonThreshold = (float)AoLimits.Clamp(dTmp, 0.0, 0.2);
+							}
+							dTmp = Interface.CurrentOptions.AoDetailStrength;
+							if (block.TryGetValue(OptionsKey.AoDetailStrength, ref dTmp))
+							{
+								Interface.CurrentOptions.AoDetailStrength = (float)AoLimits.Clamp(dTmp, 0.0, 5.0);
+							}
+							iTmp = Interface.CurrentOptions.GtaoSlices;
+							if (block.TryGetValue(OptionsKey.GtaoSlices, ref iTmp))
+							{
+								Interface.CurrentOptions.GtaoSlices = AoLimits.Clamp(iTmp, 1, 8);
+							}
+							iTmp = Interface.CurrentOptions.GtaoSteps;
+							if (block.TryGetValue(OptionsKey.GtaoSteps, ref iTmp))
+							{
+								Interface.CurrentOptions.GtaoSteps = AoLimits.Clamp(iTmp, 1, 8);
+							}
+							dTmp = Interface.CurrentOptions.GtaoFalloffRange;
+							if (block.TryGetValue(OptionsKey.GtaoFalloffRange, ref dTmp))
+							{
+								Interface.CurrentOptions.GtaoFalloffRange = (float)AoLimits.Clamp(dTmp, 0.05, 2.0);
+							}
+							break;
+						}
 					}
 				}
 			}

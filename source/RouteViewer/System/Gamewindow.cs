@@ -16,7 +16,20 @@ namespace RouteViewer
     internal class RouteViewer : GameWindow
     {
         //Deliberately specify the default constructor with various overrides
+        // NOTE: bases differ on purpose (default vs explicit GL version for macOS), so only the icon + idle fix are shared.
         public RouteViewer(int width, int height, GraphicsMode currentGraphicsMode, string windowTitle, GameWindowFlags @default): base (width, height, currentGraphicsMode, windowTitle, @default)
+        {
+            InitIcon();
+            ApplyMacOsIdleFix();
+        }
+
+        public RouteViewer(int width, int height, GraphicsMode currentGraphicsMode, string windowTitle, GameWindowFlags @default, GraphicsContextFlags flags, int major, int minor): base (width, height, currentGraphicsMode, windowTitle, @default, DisplayDevice.Default, major, minor, flags)
+        {
+            InitIcon();
+            ApplyMacOsIdleFix();
+        }
+
+        private void InitIcon()
         {
             try
             {
@@ -27,13 +40,15 @@ namespace RouteViewer
             {
 				// Ignored- Just an icon
             }
+        }
 
+        private void ApplyMacOsIdleFix()
+        {
             if (Program.CurrentHost.Platform == HostPlatform.AppleOSX && IntPtr.Size != 4)
             {
 	            // attempted workaround for massive CPU usage when idle
 	            TargetRenderFrequency = 5.0;
 			}
-			
         }
 
         //Default Properties
