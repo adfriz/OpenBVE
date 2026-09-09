@@ -1,0 +1,30 @@
+#version 430
+
+// Smoke kernel: proves compute dispatch + image load/store plumbing.
+// Reads the full-res scene color image and writes a half-res AO raw target
+// (luminance placeholder). The image units (0 = color, 2 = AO) and uniform
+// layout are already stable so the C# dispatcher needs no changes.
+
+#include "common_color.glsl"
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout(binding = 0, rgba8) readonly uniform image2D uColorImg;
+layout(binding = 2, r16f) writeonly uniform image2D uAoImg;
+
+void main()
+{
+	ivec2 px = ivec2(gl_GlobalInvocationID.xy);
+	ivec2 aoSize = imageSize(uAoImg);
+	if (px.x >= aoSize.x || px.y >= aoSize.y)
+	{
+		return;
+	}
+	ivec2 srcSize = imageSize(uColorImg);
+	ivec2 srcPx = ivec2(int((float(px.x) + 0.5) / float(aoSize.x) * float(srcSize.x)),
+		int((float(px.y) + 0.5) / float(aoSize.y) * float(srcSize.y)));
+	srcPx = clamp(srcPx, ivec2(0), max(srcSize - ivec2(1), ivec2(0)));
+	vec4 c = imageLoad(uColorImg, srcPx);
+	float lum = clamp(Luma(c.rgb), 0.0, 1.0);
+	imageStore(uAoImg, px, vec4(lum, 0.0, 0.0, 1.0));
+}
