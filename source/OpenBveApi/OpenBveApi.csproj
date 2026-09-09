@@ -126,6 +126,7 @@
     <Compile Include="Interface\Logging\LogMessage.cs" />
     <Compile Include="Interface\Logging\LogMessage.MessageType.cs" />
     <Compile Include="Interface\ShadowMapResolution.cs" />
+    <Compile Include="Interface\AmbientOcclusionMode.cs" />
     <Compile Include="Interface\Time.cs" />
     <Compile Include="Interface\Translations\Language\InterfaceQuickReference.cs" />
     <Compile Include="Interface\Translations\Language\Language.cs" />
@@ -232,6 +233,8 @@
     <Compile Include="Sounds\Sounds.SoundSourceState.cs" />
     <Compile Include="Sounds\Sounds.SoundType.cs" />
     <Compile Include="System\BaseOptions.cs" />
+    <Compile Include="System\AoLimits.cs" />
+    <Compile Include="Interface\AoModeMapper.cs" />
     <Compile Include="System\BaseOptions.OptionsKey.cs" />
     <Compile Include="System\BaseOptions.OptionsSection.cs" />
     <Compile Include="System\BinaryExtensions.cs" />
