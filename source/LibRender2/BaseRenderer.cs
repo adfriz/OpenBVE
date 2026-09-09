@@ -15,6 +15,7 @@ using LibRender2.Loadings;
 using LibRender2.MotionBlurs;
 using LibRender2.Objects;
 using LibRender2.Overlays;
+using LibRender2.PostProcessing;
 using LibRender2.Primitives;
 using LibRender2.Screens;
 using LibRender2.Shaders;
@@ -163,11 +164,52 @@ namespace LibRender2
 		/// <summary>Manages the Cascaded Shadow Mapping (CSM) system.</summary>
 		public Shadows Shadows;
 
+		/// <summary>Detected OpenGL capabilities (version + compute support for post-processing).</summary>
+		public RenderCapabilities Capabilities;
+
 		/// <summary>Whether shadows are enabled.</summary>
 		public bool ShadowsEnabled => Shadows?.Enabled ?? false;
 
 		/// <summary>Shadow strength: 0=invisible, 1=full darkness.</summary>
 		public float ShadowStrength => Shadows?.Strength ?? 0.7f;
+
+		/// <summary>Owns the stackable post-processing chain. Default OFF = bypass, output unchanged.</summary>
+		public PostProcessing.PostProcessManager PostProcessor;
+
+		/// <summary>
+		/// Begins a post-processed 3D layer. Returns true when the caller must render into
+		/// <see cref="PostProcessing.PostProcessManager.SceneBuffer"/>; false means render
+		/// directly to screen (bypass, pixel-identical).
+		/// </summary>
+		public bool BeginPostLayer()
+		{
+			PostProcessing.PostProcessManager postProcessor = PostProcessor;
+			return postProcessor != null && postProcessor.BeginLayer();
+		}
+
+		/// <summary>
+		/// Cab variant of <see cref="BeginPostLayer"/>. Routes through the chain when any
+		/// effect is enabled; AO honours AffectCab3D itself so other effects still hit cab when ON.
+		/// </summary>
+		public bool BeginPostCabLayer()
+		{
+			PostProcessing.PostProcessManager postProcessor = PostProcessor;
+			return postProcessor != null && postProcessor.BeginCabLayer();
+		}
+
+		/// <summary>
+		/// Ends a post-processed 3D layer started by <see cref="BeginPostLayer"/>.
+		/// No-op unless the matching Begin returned true.
+		/// Cab-2D / Touch / overlay / HUD / menu must stay direct (never wrapped).
+		/// </summary>
+		public void EndPostLayer()
+		{
+			PostProcessing.PostProcessManager postProcessor = PostProcessor;
+			if (postProcessor != null)
+			{
+				postProcessor.EndLayerAndComposite();
+			}
+		}
 
 		/// <summary>Whether lighting is enabled in the debug options</summary>
 		public bool OptionLighting = true;
@@ -488,9 +530,43 @@ namespace LibRender2
 			currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("Menu"), "joystick.png"), TextureParameters.NoChange, out JoystickTexture);
 			currentHost.RegisterTexture(Path.CombineFile(fileSystem.GetDataFolder("Menu"), "raildriver.png"), TextureParameters.NoChange, out RailDriverTexture);
 
-			Lighting.Initialize();
+		Lighting.Initialize();
 			Shadows.Initialize();
+
+		// Capabilities must be known before PostProcessor.Initialize:
+		// AO kernels read SupportsCompute at init and latch it.
+		DetectCapabilities();
+
+			// Post-processing foundation (mirrors Shadows.Initialize):
+			// fail-safe, default OFF = bypass so existing output is unchanged.
+			PostProcessor = new PostProcessing.PostProcessManager(this);
+			try
+			{
+				foreach (PostProcessing.IPostEffect effect in PostProcessing.EffectRegistry.CreateAll(this))
+				{
+					PostProcessor.AddEffect(effect);
+				}
+				PostProcessor.Initialize(Screen.Width, Screen.Height);
+			}
+			catch
+			{
+				// Post-processing unavailable; rendering continues without it.
+			}
         }
+
+		/// <summary>Detects OpenGL capabilities from the current context and logs them.</summary>
+		public void DetectCapabilities()
+		{
+			Capabilities = RenderCapabilities.Detect(currentHost.Platform);
+			if (fileSystem != null)
+			{
+				fileSystem.AppendToLogFile($"OpenGL {Capabilities.GlMajor}.{Capabilities.GlMinor} ({Capabilities.GlVersionString}) Renderer: {Capabilities.GlRendererString} GLSL: {Capabilities.GlslVersionString} SupportsCompute={Capabilities.SupportsCompute}");
+				if (ReShadeInUse && Capabilities.SupportsCompute)
+				{
+					fileSystem.AppendToLogFile("WARNING: ReShade detected - Ambient Occlusion default OFF to avoid conflicts.");
+				}
+			}
+		}
 
 		/// <summary>Initializes (or reinitializes) shadow mapping from current options.</summary>
 		public void InitializeShadows() => Shadows.Initialize();
@@ -517,6 +593,18 @@ namespace LibRender2
 				GL.DeleteTexture(nullDepthMap);
 				nullDepthMap = 0;
 			}
+			try
+			{
+				if (PostProcessor != null)
+				{
+					PostProcessor.Dispose();
+				}
+			}
+			catch
+			{
+				// ignored
+			}
+			PostProcessor = null;
 			GameWindow?.Dispose();
 			// terminate spinning thread
 			VisibilityThreadShouldRun = false;
@@ -1121,6 +1209,18 @@ namespace LibRender2
 			Camera.HorizontalViewingAngle = 2.0 * Math.Atan(Math.Tan(0.5 * Camera.VerticalViewingAngle) * Screen.AspectRatio);
 			double nearClip = Math.Max(0.01, currentOptions.NearClipBase);
 			CurrentProjectionMatrix = Matrix4D.CreatePerspectiveFieldOfView(Camera.VerticalViewingAngle, Screen.AspectRatio, nearClip, currentOptions.ViewingDistance);
+			try
+			{
+				// Covers viewers calling this override directly.
+				if (PostProcessor != null)
+				{
+					PostProcessor.Resize(Width, Height);
+				}
+			}
+			catch
+			{
+				// ignored: post chain falls back to bypass
+			}
 		}
 
 		public void ResetShader(Shader shader)

@@ -3,6 +3,16 @@ using OpenTK.Graphics.OpenGL;
 
 namespace LibRender2.MotionBlurs
 {
+	/// <summary>
+	/// Legacy accumulation motion blur (fixed-function path).
+	/// Migration foundation: port this to a PostProcessManager
+	/// fragment effect (velocity-aware gather over the SceneFBO ping-pong
+	/// chain) once enough fragment effects are stable. The GL.Begin/CopyTexImage2D
+	/// path below is intentionally KEPT: the plan only removes it when safe,
+	/// and the chain stays compatible because MotionBlur runs inside the
+	/// captured scenery layer (NewRenderer sceneryPost) operating on the
+	/// currently bound target (SceneFBO when post is active, screen otherwise).
+	/// </summary>
 	public class MotionBlur
 	{
 		private readonly BaseRenderer renderer;
@@ -12,6 +22,8 @@ namespace LibRender2.MotionBlurs
 		private byte[] PixelBuffer;
 		/// <summary>The OpenGL texture index from which the blurred image is rendered</summary>
 		private int PixelBufferOpenGlTextureIndex;
+		private int bufferWidth;
+		private int bufferHeight;
 
 		internal MotionBlur(BaseRenderer renderer)
 		{
@@ -33,6 +45,8 @@ namespace LibRender2.MotionBlurs
 			}
 
 			PixelBuffer = new byte[4 * renderer.Screen.Width * renderer.Screen.Height];
+			bufferWidth = renderer.Screen.Width;
+			bufferHeight = renderer.Screen.Height;
 			int[] a = new int[1];
 
 			GL.GenTextures(1, a);
@@ -49,10 +63,17 @@ namespace LibRender2.MotionBlurs
 			if (renderer.Screen.Minimized || renderer.currentOptions.ForceForwardsCompatibleContext)
 			{
 				/*
-		         * HACK:
+			 * HACK:
 		         * This breaks if minimized or using a forwards compatible context, even if we don't reset the W / H values
 		         */
 				return;
+			}
+			if (PixelBufferOpenGlTextureIndex != 0
+				&& (bufferWidth != renderer.Screen.Width || bufferHeight != renderer.Screen.Height))
+			{
+				// Window was resized after Initialize: reallocate so the
+				// CopyTexImage2D round-trip matches the current target size.
+				Initialize(mode);
 			}
 			renderer.LastBoundTexture = null;
 			GL.Enable(EnableCap.Texture2D);

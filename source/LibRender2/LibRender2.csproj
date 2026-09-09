@@ -57,6 +57,8 @@
     <Reference Include="System.Drawing" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="PostProcessing\RenderCapabilities.cs" />
+    <Compile Include="PostProcessing\GlContextFactory.cs" />
     <Compile Include="Backgrounds\Background.cs" />
     <Compile Include="BaseRenderer.cs" />
     <Compile Include="Camera\Camera.cs" />
@@ -75,6 +77,7 @@
     <Compile Include="Menu\MenuEntries\MenuEntry.cs" />
     <Compile Include="Menu\MenuEntries\MenuEntry.Error.cs" />
     <Compile Include="Menu\MenuEntries\MenuOption.cs" />
+    <Compile Include="Menu\MenuBuilder.cs" />
     <Compile Include="Menu\MenuTag.cs" />
     <Compile Include="Menu\MenuType.cs" />
     <Compile Include="MotionBlur\MotionBlur.cs" />
@@ -112,6 +115,7 @@
     <Compile Include="Shaders\AbstractShader.cs" />
     <Compile Include="Shaders\Shader.cs" />
     <Compile Include="Shaders\ShadowDepthShader.cs" />
+    <Compile Include="Shaders\ShaderInclude.cs" />
     <Compile Include="Smoke\Particle.cs" />
     <Compile Include="Smoke\ParticleSource.cs" />
     <Compile Include="Smoke\ParticleType.cs" />
@@ -119,6 +123,20 @@
     <Compile Include="Shadows\CascadedShadowMap.cs" />
     <Compile Include="Shadows\FrustumUtils.cs" />
     <Compile Include="Shadows\Shadows.cs" />
+    <Compile Include="PostProcessing\IPostEffect.cs" />
+    <Compile Include="PostProcessing\EffectRegistry.cs" />
+    <Compile Include="PostProcessing\PostProcessManager.cs" />
+    <Compile Include="PostProcessing\SceneFrameBuffer.cs" />
+    <Compile Include="PostProcessing\FullscreenTriangle.cs" />
+    <Compile Include="PostProcessing\PostEffectShader.cs" />
+    <Compile Include="PostProcessing\ComputeShader.cs" />
+    <Compile Include="PostProcessing\ComputeAoDispatcher.cs" />
+    <Compile Include="PostProcessing\effects\AmbientOcclusionEffect.cs" />
+    <Compile Include="PostProcessing\effects\SinglePassEffect.cs" />
+    <Compile Include="PostProcessing\effects\CopyEffect.cs" />
+    <Compile Include="PostProcessing\effects\FxaaEffect.cs" />
+    <Compile Include="PostProcessing\effects\SharpenEffect.cs" />
+    <Compile Include="PostProcessing\effects\VignetteEffect.cs" />
     <Compile Include="Textures\TextureManager.cs" />
     <Compile Include="Text\Fonts.BlockedFonts.cs" />
     <Compile Include="Text\Fonts.cs" />
@@ -142,6 +160,20 @@
     <EmbeddedResource Include="..\..\assets\Shaders\text.vert" />
     <EmbeddedResource Include="..\..\assets\Shaders\shadow_depth.vert" />
     <EmbeddedResource Include="..\..\assets\Shaders\shadow_depth.frag" />
+    <EmbeddedResource Include="..\..\assets\Shaders\post.vert" />
+    <EmbeddedResource Include="..\..\assets\Shaders\post_copy.frag" />
+    <EmbeddedResource Include="..\..\assets\Shaders\post_fxaa.frag" />
+    <EmbeddedResource Include="..\..\assets\Shaders\post_sharpen.frag" />
+    <EmbeddedResource Include="..\..\assets\Shaders\post_vignette.frag" />
+    <EmbeddedResource Include="..\..\assets\Shaders\common_blur.glsl" />
+    <EmbeddedResource Include="..\..\assets\Shaders\common_ao.glsl" />
+    <EmbeddedResource Include="..\..\assets\Shaders\common_color.glsl" />
+    <EmbeddedResource Include="..\..\assets\Shaders\ao_smoke.comp" />
+    <EmbeddedResource Include="..\..\assets\Shaders\ao_depth.comp" />
+    <EmbeddedResource Include="..\..\assets\Shaders\ao_sao.comp" />
+    <EmbeddedResource Include="..\..\assets\Shaders\ao_gtao.comp" />
+    <EmbeddedResource Include="..\..\assets\Shaders\bilateral.comp" />
+    <EmbeddedResource Include="..\..\assets\Shaders\ao_composite.comp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\OpenBveApi\OpenBveApi.csproj">

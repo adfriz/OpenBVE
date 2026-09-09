@@ -48,6 +48,14 @@ namespace LibRender2.Menu
 		/// <summary>Sets the shadow quality</summary>
 		ShadowQuality,
 		/// <summary>Sets whether shadow casters are filtered per cascade</summary>
-		ShadowFilterCascades
+		ShadowFilterCascades,
+		/// <summary>Master switch for the stackable post-processing chain</summary>
+		PostProcessingEnabled,
+		/// <summary>Sets the ambient occlusion mode (Off/SAO/GTAO)</summary>
+		AoMode,
+		/// <summary>Sets the ambient occlusion intensity</summary>
+		AoIntensity,
+		/// <summary>Sets the ambient occlusion radius</summary>
+		AoRadius
 	}
 }
