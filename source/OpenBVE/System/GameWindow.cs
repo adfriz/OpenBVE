@@ -115,6 +115,8 @@ namespace OpenBve
 			}
 			
 			Program.Renderer.RenderThreadJobWaiting = false;
+			Program.Renderer.TextureManager.StreamingActive = Interface.CurrentOptions.UnloadUnusedTextures;
+			Program.Renderer.TextureManager.StreamingBudgetMB = Interface.CurrentOptions.TextureMemoryBudgetMB;
 			Program.Renderer.TextureManager.BeginFrame();
 			double TimeElapsed = RenderTimeElapsed;
 			double RealTimeElapsed = RenderRealTimeElapsed;

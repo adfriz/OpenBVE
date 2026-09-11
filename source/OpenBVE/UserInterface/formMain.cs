@@ -472,6 +472,10 @@ namespace OpenBve {
 			checkboxDerailments.Checked = Interface.CurrentOptions.Derailments;
 			checkBoxLoadInAdvance.Checked = Interface.CurrentOptions.LoadInAdvance;
 			checkBoxUnloadTextures.Checked = Interface.CurrentOptions.UnloadUnusedTextures;
+			comboBoxTextureMemory.Items.Clear();
+			comboBoxTextureMemory.Items.AddRange(new object[] { "Auto", "512 MB", "1 GB", "2 GB", "4 GB" });
+			comboBoxTextureMemory.SelectedIndex = TextureMemoryBudgetToIndex(Interface.CurrentOptions.TextureMemoryBudgetMB);
+			UpdateTextureMemoryControls();
 			// Shadow Resolution
 			switch (Interface.CurrentOptions.ShadowResolution)
 			{
@@ -816,6 +820,7 @@ namespace OpenBve {
 			groupBoxAdvancedOptions.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","advanced"});
 			checkBoxLoadInAdvance.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","advanced_load_advance"});
 			checkBoxUnloadTextures.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","advanced_unload_textures"});
+			labelTextureMemory.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","advanced_texture_memory"});
 			labelTimeAcceleration.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","advanced_timefactor"});
 			labelCursor.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","advanced_cursor"});
 			//Other Options
@@ -1280,6 +1285,7 @@ namespace OpenBve {
 			Interface.CurrentOptions.Derailments = checkboxDerailments.Checked;
 			Interface.CurrentOptions.LoadInAdvance = checkBoxLoadInAdvance.Checked;
 			Interface.CurrentOptions.UnloadUnusedTextures = checkBoxUnloadTextures.Checked;
+			Interface.CurrentOptions.TextureMemoryBudgetMB = TextureMemoryBudgetFromIndex(comboBoxTextureMemory.SelectedIndex);
 			Interface.CurrentOptions.OldTransparencyMode = checkBoxTransparencyFix.Checked;
 			Interface.CurrentOptions.EnableBveTsHacks = checkBoxHacks.Checked;
 			// Shadow Resolution
@@ -2016,6 +2022,7 @@ namespace OpenBve {
 			{
 				checkBoxUnloadTextures.Enabled = true;
 			}
+			UpdateTextureMemoryControls();
 		}
 
 		private void checkBoxUnloadTextures_CheckedChanged(object sender, EventArgs e)
@@ -2030,6 +2037,39 @@ namespace OpenBve {
 			{
 				checkBoxLoadInAdvance.Enabled = true;
 			}
+			UpdateTextureMemoryControls();
+		}
+
+		/// <summary>The texture budget values in megabytes behind the dropdown (index 0 = automatic).</summary>
+		private static readonly int[] TextureMemoryBudgetValues = { 0, 512, 1024, 2048, 4096 };
+
+		private static int TextureMemoryBudgetToIndex(int budgetMB)
+		{
+			for (int i = 0; i < TextureMemoryBudgetValues.Length; i++)
+			{
+				if (TextureMemoryBudgetValues[i] == budgetMB)
+				{
+					return i;
+				}
+			}
+			return 0;
+		}
+
+		private static int TextureMemoryBudgetFromIndex(int index)
+		{
+			if (index < 0 || index >= TextureMemoryBudgetValues.Length)
+			{
+				return 0;
+			}
+			return TextureMemoryBudgetValues[index];
+		}
+
+		/// <summary>Enables the budget dropdown only while unloading is active.</summary>
+		private void UpdateTextureMemoryControls()
+		{
+			bool enabled = checkBoxUnloadTextures.Checked && checkBoxUnloadTextures.Enabled;
+			labelTextureMemory.Enabled = enabled;
+			comboBoxTextureMemory.Enabled = enabled;
 		}
 
 		private void CheckForUpdate()

@@ -1294,6 +1294,9 @@
 					<trans-unit id="advanced_unload_textures">
 						<source>Unload unused textures</source>
 					</trans-unit>
+					<trans-unit id="advanced_texture_memory">
+						<source>Max texture memory:</source>
+					</trans-unit>
 					<trans-unit id="advanced_cursor">
 						<source>Cursor</source>
 					</trans-unit>

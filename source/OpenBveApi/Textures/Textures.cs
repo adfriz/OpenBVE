@@ -30,6 +30,13 @@ namespace OpenBveApi.Textures {
 		/// <remarks>Defaults to true for scenery textures so UnloadUnusedTextures can evict them after the timeout.
 		/// Pinned textures (e.g. animated object textures) opt out by setting this to false.</remarks>
 		public bool AvailableToUnload = true;
+		/// <summary>The resident mip tier of the uploaded OpenGL texture (0 = full, higher = smaller).</summary>
+		/// <remarks>-1 when no GL slot is resident. Managed by the renderer streaming pass.</remarks>
+		public int ResidentTier = -1;
+		/// <summary>The desired mip tier based on camera distance and the memory budget.</summary>
+		public int DesiredTier;
+		/// <summary>Clock-ticks of the last tier change, used to avoid downgrade flapping.</summary>
+		public int TierChangeTick;
 		/// <summary>Holds the OpenGL textures</summary>
 		/// <remarks>An 3D array containing the OpenGL texture array for each frame</remarks>
 		private readonly OpenGlTexture[][] MyOpenGlTextures;

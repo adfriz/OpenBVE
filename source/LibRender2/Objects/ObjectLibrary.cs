@@ -97,6 +97,9 @@ namespace LibRender2.Objects
 				return;
 			}
 
+			// Seed streaming tiers so the first upload is already distance-sized (no decode, no GL calls here)
+			renderer.TextureManager.SeedDesiredTier(State);
+
 			// Per-material cache: avoid repeated textureCache lookups for faces sharing the same material
 			Dictionary<int, bool> materialAlphaCache = new Dictionary<int, bool>();
 

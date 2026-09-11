@@ -29,6 +29,7 @@ namespace OpenBveApi
 		MainMenuHeight,
 		LoadInAdvance,
 		UnloadTextures,
+		TextureMemoryBudget,
 		ForwardsCompatibleContext,
 		ViewingDistance,
 		QuadLeafSize,

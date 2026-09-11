@@ -4,9 +4,11 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using LibRender2.Objects;
 using LibRender2.Screens;
 using OpenBveApi;
 using OpenBveApi.Hosts;
+using OpenBveApi.Objects;
 using OpenBveApi.Textures;
 using OpenTK.Graphics.OpenGL;
 using InterpolationMode = OpenBveApi.Graphics.InterpolationMode;
@@ -56,6 +58,13 @@ namespace LibRender2.Textures
 		public int MaxUploadsPerFrame = 2;
 		private int uploadsThisWindow;
 		private int uploadWindowStart;
+
+		/// <summary>Whether distance-tiered streaming is active (mirrors the UnloadUnusedTextures option).</summary>
+		/// <remarks>Set every frame by the game window. Viewers leave it false for full-quality uploads.</remarks>
+		public bool StreamingActive;
+		/// <summary>Configured resident texture budget in megabytes (0 = automatic).</summary>
+		public int StreamingBudgetMB;
+		private int lastTierPassTick;
 
 		internal TextureManager(HostInterface CurrentHost, BaseRenderer Renderer)
 		{
@@ -520,6 +529,28 @@ namespace LibRender2.Textures
 						handle.OpenGlTextures[(int)wrap].Name = 0;
 						return false;
 					}
+					int uploadTier = 0;
+					if (StreamingActive && !bypassBudget && !texture.MultipleFrames)
+					{
+						uploadTier = handle.DesiredTier;
+						if (uploadTier < 0 || uploadTier > TexturePolicy.MaxTier || TexturePolicy.IsProtected(texture))
+						{
+							uploadTier = 0;
+						}
+						if (uploadTier > 0)
+						{
+							Texture tierTexture = TextureDownscale.CreateTierTexture(texture, textureBytes, uploadTier, handle.Transparency == TextureTransparencyType.Opaque);
+							if (!ReferenceEquals(tierTexture, texture))
+							{
+								texture = tierTexture;
+								textureBytes = texture.Bytes;
+							}
+							else
+							{
+								uploadTier = 0;
+							}
+						}
+					}
 					switch (Interpolation)
 					{
 						case InterpolationMode.NearestNeighbor:
@@ -754,6 +785,8 @@ namespace LibRender2.Textures
 					}
 					GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
                     handle.OpenGlTextures[(int)wrap].Valid = true;
+					handle.ResidentTier = uploadTier;
+					handle.TierChangeTick = currentTicks;
 					if (texture.MultipleFrames)
 					{
 						texture.OpenGlTextures[(int)wrap].Valid = true;
@@ -854,6 +887,7 @@ namespace LibRender2.Textures
 				}
 			}
 			handle.Ignore = false;
+			handle.ResidentTier = -1;
 			if (handle.Origin != null)
 			{
 				// On reload, keep cache entries whose source file is unchanged: the reloaded
@@ -1006,6 +1040,13 @@ namespace LibRender2.Textures
 						UnloadTexture(ref RegisteredTextures[i]);
 					}
 				}
+				if (StreamingActive)
+				{
+					long budgetBytes = (long)TexturePolicy.ResolveBudgetMB(StreamingBudgetMB) * 1048576L;
+					bool allowUpgrades = GetEstimatedResidentVramBytes() <= budgetBytes;
+					UpdateTextureTiers(now, allowUpgrades);
+					EnforceTextureBudget();
+				}
 			}
 			else
 			{
@@ -1018,6 +1059,289 @@ namespace LibRender2.Textures
 						Texture.LastAccess = CPreciseTimer.GetClockTicks();
 					}
 				}
+			}
+		}
+
+		// --- streaming tiers ---
+
+		/// <summary>Reference-identity comparer for textures (Texture overrides Equals without GetHashCode).</summary>
+		private sealed class ReferenceTextureComparer : IEqualityComparer<Texture>
+		{
+			public bool Equals(Texture a, Texture b)
+			{
+				return ReferenceEquals(a, b);
+			}
+
+			public int GetHashCode(Texture texture)
+			{
+				return System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(texture);
+			}
+		}
+
+		private static bool AnySlotValid(Texture texture)
+		{
+			foreach (OpenGlTexture slot in texture.OpenGlTextures)
+			{
+				if (slot.Valid)
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+
+		/// <summary>Whether the texture takes part in tier/budget streaming.</summary>
+		private static bool IsStreamingResident(Texture texture)
+		{
+			return texture != null && !texture.MultipleFrames && texture.AvailableToUnload && AnySlotValid(texture);
+		}
+
+		/// <summary>Seeds the desired tier for an object's textures when it becomes visible.</summary>
+		/// <remarks>Cheap and thread-safe enough for the visibility thread: plain int writes only,
+		/// no decoding, no GL calls. Only seeds non-resident textures so it never fights the tier pass.</remarks>
+		public void SeedDesiredTier(ObjectState state)
+		{
+			if (!StreamingActive || state == null || state.Prototype == null || state.Prototype.Mesh == null || state.Prototype.Mesh.Materials == null)
+			{
+				return;
+			}
+			if (renderer.CameraTrackFollower == null)
+			{
+				return;
+			}
+			double cameraTrackPosition = renderer.CameraTrackFollower.TrackPosition;
+			double viewingDistance = renderer.currentOptions.ViewingDistance;
+			double distance = TexturePolicy.DistanceToCamera(state.StartingDistance, state.EndingDistance, cameraTrackPosition);
+			int tier = TexturePolicy.TierForDistance(distance, viewingDistance);
+			foreach (var material in state.Prototype.Mesh.Materials)
+			{
+				if (material == null)
+				{
+					continue;
+				}
+				SeedTextureTier(material.DaytimeTexture, tier);
+				SeedTextureTier(material.NighttimeTexture, tier);
+			}
+		}
+
+		private static void SeedTextureTier(Texture texture, int tier)
+		{
+			if (texture == null || texture.MultipleFrames)
+			{
+				return;
+			}
+			if (TexturePolicy.IsProtected(texture))
+			{
+				texture.DesiredTier = 0;
+				return;
+			}
+			if (texture.ResidentTier < 0)
+			{
+				texture.DesiredTier = tier;
+			}
+		}
+
+		private void ApplyTierChange(int index, int tier, ref int swaps)
+		{
+			RegisteredTextures[index].DesiredTier = tier;
+			UnloadTexture(ref RegisteredTextures[index]);
+			swaps++;
+		}
+
+		private static void CollectFaceDistances(System.Collections.ObjectModel.ReadOnlyCollection<FaceState> faces, double cameraTrackPosition, Dictionary<Texture, double> distances, HashSet<Texture> overlayTextures)
+		{
+			if (faces == null)
+			{
+				return;
+			}
+			foreach (FaceState faceState in faces)
+			{
+				if (faceState == null || faceState.Object == null)
+				{
+					continue;
+				}
+				double distance = TexturePolicy.DistanceToCamera(faceState.Object.StartingDistance, faceState.Object.EndingDistance, cameraTrackPosition);
+				var materials = faceState.Object.Prototype.Mesh.Materials;
+				if (faceState.Face.Material < 0 || faceState.Face.Material >= materials.Length)
+				{
+					continue;
+				}
+				var material = materials[faceState.Face.Material];
+				if (material == null)
+				{
+					continue;
+				}
+				AccumulateDistance(distances, material.DaytimeTexture, distance);
+				AccumulateDistance(distances, material.NighttimeTexture, distance);
+				if (overlayTextures != null)
+				{
+					if (material.DaytimeTexture != null)
+					{
+						overlayTextures.Add(material.DaytimeTexture);
+					}
+					if (material.NighttimeTexture != null)
+					{
+						overlayTextures.Add(material.NighttimeTexture);
+					}
+				}
+			}
+		}
+
+		private static void AccumulateDistance(Dictionary<Texture, double> distances, Texture texture, double distance)
+		{
+			if (texture == null || texture.MultipleFrames)
+			{
+				return;
+			}
+			double current;
+			if (!distances.TryGetValue(texture, out current) || distance < current)
+			{
+				distances[texture] = distance;
+			}
+		}
+
+		/// <summary>Re-evaluates desired tiers from visible-face distances; unloads mismatches for re-upload.</summary>
+		private void UpdateTextureTiers(int now, bool allowUpgrades)
+		{
+			if (now - lastTierPassTick < TexturePolicy.TierPassIntervalTicks)
+			{
+				return;
+			}
+			lastTierPassTick = now;
+			if (renderer.CameraTrackFollower == null)
+			{
+				return;
+			}
+			double cameraTrackPosition = renderer.CameraTrackFollower.TrackPosition + renderer.Camera.Alignment.Position.Z;
+			double viewingDistance = renderer.currentOptions.ViewingDistance;
+
+			var distances = new Dictionary<Texture, double>(new ReferenceTextureComparer());
+			var overlayTextures = new HashSet<Texture>(new ReferenceTextureComparer());
+			lock (renderer.VisibleObjects.LockObject)
+			{
+				CollectFaceDistances(renderer.VisibleObjects.OpaqueFaces, cameraTrackPosition, distances, null);
+				CollectFaceDistances(renderer.VisibleObjects.AlphaFaces, cameraTrackPosition, distances, null);
+				CollectFaceDistances(renderer.VisibleObjects.OverlayOpaqueFaces, cameraTrackPosition, distances, overlayTextures);
+				CollectFaceDistances(renderer.VisibleObjects.OverlayAlphaFaces, cameraTrackPosition, distances, overlayTextures);
+			}
+
+			int swaps = 0;
+			for (int i = 0; i < RegisteredTexturesCount && swaps < TexturePolicy.MaxTierSwapsPerPass; i++)
+			{
+				Texture handle = RegisteredTextures[i];
+				if (!IsStreamingResident(handle))
+				{
+					continue;
+				}
+				if (TexturePolicy.IsProtected(handle) || overlayTextures.Contains(handle))
+				{
+					handle.DesiredTier = 0;
+					if (handle.ResidentTier > 0)
+					{
+						ApplyTierChange(i, 0, ref swaps);
+					}
+					continue;
+				}
+				double distance;
+				if (!distances.TryGetValue(handle, out distance))
+				{
+					continue; // not used by visible faces: leave to the time-based LRU
+				}
+				int desired = TexturePolicy.TierForDistance(distance, viewingDistance);
+				if (desired == handle.ResidentTier)
+				{
+					handle.DesiredTier = desired;
+					continue;
+				}
+				if (desired < handle.ResidentTier)
+				{
+					if (!allowUpgrades)
+					{
+						continue; // over budget: hold the smaller tier until memory fits
+					}
+					ApplyTierChange(i, desired, ref swaps);
+				}
+				else
+				{
+					handle.DesiredTier = desired;
+					if (now - handle.TierChangeTick > TexturePolicy.DowngradeCooldownTicks)
+					{
+						ApplyTierChange(i, desired, ref swaps);
+					}
+				}
+			}
+		}
+
+		/// <summary>Downgrades then evicts resident textures until the configured budget fits.</summary>
+		/// <remarks>Runs on the render thread; residency only decreases here, so the running
+		/// total is tracked with exact deltas instead of rescanning per operation.</remarks>
+		private void EnforceTextureBudget()
+		{
+			long budgetBytes = (long)TexturePolicy.ResolveBudgetMB(StreamingBudgetMB) * 1048576L;
+			long total = GetEstimatedResidentVramBytes();
+			if (total <= budgetBytes)
+			{
+				return;
+			}
+			var candidates = new List<KeyValuePair<int, long>>();
+			for (int i = 0; i < RegisteredTexturesCount; i++)
+			{
+				Texture texture = RegisteredTextures[i];
+				if (!IsStreamingResident(texture))
+				{
+					continue;
+				}
+				if (TexturePolicy.IsProtected(texture) || texture.ResidentTier >= TexturePolicy.MaxTier)
+				{
+					continue;
+				}
+				long estimate = EstimateVramBytes(texture);
+				if (estimate > 0)
+				{
+					candidates.Add(new KeyValuePair<int, long>(i, estimate));
+				}
+			}
+			candidates.Sort((a, b) => b.Value.CompareTo(a.Value));
+			int ops = 0;
+			foreach (KeyValuePair<int, long> candidate in candidates)
+			{
+				if (ops >= TexturePolicy.MaxTierSwapsPerPass || total <= budgetBytes)
+				{
+					break;
+				}
+				Texture texture = RegisteredTextures[candidate.Key];
+				if (!IsStreamingResident(texture))
+				{
+					continue;
+				}
+				int resident = texture.ResidentTier < 0 ? 0 : texture.ResidentTier;
+				texture.DesiredTier = Math.Min(TexturePolicy.MaxTier, resident + 1);
+				total -= candidate.Value * 3 / 4; // one tier up quarters the pixels
+				UnloadTexture(ref RegisteredTextures[candidate.Key]);
+				ops++;
+			}
+			while (ops < TexturePolicy.MaxTierSwapsPerPass && total > budgetBytes)
+			{
+				int oldest = -1;
+				for (int i = 0; i < RegisteredTexturesCount; i++)
+				{
+					Texture texture = RegisteredTextures[i];
+					if (!IsStreamingResident(texture))
+					{
+						continue;
+					}
+					if (oldest < 0 || texture.LastAccess < RegisteredTextures[oldest].LastAccess)
+					{
+						oldest = i;
+					}
+				}
+				if (oldest < 0)
+				{
+					break;
+				}
+				total -= EstimateVramBytes(RegisteredTextures[oldest]);
+				UnloadTexture(ref RegisteredTextures[oldest]);
+				ops++;
 			}
 		}
 
@@ -1110,7 +1434,9 @@ namespace LibRender2.Textures
 					bytesPerPixel = 4;
 					break;
 			}
-			long level0 = (long)texture.Width * texture.Height * bytesPerPixel;
+			int residentWidth, residentHeight;
+			TexturePolicy.TierDimensions(texture.Width, texture.Height, texture.ResidentTier < 0 ? 0 : texture.ResidentTier, out residentWidth, out residentHeight);
+			long level0 = (long)residentWidth * residentHeight * bytesPerPixel;
 			return level0 + level0 / 3; // mipmap chain ≈ 4/3
 		}
 
