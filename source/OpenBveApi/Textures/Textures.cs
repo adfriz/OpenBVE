@@ -27,7 +27,9 @@ namespace OpenBveApi.Textures {
 		/// <remarks>Used by the engine when deciding to unload unused textures</remarks>
 		public int LastAccess;
 		/// <summary>Whether the texture is available to unload</summary>
-		public bool AvailableToUnload;
+		/// <remarks>Defaults to true for scenery textures so UnloadUnusedTextures can evict them after the timeout.
+		/// Pinned textures (e.g. animated object textures) opt out by setting this to false.</remarks>
+		public bool AvailableToUnload = true;
 		/// <summary>Holds the OpenGL textures</summary>
 		/// <remarks>An 3D array containing the OpenGL texture array for each frame</remarks>
 		private readonly OpenGlTexture[][] MyOpenGlTextures;

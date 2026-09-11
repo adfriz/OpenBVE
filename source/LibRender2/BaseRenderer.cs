@@ -1092,6 +1092,16 @@ namespace LibRender2
 			{
 				currentOptions.AnisotropicFilteringLevel = currentOptions.AnisotropicFilteringMaximum;
 			}
+			// Probe texture compression capabilities (observe only, no upload behavior change)
+			try
+			{
+				Textures.TextureCapabilities.Probe();
+				fileSystem.AppendToLogFile("Texture capabilities: " + Textures.TextureCapabilities.Summary);
+			}
+			catch
+			{
+				// never fail init because of the probe
+			}
 		}
 		
 		/// <summary>Updates the openGL viewport</summary>

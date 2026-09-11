@@ -69,6 +69,7 @@ namespace RouteViewer
 	            }
 	            Program.Renderer.RenderThreadJobWaiting = false;
             }
+			Program.Renderer.TextureManager.BeginFrame();
 			ProcessEvents();
             double TimeElapsed = CPreciseTimer.GetElapsedTime();
 

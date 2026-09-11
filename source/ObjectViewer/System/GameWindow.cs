@@ -50,9 +50,10 @@ namespace ObjectViewer
 				        Monitor.Pulse(currentJob);
 			        }
 		        }
-		        Program.Renderer.RenderThreadJobWaiting = false;
-	        }
-			double timeElapsed = RenderRealTimeElapsed;
+	        Program.Renderer.RenderThreadJobWaiting = false;
+        }
+		Program.Renderer.TextureManager.BeginFrame();
+		double timeElapsed = RenderRealTimeElapsed;
 
 			// Use the OpenTK frame rate as this is much more accurate
 			// Also avoids running a calculation

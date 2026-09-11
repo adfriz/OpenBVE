@@ -48,6 +48,15 @@ namespace LibRender2.Textures
 		/// <summary>The number of currently registered textures.</summary>
 		public int RegisteredTexturesCount;
 
+		/// <summary>Maximum number of new texture uploads per frame (lazy upload).</summary>
+		/// <remarks>Excess uploads are deferred to following frames so a camera teleport or fast
+		/// movement spreads the hitch instead of freezing one frame. Deferred faces render
+		/// untextured for that frame and retry on the next. Animated frame updates
+		/// (TexSubImage2D) are exempt. Loading screens bypass via LoadAllTextures.</remarks>
+		public int MaxUploadsPerFrame = 2;
+		private int uploadsThisWindow;
+		private int uploadWindowStart;
+
 		internal TextureManager(HostInterface CurrentHost, BaseRenderer Renderer)
 		{
 			currentHost = CurrentHost;
@@ -55,6 +64,34 @@ namespace LibRender2.Textures
 			RegisteredTexturesCount = 0;
 			renderer = Renderer;
 			animatedTextures = new Dictionary<TextureOrigin, Texture>();
+			uploadWindowStart = CPreciseTimer.GetClockTicks();
+		}
+
+		/// <summary>Resets the per-frame upload budget. Called once per render frame.</summary>
+		public void BeginFrame()
+		{
+			uploadsThisWindow = 0;
+			uploadWindowStart = CPreciseTimer.GetClockTicks();
+		}
+
+		/// <summary>Tries to claim one upload slot from the per-frame budget.</summary>
+		/// <remarks>The window also resets on a timeout so render loops that never call
+		/// BeginFrame (viewers) degrade to a rate limit instead of stalling forever.</remarks>
+		/// <returns>Whether an upload may proceed this frame.</returns>
+		private bool ClaimUploadSlot()
+		{
+			int now = CPreciseTimer.GetClockTicks();
+			if (now - uploadWindowStart > 100)
+			{
+				uploadsThisWindow = 0;
+				uploadWindowStart = now;
+			}
+			if (uploadsThisWindow >= MaxUploadsPerFrame)
+			{
+				return false;
+			}
+			uploadsThisWindow++;
+			return true;
 		}
 
 
@@ -126,6 +163,10 @@ namespace LibRender2.Textures
 			RegisteredTextures[idx] = new Texture(path, parameters, currentHost);
 			RegisteredTexturesCount++;
 			handle = RegisteredTextures[idx];
+			// New handles participate in UnloadUnusedTextures LRU by default;
+			// pinned textures (animated objects) opt out explicitly after load.
+			handle.AvailableToUnload = true;
+			handle.LastAccess = CPreciseTimer.GetClockTicks();
 
 			lock (TextureLookupLock)
 			{
@@ -162,6 +203,8 @@ namespace LibRender2.Textures
 			 * */
 			int idx = GetNextFreeTexture();
 			RegisteredTextures[idx] = new Texture(texture);
+			RegisteredTextures[idx].AvailableToUnload = true;
+			RegisteredTextures[idx].LastAccess = CPreciseTimer.GetClockTicks();
 			RegisteredTexturesCount++;
 			return RegisteredTextures[idx];
 		}
@@ -178,6 +221,8 @@ namespace LibRender2.Textures
 			 * */
 			int idx = GetNextFreeTexture();
 			RegisteredTextures[idx] = new Texture(bitmap, parameters);
+			RegisteredTextures[idx].AvailableToUnload = true;
+			RegisteredTextures[idx].LastAccess = CPreciseTimer.GetClockTicks();
 			RegisteredTexturesCount++;
 			return RegisteredTextures[idx];
 		}
@@ -193,6 +238,8 @@ namespace LibRender2.Textures
 			 * */
 			int idx = GetNextFreeTexture();
 			RegisteredTextures[idx] = new Texture(bitmap);
+			RegisteredTextures[idx].AvailableToUnload = true;
+			RegisteredTextures[idx].LastAccess = CPreciseTimer.GetClockTicks();
 			RegisteredTexturesCount++;
 			return RegisteredTextures[idx];
 		}
@@ -206,17 +253,18 @@ namespace LibRender2.Textures
 		/// <param name="currentTicks">The current system clock-ticks</param>
 		/// <param name="Interpolation">The interpolation mode to use when loading the texture</param>
 		/// <param name="AnisotropicFilteringLevel">The anisotropic filtering level to use when loading the texture</param>
+		/// <param name="bypassBudget">When true, ignores the per-frame lazy-upload budget (loading screens).</param>
 		/// <returns>Whether loading the texture was successful.</returns>
-		public bool LoadTexture(ref Texture handle, OpenGlTextureWrapMode wrap, int currentTicks, InterpolationMode Interpolation, int AnisotropicFilteringLevel)
+		public bool LoadTexture(ref Texture handle, OpenGlTextureWrapMode wrap, int currentTicks, InterpolationMode Interpolation, int AnisotropicFilteringLevel, bool bypassBudget = false)
 		{
 			Stopwatch uploadTimer = Stopwatch.StartNew();
-			bool result = LoadTextureInternal(ref handle, wrap, currentTicks, Interpolation, AnisotropicFilteringLevel);
+			bool result = LoadTextureInternal(ref handle, wrap, currentTicks, Interpolation, AnisotropicFilteringLevel, bypassBudget);
 			UploadCount++;
 			UploadMs += uploadTimer.ElapsedMilliseconds;
 			return result;
 		}
 
-		private bool LoadTextureInternal(ref Texture handle, OpenGlTextureWrapMode wrap, int currentTicks, InterpolationMode Interpolation, int AnisotropicFilteringLevel)
+		private bool LoadTextureInternal(ref Texture handle, OpenGlTextureWrapMode wrap, int currentTicks, InterpolationMode Interpolation, int AnisotropicFilteringLevel, bool bypassBudget = false)
 		{
 
 			Texture texture = null;
@@ -437,6 +485,13 @@ namespace LibRender2.Textures
 			}
 			if (texture != null)
 			{
+				if (!bypassBudget && !ClaimUploadSlot())
+				{
+					// Lazy upload: budget for this frame is spent. Leave the handle invalid
+					// (without marking Ignore) so the face renders untextured this frame and
+					// retries on the next. This spreads teleport/fast-movement hitches.
+					return false;
+				}
 				if (texture.MultipleFrames)
 				{
 					handle.MultipleFrames = true;
@@ -783,6 +838,9 @@ namespace LibRender2.Textures
 			// been cleared by UnloadAllTextures, which previously produced hollow handles with
 			// a null origin here and killed animated GIFs after a reload / filtering change.)
 			handle = new Texture(texture.Origin);
+			// Animated handles stay pinned (pre-existing behavior): they are re-uploaded
+			// per-frame via TexSubImage2D and must not be evicted by the LRU.
+			handle.AvailableToUnload = false;
 			}
 			else
 			{
@@ -812,6 +870,7 @@ namespace LibRender2.Textures
 		}
 
 		/// <summary>Loads all registered textures.</summary>
+		/// <remarks>Bypasses the lazy-upload budget: loading screens expect blocking completion.</remarks>
 		public void LoadAllTextures()
 		{
 			for (int i = 0; i < RegisteredTexturesCount; i++)
@@ -820,7 +879,7 @@ namespace LibRender2.Textures
 				{
 					if (RegisteredTextures[i] != null && RegisteredTextures[i].OpenGlTextures[j].Used)
 					{
-						LoadTexture(ref RegisteredTextures[i], (OpenGlTextureWrapMode)j, CPreciseTimer.GetClockTicks(), renderer.currentOptions.Interpolation, renderer.currentOptions.AnisotropicFilteringLevel);
+						LoadTexture(ref RegisteredTextures[i], (OpenGlTextureWrapMode)j, CPreciseTimer.GetClockTicks(), renderer.currentOptions.Interpolation, renderer.currentOptions.AnisotropicFilteringLevel, true);
 					}
 
 				}
@@ -939,9 +998,10 @@ namespace LibRender2.Textures
 #endif
 			if (renderer.CurrentInterface == InterfaceType.Normal)
 			{
-				for (int i = 0; i < RegisteredTextures.Length; i++)
+				int now = CPreciseTimer.GetClockTicks();
+				for (int i = 0; i < RegisteredTexturesCount; i++)
 				{
-					if (RegisteredTextures[i] != null && RegisteredTextures[i].AvailableToUnload && (CPreciseTimer.GetClockTicks() - RegisteredTextures[i].LastAccess) > 20000)
+					if (RegisteredTextures[i] != null && RegisteredTextures[i].AvailableToUnload && (now - RegisteredTextures[i].LastAccess) > 20000)
 					{
 						UnloadTexture(ref RegisteredTextures[i]);
 					}
@@ -1008,6 +1068,61 @@ namespace LibRender2.Textures
 				}
 			}
 			return count;
+		}
+
+		/// <summary>Estimates the VRAM footprint of a single texture in bytes, including the mipmap chain.</summary>
+		/// <remarks>Matches the uncompressed upload path (Rgb8/Rgba8/R8 + GenerateMipmap).
+		/// Returns 0 when no GL slot is currently resident.</remarks>
+		public static long EstimateVramBytes(Texture texture)
+		{
+			if (texture == null || texture.Width <= 0 || texture.Height <= 0)
+			{
+				return 0;
+			}
+			bool resident = false;
+			foreach (OpenGlTexture t in texture.OpenGlTextures)
+			{
+				if (t.Valid)
+				{
+					resident = true;
+					break;
+				}
+			}
+			if (!resident)
+			{
+				return 0;
+			}
+			int bytesPerPixel;
+			switch (texture.PixelFormat)
+			{
+				case PixelFormat.Grayscale:
+				case PixelFormat.Paletted:
+					// Grayscale uploads via R8; paletted opaque expands to RGB (transparent to RGBA)
+					bytesPerPixel = texture.Transparency == TextureTransparencyType.Opaque ? (texture.PixelFormat == PixelFormat.Grayscale ? 1 : 3) : 4;
+					break;
+				case PixelFormat.GrayscaleAlpha:
+					bytesPerPixel = 4; // upconverted to RGBA on upload
+					break;
+				case PixelFormat.RGB:
+					bytesPerPixel = texture.Transparency == TextureTransparencyType.Opaque ? 3 : 4;
+					break;
+				default:
+					bytesPerPixel = 4;
+					break;
+			}
+			long level0 = (long)texture.Width * texture.Height * bytesPerPixel;
+			return level0 + level0 / 3; // mipmap chain ≈ 4/3
+		}
+
+		/// <summary>Estimates the total resident VRAM footprint of all registered textures in bytes.</summary>
+		public long GetEstimatedResidentVramBytes()
+		{
+			long total = 0;
+			for (int i = 0; i < RegisteredTexturesCount; i++)
+			{
+				total += EstimateVramBytes(RegisteredTextures[i]);
+			}
+			return total;
 		}
 
 
