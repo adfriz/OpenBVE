@@ -473,6 +473,7 @@ namespace OpenBve {
 			checkBoxLoadInAdvance.Checked = Interface.CurrentOptions.LoadInAdvance;
 			checkBoxUnloadTextures.Checked = Interface.CurrentOptions.UnloadUnusedTextures;
 			checkBoxTextureCompression.Checked = Interface.CurrentOptions.TextureCompression;
+			checkBoxTextureDiskCache.Checked = Interface.CurrentOptions.TextureDiskCache;
 			comboBoxTextureMemory.Items.Clear();
 			comboBoxTextureMemory.Items.AddRange(new object[] { "Auto", "512 MB", "1 GB", "2 GB", "4 GB" });
 			comboBoxTextureMemory.SelectedIndex = TextureMemoryBudgetToIndex(Interface.CurrentOptions.TextureMemoryBudgetMB);
@@ -822,6 +823,7 @@ namespace OpenBve {
 			checkBoxLoadInAdvance.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","advanced_load_advance"});
 			checkBoxUnloadTextures.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","advanced_unload_textures"});
 			checkBoxTextureCompression.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","advanced_texture_compression"});
+			checkBoxTextureDiskCache.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","advanced_texture_cache"});
 			labelTextureMemory.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","advanced_texture_memory"});
 			labelTimeAcceleration.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","advanced_timefactor"});
 			labelCursor.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","advanced_cursor"});
@@ -1288,6 +1290,7 @@ namespace OpenBve {
 			Interface.CurrentOptions.LoadInAdvance = checkBoxLoadInAdvance.Checked;
 			Interface.CurrentOptions.UnloadUnusedTextures = checkBoxUnloadTextures.Checked;
 			Interface.CurrentOptions.TextureCompression = checkBoxTextureCompression.Checked;
+			Interface.CurrentOptions.TextureDiskCache = checkBoxTextureDiskCache.Checked;
 			Interface.CurrentOptions.TextureMemoryBudgetMB = TextureMemoryBudgetFromIndex(comboBoxTextureMemory.SelectedIndex);
 			Interface.CurrentOptions.OldTransparencyMode = checkBoxTransparencyFix.Checked;
 			Interface.CurrentOptions.EnableBveTsHacks = checkBoxHacks.Checked;
@@ -2070,10 +2073,55 @@ namespace OpenBve {
 		/// <summary>Enables the streaming child controls only while unloading is active.</summary>
 		private void UpdateTextureStreamingControls()
 		{
-			bool enabled = checkBoxUnloadTextures.Checked && checkBoxUnloadTextures.Enabled;
-			checkBoxTextureCompression.Enabled = enabled;
-			labelTextureMemory.Enabled = enabled;
-			comboBoxTextureMemory.Enabled = enabled;
+			bool unloadOn = checkBoxUnloadTextures.Checked && checkBoxUnloadTextures.Enabled;
+			checkBoxTextureCompression.Enabled = unloadOn;
+			bool cacheOn = unloadOn && checkBoxTextureCompression.Checked && checkBoxTextureCompression.Enabled;
+			checkBoxTextureDiskCache.Enabled = cacheOn;
+			labelTextureMemory.Enabled = unloadOn;
+			comboBoxTextureMemory.Enabled = unloadOn;
+			buttonDeleteTextureCache.Enabled = cacheOn && checkBoxTextureDiskCache.Checked && checkBoxTextureDiskCache.Enabled;
+		}
+
+		private void checkBoxTextureCompression_CheckedChanged(object sender, EventArgs e)
+		{
+			UpdateTextureStreamingControls();
+		}
+
+		private void checkBoxTextureDiskCache_CheckedChanged(object sender, EventArgs e)
+		{
+			UpdateTextureStreamingControls();
+		}
+
+		private void buttonDeleteTextureCache_Click(object sender, EventArgs e)
+		{
+			int count;
+			long bytes;
+			LibRender2.Textures.TextureDiskCache.GetStats(out count, out bytes);
+			string message = "Delete " + count + " cached texture file(s) (" + (bytes / 1048576) + " MB)?\nOnly files inside the texture cache folder are removed. Route and train content is never touched.";
+			if (MessageBox.Show(message, "Delete texture cache", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+			{
+				return;
+			}
+			buttonDeleteTextureCache.Enabled = false;
+			System.Threading.ThreadPool.QueueUserWorkItem(delegate(object state)
+			{
+				int deleted;
+				long freed;
+				LibRender2.Textures.TextureDiskCache.ClearAll(out deleted, out freed);
+				string result = "Deleted " + deleted + " file(s), freed " + (freed / 1048576) + " MB.";
+				try
+				{
+					Program.FileSystem.AppendToLogFile(result);
+				}
+				catch
+				{
+				}
+				BeginInvoke((Action)delegate
+				{
+					MessageBox.Show(result, "Delete texture cache", MessageBoxButtons.OK, MessageBoxIcon.Information);
+					UpdateTextureStreamingControls();
+				});
+			});
 		}
 
 		private void CheckForUpdate()

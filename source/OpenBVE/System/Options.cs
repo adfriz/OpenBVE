@@ -75,6 +75,8 @@ namespace OpenBve
 			internal int TextureMemoryBudgetMB;
 			/// <summary>Whether large textures use driver-side block compression.</summary>
 			internal bool TextureCompression;
+			/// <summary>Whether compressed uploads are cached on disk.</summary>
+			internal bool TextureDiskCache;
 			/// <summary>Whether EB application is possible from the use of a joystick axis</summary>
 			internal bool AllowAxisEB;
 			/// <summary>Whether to prefer the native OpenTK operating system backend</summary>
@@ -164,6 +166,7 @@ namespace OpenBve
 				UnloadUnusedTextures = false;
 				TextureMemoryBudgetMB = 0;
 				TextureCompression = false;
+				TextureDiskCache = false;
 				TimeAccelerationFactor = 5;
 				AllowAxisEB = true;
 				TimeTableStyle = TimeTableMode.Default;
@@ -302,6 +305,7 @@ namespace OpenBve
 				Builder.AppendLine("unloadtextures = " + (UnloadUnusedTextures ? "true" : "false"));
 				Builder.AppendLine("texturememorybudget = " + TextureMemoryBudgetMB.ToString(Culture));
 				Builder.AppendLine("texturecompression = " + (TextureCompression ? "true" : "false"));
+				Builder.AppendLine("texturediskcache = " + (TextureDiskCache ? "true" : "false"));
 				Builder.AppendLine("forwardsCompatibleContext = " + (ForceForwardsCompatibleContext ? "true" : "false"));
 				Builder.AppendLine("uiscalefactor = " + UserInterfaceScaleFactor);
 				Builder.AppendLine("cameraInteriorTransition = " + (CameraInteriorTransition ? "true" : "false"));
@@ -486,6 +490,7 @@ namespace OpenBve
 							block.GetValue(OptionsKey.UnloadTextures, out CurrentOptions.UnloadUnusedTextures);
 							block.TryGetValue(OptionsKey.TextureMemoryBudget, ref CurrentOptions.TextureMemoryBudgetMB, NumberRange.NonNegative);
 							block.GetValue(OptionsKey.TextureCompression, out CurrentOptions.TextureCompression);
+							block.GetValue(OptionsKey.TextureDiskCache, out CurrentOptions.TextureDiskCache);
 							block.GetValue(OptionsKey.ForwardsCompatibleContext, out CurrentOptions.ForceForwardsCompatibleContext);
 							block.TryGetValue(OptionsKey.ViewingDistance, ref Interface.CurrentOptions.ViewingDistance, NumberRange.Positive);
 							block.TryGetValue(OptionsKey.QuadLeafSize, ref Interface.CurrentOptions.QuadTreeLeafSize, NumberRange.Positive);

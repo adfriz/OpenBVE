@@ -460,6 +460,24 @@ namespace OpenBveApi.Textures {
 			MyBytes = null;
 		}
 
+		/// <summary>Whether CPU-side pixel bytes are currently held (never triggers a lazy decode).</summary>
+		public bool HasResidentBytes()
+		{
+			if (Origin is StreamingGifOrigin)
+			{
+				return true;
+			}
+			if (MyBytes == null)
+			{
+				return false;
+			}
+			if (!MultipleFrames)
+			{
+				return MyBytes[0] != null;
+			}
+			return CurrentFrame < MyBytes.Length ? MyBytes[CurrentFrame] != null : MyBytes[0] != null;
+		}
+
 		/// <summary>Applies the specified parameters onto this texture.</summary>
 		/// <param name="parameters">The parameters, or a null reference.</param>
 		/// <returns>The texture with the parameters applied.</returns>

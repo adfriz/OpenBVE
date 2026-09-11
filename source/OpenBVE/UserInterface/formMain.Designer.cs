@@ -227,6 +227,8 @@ namespace OpenBve {
             this.checkBoxHacks = new System.Windows.Forms.CheckBox();
             this.checkBoxTransparencyFix = new System.Windows.Forms.CheckBox();
             this.checkBoxUnloadTextures = new System.Windows.Forms.CheckBox();
+            this.buttonDeleteTextureCache = new System.Windows.Forms.Button();
+            this.checkBoxTextureDiskCache = new System.Windows.Forms.CheckBox();
             this.checkBoxTextureCompression = new System.Windows.Forms.CheckBox();
             this.labelTextureMemory = new System.Windows.Forms.Label();
             this.comboBoxTextureMemory = new System.Windows.Forms.ComboBox();
@@ -2452,6 +2454,7 @@ namespace OpenBve {
             this.panelOptionsPage2.Location = new System.Drawing.Point(0, 72);
             this.panelOptionsPage2.Name = "panelOptionsPage2";
             this.panelOptionsPage2.Size = new System.Drawing.Size(683, 583);
+            this.panelOptionsPage2.AutoScroll = true;
             this.panelOptionsPage2.TabIndex = 21;
             // 
             // groupboxDistance
@@ -3188,6 +3191,8 @@ namespace OpenBve {
             this.groupBoxAdvancedOptions.Controls.Add(this.comboboxCursor);
             this.groupBoxAdvancedOptions.Controls.Add(this.checkBoxHacks);
             this.groupBoxAdvancedOptions.Controls.Add(this.checkBoxTransparencyFix);
+            this.groupBoxAdvancedOptions.Controls.Add(this.buttonDeleteTextureCache);
+            this.groupBoxAdvancedOptions.Controls.Add(this.checkBoxTextureDiskCache);
             this.groupBoxAdvancedOptions.Controls.Add(this.checkBoxTextureCompression);
             this.groupBoxAdvancedOptions.Controls.Add(this.labelTextureMemory);
             this.groupBoxAdvancedOptions.Controls.Add(this.comboBoxTextureMemory);
@@ -3198,15 +3203,36 @@ namespace OpenBve {
             this.groupBoxAdvancedOptions.ForeColor = System.Drawing.Color.Black;
             this.groupBoxAdvancedOptions.Location = new System.Drawing.Point(0, 323);
             this.groupBoxAdvancedOptions.Name = "groupBoxAdvancedOptions";
-            this.groupBoxAdvancedOptions.Size = new System.Drawing.Size(321, 237);
+            this.groupBoxAdvancedOptions.Size = new System.Drawing.Size(321, 261);
             this.groupBoxAdvancedOptions.TabIndex = 21;
             this.groupBoxAdvancedOptions.TabStop = false;
             this.groupBoxAdvancedOptions.Text = "Advanced Options";
             // 
+            // buttonDeleteTextureCache
+            // 
+            this.buttonDeleteTextureCache.Location = new System.Drawing.Point(200, 210);
+            this.buttonDeleteTextureCache.Name = "buttonDeleteTextureCache";
+            this.buttonDeleteTextureCache.Size = new System.Drawing.Size(105, 23);
+            this.buttonDeleteTextureCache.TabIndex = 25;
+            this.buttonDeleteTextureCache.Text = "Delete cache...";
+            this.buttonDeleteTextureCache.UseVisualStyleBackColor = true;
+            this.buttonDeleteTextureCache.Click += new System.EventHandler(this.buttonDeleteTextureCache_Click);
+            // 
+            // checkBoxTextureDiskCache
+            // 
+            this.checkBoxTextureDiskCache.AutoSize = true;
+            this.checkBoxTextureDiskCache.Location = new System.Drawing.Point(28, 213);
+            this.checkBoxTextureDiskCache.Name = "checkBoxTextureDiskCache";
+            this.checkBoxTextureDiskCache.Size = new System.Drawing.Size(158, 17);
+            this.checkBoxTextureDiskCache.TabIndex = 24;
+            this.checkBoxTextureDiskCache.Text = "Cache compressed textures to disk";
+            this.checkBoxTextureDiskCache.UseVisualStyleBackColor = true;
+            this.checkBoxTextureDiskCache.CheckedChanged += new System.EventHandler(this.checkBoxTextureDiskCache_CheckedChanged);
+            // 
             // checkBoxPanel2Extended
             // 
             this.checkBoxPanel2Extended.AutoSize = true;
-            this.checkBoxPanel2Extended.Location = new System.Drawing.Point(8, 212);
+            this.checkBoxPanel2Extended.Location = new System.Drawing.Point(8, 236);
             this.checkBoxPanel2Extended.Name = "checkBoxPanel2Extended";
             this.checkBoxPanel2Extended.Size = new System.Drawing.Size(159, 17);
             this.checkBoxPanel2Extended.TabIndex = 20;
@@ -7034,6 +7060,8 @@ namespace OpenBve {
 		private System.Windows.Forms.CheckBox checkBoxHacks;
 		private System.Windows.Forms.CheckBox checkBoxTransparencyFix;
 		private System.Windows.Forms.CheckBox checkBoxUnloadTextures;
+		private System.Windows.Forms.Button buttonDeleteTextureCache;
+		private System.Windows.Forms.CheckBox checkBoxTextureDiskCache;
 		private System.Windows.Forms.CheckBox checkBoxTextureCompression;
 		private System.Windows.Forms.Label labelTextureMemory;
 		private System.Windows.Forms.ComboBox comboBoxTextureMemory;

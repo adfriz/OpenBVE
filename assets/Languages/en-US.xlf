@@ -1297,6 +1297,9 @@
 					<trans-unit id="advanced_texture_compression">
 						<source>Texture compression</source>
 					</trans-unit>
+					<trans-unit id="advanced_texture_cache">
+						<source>Cache compressed textures to disk</source>
+					</trans-unit>
 					<trans-unit id="advanced_texture_memory">
 						<source>Max texture memory:</source>
 					</trans-unit>

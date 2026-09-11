@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using LibRender2.Objects;
 using LibRender2.Screens;
 using OpenBveApi;
@@ -65,6 +66,10 @@ namespace LibRender2.Textures
 		/// <summary>Whether driver-side block compression is active (requires StreamingActive).</summary>
 		/// <remarks>Set every frame by the game window from the Texture compression option.</remarks>
 		public bool CompressionActive;
+		/// <summary>Whether the on-disk upload cache is active (requires CompressionActive).</summary>
+		/// <remarks>Set every frame by the game window from the disk cache option.</remarks>
+		public bool DiskCacheActive;
+		private bool diskCacheInitAttempted;
 		/// <summary>Configured resident texture budget in megabytes (0 = automatic).</summary>
 		public int StreamingBudgetMB;
 		private int lastTierPassTick;
@@ -434,6 +439,21 @@ namespace LibRender2.Textures
 				return false;
 			}
 
+			// Tier carried by disk-cache bytes (already tier-sized); -1 when decoded normally.
+			int cachedTier = -1;
+			// Disk cache precedes the memory cache: surviving memory entries hold no bytes
+			// (released after upload), so consulting them first would just trigger a decode.
+			// Live register-time decodes still win via the block below.
+			if (texture == null && !IsMemoryCacheLive(handle))
+			{
+				Texture diskTexture;
+				int diskTier;
+				if (TryDiskCacheLoad(handle, out diskTexture, out diskTier))
+				{
+					texture = diskTexture;
+					cachedTier = diskTier;
+				}
+			}
 			if (texture == null)
 			{
 				/*
@@ -471,10 +491,10 @@ namespace LibRender2.Textures
 								// Reuse when handle has no special parameters to avoid duplicate decode.
 								if (handlePathOrigin.Parameters == null)
 									texture = cachedTexture;
-							}
 						}
 					}
 				}
+			}
 			if (texture == null && handle.Origin != null)
 			{
 				// Reuse a live animated decode (e.g. after a reload dropped the register-time
@@ -533,7 +553,12 @@ namespace LibRender2.Textures
 						return false;
 					}
 					int uploadTier = 0;
-					if (StreamingActive && !bypassBudget && !texture.MultipleFrames)
+					if (cachedTier >= 0)
+					{
+						// Disk-cache bytes are already tier-sized for a policy-conforming source.
+						uploadTier = cachedTier;
+					}
+					else if (StreamingActive && !bypassBudget && !texture.MultipleFrames)
 					{
 						uploadTier = handle.DesiredTier;
 						if (uploadTier < 0 || uploadTier > TexturePolicy.MaxTier || TexturePolicy.IsProtected(texture))
@@ -825,6 +850,7 @@ namespace LibRender2.Textures
 					handle.TierChangeTick = currentTicks;
 					handle.ResidentCompressed = compressedBlockBytes > 0;
 					handle.ResidentBlockBytes = compressedBlockBytes;
+					QueueDiskCacheStore(handle, texture, textureBytes, uploadTier);
 					if (texture.MultipleFrames)
 					{
 						texture.OpenGlTextures[(int)wrap].Valid = true;
@@ -1383,6 +1409,116 @@ namespace LibRender2.Textures
 				UnloadTexture(ref RegisteredTextures[oldest]);
 				ops++;
 			}
+		}
+
+		// --- disk cache ---
+
+		private bool EnsureDiskCache()
+		{
+			if (!DiskCacheActive)
+			{
+				return false;
+			}
+			if (!diskCacheInitAttempted)
+			{
+				diskCacheInitAttempted = true;
+				try
+				{
+					if (renderer != null && renderer.fileSystem != null && !string.IsNullOrEmpty(renderer.fileSystem.SettingsFolder))
+					{
+						TextureDiskCache.Initialize(renderer.fileSystem.SettingsFolder);
+					}
+				}
+				catch
+				{
+					// cache init must never break loading
+				}
+			}
+			return TextureDiskCache.Available;
+		}
+
+		/// <summary>Whether the memory cache holds live bytes, making disk lookup pointless.</summary>
+		private bool IsMemoryCacheLive(Texture handle)
+		{
+			if (!DiskCacheActive || handle == null)
+			{
+				return true;
+			}
+			lock (TextureLookupLock)
+			{
+				Texture cached;
+				if (textureCache.TryGetValue(handle.Origin, out cached) && cached != null && cached.HasResidentBytes())
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+
+		private bool TryDiskCacheLoad(Texture handle, out Texture texture, out int tier)
+		{
+			texture = null;
+			tier = -1;
+			if (!StreamingActive || !EnsureDiskCache() || handle == null || handle.MultipleFrames)
+			{
+				return false;
+			}
+			PathOrigin pathOrigin = handle.Origin as PathOrigin;
+			if (pathOrigin == null)
+			{
+				return false;
+			}
+			int wantTier = handle.DesiredTier;
+			if (wantTier < 0)
+			{
+				wantTier = 0;
+			}
+			else if (wantTier > TexturePolicy.MaxTier)
+			{
+				wantTier = TexturePolicy.MaxTier;
+			}
+			Texture loaded;
+			if (TextureDiskCache.TryLoadTexture(pathOrigin.Path, wantTier, out loaded) && loaded != null)
+			{
+				texture = loaded;
+				tier = wantTier;
+				return true;
+			}
+			return false;
+		}
+
+		private void QueueDiskCacheStore(Texture handle, Texture texture, byte[] uploadBytes, int uploadTier)
+		{
+			if (!DiskCacheActive || !EnsureDiskCache())
+			{
+				return;
+			}
+			if (handle == null || texture == null || texture.MultipleFrames || uploadBytes == null)
+			{
+				return;
+			}
+			if (uploadBytes.Length < TextureDiskCache.MinCacheBytes)
+			{
+				return;
+			}
+			PathOrigin pathOrigin = handle.Origin as PathOrigin;
+			if (pathOrigin == null)
+			{
+				return;
+			}
+			if (uploadTier <= 0 && TexturePolicy.IsProtected(texture))
+			{
+				return;
+			}
+			string path = pathOrigin.Path;
+			int width = texture.Width;
+			int height = texture.Height;
+			PixelFormat format = texture.PixelFormat;
+			int tier = uploadTier;
+			ThreadPool.QueueUserWorkItem(delegate(object state)
+			{
+				TextureDiskCache.StoreUpload(path, tier, width, height, format, uploadBytes);
+			});
 		}
 
 
