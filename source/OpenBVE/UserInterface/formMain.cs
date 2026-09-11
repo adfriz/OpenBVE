@@ -2108,7 +2108,9 @@ namespace OpenBve {
 				int deleted;
 				long freed;
 				LibRender2.Textures.TextureDiskCache.ClearAll(out deleted, out freed);
-				string result = "Deleted " + deleted + " file(s), freed " + (freed / 1048576) + " MB.";
+				string result = Environment.OSVersion.Platform == PlatformID.Win32NT
+					? "Moved " + deleted + " file(s) (" + (freed / 1048576) + " MB) to the Recycle Bin."
+					: "Deleted " + deleted + " file(s), freed " + (freed / 1048576) + " MB.";
 				try
 				{
 					Program.FileSystem.AppendToLogFile(result);

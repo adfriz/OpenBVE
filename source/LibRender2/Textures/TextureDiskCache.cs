@@ -246,6 +246,8 @@ namespace LibRender2.Textures
 		}
 
 		/// <summary>Deletes every indexed entry and resets the index (safe: cache root only).</summary>
+		/// <remarks>User-initiated clears go to the Recycle Bin on Windows; maintenance
+		/// deletions (cap enforcement, stale files) are permanent so disk space is freed.</remarks>
 		public static void ClearAll(out int count, out long bytes)
 		{
 			count = 0;
@@ -258,7 +260,7 @@ namespace LibRender2.Textures
 				}
 				foreach (CacheEntry entry in entries.Values)
 				{
-					if (DeleteEntryFile(entry))
+					if (DeleteEntryFile(entry, true))
 					{
 						count++;
 					}
@@ -431,14 +433,15 @@ namespace LibRender2.Textures
 				{
 					continue;
 				}
-				DeleteEntryFile(pair.Value);
+				DeleteEntryFile(pair.Value, false);
 				RemoveLocked(pair.Key);
 			}
 		}
 
 		/// <summary>Deletes the file behind an entry (stays inside the cache root).</summary>
-		/// <returns>Whether a file was deleted.</returns>
-		private static bool DeleteEntryFile(CacheEntry entry)
+		/// <param name="recycle">Recycle on Windows instead of permanently deleting.</param>
+		/// <returns>Whether the file is gone (recycled or deleted).</returns>
+		private static bool DeleteEntryFile(CacheEntry entry, bool recycle)
 		{
 			if (entry == null || string.IsNullOrEmpty(entry.File))
 			{
@@ -449,7 +452,29 @@ namespace LibRender2.Textures
 			{
 				return false;
 			}
+			if (recycle && SendToRecycleBin(full))
+			{
+				return true;
+			}
 			return TryDeleteFile(full);
+		}
+
+		/// <summary>Moves a file to the Recycle Bin (Windows only, falls back to false).</summary>
+		private static bool SendToRecycleBin(string path)
+		{
+			try
+			{
+				if (Environment.OSVersion.Platform != PlatformID.Win32NT || !File.Exists(path))
+				{
+					return false;
+				}
+				Microsoft.VisualBasic.FileIO.FileSystem.DeleteFile(path, Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs, Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin);
+				return true;
+			}
+			catch
+			{
+				return false;
+			}
 		}
 
 		private static void SaveIfDueLocked()
