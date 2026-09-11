@@ -37,6 +37,10 @@ namespace OpenBveApi.Textures {
 		public int DesiredTier;
 		/// <summary>Clock-ticks of the last tier change, used to avoid downgrade flapping.</summary>
 		public int TierChangeTick;
+		/// <summary>Whether the resident OpenGL texture uses driver-side block compression.</summary>
+		public bool ResidentCompressed;
+		/// <summary>Compressed block size in bytes (8 for BC1, 16 for BC3/BC7); 0 when uncompressed.</summary>
+		public int ResidentBlockBytes;
 		/// <summary>Holds the OpenGL textures</summary>
 		/// <remarks>An 3D array containing the OpenGL texture array for each frame</remarks>
 		private readonly OpenGlTexture[][] MyOpenGlTextures;

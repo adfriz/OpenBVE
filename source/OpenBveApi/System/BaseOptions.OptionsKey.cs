@@ -30,6 +30,7 @@ namespace OpenBveApi
 		LoadInAdvance,
 		UnloadTextures,
 		TextureMemoryBudget,
+		TextureCompression,
 		ForwardsCompatibleContext,
 		ViewingDistance,
 		QuadLeafSize,

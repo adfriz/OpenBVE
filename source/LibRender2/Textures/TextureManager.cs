@@ -62,6 +62,9 @@ namespace LibRender2.Textures
 		/// <summary>Whether distance-tiered streaming is active (mirrors the UnloadUnusedTextures option).</summary>
 		/// <remarks>Set every frame by the game window. Viewers leave it false for full-quality uploads.</remarks>
 		public bool StreamingActive;
+		/// <summary>Whether driver-side block compression is active (requires StreamingActive).</summary>
+		/// <remarks>Set every frame by the game window from the Texture compression option.</remarks>
+		public bool CompressionActive;
 		/// <summary>Configured resident texture budget in megabytes (0 = automatic).</summary>
 		public int StreamingBudgetMB;
 		private int lastTierPassTick;
@@ -601,6 +604,36 @@ namespace LibRender2.Textures
 					{
 						GL.TexParameter(TextureTarget.Texture2D, (TextureParameterName)ExtTextureFilterAnisotropic.TextureMaxAnisotropyExt, AnisotropicFilteringLevel);
 					}
+
+					// Driver-side block compression for direct RGB/RGBA uploads (JPG/PNG scenery).
+					// The driver compresses the uncompressed bytes on upload; expanded paletted and
+					// grayscale paths below stay uncompressed. BC7 is preferred for quality, S3TC
+					// (BC1 opaque, BC3 alpha) otherwise. Requires a successful capability probe.
+					PixelInternalFormat rgbInternal = PixelInternalFormat.Rgb8;
+					PixelInternalFormat rgbFromRgbaInternal = PixelInternalFormat.Rgb8;
+					PixelInternalFormat rgbaInternal = PixelInternalFormat.Rgba8;
+					int opaqueBlockBytes = 0;
+					int alphaBlockBytes = 0;
+					if (CompressionActive && !texture.MultipleFrames && TextureCapabilities.Probed)
+					{
+						if (TextureCapabilities.CanBPTC)
+						{
+							rgbInternal = PixelInternalFormat.CompressedRgbaBptcUnorm;
+							rgbFromRgbaInternal = PixelInternalFormat.CompressedRgbaBptcUnorm;
+							rgbaInternal = PixelInternalFormat.CompressedRgbaBptcUnorm;
+							opaqueBlockBytes = 16;
+							alphaBlockBytes = 16;
+						}
+						else if (TextureCapabilities.CanS3TC)
+						{
+							rgbInternal = PixelInternalFormat.CompressedRgbS3tcDxt1Ext;
+							rgbFromRgbaInternal = PixelInternalFormat.CompressedRgbaS3tcDxt1Ext;
+							rgbaInternal = PixelInternalFormat.CompressedRgbaS3tcDxt5Ext;
+							opaqueBlockBytes = 8;
+							alphaBlockBytes = 16;
+						}
+					}
+					int compressedBlockBytes = 0;
 					
 					if (handle.Transparency == TextureTransparencyType.Opaque)
 					{
@@ -659,22 +692,24 @@ namespace LibRender2.Textures
 								// n.b. Make sure to set the unpack alignment as otherwise we corrupt textures where stride > width
 								GL.PixelStore(PixelStoreParameter.UnpackAlignment, 1);
 								GL.TexImage2D(TextureTarget.Texture2D, 0,
-									PixelInternalFormat.Rgb8,
+									rgbInternal,
 									texture.Width, texture.Height, 0,
 									OpenTK.Graphics.OpenGL.PixelFormat.Rgb,
 									PixelType.UnsignedByte, textureBytes);
+								compressedBlockBytes = opaqueBlockBytes;
 								break;
 							case PixelFormat.RGBAlpha:
 								/*
-								 * Opaque texture, so the alpha channel is discarded by the RGB8 internal format.
+								 * Opaque texture, so the alpha channel is discarded by the RGB internal format.
 								 * Upload the RGBA data directly rather than stripping it CPU-side.
 								 */
 								GL.PixelStore(PixelStoreParameter.UnpackAlignment, 4);
 								GL.TexImage2D(TextureTarget.Texture2D, 0,
-									PixelInternalFormat.Rgb8,
+									rgbFromRgbaInternal,
 									texture.Width, texture.Height, 0,
 									OpenTK.Graphics.OpenGL.PixelFormat.Rgba,
 									PixelType.UnsignedByte, textureBytes);
+								compressedBlockBytes = opaqueBlockBytes;
 								break;
 							default:
 								// Unknown / invalid format: must not reach GenerateMipmap with no level-0 image
@@ -769,10 +804,11 @@ namespace LibRender2.Textures
 								// n.b. Must reset the unpack alignment in case of changes
 								GL.PixelStore(PixelStoreParameter.UnpackAlignment, 4);
 								GL.TexImage2D(TextureTarget.Texture2D, 0,
-									PixelInternalFormat.Rgba8,
+									rgbaInternal,
 									texture.Width, texture.Height, 0,
 									OpenTK.Graphics.OpenGL.PixelFormat.Rgba,
 									PixelType.UnsignedByte, textureBytes);
+								compressedBlockBytes = alphaBlockBytes;
 								break;
 							default:
 								// Unknown / invalid format: must not reach GenerateMipmap with no level-0 image
@@ -787,6 +823,8 @@ namespace LibRender2.Textures
                     handle.OpenGlTextures[(int)wrap].Valid = true;
 					handle.ResidentTier = uploadTier;
 					handle.TierChangeTick = currentTicks;
+					handle.ResidentCompressed = compressedBlockBytes > 0;
+					handle.ResidentBlockBytes = compressedBlockBytes;
 					if (texture.MultipleFrames)
 					{
 						texture.OpenGlTextures[(int)wrap].Valid = true;
@@ -888,6 +926,8 @@ namespace LibRender2.Textures
 			}
 			handle.Ignore = false;
 			handle.ResidentTier = -1;
+			handle.ResidentCompressed = false;
+			handle.ResidentBlockBytes = 0;
 			if (handle.Origin != null)
 			{
 				// On reload, keep cache entries whose source file is unchanged: the reloaded
@@ -1436,6 +1476,24 @@ namespace LibRender2.Textures
 			}
 			int residentWidth, residentHeight;
 			TexturePolicy.TierDimensions(texture.Width, texture.Height, texture.ResidentTier < 0 ? 0 : texture.ResidentTier, out residentWidth, out residentHeight);
+			if (texture.ResidentCompressed && texture.ResidentBlockBytes > 0)
+			{
+				// Block-compressed upload: 4x4 texel blocks per mip level.
+				long compressedTotal = 0;
+				int levelWidth = residentWidth;
+				int levelHeight = residentHeight;
+				for (int level = 0; level < 16; level++)
+				{
+					compressedTotal += (long)((levelWidth + 3) / 4) * ((levelHeight + 3) / 4) * texture.ResidentBlockBytes;
+					if (levelWidth == 1 && levelHeight == 1)
+					{
+						break;
+					}
+					levelWidth = Math.Max(1, levelWidth / 2);
+					levelHeight = Math.Max(1, levelHeight / 2);
+				}
+				return compressedTotal;
+			}
 			long level0 = (long)residentWidth * residentHeight * bytesPerPixel;
 			return level0 + level0 / 3; // mipmap chain ≈ 4/3
 		}

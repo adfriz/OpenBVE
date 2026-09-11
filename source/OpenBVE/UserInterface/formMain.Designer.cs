@@ -227,6 +227,7 @@ namespace OpenBve {
             this.checkBoxHacks = new System.Windows.Forms.CheckBox();
             this.checkBoxTransparencyFix = new System.Windows.Forms.CheckBox();
             this.checkBoxUnloadTextures = new System.Windows.Forms.CheckBox();
+            this.checkBoxTextureCompression = new System.Windows.Forms.CheckBox();
             this.labelTextureMemory = new System.Windows.Forms.Label();
             this.comboBoxTextureMemory = new System.Windows.Forms.ComboBox();
             this.labelTimeAcceleration = new System.Windows.Forms.Label();
@@ -3187,6 +3188,7 @@ namespace OpenBve {
             this.groupBoxAdvancedOptions.Controls.Add(this.comboboxCursor);
             this.groupBoxAdvancedOptions.Controls.Add(this.checkBoxHacks);
             this.groupBoxAdvancedOptions.Controls.Add(this.checkBoxTransparencyFix);
+            this.groupBoxAdvancedOptions.Controls.Add(this.checkBoxTextureCompression);
             this.groupBoxAdvancedOptions.Controls.Add(this.labelTextureMemory);
             this.groupBoxAdvancedOptions.Controls.Add(this.comboBoxTextureMemory);
             this.groupBoxAdvancedOptions.Controls.Add(this.checkBoxUnloadTextures);
@@ -3196,7 +3198,7 @@ namespace OpenBve {
             this.groupBoxAdvancedOptions.ForeColor = System.Drawing.Color.Black;
             this.groupBoxAdvancedOptions.Location = new System.Drawing.Point(0, 323);
             this.groupBoxAdvancedOptions.Name = "groupBoxAdvancedOptions";
-            this.groupBoxAdvancedOptions.Size = new System.Drawing.Size(321, 213);
+            this.groupBoxAdvancedOptions.Size = new System.Drawing.Size(321, 237);
             this.groupBoxAdvancedOptions.TabIndex = 21;
             this.groupBoxAdvancedOptions.TabStop = false;
             this.groupBoxAdvancedOptions.Text = "Advanced Options";
@@ -3204,7 +3206,7 @@ namespace OpenBve {
             // checkBoxPanel2Extended
             // 
             this.checkBoxPanel2Extended.AutoSize = true;
-            this.checkBoxPanel2Extended.Location = new System.Drawing.Point(8, 188);
+            this.checkBoxPanel2Extended.Location = new System.Drawing.Point(8, 212);
             this.checkBoxPanel2Extended.Name = "checkBoxPanel2Extended";
             this.checkBoxPanel2Extended.Size = new System.Drawing.Size(159, 17);
             this.checkBoxPanel2Extended.TabIndex = 20;
@@ -3213,7 +3215,7 @@ namespace OpenBve {
             // 
             // pictureboxCursor
             // 
-            this.pictureboxCursor.Location = new System.Drawing.Point(8, 150);
+            this.pictureboxCursor.Location = new System.Drawing.Point(8, 174);
             this.pictureboxCursor.Name = "pictureboxCursor";
             this.pictureboxCursor.Size = new System.Drawing.Size(32, 32);
             this.pictureboxCursor.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
@@ -3223,7 +3225,7 @@ namespace OpenBve {
             // labelCursor
             // 
             this.labelCursor.AutoSize = true;
-            this.labelCursor.Location = new System.Drawing.Point(48, 145);
+            this.labelCursor.Location = new System.Drawing.Point(48, 169);
             this.labelCursor.Name = "labelCursor";
             this.labelCursor.Size = new System.Drawing.Size(37, 13);
             this.labelCursor.TabIndex = 17;
@@ -3233,7 +3235,7 @@ namespace OpenBve {
             // 
             this.comboboxCursor.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboboxCursor.FormattingEnabled = true;
-            this.comboboxCursor.Location = new System.Drawing.Point(48, 163);
+            this.comboboxCursor.Location = new System.Drawing.Point(48, 187);
             this.comboboxCursor.Name = "comboboxCursor";
             this.comboboxCursor.Size = new System.Drawing.Size(108, 21);
             this.comboboxCursor.TabIndex = 19;
@@ -3242,7 +3244,7 @@ namespace OpenBve {
             // checkBoxHacks
             // 
             this.checkBoxHacks.AutoSize = true;
-            this.checkBoxHacks.Location = new System.Drawing.Point(8, 105);
+            this.checkBoxHacks.Location = new System.Drawing.Point(8, 129);
             this.checkBoxHacks.Name = "checkBoxHacks";
             this.checkBoxHacks.Size = new System.Drawing.Size(203, 17);
             this.checkBoxHacks.TabIndex = 15;
@@ -3252,7 +3254,7 @@ namespace OpenBve {
             // checkBoxTransparencyFix
             // 
             this.checkBoxTransparencyFix.AutoSize = true;
-            this.checkBoxTransparencyFix.Location = new System.Drawing.Point(8, 86);
+            this.checkBoxTransparencyFix.Location = new System.Drawing.Point(8, 110);
             this.checkBoxTransparencyFix.Name = "checkBoxTransparencyFix";
             this.checkBoxTransparencyFix.Size = new System.Drawing.Size(259, 17);
             this.checkBoxTransparencyFix.TabIndex = 14;
@@ -3270,10 +3272,20 @@ namespace OpenBve {
             this.checkBoxUnloadTextures.UseVisualStyleBackColor = true;
             this.checkBoxUnloadTextures.CheckedChanged += new System.EventHandler(this.checkBoxUnloadTextures_CheckedChanged);
             // 
+            // checkBoxTextureCompression
+            // 
+            this.checkBoxTextureCompression.AutoSize = true;
+            this.checkBoxTextureCompression.Location = new System.Drawing.Point(28, 62);
+            this.checkBoxTextureCompression.Name = "checkBoxTextureCompression";
+            this.checkBoxTextureCompression.Size = new System.Drawing.Size(128, 17);
+            this.checkBoxTextureCompression.TabIndex = 23;
+            this.checkBoxTextureCompression.Text = "Texture compression";
+            this.checkBoxTextureCompression.UseVisualStyleBackColor = true;
+            // 
             // labelTextureMemory
             // 
             this.labelTextureMemory.AutoSize = true;
-            this.labelTextureMemory.Location = new System.Drawing.Point(28, 66);
+            this.labelTextureMemory.Location = new System.Drawing.Point(28, 90);
             this.labelTextureMemory.Name = "labelTextureMemory";
             this.labelTextureMemory.Size = new System.Drawing.Size(105, 13);
             this.labelTextureMemory.TabIndex = 21;
@@ -3283,7 +3295,7 @@ namespace OpenBve {
             // 
             this.comboBoxTextureMemory.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboBoxTextureMemory.FormattingEnabled = true;
-            this.comboBoxTextureMemory.Location = new System.Drawing.Point(170, 62);
+            this.comboBoxTextureMemory.Location = new System.Drawing.Point(170, 86);
             this.comboBoxTextureMemory.Name = "comboBoxTextureMemory";
             this.comboBoxTextureMemory.Size = new System.Drawing.Size(130, 21);
             this.comboBoxTextureMemory.TabIndex = 22;
@@ -3291,7 +3303,7 @@ namespace OpenBve {
             // labelTimeAcceleration
             // 
             this.labelTimeAcceleration.AutoSize = true;
-            this.labelTimeAcceleration.Location = new System.Drawing.Point(8, 128);
+            this.labelTimeAcceleration.Location = new System.Drawing.Point(8, 152);
             this.labelTimeAcceleration.Name = "labelTimeAcceleration";
             this.labelTimeAcceleration.Size = new System.Drawing.Size(126, 13);
             this.labelTimeAcceleration.TabIndex = 10;
@@ -3299,7 +3311,7 @@ namespace OpenBve {
             // 
             // updownTimeAccelerationFactor
             // 
-            this.updownTimeAccelerationFactor.Location = new System.Drawing.Point(200, 127);
+            this.updownTimeAccelerationFactor.Location = new System.Drawing.Point(200, 151);
             this.updownTimeAccelerationFactor.Maximum = new decimal(new int[] {
             5,
             0,
@@ -7022,6 +7034,7 @@ namespace OpenBve {
 		private System.Windows.Forms.CheckBox checkBoxHacks;
 		private System.Windows.Forms.CheckBox checkBoxTransparencyFix;
 		private System.Windows.Forms.CheckBox checkBoxUnloadTextures;
+		private System.Windows.Forms.CheckBox checkBoxTextureCompression;
 		private System.Windows.Forms.Label labelTextureMemory;
 		private System.Windows.Forms.ComboBox comboBoxTextureMemory;
 		private System.Windows.Forms.Label labelTimeAcceleration;

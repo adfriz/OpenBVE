@@ -472,10 +472,11 @@ namespace OpenBve {
 			checkboxDerailments.Checked = Interface.CurrentOptions.Derailments;
 			checkBoxLoadInAdvance.Checked = Interface.CurrentOptions.LoadInAdvance;
 			checkBoxUnloadTextures.Checked = Interface.CurrentOptions.UnloadUnusedTextures;
+			checkBoxTextureCompression.Checked = Interface.CurrentOptions.TextureCompression;
 			comboBoxTextureMemory.Items.Clear();
 			comboBoxTextureMemory.Items.AddRange(new object[] { "Auto", "512 MB", "1 GB", "2 GB", "4 GB" });
 			comboBoxTextureMemory.SelectedIndex = TextureMemoryBudgetToIndex(Interface.CurrentOptions.TextureMemoryBudgetMB);
-			UpdateTextureMemoryControls();
+			UpdateTextureStreamingControls();
 			// Shadow Resolution
 			switch (Interface.CurrentOptions.ShadowResolution)
 			{
@@ -820,6 +821,7 @@ namespace OpenBve {
 			groupBoxAdvancedOptions.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","advanced"});
 			checkBoxLoadInAdvance.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","advanced_load_advance"});
 			checkBoxUnloadTextures.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","advanced_unload_textures"});
+			checkBoxTextureCompression.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","advanced_texture_compression"});
 			labelTextureMemory.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","advanced_texture_memory"});
 			labelTimeAcceleration.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","advanced_timefactor"});
 			labelCursor.Text = Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"options","advanced_cursor"});
@@ -1285,6 +1287,7 @@ namespace OpenBve {
 			Interface.CurrentOptions.Derailments = checkboxDerailments.Checked;
 			Interface.CurrentOptions.LoadInAdvance = checkBoxLoadInAdvance.Checked;
 			Interface.CurrentOptions.UnloadUnusedTextures = checkBoxUnloadTextures.Checked;
+			Interface.CurrentOptions.TextureCompression = checkBoxTextureCompression.Checked;
 			Interface.CurrentOptions.TextureMemoryBudgetMB = TextureMemoryBudgetFromIndex(comboBoxTextureMemory.SelectedIndex);
 			Interface.CurrentOptions.OldTransparencyMode = checkBoxTransparencyFix.Checked;
 			Interface.CurrentOptions.EnableBveTsHacks = checkBoxHacks.Checked;
@@ -2022,7 +2025,7 @@ namespace OpenBve {
 			{
 				checkBoxUnloadTextures.Enabled = true;
 			}
-			UpdateTextureMemoryControls();
+			UpdateTextureStreamingControls();
 		}
 
 		private void checkBoxUnloadTextures_CheckedChanged(object sender, EventArgs e)
@@ -2037,7 +2040,7 @@ namespace OpenBve {
 			{
 				checkBoxLoadInAdvance.Enabled = true;
 			}
-			UpdateTextureMemoryControls();
+			UpdateTextureStreamingControls();
 		}
 
 		/// <summary>The texture budget values in megabytes behind the dropdown (index 0 = automatic).</summary>
@@ -2064,10 +2067,11 @@ namespace OpenBve {
 			return TextureMemoryBudgetValues[index];
 		}
 
-		/// <summary>Enables the budget dropdown only while unloading is active.</summary>
-		private void UpdateTextureMemoryControls()
+		/// <summary>Enables the streaming child controls only while unloading is active.</summary>
+		private void UpdateTextureStreamingControls()
 		{
 			bool enabled = checkBoxUnloadTextures.Checked && checkBoxUnloadTextures.Enabled;
+			checkBoxTextureCompression.Enabled = enabled;
 			labelTextureMemory.Enabled = enabled;
 			comboBoxTextureMemory.Enabled = enabled;
 		}
