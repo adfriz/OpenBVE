@@ -258,16 +258,7 @@ namespace LibRender2.Textures
 				}
 				foreach (CacheEntry entry in entries.Values)
 				{
-					if (entry == null || string.IsNullOrEmpty(entry.File))
-					{
-						continue;
-					}
-					string full = CanonicalUnderRoot(entry.File);
-					if (full == null)
-					{
-						continue;
-					}
-					if (TryDeleteFile(full))
+					if (DeleteEntryFile(entry))
 					{
 						count++;
 					}
@@ -419,29 +410,46 @@ namespace LibRender2.Textures
 
 		private static void EnforceCapLocked()
 		{
-			while (currentBytes > MaxCacheBytes && entries.Count > 0)
+			if (currentBytes <= MaxCacheBytes)
 			{
-				string oldest = null;
-				long oldestTicks = long.MaxValue;
-				foreach (KeyValuePair<string, CacheEntry> pair in entries)
-				{
-					if (pair.Value != null && pair.Value.LastUsedTicks < oldestTicks)
-					{
-						oldestTicks = pair.Value.LastUsedTicks;
-						oldest = pair.Key;
-					}
-				}
-				if (oldest == null)
+				return;
+			}
+			List<KeyValuePair<string, CacheEntry>> ordered = new List<KeyValuePair<string, CacheEntry>>(entries);
+			ordered.Sort((a, b) =>
+			{
+				long aTicks = a.Value != null ? a.Value.LastUsedTicks : long.MaxValue;
+				long bTicks = b.Value != null ? b.Value.LastUsedTicks : long.MaxValue;
+				return aTicks.CompareTo(bTicks);
+			});
+			foreach (KeyValuePair<string, CacheEntry> pair in ordered)
+			{
+				if (currentBytes <= MaxCacheBytes)
 				{
 					break;
 				}
-				string full = CanonicalUnderRoot(oldest.Substring(0, 2) + "/" + oldest + ".bc");
-				if (full != null)
+				if (pair.Value == null || string.IsNullOrEmpty(pair.Value.File))
 				{
-					TryDeleteFile(full);
+					continue;
 				}
-				RemoveLocked(oldest);
+				DeleteEntryFile(pair.Value);
+				RemoveLocked(pair.Key);
 			}
+		}
+
+		/// <summary>Deletes the file behind an entry (stays inside the cache root).</summary>
+		/// <returns>Whether a file was deleted.</returns>
+		private static bool DeleteEntryFile(CacheEntry entry)
+		{
+			if (entry == null || string.IsNullOrEmpty(entry.File))
+			{
+				return false;
+			}
+			string full = CanonicalUnderRoot(entry.File);
+			if (full == null)
+			{
+				return false;
+			}
+			return TryDeleteFile(full);
 		}
 
 		private static void SaveIfDueLocked()
