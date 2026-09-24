@@ -20,6 +20,17 @@ namespace LibRender2.Textures
 		private readonly HostInterface currentHost;
 
 		private readonly BaseRenderer renderer;
+		private TextureCapabilities? detectedCapabilities;
+		private static readonly int[] Bc4Swizzle = { (int)All.Red, (int)All.Red, (int)All.Red, (int)All.One };
+		private static readonly int[] Bc5Swizzle = { (int)All.Red, (int)All.Green, (int)All.Zero, (int)All.One };
+		private static readonly int[] IdentitySwizzle = { (int)All.Red, (int)All.Green, (int)All.Blue, (int)All.Alpha };
+
+		/// <summary>Gets the compressed texture formats detected for the active OpenGL context.</summary>
+		public TextureCapabilities TextureCapabilities => detectedCapabilities ?? TextureCapabilities.None;
+
+		internal void InitializeTextureCapabilities() {
+			detectedCapabilities = DetectTextureCapabilities();
+		}
 
 		/// <summary>Holds all currently registered textures.</summary>
 		public static Texture[] RegisteredTextures;
@@ -81,10 +92,87 @@ namespace LibRender2.Textures
 		internal TextureManager(HostInterface CurrentHost, BaseRenderer Renderer)
 		{
 			currentHost = CurrentHost;
-			RegisteredTextures = new Texture[16];
-			RegisteredTexturesCount = 0;
 			renderer = Renderer;
-			animatedTextures = new Dictionary<TextureOrigin, Texture>();
+			lock (TextureLookupLock)
+			{
+				RegisteredTextures = new Texture[16];
+				RegisteredTexturesCount = 0;
+				textureCache.Clear();
+				RegisteredTextureLookup.Clear();
+				animatedTextures = new Dictionary<TextureOrigin, Texture>();
+			}
+		}
+
+		private static TextureCapabilities DetectTextureCapabilities() {
+			try {
+				string extensions = GL.GetString(StringName.Extensions) ?? string.Empty;
+				string version = GL.GetString(StringName.Version) ?? string.Empty;
+				TextureCapabilities capabilities = TextureCapabilities.None;
+				if (HasExtension(extensions, "GL_EXT_texture_compression_s3tc") || HasExtension(extensions, "GL_EXT_texture_compression_dxt1")) capabilities |= TextureCapabilities.BC1;
+				if (HasExtension(extensions, "GL_EXT_texture_compression_s3tc")) capabilities |= TextureCapabilities.BC2 | TextureCapabilities.BC3;
+				if (HasExtension(extensions, "GL_EXT_texture_compression_rgtc") || HasExtension(extensions, "GL_ARB_texture_compression_rgtc")) capabilities |= TextureCapabilities.BC4 | TextureCapabilities.BC5;
+				if (HasExtension(extensions, "GL_ARB_texture_compression_bptc") || HasExtension(extensions, "GL_EXT_texture_compression_bptc") || IsAtLeastOpenGl(version, 4, 2)) capabilities |= TextureCapabilities.BC7;
+
+				if ((capabilities & TextureCapabilities.BC1) != 0 && !ProbeCompressedFormat(InternalFormat.CompressedRgbaS3tcDxt1Ext, 8)) capabilities &= ~TextureCapabilities.BC1;
+				if ((capabilities & TextureCapabilities.BC2) != 0 && !ProbeCompressedFormat(InternalFormat.CompressedRgbaS3tcDxt3Ext, 16)) capabilities &= ~TextureCapabilities.BC2;
+				if ((capabilities & TextureCapabilities.BC3) != 0 && !ProbeCompressedFormat(InternalFormat.CompressedRgbaS3tcDxt5Ext, 16)) capabilities &= ~TextureCapabilities.BC3;
+				if ((capabilities & TextureCapabilities.BC4) != 0 && !ProbeCompressedFormat(InternalFormat.CompressedRedRgtc1Ext, 8)) capabilities &= ~TextureCapabilities.BC4;
+				if ((capabilities & TextureCapabilities.BC5) != 0 && !ProbeCompressedFormat(InternalFormat.CompressedRgRgtc2, 16)) capabilities &= ~TextureCapabilities.BC5;
+				if ((capabilities & TextureCapabilities.BC7) != 0 && !ProbeCompressedFormat(InternalFormat.CompressedRgbaBptcUnorm, 16)) capabilities &= ~TextureCapabilities.BC7;
+				return capabilities;
+			}
+			catch {
+				return TextureCapabilities.None;
+			}
+		}
+
+		private static bool HasExtension(string extensions, string name) {
+			int offset = 0;
+			while (offset < extensions.Length) {
+				int index = extensions.IndexOf(name, offset, StringComparison.OrdinalIgnoreCase);
+				if (index < 0) return false;
+				bool left = index == 0 || char.IsWhiteSpace(extensions[index - 1]);
+				int end = index + name.Length;
+				bool right = end == extensions.Length || char.IsWhiteSpace(extensions[end]);
+				if (left && right) return true;
+				offset = index + 1;
+			}
+			return false;
+		}
+
+		private static bool IsAtLeastOpenGl(string version, int major, int minor) {
+			int first = version.IndexOf('.');
+			if (first < 0) return false;
+			int second = version.IndexOf('.', first + 1);
+			string majorText = version.Substring(0, first);
+			string minorText = second < 0 ? version.Substring(first + 1) : version.Substring(first + 1, second - first - 1);
+			int parsedMajor, parsedMinor;
+			return int.TryParse(majorText, out parsedMajor) && int.TryParse(minorText, out parsedMinor) && (parsedMajor > major || parsedMajor == major && parsedMinor >= minor);
+		}
+
+		private static unsafe bool ProbeCompressedFormat(InternalFormat internalFormat, int blockBytes) {
+			int[] names = new int[1];
+			try {
+				for (int i = 0; i < 16 && GL.GetError() != ErrorCode.NoError; i++) { }
+				GL.GenTextures(1, names);
+				if (names[0] == 0) return false;
+				GL.BindTexture(TextureTarget.Texture2D, names[0]);
+				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Nearest);
+				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMinFilter.Nearest);
+				byte[] block = new byte[16];
+				fixed (byte* pointer = block) {
+					GL.CompressedTexImage2D(TextureTarget.Texture2D, 0, internalFormat, 4, 4, 0, blockBytes, new IntPtr(pointer));
+				}
+				return GL.GetError() == ErrorCode.NoError;
+			}
+			catch {
+				return false;
+			}
+			finally {
+				GL.BindTexture(TextureTarget.Texture2D, 0);
+				if (names[0] != 0) GL.DeleteTextures(1, names);
+				for (int i = 0; i < 16 && GL.GetError() != ErrorCode.NoError; i++) { }
+			}
 		}
 
 
@@ -150,9 +238,12 @@ namespace LibRender2.Textures
 				 * The handle itself has no decoded bytes, so storing it would cause a null
 				 * reference when the transparency type is subsequently queried.
 				 * */
-				if (handle.Origin != null && handle.PixelFormat != PixelFormat.Invalid && handle.DecodedTexture != null && !textureCache.ContainsKey(handle.Origin))
+				if (handle.Origin != null && handle.DecodedTexture != null && (handle.PixelFormat != PixelFormat.Invalid || handle.DecodedTexture.IsCompressed))
 				{
-					textureCache.Add(handle.Origin, handle.DecodedTexture);
+					lock (TextureLookupLock)
+					{
+						if (!textureCache.ContainsKey(handle.Origin)) textureCache.Add(handle.Origin, handle.DecodedTexture);
+					}
 				}
 
 				/*
@@ -446,7 +537,7 @@ namespace LibRender2.Textures
 			// Only early-out when there is nothing new to upload: a freshly decoded texture
 			// whose GL slot is not uploaded yet must fall through to the upload section,
 			// even if the handle still carries a stale Valid flag from before an unload.
-			if (handle.OpenGlTextures[(int)wrap].Valid && (texture == null || texture.OpenGlTextures[(int)wrap].Valid))
+			if (handle.OpenGlTextures[(int)wrap].Valid && (texture == null || texture.IsCompressed || texture.OpenGlTextures[(int)wrap].Valid))
 			{
 				return true;
 			}
@@ -493,7 +584,7 @@ namespace LibRender2.Textures
 							{
 								texture = cachedTexture;
 							}
-							else if (cachedTexture.Origin is ByteArrayOrigin && handlePathOrigin != null)
+							else if ((cachedTexture.Origin is ByteArrayOrigin || cachedTexture.IsCompressed) && handlePathOrigin != null)
 							{
 								// DecodedTexture path: key's Parameters are in handle.Origin; value has no Parameters to compare.
 								// Reuse when handle has no special parameters to avoid duplicate decode.
@@ -533,6 +624,24 @@ namespace LibRender2.Textures
 			}
 			if (texture != null)
 			{
+				if (texture.IsCompressed)
+				{
+					if (TryUploadCompressedTexture(ref handle, texture, wrap, Interpolation, AnisotropicFilteringLevel)) return true;
+					try
+					{
+						texture = texture.DecodeToRgba();
+					}
+					catch
+					{
+						handle.Ignore = true;
+						return false;
+					}
+					if (texture == null)
+					{
+						handle.Ignore = true;
+						return false;
+					}
+				}
 				if (texture.MultipleFrames)
 				{
 					handle.MultipleFrames = true;
@@ -849,6 +958,147 @@ namespace LibRender2.Textures
 
 			handle.Ignore = true;
 			return false;
+		}
+
+		private unsafe bool TryUploadCompressedTexture(ref Texture handle, Texture texture, OpenGlTextureWrapMode wrap,
+			InterpolationMode interpolation, int anisotropicFilteringLevel) {
+			CompressedTextureData compressed = texture.CompressedData;
+			if (currentHost == null || compressed == null || compressed.SurfaceCount != 1 || compressed.Data == null || compressed.MipLevels == null || compressed.MipLevels.Length == 0 || compressed.IsSrgb || compressed.Format == CompressedTextureFormat.Bc7Srgb || !IsValidCompressedPayload(compressed)) return false;
+			if (RequiresMipmapChain(interpolation) && !compressed.HasCompleteMipChain) return false;
+			TextureCapabilities required = GetCompressedCapabilities(compressed.Format);
+			if (required == TextureCapabilities.None || (currentHost.TextureCapabilities & required) != required) return false;
+			if (!TryGetCompressedInternalFormat(compressed.Format, out InternalFormat internalFormat)) return false;
+
+			int[] names = null;
+			int name = 0;
+			bool success = false;
+			try {
+				names = new int[1];
+				GL.GenTextures(1, names);
+				name = names[0];
+				if (name == 0) return false;
+				for (int i = 0; i < 16 && GL.GetError() != ErrorCode.NoError; i++) { }
+				GL.BindTexture(TextureTarget.Texture2D, name);
+				ApplyTextureParameters(wrap, interpolation, anisotropicFilteringLevel);
+				switch (compressed.Format) {
+					case CompressedTextureFormat.Bc4R:
+						GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureSwizzleRgba, Bc4Swizzle);
+						break;
+					case CompressedTextureFormat.Bc5Rg:
+						GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureSwizzleRgba, Bc5Swizzle);
+						break;
+					default:
+						GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureSwizzleRgba, IdentitySwizzle);
+						break;
+				}
+				fixed (byte* data = compressed.Data) {
+					for (int level = 0; level < compressed.MipLevels.Length; level++) {
+						CompressedTextureMip mip = compressed.MipLevels[level];
+						GL.CompressedTexImage2D(TextureTarget.Texture2D, level, internalFormat,
+							mip.Width, mip.Height, 0, mip.Length, new IntPtr(data + mip.Offset));
+						if (GL.GetError() != ErrorCode.NoError) return false;
+					}
+				}
+				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMaxLevel, compressed.MipLevels.Length - 1);
+				if (GL.GetError() != ErrorCode.NoError) return false;
+				handle.OpenGlTextures[(int)wrap].Name = name;
+				handle.OpenGlTextures[(int)wrap].Valid = true;
+				handle.Size = texture.Size;
+				handle.Transparency = texture.Transparency;
+				success = true;
+				return true;
+			}
+			catch {
+				return false;
+			}
+			finally {
+				if (!success && name != 0) {
+					GL.BindTexture(TextureTarget.Texture2D, 0);
+					GL.DeleteTextures(1, new[] { name });
+				}
+				if (!success) {
+					handle.OpenGlTextures[(int)wrap].Name = 0;
+					handle.OpenGlTextures[(int)wrap].Valid = false;
+				}
+			}
+		}
+
+		private static bool IsValidCompressedPayload(CompressedTextureData data) {
+			int blockBytes = CompressedTextureData.GetBlockBytes(data.Format);
+			int previousEnd = 0;
+			int previousWidth = int.MaxValue;
+			int previousHeight = int.MaxValue;
+			for (int i = 0; i < data.MipLevels.Length; i++) {
+				CompressedTextureMip mip = data.MipLevels[i];
+				if (mip == null || mip.Offset != previousEnd || mip.Offset < 0 || mip.Length <= 0 || mip.Offset > data.Data.Length - mip.Length || mip.Width > previousWidth || mip.Height > previousHeight) return false;
+				long expected = (long)((mip.Width + 3) / 4) * ((mip.Height + 3) / 4) * blockBytes;
+				if (expected != mip.Length) return false;
+				previousEnd = mip.Offset + mip.Length;
+				previousWidth = mip.Width;
+				previousHeight = mip.Height;
+			}
+			return previousEnd == data.Data.Length;
+		}
+
+		private static bool RequiresMipmapChain(InterpolationMode interpolation) {
+			return interpolation == InterpolationMode.NearestNeighborMipmapped ||
+				interpolation == InterpolationMode.BilinearMipmapped ||
+				interpolation == InterpolationMode.TrilinearMipmapped ||
+				interpolation == InterpolationMode.AnisotropicFiltering;
+		}
+
+		private static TextureCapabilities GetCompressedCapabilities(CompressedTextureFormat format) {
+			return CompressedTextureData.GetRequiredCapabilities(format);
+		}
+
+		private static bool TryGetCompressedInternalFormat(CompressedTextureFormat format, out InternalFormat internalFormat) {
+			switch (format) {
+				case CompressedTextureFormat.Bc1Rgb: internalFormat = InternalFormat.CompressedRgbS3tcDxt1Ext; return true;
+				case CompressedTextureFormat.Bc1Rgba: internalFormat = InternalFormat.CompressedRgbaS3tcDxt1Ext; return true;
+				case CompressedTextureFormat.Bc2Rgba: internalFormat = InternalFormat.CompressedRgbaS3tcDxt3Ext; return true;
+				case CompressedTextureFormat.Bc3Rgba: internalFormat = InternalFormat.CompressedRgbaS3tcDxt5Ext; return true;
+				case CompressedTextureFormat.Bc4R: internalFormat = InternalFormat.CompressedRedRgtc1Ext; return true;
+				case CompressedTextureFormat.Bc5Rg: internalFormat = InternalFormat.CompressedRgRgtc2; return true;
+				case CompressedTextureFormat.Bc7Unorm: internalFormat = InternalFormat.CompressedRgbaBptcUnorm; return true;
+				case CompressedTextureFormat.Bc7Srgb: internalFormat = InternalFormat.CompressedSrgbAlphaBptcUnorm; return true;
+				default: internalFormat = default(InternalFormat); return false;
+			}
+		}
+
+		private static void ApplyTextureParameters(OpenGlTextureWrapMode wrap, InterpolationMode interpolation, int anisotropicFilteringLevel) {
+			switch (interpolation) {
+				case InterpolationMode.NearestNeighbor:
+					GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Nearest);
+					GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMinFilter.Nearest);
+					break;
+				case InterpolationMode.Bilinear:
+					GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Linear);
+					GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMinFilter.Linear);
+					break;
+				case InterpolationMode.NearestNeighborMipmapped:
+					GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.NearestMipmapNearest);
+					GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMinFilter.Nearest);
+					break;
+				case InterpolationMode.BilinearMipmapped:
+					GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.NearestMipmapLinear);
+					GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMinFilter.Linear);
+					break;
+				case InterpolationMode.TrilinearMipmapped:
+					GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.LinearMipmapLinear);
+					GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMinFilter.Linear);
+					break;
+				default:
+					GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.LinearMipmapLinear);
+					GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMinFilter.Linear);
+					break;
+			}
+			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS,
+				(wrap & OpenGlTextureWrapMode.RepeatClamp) != 0 ? (float)TextureWrapMode.Repeat : (float)TextureWrapMode.ClampToEdge);
+			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT,
+				(wrap & OpenGlTextureWrapMode.ClampRepeat) != 0 ? (float)TextureWrapMode.Repeat : (float)TextureWrapMode.ClampToEdge);
+			if (interpolation == InterpolationMode.AnisotropicFiltering && anisotropicFilteringLevel > 0) {
+				GL.TexParameter(TextureTarget.Texture2D, (TextureParameterName)ExtTextureFilterAnisotropic.TextureMaxAnisotropyExt, anisotropicFilteringLevel);
+			}
 		}
 
 		/// <summary>Unloads the specified texture from OpenGL if loaded.</summary>

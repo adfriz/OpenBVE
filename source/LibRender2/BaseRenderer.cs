@@ -429,6 +429,7 @@ namespace LibRender2
 			Fog = new Fog(this);
 			OpenGlString = new OpenGlString(this); //text shader shares the rectangle fragment shader
 			TextureManager = new TextureManager(currentHost, this);
+			TextureManager.InitializeTextureCapabilities();
 			Cube = new Cube(this);
 			Rectangle = new Rectangle(this);
 			Particle = new Particle(this);
