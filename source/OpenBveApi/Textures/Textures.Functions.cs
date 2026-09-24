@@ -16,6 +16,11 @@ namespace OpenBveApi.Textures {
 		/// <exception cref="System.ArgumentException">Raised when the clip region is outside the texture bounds.</exception>
 		/// <exception cref="System.NotSupportedException">Raised when the bits per pixel in the texture is other than 32.</exception>
 		internal static Texture ApplyParameters(Texture texture, TextureParameters parameters) {
+			if (texture.IsCompressed)
+			{
+				if (parameters == null || (parameters.ClipRegion == null && parameters.TransparentColor == null && parameters.TransparencyTexture == null && !parameters.FirstColorTransparent)) return texture;
+				return ApplyParameters(texture.DecodeToRgba(), parameters);
+			}
 			Texture result = texture;
 			if (parameters != null) {
 				if (parameters.ClipRegion != null) {

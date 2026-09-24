@@ -21,6 +21,9 @@ namespace OpenBveApi.Hosts {
 	public abstract partial class HostInterface
 	{
 
+		/// <summary>Returns the compressed texture formats supported by the active renderer.</summary>
+		public virtual TextureCapabilities TextureCapabilities => TextureCapabilities.None;
+
 		/// <summary>Returns whether the current host application is running under Mono</summary>
 		public bool MonoRuntime => Type.GetType("Mono.Runtime") != null;
 

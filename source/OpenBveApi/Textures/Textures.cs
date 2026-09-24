@@ -2,6 +2,7 @@
 
 using System;
 using System.Drawing;
+using System.IO;
 using OpenBveApi.Colors;
 using OpenBveApi.Math;
 
@@ -16,6 +17,14 @@ namespace OpenBveApi.Textures {
 		public readonly PixelFormat PixelFormat;
 		/// <summary>The texture data. Pixels are stored row-based from top to bottom, and within a row from left to right. For 32 bits per pixel, four bytes are used in the order red, green, blue and alpha.</summary>
 		private byte[][] MyBytes;
+		/// <summary>The optional compressed payload retained for native GPU upload.</summary>
+		public CompressedTextureData CompressedData { get; private set; }
+		/// <summary>The explicit decoder used when a compressed texture needs CPU pixels.</summary>
+		public ICompressedTextureDecoder CompressedDecoder { get; private set; }
+		private Texture decodedRgba;
+		private readonly object compressedDecodeLock = new object();
+		/// <summary>Whether this instance contains compressed rather than uncompressed pixel data.</summary>
+		public bool IsCompressed => CompressedData != null;
 		/// <summary>The restricted color palette for this texture, or a null reference if the texture was 24/ 32 bit originally</summary>
 		public readonly Color24[] Palette;
 		/// <summary>The palette for indexed (Paletted) textures as 32-bit colors (includes alpha)</summary>
@@ -61,11 +70,30 @@ namespace OpenBveApi.Textures {
 		}
 
 
+		/// <summary>Explicitly decodes a compressed texture to the existing RGBA representation.</summary>
+		/// <returns>An uncompressed texture containing the base mip.</returns>
+		public Texture DecodeToRgba() {
+			if (!IsCompressed) return this;
+			lock (compressedDecodeLock)
+			{
+				if (decodedRgba != null) return decodedRgba;
+				if (CompressedDecoder == null) throw new NotSupportedException("This compressed texture has no CPU decoder.");
+				byte[] bytes = CompressedDecoder.DecodeToRgba(CompressedData);
+				if (bytes == null || bytes.Length != Width * Height * 4) {
+					throw new InvalidDataException("The compressed texture decoder returned an invalid RGBA buffer.");
+				}
+				decodedRgba = new Texture(Width, Height, PixelFormat.RGBAlpha, bytes, Palette);
+				decodedRgba.Transparency = Transparency;
+				return decodedRgba;
+			}
+		}
+
 		/// <summary>Gets the color of the given pixel</summary>
 		/// <param name="pix">The pixel index</param>
 		/// <param name="frame">The frame</param>
 		public Color24 GetPixel(int pix, int frame = 0)
 		{
+			if (IsCompressed) return DecodeToRgba().GetPixel(pix, 0);
 			if (pix > Size.X * Size.Y)
 			{
 				throw new ArgumentException("Pixel is outside the bounds of the image");
@@ -105,6 +133,7 @@ namespace OpenBveApi.Textures {
 		/// <returns></returns>
 		public byte GetAlpha(int pix, int frame = 0)
 		{
+			if (IsCompressed) return DecodeToRgba().GetAlpha(pix, 0);
 			switch (PixelFormat)
 			{
 				case PixelFormat.Grayscale:
@@ -234,6 +263,27 @@ namespace OpenBveApi.Textures {
 			MyOpenGlTextures[0] = new[] { new OpenGlTexture(), new OpenGlTexture(), new OpenGlTexture(), new OpenGlTexture() };
 		}
 
+		/// <summary>Creates a compressed texture using an opaque default classification.</summary>
+		public Texture(CompressedTextureData data, ICompressedTextureDecoder decoder) : this(data, decoder, TextureTransparencyType.Opaque) { }
+
+		/// <summary>Creates a compressed texture that can be uploaded directly to a supported renderer.</summary>
+		/// <param name="data">The complete compressed mip payload.</param>
+		/// <param name="decoder">The explicit CPU fallback decoder.</param>
+		/// <param name="transparency">The conservative transparency classification.</param>
+		public Texture(CompressedTextureData data, ICompressedTextureDecoder decoder, TextureTransparencyType transparency) {
+			CompressedData = data ?? throw new ArgumentNullException(nameof(data));
+			CompressedDecoder = decoder;
+			Origin = new CompressedOrigin(data, decoder, transparency);
+			Size.X = data.Width;
+			Size.Y = data.Height;
+			PixelFormat = PixelFormat.Invalid;
+			Palette = null;
+			Palette32 = null;
+			Transparency = transparency;
+			MyOpenGlTextures = new OpenGlTexture[1][];
+			MyOpenGlTextures[0] = new[] { new OpenGlTexture(), new OpenGlTexture(), new OpenGlTexture(), new OpenGlTexture() };
+		}
+
 		/// <summary>Creates a new texture.</summary>
 		/// <param name="path">The path to the texture.</param>
 		/// <param name="parameters">The parameters that specify how to process the texture.</param>
@@ -241,10 +291,21 @@ namespace OpenBveApi.Textures {
 		public Texture(string path, TextureParameters parameters, Hosts.HostInterface currentHost)
 		{
 			Origin = new PathOrigin(path, parameters, currentHost);
-			PixelFormat = Origin.GetTexture(out Texture t) ? t.PixelFormat : PixelFormat.Invalid;
+			bool loaded = Origin.GetTexture(out Texture t);
+			PixelFormat = loaded && t != null ? t.PixelFormat : PixelFormat.Invalid;
+			if (loaded && t != null)
+			{
+				Size = t.Size;
+				Transparency = t.Transparency;
+				if (t.IsCompressed)
+				{
+					CompressedData = t.CompressedData;
+					CompressedDecoder = t.CompressedDecoder;
+				}
+			}
 			MyOpenGlTextures = new OpenGlTexture[1][];
 			MyOpenGlTextures[0] = new[] {new OpenGlTexture(), new OpenGlTexture(), new OpenGlTexture(), new OpenGlTexture()};
-			DecodedTexture = PixelFormat == PixelFormat.Invalid ? null : t;
+			DecodedTexture = t != null && (t.PixelFormat != PixelFormat.Invalid || t.IsCompressed) ? t : null;
 		}
 
 		/// <summary>Creates a new texture.</summary>
@@ -270,7 +331,20 @@ namespace OpenBveApi.Textures {
 		/// <param name="texture">The texture raw data.</param>
 		public Texture(Texture texture)
 		{
-			Origin = new RawOrigin(texture);
+			if (texture == null) throw new ArgumentNullException(nameof(texture));
+			if (texture.IsCompressed)
+			{
+				Origin = new CompressedOrigin(texture.CompressedData, texture.CompressedDecoder, texture.Transparency);
+			}
+			else
+			{
+				Origin = new RawOrigin(texture);
+			}
+			Size = texture.Size;
+			PixelFormat = texture.PixelFormat;
+			Transparency = texture.Transparency;
+			CompressedData = texture.CompressedData;
+			CompressedDecoder = texture.CompressedDecoder;
 			MyOpenGlTextures = new OpenGlTexture[1][];
 			MyOpenGlTextures[0] = new[] {new OpenGlTexture(), new OpenGlTexture(), new OpenGlTexture(), new OpenGlTexture()};
 		}
@@ -280,6 +354,15 @@ namespace OpenBveApi.Textures {
 		public Texture(TextureOrigin origin)
 		{
 			Origin = origin;
+			if (origin is CompressedOrigin compressedOrigin)
+			{
+				CompressedData = compressedOrigin.Data;
+				CompressedDecoder = compressedOrigin.Decoder;
+				Size.X = compressedOrigin.Data.Width;
+				Size.Y = compressedOrigin.Data.Height;
+				PixelFormat = PixelFormat.Invalid;
+				Transparency = compressedOrigin.Transparency;
+			}
 			MyOpenGlTextures = new OpenGlTexture[1][];
 			MyOpenGlTextures[0] = new[] {new OpenGlTexture(), new OpenGlTexture(), new OpenGlTexture(), new OpenGlTexture()};
 		}
@@ -317,11 +400,12 @@ namespace OpenBveApi.Textures {
 		/// <summary>Gets the aspect ratio of the texture</summary>
 		public double AspectRatio => Size.X / Size.Y;
 		
-		/// <summary>Gets the texture data. Pixels are stored row-based from top to bottom, and within a row from left to right. For 32 bits per pixel, four bytes are used in the order red, green, blue and alpha.</summary>
+		/// <summary>Gets the texture data. Pixels are stored row-based from top to bottom, and within a row from left to right. For 32 bits per pixel, four bytes are used in the order red, green, blue and alpha. Compressed textures return null; use <see cref="DecodeToRgba"/> explicitly when CPU pixels are required.</summary>
 		public byte[] Bytes
 		{
 			get
 			{
+				if (IsCompressed) return null;
 				if (Origin is StreamingGifOrigin sgo && MultipleFrames)
 				{
 					return sgo.GetFrameBytes(CurrentFrame) ?? MyBytes[0];
@@ -371,6 +455,10 @@ namespace OpenBveApi.Textures {
 			if (ReferenceEquals(a, b)) return true;
 			if (a is null) return false;
 			if (b is null) return false;
+			if (a.IsCompressed || b.IsCompressed)
+			{
+				return a.IsCompressed && b.IsCompressed && ReferenceEquals(a.CompressedData, b.CompressedData) && a.Origin == b.Origin;
+			}
 			if (a.MultipleFrames != b.MultipleFrames) return false;
 			if (a.Origin != b.Origin) return false;
 			if (a.Size != b.Size) return false;
@@ -397,6 +485,10 @@ namespace OpenBveApi.Textures {
 			if (ReferenceEquals(a, b)) return false;
 			if (a is null) return true;
 			if (b is null) return true;
+			if (a.IsCompressed || b.IsCompressed)
+			{
+				return !(a.IsCompressed && b.IsCompressed && ReferenceEquals(a.CompressedData, b.CompressedData) && a.Origin == b.Origin);
+			}
 			if (a.MultipleFrames != b.MultipleFrames) return true;
 			if (a.Origin != b.Origin) return true;
 			if (a.Size != b.Size) return true;
@@ -422,6 +514,10 @@ namespace OpenBveApi.Textures {
 			if (ReferenceEquals(this, obj)) return true;
 			if (obj is null) return false;
 			if (!(obj is Texture x)) return false;
+			if (IsCompressed || x.IsCompressed)
+			{
+				return IsCompressed && x.IsCompressed && ReferenceEquals(CompressedData, x.CompressedData) && Origin == x.Origin;
+			}
 			if (MultipleFrames != x.MultipleFrames) return false;
 			if (Origin != x.Origin) return false;
 			if (Size != x.Size) return false;
@@ -445,6 +541,7 @@ namespace OpenBveApi.Textures {
 		public void ReleaseBytes()
 		{
 			MyBytes = null;
+			decodedRgba = null;
 		}
 
 		/// <summary>Applies the specified parameters onto this texture.</summary>
@@ -454,6 +551,11 @@ namespace OpenBveApi.Textures {
 		/// <exception cref="System.NotSupportedException">Raised when the bits per pixel in the texture is not supported.</exception>
 		public Texture ApplyParameters(TextureParameters parameters)
 		{
+			if (IsCompressed)
+			{
+				if (parameters == null || (parameters.ClipRegion == null && parameters.TransparentColor == null && parameters.TransparencyTexture == null && !parameters.FirstColorTransparent)) return this;
+				return DecodeToRgba().ApplyParameters(parameters);
+			}
 			return Functions.ApplyParameters(this, parameters);
 		}
 
@@ -462,6 +564,7 @@ namespace OpenBveApi.Textures {
 		/// <exception cref="System.NotSupportedException">Raised when the bits per pixel in the texture is not supported.</exception>
 		public TextureTransparencyType GetTransparencyType()
 		{
+			if (IsCompressed) return Transparency;
 			if (knownTransparencyType)
 			{
 				return transparencyType;

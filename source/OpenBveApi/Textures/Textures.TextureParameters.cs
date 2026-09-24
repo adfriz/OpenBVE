@@ -44,6 +44,8 @@ namespace OpenBveApi.Textures
 			if (b is null) return false;
 			if (a.ClipRegion != b.ClipRegion) return false;
 			if (a.TransparentColor != b.TransparentColor) return false;
+			if (!ReferenceEquals(a.TransparencyTexture, b.TransparencyTexture)) return false;
+			if (a.FirstColorTransparent != b.FirstColorTransparent) return false;
 			return true;
 		}
 
@@ -58,6 +60,8 @@ namespace OpenBveApi.Textures
 			if (b is null) return true;
 			if (a.ClipRegion != b.ClipRegion) return true;
 			if (a.TransparentColor != b.TransparentColor) return true;
+			if (!ReferenceEquals(a.TransparencyTexture, b.TransparencyTexture)) return true;
+			if (a.FirstColorTransparent != b.FirstColorTransparent) return true;
 			return false;
 		}
 
@@ -72,6 +76,8 @@ namespace OpenBveApi.Textures
 			TextureParameters x = (TextureParameters) obj;
 			if (ClipRegion != x.ClipRegion) return false;
 			if (TransparentColor != x.TransparentColor) return false;
+			if (!ReferenceEquals(TransparencyTexture, x.TransparencyTexture)) return false;
+			if (FirstColorTransparent != x.FirstColorTransparent) return false;
 			return true;
 		}
 	}

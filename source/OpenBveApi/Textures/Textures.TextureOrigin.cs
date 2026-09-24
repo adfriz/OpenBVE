@@ -46,6 +46,10 @@ namespace OpenBveApi.Textures
 			{
 				return (RawOrigin)a == (RawOrigin)b;
 			}
+			if (a is CompressedOrigin && b is CompressedOrigin)
+			{
+				return (CompressedOrigin)a == (CompressedOrigin)b;
+			}
 			return false;
 		}
 
@@ -84,6 +88,10 @@ namespace OpenBveApi.Textures
 			{
 				return (RawOrigin)a != (RawOrigin)b;
 			}
+			if (a is CompressedOrigin && b is CompressedOrigin)
+			{
+				return (CompressedOrigin)a != (CompressedOrigin)b;
+			}
 			return true;
 		}
 
@@ -120,6 +128,10 @@ namespace OpenBveApi.Textures
 			if (this is RawOrigin && obj is RawOrigin)
 			{
 				return ReferenceEquals(this, obj);
+			}
+			if (this is CompressedOrigin && obj is CompressedOrigin)
+			{
+				return (CompressedOrigin)this == (CompressedOrigin)obj;
 			}
 			return false;
 		}
