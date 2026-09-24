@@ -34,16 +34,23 @@ using System;
 using System.IO;
 using System.Text;
 using OpenBveApi.Colors;
+using OpenBveApi.Textures;
 
 namespace Texture.Dds
 {
-	public class DDSImage
+	public partial class DDSImage
 	{
 		private const long MaxInputBytes = 128L * 1024L * 1024L;
+		private readonly TextureCapabilities capabilities;
 		internal OpenBveApi.Textures.Texture myTexture;
 
 		public DDSImage(byte[] ddsImage)
+			: this(ddsImage, TextureCapabilities.None) {
+		}
+
+		public DDSImage(byte[] ddsImage, TextureCapabilities capabilities)
 		{
+			this.capabilities = capabilities;
 			if (ddsImage == null) return;
 			if (ddsImage.Length == 0) return;
 			using (MemoryStream stream = new MemoryStream(ddsImage, false))
@@ -56,7 +63,12 @@ namespace Texture.Dds
 		}
 
 		public DDSImage(Stream stream)
+			: this(stream, TextureCapabilities.None) {
+		}
+
+		public DDSImage(Stream stream, TextureCapabilities capabilities)
 		{
+			this.capabilities = capabilities;
 			if (stream == null) return;
 			// leaveOpen: the caller owns the stream (e.g. LoadTexture's FileStream).
 			using (BinaryReader reader = new BinaryReader(stream, Encoding.UTF8, true))
@@ -69,7 +81,7 @@ namespace Texture.Dds
 		{
 			DdsHeader header = new DdsHeader(reader);
 			// Depth > 1 (volume) / cubemap arrays: only the first slice is decoded.
-			// Mipmaps: only the top level is decoded (fast + saves memory).
+			// Native-capable hosts read the complete compressed mip chain; CPU fallback uses the top mip.
 			int srcPitch;
 			PixelFormat pixelFormat = GetFormat(header, out srcPitch);
 			if (header.IsDx10)
@@ -79,6 +91,14 @@ namespace Texture.Dds
 				{
 					throw new InvalidDataException("DDS alpha mode is not supported.");
 				}
+			}
+			if (this.CanUseCompressedTexture(header, pixelFormat))
+			{
+				CompressedTextureData compressed = this.ReadCompressedMipChain(reader, header, pixelFormat);
+				myTexture = new OpenBveApi.Textures.Texture(compressed,
+					new DdsCompressedTextureDecoder(this, header, pixelFormat, srcPitch),
+					this.GetCompressedTransparency(header, pixelFormat));
+				return;
 			}
 			byte[] data = this.ReadTopLevelData(reader, header, pixelFormat, srcPitch);
 			if (data == null)

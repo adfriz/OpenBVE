@@ -6,11 +6,13 @@ using OpenBveApi.Textures;
 namespace Texture.Dds {
 	/// <summary>Implements the texture interface.</summary>
 	public class Plugin : TextureInterface {
+		private HostInterface host;
 		// --- functions ---
 		
 		/// <summary>Called when the plugin is loaded.</summary>
 		/// <param name="host">The host that loaded the plugin.</param>
 		public override void Load(HostInterface host) {
+			this.host = host;
 		}
 		
 		/// <summary>Queries the dimensions of a texture.</summary>
@@ -86,10 +88,10 @@ namespace Texture.Dds {
 			texture = null;
 			try
 			{
-				// Read only the top mip to avoid loading all mipmaps and cube faces.
+				// Native-capable hosts receive the full mip chain; other hosts use the top mip.
 				using (FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, FileOptions.SequentialScan))
 				{
-					DDSImage d = new DDSImage(stream);
+					DDSImage d = new DDSImage(stream, host?.TextureCapabilities ?? TextureCapabilities.None);
 					texture = d.myTexture;
 					return texture != null;
 				}

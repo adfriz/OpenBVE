@@ -205,6 +205,21 @@ namespace Texture.Dds
 				depth = rawDepth == 0 ? 1 : ToDimension(rawDepth, "depth");
 			}
 
+			uint normalizedMipCount = mipmapCount == 0 ? 1U : mipmapCount;
+			int maximumMipCount = 1;
+			int mipWidth = width;
+			int mipHeight = height;
+			while (mipWidth > 1 || mipHeight > 1)
+			{
+				mipWidth = mipWidth > 1 ? mipWidth >> 1 : 1;
+				mipHeight = mipHeight > 1 ? mipHeight >> 1 : 1;
+				maximumMipCount++;
+			}
+			if (normalizedMipCount > (uint)maximumMipCount)
+			{
+				throw new InvalidDataException("DDS mip level count is invalid.");
+			}
+
 			// Bound the CPU decoder's working set; output is 32-bit RGBA.
 			long pixels = (long)width * (long)height;
 			if (pixels > MaxPixels || pixels * 4L > int.MaxValue)
@@ -243,5 +258,8 @@ namespace Texture.Dds
 		public const uint DdsAlphaModeOpaque = 3;
 		public const uint DdsAlphaModeCustom = 4;
 		public const uint DdsResourceMiscTextureCube = 0x00000004;
+		public const uint DdsSdLinearSize = 0x00080000;
+		public const uint DdsCaps2Cubemap = 0x00000200;
+		public const uint DdsCaps2Volume = 0x00200000;
 	}
 }

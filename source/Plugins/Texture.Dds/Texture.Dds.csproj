@@ -74,6 +74,9 @@
     <Compile Include="Plugin.Parser.cs">
       <DependentUpon>Plugin.cs</DependentUpon>
     </Compile>
+    <Compile Include="Plugin.Compressed.cs">
+      <DependentUpon>Plugin.cs</DependentUpon>
+    </Compile>
     <Compile Include="Plugin.BC7.cs">
       <DependentUpon>Plugin.cs</DependentUpon>
     </Compile>
