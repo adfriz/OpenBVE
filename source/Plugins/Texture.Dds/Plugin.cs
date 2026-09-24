@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using OpenBveApi.Hosts;
 using OpenBveApi.Textures;
 
@@ -17,11 +18,38 @@ namespace Texture.Dds {
 		/// <param name="width">Receives the width of the texture.</param>
 		/// <param name="height">Receives the height of the texture.</param>
 		/// <returns>Whether querying the dimensions was successful.</returns>
+		/// <remarks>Validates the DDS header and dimensions without reading image data.
+		/// Structure and header fields:
+		/// https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dx-graphics-dds-pguide
+		/// https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dds-header
+		/// </remarks>
 		public override bool QueryTextureDimensions(string path, out int width, out int height) {
-			//QueryDimensionsFromFile(path, out width, out height);
 			width = 0;
 			height = 0;
-			return true;
+			try
+			{
+				using (FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.SequentialScan))
+				{
+					if (stream.Length < 128)
+					{
+						return false;
+					}
+					using (BinaryReader reader = new BinaryReader(stream))
+					{
+						DdsHeader header = new DdsHeader(reader);
+						DDSImage.ValidateHeader(header);
+						width = header.width;
+						height = header.height;
+						return true;
+					}
+				}
+			}
+			catch
+			{
+				width = 0;
+				height = 0;
+				return false;
+			}
 		}
 		
 		/// <summary>Checks whether the plugin can load the specified texture.</summary>
@@ -29,25 +57,24 @@ namespace Texture.Dds {
 		/// <returns>Whether the plugin can load the specified texture.</returns>
 		public override bool CanLoadTexture(string path)
 		{
-			if (File.Exists(path)) {
-				using (Stream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+			if (!File.Exists(path)) return false;
+			try
+			{
+				using (FileStream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.SequentialScan))
 				{
+					if (fileStream.Length < 128) return false;
 					using (BinaryReader reader = new BinaryReader(fileStream))
 					{
-						if (fileStream.Length < 4)
-						{
-							return false;
-						}
-						byte[] signature = reader.ReadBytes(4);
-						if (!(signature[0] == 'D' && signature[1] == 'D' && signature[2] == 'S' && signature[3] == ' '))
-						{
-							return false;
-						}
+						DdsHeader header = new DdsHeader(reader);
+						DDSImage.ValidateHeader(header);
 						return true;
 					}
 				}
 			}
-			return false;
+			catch
+			{
+				return false;
+			}
 		}
 
 		/// <summary>Loads the specified texture.</summary>
@@ -56,9 +83,22 @@ namespace Texture.Dds {
 		/// <returns>Whether loading the texture was successful.</returns>
 		public override bool LoadTexture(string path, out OpenBveApi.Textures.Texture texture)
 		{
-			DDSImage d = new DDSImage(File.ReadAllBytes(path));
-			texture = d.myTexture;
-			return true;
+			texture = null;
+			try
+			{
+				// Read only the top mip to avoid loading all mipmaps and cube faces.
+				using (FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, FileOptions.SequentialScan))
+				{
+					DDSImage d = new DDSImage(stream);
+					texture = d.myTexture;
+					return texture != null;
+				}
+			}
+			catch (Exception)
+			{
+				texture = null;
+				return false;
+			}
 		}
 		
 	}
