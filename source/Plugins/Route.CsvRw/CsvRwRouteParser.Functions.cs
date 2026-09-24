@@ -74,11 +74,12 @@ namespace CsvRwRouteParser
 										{
 											if (Plugin.CurrentHost.LoadTexture(Files[i], null, out Texture texture))
 											{
-												if (texture.PixelFormat == PixelFormat.RGBAlpha)
+												Texture processed = texture.IsCompressed ? texture.DecodeToRgba() : texture;
+												if (processed.PixelFormat == PixelFormat.RGBAlpha)
 												{
-													texture.InvertLightness();
+													processed.InvertLightness();
 												}
-												Plugin.CurrentHost.RegisterTexture(texture, TextureParameters.NoChange, out Textures[j]);
+												Plugin.CurrentHost.RegisterTexture(processed, TextureParameters.NoChange, out Textures[j]);
 											}
 										}
 										else

@@ -24,6 +24,10 @@ using Path = OpenBveApi.Path;
 namespace OpenBve {
 	/// <summary>Represents the host application.</summary>
 	internal class Host : HostInterface {
+		/// <summary>Reports the compressed texture formats supported by the active renderer.</summary>
+		public override TextureCapabilities TextureCapabilities => Program.Renderer == null || Program.Renderer.TextureManager == null
+			? OpenBveApi.Textures.TextureCapabilities.None
+			: Program.Renderer.TextureManager.TextureCapabilities;
 		
 		/// <summary>Reports a problem to the host application.</summary>
 		/// <param name="type">The type of problem that is reported.</param>

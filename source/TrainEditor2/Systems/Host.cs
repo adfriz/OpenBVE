@@ -15,6 +15,11 @@ namespace TrainEditor2.Systems
 	{
 		public Host() : base(HostApplication.TrainEditor2) { }
 
+		/// <summary>Reports the compressed texture formats supported by the active renderer.</summary>
+		public override TextureCapabilities TextureCapabilities => Program.Renderer == null || Program.Renderer.TextureManager == null
+			? OpenBveApi.Textures.TextureCapabilities.None
+			: Program.Renderer.TextureManager.TextureCapabilities;
+
 		// --- texture ---
 
 		public override bool LoadTexture(ref Texture Texture, OpenGlTextureWrapMode wrapMode)
