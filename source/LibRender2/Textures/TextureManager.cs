@@ -976,17 +976,10 @@ namespace LibRender2.Textures
 		public void UnloadUnusedTextures(double TimeElapsed)
 		{
 #if DEBUG
-			//HACK: If when running in debug mode the frame time exceeds 1s, we can assume VS has hit a breakpoint
-			//Don't unload textures in this case, as it just causes texture bugs
+			// Breakpoint in VS stalls the frame: touch everything so nothing unloads by mistake.
 			if (TimeElapsed > 1000)
 			{
-				foreach (var Texture in RegisteredTextures)
-				{
-					if (Texture != null)
-					{
-						Texture.LastAccess = CPreciseTimer.GetClockTicks();
-					}
-				}
+				TouchAllTextures();
 			}
 #endif
 			if (renderer.CurrentInterface == InterfaceType.Normal)
@@ -1004,17 +997,23 @@ namespace LibRender2.Textures
 			}
 			else
 			{
-				//Don't unload textures if we are in a menu/ paused, as they may be required immediately after unpause
+				// Paused or in a menu: textures may be needed right after unpause, so just touch them.
 				lock (TextureLookupLock)
 				{
-					foreach (Texture Texture in RegisteredTextures)
-					{
-						//Texture can be null in certain cases....
-						if (Texture != null)
-						{
-							Texture.LastAccess = CPreciseTimer.GetClockTicks();
-						}
-					}
+					TouchAllTextures();
+				}
+			}
+		}
+
+		// Marks every texture as just-used. Call with TextureLookupLock held, except DEBUG callers.
+		private static void TouchAllTextures()
+		{
+			int now = CPreciseTimer.GetClockTicks();
+			foreach (Texture texture in RegisteredTextures)
+			{
+				if (texture != null)
+				{
+					texture.LastAccess = now;
 				}
 			}
 		}

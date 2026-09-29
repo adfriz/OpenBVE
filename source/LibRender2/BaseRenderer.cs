@@ -589,38 +589,41 @@ namespace LibRender2
 			SetAlphaFunc(AlphaFunction.Greater, 0.9f);
 		}
 
+		// Picks the matrix stack for a mode (throws on bogus modes).
+		private List<Matrix4D> StackFor(MatrixMode Mode)
+		{
+			if (Mode == MatrixMode.Modelview)
+			{
+				return viewMatrixList;
+			}
+			if (Mode == MatrixMode.Projection)
+			{
+				return projectionMatrixList;
+			}
+			throw new ArgumentOutOfRangeException(nameof(Mode), Mode, null);
+		}
+
 		public void PushMatrix(MatrixMode Mode)
 		{
-			switch (Mode)
-			{
-				case MatrixMode.Modelview:
-					viewMatrixList.Add(CurrentViewMatrix);
-					break;
-				case MatrixMode.Projection:
-					projectionMatrixList.Add(CurrentProjectionMatrix);
-					break;
-				default:
-					throw new ArgumentOutOfRangeException(nameof(Mode), Mode, null);
-			}
+			StackFor(Mode).Add(Mode == MatrixMode.Modelview ? CurrentViewMatrix : CurrentProjectionMatrix);
 		}
 
 		public void PopMatrix(MatrixMode Mode)
 		{
-			switch (Mode)
+			List<Matrix4D> stack = StackFor(Mode);
+			Matrix4D top = stack.Last();
+			stack.RemoveAt(stack.Count - 1);
+			if (Mode == MatrixMode.Modelview)
 			{
-				case MatrixMode.Modelview:
-					CurrentViewMatrix = viewMatrixList.Last();
-					viewMatrixList.RemoveAt(viewMatrixList.Count - 1);
-					break;
-				case MatrixMode.Projection:
-					CurrentProjectionMatrix = projectionMatrixList.Last();
-					projectionMatrixList.RemoveAt(projectionMatrixList.Count - 1);
-					break;
-				default:
-					throw new ArgumentOutOfRangeException(nameof(Mode), Mode, null);
+				CurrentViewMatrix = top;
+			}
+			else
+			{
+				CurrentProjectionMatrix = top;
 			}
 		}
 
+		// Drops cached scene data (route reload / reset).
 		public void Reset()
 		{
 			currentHost.ClearAnimatedObjectCache();
