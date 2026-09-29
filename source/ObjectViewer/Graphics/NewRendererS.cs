@@ -7,6 +7,7 @@ using LibRender2;
 using LibRender2.Objects;
 using LibRender2.Primitives;
 using LibRender2.Screens;
+using LibRender2.Shaders;
 using LibRender2.Viewports;
 using OpenBveApi;
 using OpenBveApi.Colors;
@@ -111,8 +112,6 @@ namespace ObjectViewer.Graphics
             if (OptionLighting)
             {
 	            LightRegistry.UploadSun(DefaultShader, TransformedLightPosition, Lighting.OptionAmbientColor, Lighting.OptionDiffuseColor);
-	            LightRegistry.UploadDynamic(DefaultShader, CurrentViewMatrix, Camera.AbsolutePosition);
-	            Clusters.Dispatch();
             }
             DefaultShader.SetTexture(0);
             DefaultShader.SetCurrentProjectionMatrix(CurrentProjectionMatrix);
@@ -130,6 +129,18 @@ List<FaceState> opaqueFaces, alphaFaces;
 				opaqueFaces = VisibleObjects.OpaqueFaces.ToList();
 				alphaFaces = VisibleObjects.GetSortedPolygons();
 			}
+
+			// World faces run clustered when the GPU path delivered, ground above stays classic.
+		bool useClusters = TryUseClusters(out Shader worldShader);
+		if (useClusters)
+		{
+			worldShader.SetTexture(0);
+			worldShader.SetCurrentProjectionMatrix(CurrentProjectionMatrix);
+		}
+		else if (OptionLighting)
+		{
+			LightRegistry.UploadDynamic(DefaultShader, CurrentViewMatrix, Camera.AbsolutePosition);
+		}
 
 			foreach (FaceState face in opaqueFaces)
 			{
@@ -194,6 +205,7 @@ List<FaceState> opaqueFaces, alphaFaces;
 				}
 			}
 
+			RestoreClassic(useClusters);
 			DefaultShader.Deactivate();
 			lastVAO = -1;
 

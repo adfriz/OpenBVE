@@ -221,6 +221,10 @@ namespace LibRender2.Shaders
 				layout.DynamicLightRange[i] = (short)GL.GetUniformLocation(Handle, "uDynamicLights[" + i + "].range");
 				layout.DynamicLightCutoff[i] = (short)GL.GetUniformLocation(Handle, "uDynamicLights[" + i + "].cutoff");
 			}
+			layout.ClusterGrid = (short)GL.GetUniformLocation(Handle, "uClusterGrid");
+			layout.ClusterScreen = (short)GL.GetUniformLocation(Handle, "uClusterScreen");
+			layout.ClusterNear = (short)GL.GetUniformLocation(Handle, "uClusterNear");
+			layout.ClusterFar = (short)GL.GetUniformLocation(Handle, "uClusterFar");
 			return layout;
 		}
 
@@ -367,6 +371,27 @@ namespace LibRender2.Shaders
 			GL.ProgramUniform3(Handle, UniformLayout.DynamicLightColor[index], color.R / 255.0f, color.G / 255.0f, color.B / 255.0f);
 			GL.ProgramUniform1(Handle, UniformLayout.DynamicLightRange[index], range);
 			GL.ProgramUniform1(Handle, UniformLayout.DynamicLightCutoff[index], cutoff);
+		}
+
+		/// <summary>Points the clustered fragment pass at this frame's grid. Skips missing uniforms.</summary>
+		public void SetClusterParams(uint gridX, uint gridY, uint gridZ, uint screenX, uint screenY, float near, float far)
+		{
+			if (UniformLayout.ClusterGrid != -1)
+			{
+				GL.ProgramUniform3(Handle, UniformLayout.ClusterGrid, gridX, gridY, gridZ);
+			}
+			if (UniformLayout.ClusterScreen != -1)
+			{
+				GL.ProgramUniform2(Handle, UniformLayout.ClusterScreen, screenX, screenY);
+			}
+			if (UniformLayout.ClusterNear != -1)
+			{
+				GL.ProgramUniform1(Handle, UniformLayout.ClusterNear, near);
+			}
+			if (UniformLayout.ClusterFar != -1)
+			{
+				GL.ProgramUniform1(Handle, UniformLayout.ClusterFar, far);
+			}
 		}
 
 		public void SetMaterialAmbient(Color32 MaterialAmbient)

@@ -262,5 +262,25 @@ namespace LibRender2
 		/// Handles of "uDynamicLights[i].cutoff" (one per slot)
 		/// </summary>
 		public short[] DynamicLightCutoff;
+
+		/// <summary>
+		/// The handle of "uClusterGrid" (clustered shader only)
+		/// </summary>
+		public short ClusterGrid = -1;
+
+		/// <summary>
+		/// The handle of "uClusterScreen" (clustered shader only)
+		/// </summary>
+		public short ClusterScreen = -1;
+
+		/// <summary>
+		/// The handle of "uClusterNear" (clustered shader only)
+		/// </summary>
+		public short ClusterNear = -1;
+
+		/// <summary>
+		/// The handle of "uClusterFar" (clustered shader only)
+		/// </summary>
+		public short ClusterFar = -1;
 	}
 }

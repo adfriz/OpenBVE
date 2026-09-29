@@ -124,6 +124,7 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="..\..\assets\Shaders\default.frag" />
+    <EmbeddedResource Include="..\..\assets\Shaders\default_cluster.frag" />
     <EmbeddedResource Include="..\..\assets\Shaders\default.vert" />
     <EmbeddedResource Include="..\..\assets\Shaders\light_cull.comp" />
     <EmbeddedResource Include="..\..\assets\Shaders\light_clusters.comp" />

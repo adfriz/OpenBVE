@@ -6,6 +6,7 @@ using System.Windows.Forms;
 using LibRender2;
 using LibRender2.Objects;
 using LibRender2.Screens;
+using LibRender2.Shaders;
 using OpenBveApi;
 using OpenBveApi.Colors;
 using OpenBveApi.FileSystem;
@@ -173,16 +174,16 @@ namespace RouteViewer
             // opaque face
 			
             //Setup the shader for rendering the scene
-            if (OptionLighting)
+            bool useClusters = TryUseClusters(out Shader worldShader);
+            if (OptionLighting && !useClusters)
             {
 	            LightRegistry.UploadSun(DefaultShader, TransformedLightPosition, Lighting.OptionAmbientColor, Lighting.OptionDiffuseColor);
 	            LightRegistry.UploadDynamic(DefaultShader, CurrentViewMatrix, Camera.AbsolutePosition);
-	            Clusters.Dispatch();
             }
 
             Fog.Set();
-            DefaultShader.SetTexture(0);
-            DefaultShader.SetCurrentProjectionMatrix(CurrentProjectionMatrix);
+            worldShader.SetTexture(0);
+            worldShader.SetCurrentProjectionMatrix(CurrentProjectionMatrix);
             ResetOpenGlState();
 			List<FaceState> opaqueFaces, alphaFaces;
 			lock (VisibleObjects.LockObject)
@@ -253,6 +254,8 @@ namespace RouteViewer
 					face.Draw();
 				}
 			}
+
+			RestoreClassic(useClusters);
 
 			if (OptionPaths)
 			{

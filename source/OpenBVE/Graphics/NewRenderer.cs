@@ -196,15 +196,15 @@ namespace OpenBve.Graphics
             // world layer
             // opaque face
             //Setup the shader for rendering the scene
-            if (OptionLighting)
+            bool useClusters = TryUseClusters(out Shader worldShader);
+            if (OptionLighting && !useClusters)
             {
 	            LightRegistry.UploadSun(DefaultShader, TransformedLightPosition, Lighting.OptionAmbientColor, Lighting.OptionDiffuseColor);
 	            LightRegistry.UploadDynamic(DefaultShader, CurrentViewMatrix, Camera.AbsolutePosition);
-	            Clusters.Dispatch();
             }
             Fog.Set();
-            DefaultShader.SetTexture(0);
-            DefaultShader.SetCurrentProjectionMatrix(CurrentProjectionMatrix);
+            worldShader.SetTexture(0);
+            worldShader.SetCurrentProjectionMatrix(CurrentProjectionMatrix);
 
             ResetOpenGlState();
 			List<FaceState> opaqueFaces, alphaFaces, overlayOpaqueFaces, overlayAlphaFaces;
@@ -280,6 +280,7 @@ namespace OpenBve.Graphics
 			}
 
 			// motion blur
+			RestoreClassic(useClusters);
 			ResetOpenGlState();
 			SetAlphaFunc(AlphaFunction.Greater, 0.0f);
 			GL.Disable(EnableCap.DepthTest);

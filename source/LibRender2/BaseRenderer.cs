@@ -165,6 +165,9 @@ namespace LibRender2
 		public AbstractShader CurrentShader;
 
 		public Shader DefaultShader;
+
+		/// <summary>Clustered-forward twin of DefaultShader. Null where GL 4.3+ is missing.</summary>
+		public Shader ClusterShader;
 		
 		/// <summary>Manages the Cascaded Shadow Mapping (CSM) system.</summary>
 		public Shadows Shadows;
@@ -429,6 +432,17 @@ namespace LibRender2
 				currentHost.AddMessage(MessageType.Error, false, "Initializing the default shaders failed.");
 			}
 
+			try
+			{
+				ClusterShader = new Shader(this, "default", "default_cluster", true);
+			}
+			catch
+			{
+				// Optional path: macOS and old drivers stay on the classic shader, quietly.
+				ClusterShader = null;
+				GL.GetError();
+			}
+
             Background = new Background(this);
 			Fog = new Fog(this);
 			OpenGlString = new OpenGlString(this); //text shader shares the rectangle fragment shader
@@ -558,6 +572,35 @@ namespace LibRender2
 
 		/// <summary>Binds cascading shadow data to the default shader.</summary>
 		protected void BindCSMToDefaultShader() => Shadows.Bind(DefaultShader);
+
+		// Picks the program for the world faces: clustered when the GPU path delivered, classic otherwise.
+		protected bool TryUseClusters(out Shader worldShader)
+		{
+			worldShader = DefaultShader;
+			if (!OptionLighting || ClusterShader == null || !Clusters.Dispatch())
+			{
+				return false;
+			}
+			worldShader = ClusterShader;
+			worldShader.Activate();
+			Shadows.Bind(worldShader);
+			LightRegistry.UploadSun(worldShader, TransformedLightPosition, Lighting.OptionAmbientColor, Lighting.OptionDiffuseColor);
+			worldShader.SetDynamicLightCount(0);
+			LightRegistry.InvalidateUploads();
+			worldShader.SetClusterParams((uint)ClusterGrid.GridX, (uint)ClusterGrid.GridY, (uint)ClusterGrid.GridZ, (uint)Screen.Width, (uint)Screen.Height, (float)CurrentNearPlane, (float)CurrentFarPlane);
+			Clusters.BindForShading();
+			return true;
+		}
+
+		// Back to the classic shader after clustered faces.
+		protected void RestoreClassic(bool useClusters)
+		{
+			if (useClusters)
+			{
+				Clusters.UnbindShading();
+				DefaultShader.Activate();
+			}
+		}
 
 		internal PrimitiveType GetPrimitiveType(FaceFlags flags)
 		{
