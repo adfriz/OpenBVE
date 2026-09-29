@@ -113,12 +113,13 @@ namespace LibRender2.Lightings
 			{
 				return computeAvailable;
 			}
-			probed = true;
-			computeAvailable = false;
 			if (renderer == null || renderer.currentHost == null || renderer.currentHost.Platform == HostPlatform.AppleOSX)
 			{
+				// Don't latch: no valid context to probe yet.
 				return false;
 			}
+			probed = true;
+			computeAvailable = false;
 			try
 			{
 				string version = GL.GetString(StringName.Version);
@@ -156,6 +157,7 @@ namespace LibRender2.Lightings
 		private int cachedVersion = -1;
 		private Vector3 cachedCamera;
 		private int cachedMax;
+		private FrustumPlane[] cachedFrustum;
 		private List<SceneLight> cachedSelection = new List<SceneLight>();
 
 		internal LightRegistry(BaseRenderer renderer)
@@ -181,17 +183,31 @@ namespace LibRender2.Lightings
 		/// <summary>Replaces the light at an index (e.g. animated objects each frame).</summary>
 		public void Update(int index, SceneLight light)
 		{
+			if (index < 0 || index >= DynamicLights.Count)
+			{
+				throw new ArgumentOutOfRangeException(nameof(index));
+			}
 			DynamicLights[index] = light;
 			Touch();
 		}
 
-		// Swap-remove: the index of the last light changes. Selection sorts anyway.
+		/// <summary>Swap-removes the light at an index. The last light moves into the gap, so any stored indices for it change.</summary>
 		public void RemoveAt(int index)
 		{
+			if (index < 0 || index >= DynamicLights.Count)
+			{
+				throw new ArgumentOutOfRangeException(nameof(index));
+			}
 			int last = DynamicLights.Count - 1;
 			DynamicLights[index] = DynamicLights[last];
 			DynamicLights.RemoveAt(last);
 			Touch();
+		}
+
+		/// <summary>Drops the cached selection so the next query recomputes (e.g. projection changed).</summary>
+		public void Invalidate()
+		{
+			cachedVersion = -1;
 		}
 
 		public void Clear()
@@ -231,7 +247,7 @@ namespace LibRender2.Lightings
 		// Closest-N lights whose range sphere touches the frustum, priority first.
 		public List<SceneLight> SelectNearest(Vector3 cameraPosition, FrustumPlane[] frustum, int maxCount)
 		{
-			if (version == cachedVersion && cameraPosition == cachedCamera && maxCount == cachedMax)
+			if (version == cachedVersion && cameraPosition == cachedCamera && maxCount == cachedMax && FrustumEquals(cachedFrustum, frustum))
 			{
 				return new List<SceneLight>(cachedSelection);
 			}
@@ -243,8 +259,42 @@ namespace LibRender2.Lightings
 			cachedVersion = version;
 			cachedCamera = cameraPosition;
 			cachedMax = maxCount;
+			cachedFrustum = CloneFrustum(frustum);
 			cachedSelection = selected;
 			return new List<SceneLight>(selected);
+		}
+
+		// Frustum is derived from the view-projection matrix, so camera rotation alone changes it.
+		// Without this check a stationary camera that turns would keep a stale selection.
+		private static bool FrustumEquals(FrustumPlane[] a, FrustumPlane[] b)
+		{
+			if (ReferenceEquals(a, b))
+			{
+				return true;
+			}
+			if (a == null || b == null || a.Length != b.Length)
+			{
+				return false;
+			}
+			for (int i = 0; i < a.Length; i++)
+			{
+				if (a[i].Normal.X != b[i].Normal.X || a[i].Normal.Y != b[i].Normal.Y || a[i].Normal.Z != b[i].Normal.Z || a[i].Distance != b[i].Distance)
+				{
+					return false;
+				}
+			}
+			return true;
+		}
+
+		private static FrustumPlane[] CloneFrustum(FrustumPlane[] frustum)
+		{
+			if (frustum == null)
+			{
+				return null;
+			}
+			FrustumPlane[] copy = new FrustumPlane[frustum.Length];
+			Array.Copy(frustum, copy, frustum.Length);
+			return copy;
 		}
 
 		// Uploads dynamic lights in view space. Sun stays on uLight; this only fills uDynamicLights.

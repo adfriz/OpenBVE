@@ -20,8 +20,9 @@ layout(local_size_x = LOCAL_SIZE, local_size_y = 1, local_size_z = 1) in;
 
 #define CLUSTER_MAX_LIGHTS 100
 
-// Matches DynamicLight in default.vert, in view space. std430-safe: every
-// vec3 is followed by a float, so each pair fills 16 bytes.
+// World-space light data (testSphereAABB applies viewMatrix, so do NOT
+// pre-transform on upload). std430-safe: every vec3 is followed by a
+// float, so each pair fills 16 bytes.
 struct ClusterLight
 {
 	vec3 position;

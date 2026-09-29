@@ -176,6 +176,7 @@ namespace RouteViewer
             if (OptionLighting)
             {
 	            LightRegistry.UploadSun(DefaultShader, TransformedLightPosition, Lighting.OptionAmbientColor, Lighting.OptionDiffuseColor);
+	            LightRegistry.UploadDynamic(DefaultShader, CurrentViewMatrix, Camera.AbsolutePosition);
             }
 
             Fog.Set();
