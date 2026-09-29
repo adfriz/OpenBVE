@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using LibRender2.Shaders;
+using LibRender2.ShadowMapping;
 using OpenBveApi.Math;
 using OpenTK.Graphics.OpenGL;
 
@@ -16,6 +17,13 @@ namespace LibRender2.Lightings
 		private int clusterBuffer;
 		private int lightBuffer;
 		private bool permanentlyDisabled;
+		// Just looked up once, asking the driver every frame wastes GL calls.
+		private int uZNear = -1;
+		private int uZFar = -1;
+		private int uInverseProjection = -1;
+		private int uGridSize = -1;
+		private int uScreenDimensions = -1;
+		private int uViewMatrix = -1;
 
 		/// <summary>True when this frame's dispatch succeeded and the shading pass may read the buffers.</summary>
 		public bool HasValidClusters { get; private set; }
@@ -45,6 +53,12 @@ namespace LibRender2.Lightings
 			{
 				clusterProgram = new ComputeShader("light_clusters");
 				cullProgram = new ComputeShader("light_cull");
+				uZNear = clusterProgram.GetUniformLocation("zNear");
+				uZFar = clusterProgram.GetUniformLocation("zFar");
+				uInverseProjection = clusterProgram.GetUniformLocation("inverseProjection");
+				uGridSize = clusterProgram.GetUniformLocation("gridSize");
+				uScreenDimensions = clusterProgram.GetUniformLocation("screenDimensions");
+				uViewMatrix = cullProgram.GetUniformLocation("viewMatrix");
 				clusterBuffer = GL.GenBuffer();
 				GL.BindBuffer(BufferTarget.ShaderStorageBuffer, clusterBuffer);
 				GL.BufferData(BufferTarget.ShaderStorageBuffer, (IntPtr)(ClusterStride * ClusterGrid.ClusterCount), IntPtr.Zero, BufferUsageHint.DynamicDraw);
@@ -77,9 +91,17 @@ namespace LibRender2.Lightings
 			{
 				return false;
 			}
+			Matrix4D viewMatrix = renderer.CurrentViewMatrix;
+			Matrix4D projection = renderer.CurrentProjectionMatrix;
+			FrustumPlane[] frustum = FrustumUtils.GetFrustumPlanesWorldSpace(viewMatrix * projection);
 			List<ClusterLightData> packed = new List<ClusterLightData>(lights.Count);
 			for (int i = 0; i < lights.Count; i++)
 			{
+				// Outside the frustum no cluster can see it: keep the SSBO (and the cull shader) small.
+				if (!FrustumUtils.SphereVisible(frustum, lights[i].Position, lights[i].Range))
+				{
+					continue;
+				}
 				ClusterLightData data;
 				if (ClusterLightData.TryPack(lights[i], out data))
 				{
@@ -101,24 +123,23 @@ namespace LibRender2.Lightings
 				GL.BindBuffer(BufferTarget.ShaderStorageBuffer, lightBuffer);
 				GL.BufferData(BufferTarget.ShaderStorageBuffer, (IntPtr)(ClusterLightData.Stride * lightArray.Length), lightArray, BufferUsageHint.DynamicDraw);
 
-				Matrix4D projection = renderer.CurrentProjectionMatrix;
 				Matrix4D inverseProjection = Matrix4D.Inverse(projection);
 				uint screenWidth = (uint)Math.Max(renderer.Screen.Width, 1);
 				uint screenHeight = (uint)Math.Max(renderer.Screen.Height, 1);
 
 				clusterProgram.Use();
-				clusterProgram.SetFloat(clusterProgram.GetUniformLocation("zNear"), (float)renderer.CurrentNearPlane);
-				clusterProgram.SetFloat(clusterProgram.GetUniformLocation("zFar"), (float)renderer.CurrentFarPlane);
-				clusterProgram.SetMatrix(clusterProgram.GetUniformLocation("inverseProjection"), inverseProjection);
-				clusterProgram.SetUInt3(clusterProgram.GetUniformLocation("gridSize"), ClusterGrid.GridX, ClusterGrid.GridY, ClusterGrid.GridZ);
-				clusterProgram.SetUInt2(clusterProgram.GetUniformLocation("screenDimensions"), screenWidth, screenHeight);
+				clusterProgram.SetFloat(uZNear, (float)renderer.CurrentNearPlane);
+				clusterProgram.SetFloat(uZFar, (float)renderer.CurrentFarPlane);
+				clusterProgram.SetMatrix(uInverseProjection, inverseProjection);
+				clusterProgram.SetUInt3(uGridSize, ClusterGrid.GridX, ClusterGrid.GridY, ClusterGrid.GridZ);
+				clusterProgram.SetUInt2(uScreenDimensions, screenWidth, screenHeight);
 				GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 1, clusterBuffer);
 				GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 2, lightBuffer);
 				clusterProgram.Dispatch(ClusterGrid.GridX, ClusterGrid.GridY, ClusterGrid.GridZ);
 				GL.MemoryBarrier(MemoryBarrierFlags.ShaderStorageBarrierBit);
 
 				cullProgram.Use();
-				cullProgram.SetMatrix(cullProgram.GetUniformLocation("viewMatrix"), renderer.CurrentViewMatrix);
+				cullProgram.SetMatrix(uViewMatrix, viewMatrix);
 				cullProgram.Dispatch((ClusterGrid.ClusterCount + CullLocalSize - 1) / CullLocalSize, 1, 1);
 				GL.MemoryBarrier(MemoryBarrierFlags.ShaderStorageBarrierBit);
 			}
