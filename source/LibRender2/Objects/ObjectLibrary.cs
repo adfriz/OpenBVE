@@ -14,6 +14,17 @@ using OpenBveApi.Textures;
 
 namespace LibRender2.Objects
 {
+	/// <summary>How visibility updates run (non-QuadTree modes only).</summary>
+	internal enum VisibilityUpdate
+	{
+		/// <summary>Skip it.</summary>
+		None,
+		/// <summary>Normal update.</summary>
+		Normal,
+		/// <summary>Forced update (nudges the camera each way).</summary>
+		Force
+	}
+
 	public class VisibleObjectLibrary
 	{
 		private readonly BaseRenderer renderer;

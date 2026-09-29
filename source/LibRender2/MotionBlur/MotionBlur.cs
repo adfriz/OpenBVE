@@ -3,14 +3,27 @@ using OpenTK.Graphics.OpenGL;
 
 namespace LibRender2.MotionBlurs
 {
+	/// <summary>Motion blur strength.</summary>
+	public enum MotionBlurMode
+	{
+		/// <summary>Off.</summary>
+		None = 0,
+		/// <summary>A little blur.</summary>
+		Low = 1,
+		/// <summary>Middle ground.</summary>
+		Medium = 2,
+		/// <summary>Strong blur.</summary>
+		High = 3
+	}
+
 	public class MotionBlur
 	{
 		private readonly BaseRenderer renderer;
 
-		/// <summary>The pixel buffer used for rendering the motion blur</summary>
-		/// <remarks>Must be static to avoid re-allocating the array memory every frame</remarks>
+		/// <summary>The pixel buffer holding the blurred frame.</summary>
+		/// <remarks>Static so we don't re-allocate it every frame.</remarks>
 		private byte[] PixelBuffer;
-		/// <summary>The OpenGL texture index from which the blurred image is rendered</summary>
+		/// <summary>GL texture the blurred image renders from.</summary>
 		private int PixelBufferOpenGlTextureIndex;
 
 		internal MotionBlur(BaseRenderer renderer)
@@ -18,7 +31,7 @@ namespace LibRender2.MotionBlurs
 			this.renderer = renderer;
 		}
 
-		/// <summary>Initializes motion blur</summary>
+		/// <summary>Sets up motion blur.</summary>
 		public void Initialize(MotionBlurMode mode)
 		{
 			if (mode == MotionBlurMode.None)
@@ -43,7 +56,7 @@ namespace LibRender2.MotionBlurs
 			GL.CopyTexImage2D(TextureTarget.Texture2D, 0, InternalFormat.Rgb, 0, 0, renderer.Screen.Width, renderer.Screen.Height, 0);
 		}
 
-		/// <summary>This function renderers full-screen motion blur if selected</summary>
+		/// <summary>Draws fullscreen motion blur when enabled.</summary>
 		public void RenderFullscreen(MotionBlurMode mode, double frameRate, double speed)
 		{
 			if (renderer.Screen.Minimized || renderer.currentOptions.ForceForwardsCompatibleContext)

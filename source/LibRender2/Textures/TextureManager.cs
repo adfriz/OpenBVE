@@ -14,38 +14,38 @@ using PixelFormat = OpenBveApi.Textures.PixelFormat;
 
 namespace LibRender2.Textures
 {
-	/// <summary>Provides functions for dealing with textures.</summary>
+	/// <summary>Handles texture registration, upload, and cleanup.</summary>
 	public class TextureManager
 	{
 		private readonly HostInterface currentHost;
 
 		private readonly BaseRenderer renderer;
 
-		/// <summary>Holds all currently registered textures.</summary>
+		/// <summary>All registered textures.</summary>
 		public static Texture[] RegisteredTextures;
-		/// <summary>Holds cached texture origins</summary>
+		/// <summary>Decoded textures, keyed by origin.</summary>
 		internal static Dictionary<TextureOrigin, Texture> textureCache = new Dictionary<TextureOrigin, Texture>();
 
-		/// <summary>Total time spent decoding texture files, in milliseconds.</summary>
+		/// <summary>Total ms spent decoding texture files.</summary>
 		public static long TextureDecodeTime;
 
-		/// <summary>Number of texture upload requests handled.</summary>
+		/// <summary>Texture upload requests handled.</summary>
 		public static long UploadCount;
 
-		/// <summary>Time spent in texture upload requests, including cached-handle early exits (ms).</summary>
+		/// <summary>Ms spent in upload requests, including cache hits.</summary>
 		public static long UploadMs;
 
 		private static Dictionary<TextureOrigin, Texture> animatedTextures;
-		// Reused buffer for paletted GIF to avoid per-frame new byte[] leak (Can get StackOverflow in glTexSubImage2D)
+		// Reused buffer for paletted GIF frames (avoids a per-frame allocation).
 		private static byte[] _palettedExpandBuffer;
 		private static readonly object _expandLock = new object();
 
-		/// <summary>Holds the registered path-based textures, indexed by path.</summary>
+		/// <summary>Path-based textures, indexed by path.</summary>
 		private static readonly Dictionary<string, List<Texture>> RegisteredTextureLookup = new Dictionary<string, List<Texture>>(StringComparer.OrdinalIgnoreCase);
 
 		private static readonly object TextureLookupLock = new object();
 
-		/// <summary>Striped locks serializing same-path texture registration.</summary>
+		/// <summary>One lock per path hash, so the same file decodes once.</summary>
 		private static readonly object[] PathRegisterStripes = CreateStripes();
 
 		private static object[] CreateStripes()
@@ -99,24 +99,21 @@ namespace LibRender2.Textures
 			return RegisterTexture(path, null, out handle);
 		}
 
-		/// <summary>Registers a texture and returns a handle to the texture.</summary>
-		/// <param name="path">The path to the texture.</param>
-		/// <param name="parameters">The parameters that specify how to process the texture.</param>
-		/// <param name="handle">Receives a handle to the texture.</param>
-		/// <returns>Whether registering the texture was successful.</returns>
+		/// <summary>Registers a texture from disk.</summary>
+		/// <param name="path">The texture file.</param>
+		/// <param name="parameters">How to process it.</param>
+		/// <param name="handle">The registered handle.</param>
 		public bool RegisterTexture(string path, TextureParameters parameters, out Texture handle)
 		{
 			if (string.IsNullOrEmpty(path) || !File.Exists(path))
 			{
-				// shouldn't happen, but handle gracefully
+				// shouldn't happen, but stay graceful
 				handle = null;
 				return false;
 			}
 
-			// Serialize same-path registration: the decode below runs outside the
-			// global lookup lock, so without this every worker sharing a texture
-			// would decode it concurrently and discard all but one result.
-			// Stripes keep unrelated paths decoding in parallel.
+			// Same file, one decode: co-workers wait on this stripe,
+			// other files still decode in parallel.
 			object stripe = PathRegisterStripes[(uint)path.ToLowerInvariant().GetHashCode() % (uint)PathRegisterStripes.Length];
 			lock (stripe)
 			{
@@ -125,11 +122,10 @@ namespace LibRender2.Textures
 					return true;
 				}
 
-				// Decode outside the global lock (CPU-only, no GL). Same-path
-				// workers wait on the stripe instead of decoding twice.
+				// CPU-only decode, no GL here yet.
 				Texture decoded = new Texture(path, parameters, currentHost);
 
-				// Double-check: a case-variant path may have registered it on another stripe.
+				// A differently-cased path may have beaten us on another stripe.
 				if (TryFindRegisteredTexture(path, parameters, out handle))
 				{
 					return true;
@@ -145,19 +141,12 @@ namespace LibRender2.Textures
 				RegisteredTexturesCount++;
 				handle = RegisteredTextures[idx];
 
-				/*
-				 * Pre-seed the texture cache with the decoded texture (not the handle).
-				 * The handle itself has no decoded bytes, so storing it would cause a null
-				 * reference when the transparency type is subsequently queried.
-				 * */
+				// Cache the decoded bytes, not the empty handle.
 				if (handle.Origin != null && handle.PixelFormat != PixelFormat.Invalid && handle.DecodedTexture != null && !textureCache.ContainsKey(handle.Origin))
 				{
 					textureCache.Add(handle.Origin, handle.DecodedTexture);
 				}
 
-				/*
-				 * Maintain the registration lookup table.
-				 * */
 				if (!RegisteredTextureLookup.TryGetValue(path, out List<Texture> list))
 				{
 					list = new List<Texture>();
@@ -168,7 +157,7 @@ namespace LibRender2.Textures
 			return true;
 		}
 
-		/// <summary>Finds an already-registered texture. Caller must hold the path stripe.</summary>
+		/// <summary>Finds an already-registered texture. Call with the path stripe held.</summary>
 		private static bool TryFindRegisteredTexture(string path, TextureParameters parameters, out Texture handle)
 		{
 			lock (TextureLookupLock)
@@ -177,19 +166,10 @@ namespace LibRender2.Textures
 				{
 					for (int i = 0; i < candidates.Count; i++)
 					{
-						try
+						if (candidates[i].Origin is PathOrigin source && source.Parameters == parameters)
 						{
-							PathOrigin source = candidates[i].Origin as PathOrigin;
-
-							if (source != null && source.Parameters == parameters)
-							{
-								handle = candidates[i];
-								return true;
-							}
-						}
-						catch
-						{
-							// ignored
+							handle = candidates[i];
+							return true;
 						}
 					}
 				}
@@ -198,58 +178,22 @@ namespace LibRender2.Textures
 			return false;
 		}
 
-		/// <summary>Registers a texture and returns a handle to the texture.</summary>
-		/// <param name="texture">The texture data.</param>
-		/// <returns>The handle to the texture.</returns>
-		public Texture RegisterTexture(Texture texture)
-		{
-			/*
-			 * Register the texture and return the newly created handle.
-			 * Locked: shares the index allocator with parallel path registration.
-			 * */
-			lock (TextureLookupLock)
-			{
-				int idx = GetNextFreeTexture();
-				RegisteredTextures[idx] = new Texture(texture);
-				RegisteredTexturesCount++;
-				return RegisteredTextures[idx];
-			}
-		}
+		/// <summary>Registers decoded texture data.</summary>
+		public Texture RegisterTexture(Texture texture) => RegisterCore(() => new Texture(texture));
 
-		/// <summary>Registers a texture and returns a handle to the texture.</summary>
-		/// <param name="bitmap">The bitmap that contains the texture.</param>
-		/// <param name="parameters">The parameters that specify how to process the texture.</param>
-		/// <returns>The handle to the texture.</returns>
-		/// <remarks>Be sure not to dispose of the bitmap after calling this function.</remarks>
-		public Texture RegisterTexture(Bitmap bitmap, TextureParameters parameters)
-		{
-			/*
-			 * Register the texture and return the newly created handle.
-			 * Locked: shares the index allocator with parallel path registration.
-			 * */
-			lock (TextureLookupLock)
-			{
-				int idx = GetNextFreeTexture();
-				RegisteredTextures[idx] = new Texture(bitmap, parameters);
-				RegisteredTexturesCount++;
-				return RegisteredTextures[idx];
-			}
-		}
+		/// <summary>Registers a bitmap. Don't dispose it afterwards.</summary>
+		public Texture RegisterTexture(Bitmap bitmap, TextureParameters parameters) => RegisterCore(() => new Texture(bitmap, parameters));
 
-		/// <summary>Registers a texture and returns a handle to the texture.</summary>
-		/// <param name="bitmap">The bitmap that contains the texture.</param>
-		/// <returns>The handle to the texture.</returns>
-		/// <remarks>Be sure not to dispose of the bitmap after calling this function.</remarks>
-		public Texture RegisterTexture(Bitmap bitmap)
+		/// <summary>Registers a bitmap. Don't dispose it afterwards.</summary>
+		public Texture RegisterTexture(Bitmap bitmap) => RegisterCore(() => new Texture(bitmap));
+
+		// Shared path for the overloads above. Lock: the index allocator is shared.
+		private Texture RegisterCore(Func<Texture> factory)
 		{
-			/*
-			 * Register the texture and return the newly created handle.
-			 * Locked: shares the index allocator with parallel path registration.
-			 * */
 			lock (TextureLookupLock)
 			{
 				int idx = GetNextFreeTexture();
-				RegisteredTextures[idx] = new Texture(bitmap);
+				RegisteredTextures[idx] = factory();
 				RegisteredTexturesCount++;
 				return RegisteredTextures[idx];
 			}
@@ -851,64 +795,39 @@ namespace LibRender2.Textures
 			return false;
 		}
 
-		/// <summary>Unloads the specified texture from OpenGL if loaded.</summary>
-		/// <param name="handle">The handle to the registered texture.</param>
-		/// <param name="preserveUnchangedCache">When true (route/object reload), decoded cache entries whose source file is unchanged are kept so the reloaded scene reuses them instead of decoding again.</param>
-		/// <param name="releaseBytes">When true (route switch), handles are recreated hollow so decoded pixel bytes are also released; they re-decode from disk on demand.</param>
+		/// <summary>Unloads a texture from OpenGL.</summary>
+		/// <param name="preserveUnchangedCache">On reload, keep cache entries whose file didn't change.</param>
+		/// <param name="releaseBytes">On route switch, also drop decoded bytes (re-decodes on demand).</param>
 		public static void UnloadTexture(ref Texture handle, bool preserveUnchangedCache = false, bool releaseBytes = false)
 		{
-			//Null check the texture handle, as otherwise this can cause OpenGL to throw a fit
+			// A bad handle makes OpenGL unhappy, so bail early.
 			if (handle == null)
 			{
 				return;
 			}
 
-		if (handle.MultipleFrames)
-		{
-			// Single GL name design: one pass per frame slot, at least one pass.
-			// (TotalFrames is 0 on re-created handles, which previously skipped deletion
-			// entirely and leaked the live GL names with stale Valid flags.)
+			if (handle.MultipleFrames)
+			{
+			// One pass per frame slot (at least one, even if TotalFrames is 0).
 			int passes = handle.TotalFrames > 0 ? handle.TotalFrames : 1;
 			for (int i = 0; i < passes; i++)
 			{
 				handle.CurrentFrame = i;
-				foreach (OpenGlTexture t in handle.OpenGlTextures)
-				{
-					if (t.Valid)
-					{
-						GL.DeleteTextures(1, new[] { t.Name });
-						t.Valid = false;
-					}
-				}
+				DeleteGlTextures(handle);
 			}
-			/*
-			 * Clone the ref for the search and then re-create the original in the texturemanager array
-			 * This allows it to be re-loaded from disk
-			 */
+			// Re-create the handle so it can reload from disk later.
 			var texture = handle;
-			// Preserve the origin directly so the texture can be re-loaded from disk.
-			// (Do not gate this on animatedTextures.ContainsKey: that cache may already have
-			// been cleared by UnloadAllTextures, which previously produced hollow handles with
-			// a null origin here and killed animated GIFs after a reload / filtering change.)
+			// Keep the origin: without it animated GIFs come back hollow after reload.
 			handle = new Texture(texture.Origin);
 			}
 			else
 			{
-				foreach (OpenGlTexture t in handle.OpenGlTextures)
-				{
-					if (t.Valid)
-					{
-						GL.DeleteTextures(1, new[] { t.Name });
-						t.Valid = false;
-					}
-				}
+				DeleteGlTextures(handle);
 			}
 			handle.Ignore = false;
 			if (handle.Origin != null)
 			{
-				// On reload, keep cache entries whose source file is unchanged: the reloaded
-				// scene reuses the decode instead of decoding the same file again.
-				// (UnloadAllTextures prunes changed files separately below.)
+				// Unchanged files stay cached, so the reloaded scene reuses the decode.
 				if (!preserveUnchangedCache || !TextureFileUnchanged(handle.Origin))
 				{
 					lock (TextureLookupLock)
@@ -918,9 +837,20 @@ namespace LibRender2.Textures
 				}
 				if (releaseBytes)
 				{
-					// Drop decoded pixel bytes pinned by the handle itself
-					// (DecodedTexture is readonly and survives cache clears).
+					// Drop the handle's own pixel bytes; it re-decodes when needed.
 					handle = new Texture(handle.Origin);
+				}
+			}
+		}
+
+		private static void DeleteGlTextures(Texture handle)
+		{
+			foreach (OpenGlTexture t in handle.OpenGlTextures)
+			{
+				if (t.Valid)
+				{
+					GL.DeleteTextures(1, new[] { t.Name });
+					t.Valid = false;
 				}
 			}
 		}
@@ -994,10 +924,7 @@ namespace LibRender2.Textures
 				}
 			}
 
-			/*
-			 * Rebuild the registration lookup table from the surviving textures,
-			 * so that it does not retain handles which have been unloaded.
-			 * */
+			// Drop stale handles from the lookup so it only points at survivors.
 			lock (TextureLookupLock)
 			{
 				RegisteredTextureLookup.Clear();
@@ -1018,13 +945,13 @@ namespace LibRender2.Textures
 
 			if (!currentlyReloading)
 			{
-				// Only force GC on full unload, not on route reload
+				// Full unload only; reloads don't need the GC hit.
 				GC.Collect(0, GCCollectionMode.Optimized);
 			}
 			
 		}
 
-		/// <summary>Checks whether the on-disk source file of the given texture origin is unchanged.</summary>
+		/// <summary>True when the file behind this texture hasn't changed on disk.</summary>
 		internal static bool TextureFileUnchanged(TextureOrigin origin)
 		{
 			if (!(origin is PathOrigin pathOrigin))
@@ -1095,8 +1022,7 @@ namespace LibRender2.Textures
 
 		// --- statistics ---
 
-		/// <summary>Gets the number of registered textures.</summary>
-		/// <returns>The number of registered textures.</returns>
+		/// <summary>How many textures are registered.</summary>
 		public int GetNumberOfRegisteredTextures()
 		{
 			lock (TextureLookupLock)
@@ -1105,35 +1031,19 @@ namespace LibRender2.Textures
 			}
 		}
 
-		/// <summary>Gets the number of loaded textures.</summary>
-		/// <returns>The number of loaded textures.</returns>
-		public int GetNumberOfLoadedTextures()
-		{
-			int count = 0;
+		/// <summary>How many static textures are on the GPU.</summary>
+		public int GetNumberOfLoadedTextures() => CountWhere(t => !t.MultipleFrames);
 
-			Texture[] snapshot = GetRegisteredSnapshot(out int registered);
-			for (int i = 0; i < registered && i < snapshot.Length; i++)
-			{
-				if (snapshot[i] == null || snapshot[i].MultipleFrames)
-				{
-					continue;
-				}
+		/// <summary>How many animated textures are on the GPU.</summary>
+		public int GetNumberOfLoadedAnimatedTextures() => CountWhere(t => t.MultipleFrames);
 
-				if (snapshot[i].OpenGlTextures.Any(t => t.Valid))
-				{
-					count++;
-				}
-			}
-			return count;
-		}
-
-		public int GetNumberOfLoadedAnimatedTextures()
+		private int CountWhere(Func<Texture, bool> predicate)
 		{
 			int count = 0;
 			Texture[] snapshot = GetRegisteredSnapshot(out int registered);
 			for (int i = 0; i < registered && i < snapshot.Length; i++)
 			{
-				if (snapshot[i] == null || snapshot[i].MultipleFrames == false)
+				if (snapshot[i] == null || !predicate(snapshot[i]))
 				{
 					continue;
 				}
@@ -1147,8 +1057,7 @@ namespace LibRender2.Textures
 		}
 
 
-		/// <summary>Gets the next free texture, resizing the base textures array if appropriate</summary>
-		/// <returns>The index of the next free texture</returns>
+		/// <summary>Next free slot, growing the array when full.</summary>
 		private int GetNextFreeTexture()
 		{
 			// Caller must hold TextureLookupLock.

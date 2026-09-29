@@ -47,15 +47,15 @@ namespace LibRender2
 		// constants
 		protected const float inv255 = 1.0f / 255.0f;
 
-		/// <summary>Holds the lock for GDI Plus functions</summary>
+		/// <summary>Lock for GDI+ calls.</summary>
 		public static readonly object GdiPlusLock = new object();
 
-		/// <summary>The callback to the host application</summary>
+		/// <summary>Callback into the host app.</summary>
 		internal HostInterface currentHost;
-		/// <summary>The host filesystem</summary>
+		/// <summary>Host filesystem.</summary>
 		internal FileSystem fileSystem;
 
-		/// <summary>Holds a reference to the current options</summary>
+		/// <summary>Current options.</summary>
 		internal BaseOptions currentOptions;
 
 		public List<ObjectState> StaticObjectStates;
@@ -67,20 +67,19 @@ namespace LibRender2
 		protected int ObjectsSortedByStartPointer;
 		protected int ObjectsSortedByEndPointer;
 		protected internal double LastUpdatedTrackPosition;
-		/// <summary>Whether ReShade is in use</summary>
-		/// <remarks>Don't use OpenGL error checking with ReShade, as this breaks</remarks>
+		/// <summary>True when ReShade is active (skips GL error checks).</summary>
 		public bool ReShadeInUse;
-		/// <summary>A dummy VAO used when working with procedural data within the shader</summary>
+		/// <summary>Scratch VAO for procedural draws.</summary>
 		public VertexArrayObject dummyVao;
 
 		public Screen Screen;
 
-		/// <summary>The track follower for the main camera</summary>
+		/// <summary>Camera position tracker.</summary>
 		public TrackFollower CameraTrackFollower;
 
 		public bool RenderThreadJobWaiting;
 
-		/// <summary>Holds a reference to the current interface type of the game (Used by the renderer)</summary>
+		/// <summary>Current game screen state.</summary>
 		public InterfaceType CurrentInterface
 		{
 			get => currentInterface;
@@ -91,7 +90,7 @@ namespace LibRender2
 			}
 		}
 
-		/// <summary>Gets the scale factor for the current display</summary>
+		/// <summary>Display scale factor (1 on TrainEditor, where SDL2 lookup fails).</summary>
 		public Vector2 ScaleFactor
 		{
 			get
@@ -113,10 +112,10 @@ namespace LibRender2
 
 		private static Vector2 _scaleFactor = new Vector2(-1, -1);
 
-		/// <summary>Holds a reference to the previous interface type of the game</summary>
+		/// <summary>Holds the previous game screen state.</summary>
 		public InterfaceType PreviousInterface => previousInterface;
 
-		//Backing properties for the interface values
+		// Backing fields for the interface state
 		private InterfaceType currentInterface = InterfaceType.Normal;
 		private InterfaceType previousInterface = InterfaceType.Normal;
 
@@ -200,17 +199,13 @@ namespace LibRender2
 
 		private void DisposeNormalsVAOs()
 		{
-			if (StaticObjectStates != null)
+			foreach (var list in new[] { StaticObjectStates, DynamicObjectStates })
 			{
-				foreach (var state in StaticObjectStates)
+				if (list == null)
 				{
-					DisposeNormalsVAO(state);
+					continue;
 				}
-			}
-
-			if (DynamicObjectStates != null)
-			{
-				foreach (var state in DynamicObjectStates)
+				foreach (var state in list)
 				{
 					DisposeNormalsVAO(state);
 				}
@@ -559,41 +554,28 @@ namespace LibRender2
 			}
 		}
 
-		/// <summary>Performs cleanup of disposed resources</summary>
+		/// <summary>Frees GL objects queued for deletion. Lock: the destructor runs on another thread.</summary>
 		public void ReleaseResources()
 		{
 			//Must remember to lock on the lists as the destructor is in a different thread
-			lock (vaoToDelete)
-			{
-				foreach (int VAO in vaoToDelete)
-				{
-					GL.DeleteVertexArray(VAO);
-				}
-				vaoToDelete.Clear();
-			}
+			ReleaseIdList(vaoToDelete, GL.DeleteVertexArray);
+			ReleaseIdList(vboToDelete, GL.DeleteBuffer);
+			ReleaseIdList(iboToDelete, GL.DeleteBuffer);
+		}
 
-			lock (vboToDelete)
+		private static void ReleaseIdList(List<int> list, Action<int> delete)
+		{
+			lock (list)
 			{
-				foreach (int VBO in vboToDelete)
+				foreach (int id in list)
 				{
-					GL.DeleteBuffer(VBO);
+					delete(id);
 				}
-				vboToDelete.Clear();
-			}
-
-			lock (iboToDelete)
-			{
-				foreach (int IBO in iboToDelete)
-				{
-					GL.DeleteBuffer(IBO);
-				}
-				iboToDelete.Clear();
+				list.Clear();
 			}
 		}
 
-		/// <summary>
-		/// Performs a reset of OpenGL to the default state
-		/// </summary>
+		/// <summary>Restores default OpenGL state.</summary>
 		public virtual void ResetOpenGlState()
 		{
 			GL.Enable(EnableCap.CullFace);
@@ -1014,7 +996,7 @@ namespace LibRender2
 			double a0 = c - 0.5 * Camera.HorizontalViewingAngle;
 			double a1 = c + 0.5 * Camera.HorizontalViewingAngle;
 			double max;
-			if (a0 <= 0.0 & a1 >= 0.0)
+			if (a0 <= 0.0 && a1 >= 0.0)
 			{
 				max = 1.0;
 			}
@@ -1022,12 +1004,11 @@ namespace LibRender2
 			{
 				double c0 = Math.Cos(a0);
 				double c1 = Math.Cos(a1);
-				max = c0 > c1 ? c0 : c1;
-				if (max < 0.0) max = 0.0;
+				max = Math.Max(Math.Max(c0, c1), 0.0);
 			}
 
 			double min;
-			if (a0 <= -Math.PI | a1 >= Math.PI)
+			if (a0 <= -Math.PI || a1 >= Math.PI)
 			{
 				min = -1.0;
 			}
@@ -1035,8 +1016,7 @@ namespace LibRender2
 			{
 				double c0 = Math.Cos(a0);
 				double c1 = Math.Cos(a1);
-				min = c0 < c1 ? c0 : c1;
-				if (min > 0.0) min = 0.0;
+				min = Math.Min(Math.Min(c0, c1), 0.0);
 			}
 
 			double d = backgroundImageDistance + Camera.ExtraViewingDistance;
@@ -1078,15 +1058,10 @@ namespace LibRender2
 
 			foreach (string extension in Extensions)
 			{
-				if (string.Compare(extension, "GL_EXT_texture_filter_anisotropic", StringComparison.OrdinalIgnoreCase) == 0)
+				if (extension.Equals("GL_EXT_texture_filter_anisotropic", StringComparison.OrdinalIgnoreCase))
 				{
 					float n = GL.GetFloat((GetPName)ExtTextureFilterAnisotropic.MaxTextureMaxAnisotropyExt);
-					int MaxAF = (int)Math.Round(n);
-
-					if (MaxAF != currentOptions.AnisotropicFilteringMaximum)
-					{
-						currentOptions.AnisotropicFilteringMaximum = (int)Math.Round(n);
-					}
+					currentOptions.AnisotropicFilteringMaximum = (int)Math.Round(n);
 					break;
 				}
 			}
@@ -1096,7 +1071,7 @@ namespace LibRender2
 				currentOptions.AnisotropicFilteringMaximum = 0;
 				currentOptions.AnisotropicFilteringLevel = 0;
 			}
-			else if (currentOptions.AnisotropicFilteringLevel == 0 & currentOptions.AnisotropicFilteringMaximum > 0)
+			else if (currentOptions.AnisotropicFilteringLevel == 0 && currentOptions.AnisotropicFilteringMaximum > 0)
 			{
 				currentOptions.AnisotropicFilteringLevel = currentOptions.AnisotropicFilteringMaximum;
 			}
@@ -1173,10 +1148,7 @@ namespace LibRender2
 			shader.SetAlphaTest(false);
 		}
 
-		public void SetBlendFunc()
-		{
-			SetBlendFunc(blendSrcFactor, blendDestFactor);
-		}
+		public void SetBlendFunc() => SetBlendFunc(blendSrcFactor, blendDestFactor);
 
 		public void SetBlendFunc(BlendingFactor srcFactor, BlendingFactor destFactor)
 		{
@@ -1207,10 +1179,7 @@ namespace LibRender2
 		}
 
 		/// <summary>Specifies the OpenGL alpha function to perform</summary>
-		public void SetAlphaFunc()
-		{
-			SetAlphaFunc(alphaFuncComparison, alphaFuncValue);
-		}
+		public void SetAlphaFunc() => SetAlphaFunc(alphaFuncComparison, alphaFuncValue);
 
 		/// <summary>Specifies the OpenGL alpha function to perform</summary>
 		/// <param name="comparison">The comparison to use</param>

@@ -5,15 +5,36 @@ using OpenBveApi.Textures;
 
 namespace LibRender2.Text
 {
-	/// <summary>Represents a font.</summary>
+	/// <summary>One rendered character.</summary>
+	public struct OpenGlFontChar
+	{
+		/// <summary>Where it lives in the atlas texture.</summary>
+		public Vector4 TextureCoordinates;
+		/// <summary>Size on screen.</summary>
+		public Vector2 PhysicalSize;
+		/// <summary>Size for measuring text.</summary>
+		public Vector2 TypographicSize;
+
+		/// <summary>Creates a character.</summary>
+		/// <param name="textureCoordinates">The texture coordinates that represent the character in the underlying texture.</param>
+		/// <param name="physicalSize">The physical size of the character.</param>
+		/// <param name="typographicSize">The typographic size of the character.</param>
+		public OpenGlFontChar(Vector4 textureCoordinates, Vector2 physicalSize, Vector2 typographicSize)
+		{
+			TextureCoordinates = textureCoordinates;
+			PhysicalSize = physicalSize;
+			TypographicSize = typographicSize;
+		}
+	}
+
+	/// <summary>A usable font.</summary>
 	public sealed class OpenGlFont : IDisposable
 	{
-		// --- members ---
-		/// <summary>The underlying font.</summary>
+		/// <summary>The GDI+ font.</summary>
 		public readonly Font Font;
-		/// <summary>The size of the underlying font in pixels.</summary>
+		/// <summary>Font size in pixels.</summary>
 		public readonly float FontSize;
-		/// <summary>The 4352 tables containing 256 character each to make up 1114112 code points (U+0000...U+10FFFF).</summary>
+		/// <summary>4352 tables x 256 chars covering U+0000 to U+10FFFF.</summary>
 		private readonly OpenGlFontTable[] Tables;
 
 		private readonly StringFormat Default;
@@ -36,11 +57,11 @@ namespace LibRender2.Text
 		}
 
 		// --- functions ---
-		/// <summary>Gets data associated with the specified codepoint.</summary>
-		/// <param name="text">The string containing the codepoint.</param>
-		/// <param name="offset">The offset at which to read the codepoint. For surrogate pairs, two characters are read, and one otherwise.</param>
-		/// <param name="texture">Receives the texture that contains the codepoint.</param>
-		/// <param name="data">Receives the data that describes the codepoint.</param>
+		/// <summary>Reads one codepoint (1-2 chars for surrogate pairs).</summary>
+		/// <param name="text">Source string.</param>
+		/// <param name="offset">Where to read.</param>
+		/// <param name="texture">Atlas holding the codepoint.</param>
+		/// <param name="data">Character data.</param>
 		/// <returns>The number of characters read.</returns>
 		public int GetCharacterData(string text, int offset, out Texture texture, out OpenGlFontChar data)
 		{
@@ -61,9 +82,7 @@ namespace LibRender2.Text
 			return value >= 0x10000 ? 2 : 1;
 		}
 
-		/// <summary>Measures the size of a string as it would be rendered using this font.</summary>
-		/// <param name="text">The string to render.</param>
-		/// <returns>The size of the string.</returns>
+		/// <summary>Measures text as rendered.</summary>
 		public Vector2 MeasureString(string text)
 		{
 			double width = 0;

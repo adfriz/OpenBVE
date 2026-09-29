@@ -1,4 +1,4 @@
-﻿//Simplified BSD License (BSD-2-Clause)
+//Simplified BSD License (BSD-2-Clause)
 //
 //Copyright (c) 2024, Maurizo M. Gavioli, The OpenBVE Project
 //
@@ -25,6 +25,59 @@
 // ReSharper disable UnusedMember.Global
 namespace LibRender2.Menu
 {
+	/// <summary>The list of possible sub-menu types</summary>
+	public enum MenuType
+	{
+		/// <summary>Not a sub menu</summary>
+		None,
+		/// <summary>Returns to the menu level above</summary>
+		Top,
+		/// <summary>The station jump menu</summary>
+		JumpToStation,
+		/// <summary>Returns to the main menu</summary>
+		ExitToMainMenu,
+		/// <summary>Provides a list of controls and allows customisation whilst in-game</summary>
+		Controls,
+		/// <summary>Customises the specified control</summary>
+		Control,
+		/// <summary>Resets the controls to default</summary>
+		ControlReset,
+		/// <summary>Provides a list of tools</summary>
+		Tools,
+		/// <summary>Quits the game</summary>
+		Quit,
+		/// <summary>The game start menu</summary>
+		GameStart = 100,
+		/// <summary>Displays a list of routefiles</summary>
+		RouteList,
+		/// <summary>Asks whether the user wishes to use the default train</summary>
+		TrainDefault,
+		/// <summary>Displays a list of train folders</summary>
+		TrainList,
+		/// <summary>Displays the packages sub-menu</summary>
+		Packages,
+		/// <summary>Displays the package installation dialog</summary>
+		PackageInstall,
+		/// <summary>Displays the package uninstall sub-menu</summary>
+		PackageUninstall,
+		/// <summary>Uninstalls a route</summary>
+		UninstallRoute,
+		/// <summary>Uninstalls a train</summary>
+		UninstallTrain,
+		/// <summary>Uninstalls anything else</summary>
+		UninstallOther,
+		/// <summary>The options menu</summary>
+		Options,
+		/// <summary>A menu allowing switch settings to be changed</summary>
+		ChangeSwitch,
+		/// <summary>Displays a list of object files</summary>
+		ObjectList,
+		/// <summary>Displays the current list of errors</summary>
+		ErrorList,
+		/// <summary>Shows an error</summary>
+		Error
+	}
+
 	/// <summary>The list of possible tags for a menu entry- These define the functionality of a given menu entry</summary>
 	public enum MenuTag
 	{
@@ -112,5 +165,44 @@ namespace LibRender2.Menu
 		ObjectFile,
 		/// <summary>Shows the list of current errors</summary>
 		ErrorList
+	}
+
+	/// <summary>The type of menu option</summary>
+	public enum OptionType
+	{
+		/// <summary>Sets the screen resolution</summary>
+		ScreenResolution,
+		/// <summary>Sets the viewing distance</summary>
+		ViewingDistance,
+		/// <summary>Toggles full-screen mode</summary>
+		FullScreen,
+		/// <summary>Sets the interpolation level</summary>
+		Interpolation,
+		/// <summary>Sets the anisotropic filtering level</summary>
+		AnisotropicLevel,
+		/// <summary>Sets the antialiasing level</summary>
+		AntialiasingLevel,
+		/// <summary>Sets the UI scale factor</summary>
+		UIScaleFactor,
+		/// <summary>Sets the total number of valid sounds</summary>
+		NumberOfSounds,
+		/// <summary>Sets whether to automatically reload the current objects</summary>
+		AutoReloadObjects,
+		/// <summary>Sets the shadow quality</summary>
+		ShadowQuality,
+		/// <summary>Sets whether shadow casters are filtered per cascade</summary>
+		ShadowFilterCascades
+	}
+
+	public enum RouteState
+	{
+		/// <summary>No routefile is currently selected</summary>
+		NoneSelected,
+		/// <summary>The background thread is currently loading the routefile data</summary>
+		Loading,
+		/// <summary>The background thread has processed the route data</summary>
+		Processed,
+		/// <summary>An error was encountered loading the route data</summary>
+		Error
 	}
 }

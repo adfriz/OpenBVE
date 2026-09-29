@@ -7,24 +7,38 @@ using OpenBveApi.World;
 
 namespace LibRender2.Trains
 {
-	/// <summary>An animated object attached to a car (Exterior, cab etc.)</summary>
+	/// <summary>What kind of car interior object this is.</summary>
+	public enum CarSectionType
+	{
+		/// <summary>Hidden.</summary>
+		NotVisible = -1,
+		/// <summary>Interior (overlay mode).</summary>
+		Interior = 0,
+		/// <summary>Exterior (world object).</summary>
+		Exterior = 1,
+		/// <summary>Left head-out view (overlay).</summary>
+		HeadOutLeft = 2,
+		/// <summary>Right head-out view (overlay).</summary>
+		HeadOutRight = 3
+	}
+
+	/// <summary>An animated object attached to a car (exterior, cab, ...).</summary>
 	public class CarSection
 	{
-		/// <summary>Holds a reference to the current host</summary>
+		/// <summary>Host callback.</summary>
 		private readonly HostInterface currentHost;
-		/// <summary>The groups of animated objects</summary>
+		/// <summary>Animated object groups.</summary>
 		public ElementsGroup[] Groups;
-		/// <summary>The current additional group (touch etc.)</summary>
+		/// <summary>Current extra group (touch etc.).</summary>
 		public int CurrentAdditionalGroup;
-		/// <summary>Whether this is visible from internal views</summary>
+		/// <summary>Visible from inside.</summary>
 		public readonly bool VisibleFromInterior;
-		/// <summary>Whether this is to be shown in overlay mode (e.g. panel)</summary>
+		/// <summary>Shown in overlay mode (e.g. panel).</summary>
 		public readonly ObjectType Type;
-		/// <summary>If an interior view, the transformation to be used</summary>
-		/// <remarks>Allows rotation of a 2D panel etc.</remarks>
+		/// <summary>View direction for interior views (allows rotating a 2D panel).</summary>
 		public Vector3 ViewDirection;
 
-		/// <summary>Creates a new CarSection</summary>
+		/// <summary>Creates a car section.</summary>
 		/// <param name="Host">The host</param>
 		/// <param name="ObjectType">The object type</param>
 		/// <param name="visibleFromInterior">Whether the object is visible from the interior</param>
@@ -80,7 +94,7 @@ namespace LibRender2.Trains
 			}
 		}
 
-		/// <summary>Appends an object to the CarSection</summary>
+		/// <summary>Appends an object to the section.</summary>
 		/// <param name="Host">The host</param>
 		/// <param name="objectPosition">The relative position of the object to add</param>
 		/// <param name="baseCar">The base car</param>

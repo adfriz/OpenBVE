@@ -26,14 +26,14 @@ using OpenBveApi.Textures;
 
 namespace LibRender2.Menu
 {
-	/// <summary>The base abstract Menu Entry class</summary>
+	/// <summary>Base class for menu rows.</summary>
 	public abstract class MenuEntry
 	{
-		/// <summary>Holds a reference to the containing base menu</summary>
+		/// <summary>The menu owning this entry.</summary>
 		public readonly AbstractMenu BaseMenu;
-		/// <summary>The base text of the menu entry</summary>
+		/// <summary>Full text.</summary>
 		public string Text;
-		/// <summary>The display text of the menu entry</summary>
+		/// <summary>Visible text, scrolls when too long.</summary>
 		public string DisplayText(double TimeElapsed)
 		{
 			if (DisplayLength == 0)
@@ -63,11 +63,11 @@ namespace LibRender2.Menu
 			}
 			return _displayText;
 		}
-		/// <summary>Backing property for display text</summary>
+		/// <summary>Backing text for scrolling.</summary>
 		private string _displayText;
-		/// <summary>Backing property for display length</summary>
+		/// <summary>Visible length.</summary>
 		private int _displayLength;
-		/// <summary>The length to display</summary>
+		/// <summary>Visible length (resets the scroll).</summary>
 		public int DisplayLength
 		{
 			get => _displayLength;
@@ -78,9 +78,9 @@ namespace LibRender2.Menu
 				timer = 0;
 			}
 		}
-		/// <summary>The icon to draw for this menu entry</summary>
+		/// <summary>Icon drawn next to the entry.</summary>
 		public Texture Icon;
-		//Properties used for controlling the scrolling text if overlong
+		// Scroll state for overlong text.
 		private double timer;
 		private int scroll;
 		private bool pause;
@@ -90,5 +90,21 @@ namespace LibRender2.Menu
 			BaseMenu = menu;
 		}
 
+	}
+	/// <summary>A header line at the top of the menu.</summary>
+	public class MenuCaption : MenuEntry
+	{
+		public MenuCaption(AbstractMenu menu, string Text) : base(menu)
+		{
+			this.Text = Text;
+		}
+	}
+	/// <summary>An error line shown in the menu.</summary>
+	public class MenuErrorDisplay : MenuEntry
+	{
+		public MenuErrorDisplay(AbstractMenu menu, string Text) : base(menu)
+		{
+			this.Text = Text;
+		}
 	}
 }

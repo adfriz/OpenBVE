@@ -2,6 +2,15 @@
 
 namespace LibRender2.Smoke
 {
+	/// <summary>Particle flavor (picks the default texture).</summary>
+	public enum ParticleType
+	{
+		/// <summary>Smoke puff.</summary>
+		Smoke,
+		/// <summary>Steam puff.</summary>
+		Steam,
+	}
+
 	internal class Particle
 	{
 		internal Vector3 Position;
