@@ -1,19 +1,19 @@
 ﻿using OpenBveApi.Math;
 
-namespace LibRender2.Camera
+namespace LibRender2.Cameras
 {
 	public struct CameraRestriction
 	{
-		/// <summary>The absolute bottom left vector</summary>
+		/// <summary>Absolute bottom-left corner.</summary>
 		public Vector3 AbsoluteBottomLeft;
-		/// <summary>The absolute top right vector</summary>
+		/// <summary>Absolute top-right corner.</summary>
 		public Vector3 AbsoluteTopRight;
-		/// <summary>The relative bottom left vector</summary>
+		/// <summary>Relative bottom-left corner.</summary>
 		public Vector3 BottomLeft;
-		/// <summary>The relative top right vector</summary>
+		/// <summary>Relative top-right corner.</summary>
 		public Vector3 TopRight;
 
-		/// <summary>Reverses the camera restriction</summary>
+		/// <summary>Rotates the restriction 180 degrees.</summary>
 		public void Reverse()
 		{
 			AbsoluteBottomLeft.Rotate(Vector3.Forward, 3.14159);

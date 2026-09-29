@@ -1,5 +1,5 @@
 using System;
-using LibRender2.Camera;
+using LibRender2.Cameras;
 using LibRender2.Viewports;
 using OpenBveApi.Graphics;
 using OpenBveApi.Interface;
@@ -13,26 +13,26 @@ namespace LibRender2.Cameras
 	public class CameraProperties
 	{
 		private readonly BaseRenderer Renderer;
-		/// <summary>The current viewing distance in the forward direction.</summary>
+		/// <summary>How far we see forward.</summary>
 		public double ForwardViewingDistance;
-		/// <summary>The current viewing distance in the backward direction.</summary>
+		/// <summary>How far we see backward.</summary>
 		public double BackwardViewingDistance;
-		/// <summary>The current viewing distance</summary>
+		/// <summary>Viewing distance in use.</summary>
 		public double ViewingDistance => Math.Max(ForwardViewingDistance, BackwardViewingDistance);
 
-		/// <summary>The extra viewing distance used for determining visibility of animated objects.</summary>
+		/// <summary>Extra distance for animated-object visibility.</summary>
 		public double ExtraViewingDistance;
-		/// <summary>Whether the camera has reached the end of the world</summary>
+		/// <summary>True at the end of the world.</summary>
 		public bool AtWorldEnd;
-		/// <summary>The current horizontal viewing angle in radians</summary>
+		/// <summary>Horizontal FOV in radians.</summary>
 		public double HorizontalViewingAngle;
-		/// <summary>The current vertical viewing angle in radians</summary>
+		/// <summary>Vertical FOV in radians.</summary>
 		public double VerticalViewingAngle;
-		/// <summary>The original vertical viewing angle in radians</summary>
+		/// <summary>Unzoomed vertical FOV in radians.</summary>
 		public double OriginalVerticalViewingAngle;
-		/// <summary>A Matrix4D describing the current camera translation</summary>
+		/// <summary>Current camera translation.</summary>
 		public Matrix4D TranslationMatrix;
-		/// <summary>The absolute in-world camera position</summary>
+		/// <summary>Camera position in the world.</summary>
 		public Vector3 AbsolutePosition
 		{
 			get => absolutePosition;
@@ -47,15 +47,15 @@ namespace LibRender2.Cameras
 				TranslationMatrix = Matrix4D.CreateTranslation(-value.X, -value.Y, value.Z);
 			}
 		}
-		/// <summary>The absolute in-world camera Direction vector</summary>
+		/// <summary>Camera facing in the world.</summary>
 		public Vector3 AbsoluteDirection;
-		/// <summary>The absolute in-world camera Up vector</summary>
+		/// <summary>Camera up in the world.</summary>
 		public Vector3 AbsoluteUp;
-		/// <summary>The absolute in-world camera Side vector</summary>
+		/// <summary>Camera sideways in the world.</summary>
 		public Vector3 AbsoluteSide;
-		/// <summary>The current relative camera alignment</summary>
+		/// <summary>Camera offset from its base.</summary>
 		public CameraAlignment Alignment;
-		/// <summary>The current relative camera Direction</summary>
+		/// <summary>Where the camera is heading (resets visibility).</summary>
 		public CameraAlignment AlignmentDirection
 		{
 			get => alignmentDirection;
@@ -65,22 +65,22 @@ namespace LibRender2.Cameras
 				alignmentDirection = value;
 			}
 		}
-		/// <summary>The current relative camera Speed</summary>
+		/// <summary>Camera drift speed.</summary>
 		public CameraAlignment AlignmentSpeed;
-		/// <summary>The current camera movement speed</summary>
+		/// <summary>Current movement speed.</summary>
 		public double CurrentSpeed;
-		/// <summary>The top speed when moving in a straight line in an interior view</summary>
+		/// <summary>Top straight-line speed indoors.</summary>
 		public const double InteriorTopSpeed = 5.0;
-		/// <summary>The top speed when moving at an angle in an interior view</summary>
+		/// <summary>Top turning speed indoors.</summary>
 		public const double InteriorTopAngularSpeed = 5.0;
-		/// <summary>The top speed when moving in a straight line in an exterior view</summary>
+		/// <summary>Top straight-line speed outdoors.</summary>
 		public const double ExteriorTopSpeed = 50.0;
-		/// <summary>The top speed when moving in an angle in an exterior view</summary>
+		/// <summary>Top turning speed outdoors.</summary>
 		public const double ExteriorTopAngularSpeed = 10.0;
-		/// <summary>The top speed when zooming in or out</summary>
+		/// <summary>Top zoom speed.</summary>
 		public const double ZoomTopSpeed = 2.0;
 
-		/// <summary>The current camera mode</summary>
+		/// <summary>Current camera mode.</summary>
 		public CameraViewMode CurrentMode
 		{
 			get => currentMode;
@@ -94,28 +94,28 @@ namespace LibRender2.Cameras
 				Renderer.UpdateVisibility(true);
 			}
 		}
-		/// <summary>The current camera restriction mode</summary>
+		/// <summary>Current restriction mode.</summary>
 		public CameraRestrictionMode CurrentRestriction = CameraRestrictionMode.NotAvailable;
-		/// <summary>The saved exterior camera alignment</summary>
+		/// <summary>Parked exterior alignment.</summary>
 		public CameraAlignment SavedExterior;
-		/// <summary>The saved track camera alignment</summary>
+		/// <summary>Parked track alignment.</summary>
 		public CameraAlignment SavedTrack;
-		/// <summary>The current quad tree leaf node</summary>
+		/// <summary>Current quad-tree leaf.</summary>
 		public QuadTreeLeafNode QuadTreeLeaf;
 
-		/// <summary>The target camera car index for queued transitions</summary>
+		/// <summary>Queued car index for transitions.</summary>
 		public int TargetCameraCar = -1;
-		/// <summary>The previous camera car index (used for transitions)</summary>
+		/// <summary>Previous car index.</summary>
 		public int PreviousCameraCar = -1;
-		/// <summary>The current transition timer</summary>
+		/// <summary>Car transition timer.</summary>
 		public double CameraCarTransitionTimer = 0.0;
-		/// <summary>Whether the camera is transitioning between cars</summary>
+		/// <summary>Mid-transition between cars.</summary>
 		public bool IsTransitioning = false;
-		/// <summary>The start anchor for mode transitions (fly-in)</summary>
+		/// <summary>Fly-in start pose.</summary>
 		public (Vector3 Position, Vector3 Direction, Vector3 Up, Vector3 Side, double TrackPosition, CameraAlignment Alignment) ModeTransitionStart;
-		/// <summary>The timer for mode transitions (fly-in)</summary>
+		/// <summary>Fly-in timer.</summary>
 		public double ModeTransitionTimer = 1.0;
-		/// <summary>The duration of the camera car transition in seconds</summary>
+		/// <summary>Car transition length in seconds.</summary>
 		public const double CameraCarTransitionDuration = 0.4;
 		
 		private Vector3 absolutePosition;
@@ -130,7 +130,7 @@ namespace LibRender2.Cameras
 			AlignmentSpeed = new CameraAlignment();
 		}
 
-		/// <summary>Tests whether the camera may move further in the current direction</summary>
+		/// <summary>May the camera move further this way?</summary>
 		public bool PerformRestrictionTest(CameraRestriction Restriction)
 		{
 			if (CurrentRestriction == CameraRestrictionMode.On)
@@ -231,7 +231,7 @@ namespace LibRender2.Cameras
 			return true;
 		}
 
-		/// <summary>Performs progressive adjustments taking into account the specified camera restriction</summary>
+		/// <summary>Eases toward a target without breaking the restriction (bisection).</summary>
 		public bool PerformProgressiveAdjustmentForCameraRestriction(ref double Source, double Target, bool Zoom, CameraRestriction Restriction)
 		{
 			if ((CurrentMode != CameraViewMode.Interior && CurrentMode != CameraViewMode.InteriorLookAhead) || (CurrentRestriction != CameraRestrictionMode.On && CurrentRestriction != CameraRestrictionMode.Restricted3D))
@@ -286,7 +286,7 @@ namespace LibRender2.Cameras
 			AdjustAlignment(ref Source.Z, Direction.Z, ref Speed.Z, TimeElapsed, Zoom, Restriction);
 		}
 
-		/// <summary>Adjusts the camera alignment based upon the specified parameters</summary>
+		/// <summary>Moves camera alignment toward its direction.</summary>
 		public void AdjustAlignment(ref double Source, double Direction, ref double Speed, double TimeElapsed, bool Zoom = false, CameraRestriction? Restriction = null)
 		{
 			if (Direction == 0.0 && Speed == 0.0 || TimeElapsed == 0.0) return;
@@ -555,32 +555,32 @@ namespace LibRender2.Cameras
 			switch (rotationDirection)
 			{
 				case Translations.Command.CameraRotateLeft:
-					s = CurrentMode == CameraViewMode.Interior | CurrentMode == CameraViewMode.InteriorLookAhead ? InteriorTopAngularSpeed : ExteriorTopAngularSpeed;
+					s = CurrentMode == CameraViewMode.Interior || CurrentMode == CameraViewMode.InteriorLookAhead ? InteriorTopAngularSpeed : ExteriorTopAngularSpeed;
 					AlignmentDirection.Yaw = -s * rotation;
 					break;
 				case Translations.Command.CameraRotateRight:
-						s = CurrentMode == CameraViewMode.Interior | CurrentMode == CameraViewMode.InteriorLookAhead ? InteriorTopAngularSpeed : ExteriorTopAngularSpeed;
+						s = CurrentMode == CameraViewMode.Interior || CurrentMode == CameraViewMode.InteriorLookAhead ? InteriorTopAngularSpeed : ExteriorTopAngularSpeed;
 						AlignmentDirection.Yaw = s * rotation;
 					break;
 				case Translations.Command.CameraRotateUp:
-					s = CurrentMode == CameraViewMode.Interior | CurrentMode == CameraViewMode.InteriorLookAhead ? InteriorTopAngularSpeed : ExteriorTopAngularSpeed;
+					s = CurrentMode == CameraViewMode.Interior || CurrentMode == CameraViewMode.InteriorLookAhead ? InteriorTopAngularSpeed : ExteriorTopAngularSpeed;
 					AlignmentDirection.Pitch = s * rotation;
 					break;
 				case Translations.Command.CameraRotateDown:
-					s = CurrentMode == CameraViewMode.Interior | CurrentMode == CameraViewMode.InteriorLookAhead ? InteriorTopAngularSpeed : ExteriorTopAngularSpeed;
+					s = CurrentMode == CameraViewMode.Interior || CurrentMode == CameraViewMode.InteriorLookAhead ? InteriorTopAngularSpeed : ExteriorTopAngularSpeed;
 					AlignmentDirection.Pitch = -s * rotation;
 					break;
 			case Translations.Command.CameraRotateCCW:
-				if ((CurrentMode != CameraViewMode.Interior & CurrentMode != CameraViewMode.InteriorLookAhead) | CurrentRestriction != CameraRestrictionMode.On) 
+				if ((CurrentMode != CameraViewMode.Interior && CurrentMode != CameraViewMode.InteriorLookAhead) || CurrentRestriction != CameraRestrictionMode.On) 
 				{
-					s = CurrentMode == CameraViewMode.Interior | CurrentMode == CameraViewMode.InteriorLookAhead ? InteriorTopAngularSpeed : ExteriorTopAngularSpeed;
+					s = CurrentMode == CameraViewMode.Interior || CurrentMode == CameraViewMode.InteriorLookAhead ? InteriorTopAngularSpeed : ExteriorTopAngularSpeed;
 					AlignmentDirection.Roll = -s * rotation;
 				}
 				break;
 			case Translations.Command.CameraRotateCW:
-				if ((CurrentMode != CameraViewMode.Interior & CurrentMode != CameraViewMode.InteriorLookAhead) | CurrentRestriction != CameraRestrictionMode.On)
+				if ((CurrentMode != CameraViewMode.Interior && CurrentMode != CameraViewMode.InteriorLookAhead) || CurrentRestriction != CameraRestrictionMode.On)
 				{
-					s = CurrentMode == CameraViewMode.Interior | CurrentMode == CameraViewMode.InteriorLookAhead ? InteriorTopAngularSpeed : ExteriorTopAngularSpeed;
+					s = CurrentMode == CameraViewMode.Interior || CurrentMode == CameraViewMode.InteriorLookAhead ? InteriorTopAngularSpeed : ExteriorTopAngularSpeed;
 					AlignmentDirection.Roll = s * rotation;
 				}
 				break;
