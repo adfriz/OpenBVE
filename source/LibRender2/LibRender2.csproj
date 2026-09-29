@@ -65,6 +65,8 @@
     <Compile Include="Cursors\Cursor.cs" />
     <Compile Include="Fog\Fog.cs" />
     <Compile Include="Lighting\Lighting.cs" />
+    <Compile Include="Lighting\ClusterGrid.cs" />
+    <Compile Include="Lighting\ClusterLightData.cs" />
     <Compile Include="Lighting\LightRegistry.cs" />
     <Compile Include="Lighting\SceneLight.cs" />
     <Compile Include="Loading\Loading.cs" />
