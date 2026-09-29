@@ -1349,94 +1349,9 @@ namespace LibRender2
 				: 1.0f;
 			float blendFactor = Math.Min(inv255 * state.DaytimeNighttimeBlend + 1.0f - Lighting.OptionLightingResultingAmount, 1.0f);
 
-			// daytime polygon
-			{
-				// ReSharper disable once PossibleInvalidOperationException
-				if (material.DaytimeTexture != null && currentHost.LoadTexture(ref material.DaytimeTexture, (OpenGlTextureWrapMode)material.WrapMode))
-				{
-					BindTextureIfNeeded(material.DaytimeTexture, (OpenGlTextureWrapMode)material.WrapMode);
-				}
-				else
-				{
-					shader.DisableTexturing();
-				}
-				// Brightness for this poly.
-				float factor;
-				if (material.BlendMode == MeshMaterialBlendMode.Additive)
-				{
-					// Additive: full brightness.
-					factor = 1.0f;
-					GL.Enable(EnableCap.Blend);
-					GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.One);
-					shader.SetFog(false);
-				}
-				else if (material.NighttimeTexture == null || material.NighttimeTexture == material.DaytimeTexture)
-				{
-					//No nighttime texture or both are identical- Darken the polygon to match the light conditions
-					factor = 1.0f - 0.7f * blendFactor;
-				}
-				else
-				{
-					// Night texture exists: day draws full-bright, night blends below.
-					factor = 1.0f;
-				}
-				shader.SetBrightness(factor);
-
-				float alphaFactor = distanceFactor;
-				if (material.NighttimeTexture != null && (material.Flags & MaterialFlags.CrossFadeTexture) != 0)
-				{
-					alphaFactor *= 1.0f - blendFactor;
-				}
-
-				shader.SetOpacity(inv255 * material.Color.A * alphaFactor);
-				VAO.Draw(drawMode, face.IboStartIndex, face.Vertices.Length);
-			}
-
-			// nighttime polygon
-			if (blendFactor != 0 && material.NighttimeTexture != null && material.NighttimeTexture != material.DaytimeTexture && currentHost.LoadTexture(ref material.NighttimeTexture, (OpenGlTextureWrapMode)material.WrapMode))
-			{
-				BindTextureIfNeeded(material.NighttimeTexture, (OpenGlTextureWrapMode)material.WrapMode);
-
-				GL.Enable(EnableCap.Blend);
-
-				// Fade the night layer in.
-				shader.SetAlphaTest(true);
-				shader.SetAlphaFunction(AlphaFunction.Greater, 0.0f);
-				float alphaFactor = distanceFactor * blendFactor;
-				shader.SetOpacity(inv255 * material.Color.A * alphaFactor);
-				VAO.Draw(drawMode, face.IboStartIndex, face.Vertices.Length);
-				RestoreBlendFunc();
-				RestoreAlphaFunc();
-			}
-
-
-			// Debug normals overlay (purple lines).
-			if (OptionNormals)
-			{
-				shader.DisableTexturing();
-				shader.SetBrightness(1.0f);
-				shader.SetOpacity(1.0f);
-				Mesh normalsMesh = state.Prototype.Mesh;
-				if (normalsMesh.NormalsVAO == null)
-				{
-					// Built lazily: holding it upfront would duplicate the vertex buffer in RAM.
-					VAOExtensions.CreateNormalsVAO(normalsMesh, state.Prototype.Dynamic, DefaultShader.VertexLayout, this);
-				}
-				VertexArrayObject normalsVao = (VertexArrayObject)normalsMesh.NormalsVAO;
-				if (normalsVao != null && face.IboStartIndex == 0)
-				{
-					// One call draws every line pair; force white emissive so the baked purple shows as-is.
-					shader.SetIsLight(false);
-					shader.SetMaterialAmbient(Color32.White);
-					shader.SetMaterialFlags(MaterialFlags.Emissive);
-					normalsVao.Bind();
-					lastVAO = normalsVao.handle;
-					normalsVao.DrawArrays(PrimitiveType.Lines, 0, normalsMesh.Vertices.Length > 0 ? normalsMesh.Faces.Sum(f => f.Vertices.Length) * 2 : 0);
-					shader.SetIsLight(OptionLighting);
-					shader.SetMaterialFlags(material.Flags);
-					shader.SetMaterialAmbient(material.Color);
-				}
-			}
+			DrawDaytimeLayer(shader, face, material, VAO, drawMode, blendFactor, distanceFactor);
+			DrawNighttimeLayer(shader, face, material, VAO, drawMode, blendFactor, distanceFactor);
+			DrawNormalsOverlay(shader, state, face, material);
 
 			// Restore per-material GL state.
 			if (material.BlendMode == MeshMaterialBlendMode.Additive)
@@ -1449,6 +1364,103 @@ namespace LibRender2
 				GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
 			}
 			lastObjectState = state;
+		}
+
+		// Draws the daytime layer of a face.
+		private void DrawDaytimeLayer(Shader shader, MeshFace face, MeshMaterial material, VertexArrayObject VAO, PrimitiveType drawMode, float blendFactor, float distanceFactor)
+		{
+			// ReSharper disable once PossibleInvalidOperationException
+			if (material.DaytimeTexture != null && currentHost.LoadTexture(ref material.DaytimeTexture, (OpenGlTextureWrapMode)material.WrapMode))
+			{
+				BindTextureIfNeeded(material.DaytimeTexture, (OpenGlTextureWrapMode)material.WrapMode);
+			}
+			else
+			{
+				shader.DisableTexturing();
+			}
+			// Brightness for this poly.
+			float factor;
+			if (material.BlendMode == MeshMaterialBlendMode.Additive)
+			{
+				// Additive: full brightness.
+				factor = 1.0f;
+				GL.Enable(EnableCap.Blend);
+				GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.One);
+				shader.SetFog(false);
+			}
+			else if (material.NighttimeTexture == null || material.NighttimeTexture == material.DaytimeTexture)
+			{
+				// No night texture: darken to match the light.
+				factor = 1.0f - 0.7f * blendFactor;
+			}
+			else
+			{
+				// Night texture exists: day draws full-bright, night blends below.
+				factor = 1.0f;
+			}
+			shader.SetBrightness(factor);
+
+			float alphaFactor = distanceFactor;
+			if (material.NighttimeTexture != null && (material.Flags & MaterialFlags.CrossFadeTexture) != 0)
+			{
+				alphaFactor *= 1.0f - blendFactor;
+			}
+
+			shader.SetOpacity(inv255 * material.Color.A * alphaFactor);
+			VAO.Draw(drawMode, face.IboStartIndex, face.Vertices.Length);
+		}
+
+		// Draws the nighttime layer blended over the day layer.
+		private void DrawNighttimeLayer(Shader shader, MeshFace face, MeshMaterial material, VertexArrayObject VAO, PrimitiveType drawMode, float blendFactor, float distanceFactor)
+		{
+			if (blendFactor == 0 || material.NighttimeTexture == null || material.NighttimeTexture == material.DaytimeTexture || !currentHost.LoadTexture(ref material.NighttimeTexture, (OpenGlTextureWrapMode)material.WrapMode))
+			{
+				return;
+			}
+			BindTextureIfNeeded(material.NighttimeTexture, (OpenGlTextureWrapMode)material.WrapMode);
+
+			GL.Enable(EnableCap.Blend);
+
+			// Fade the night layer in.
+			shader.SetAlphaTest(true);
+			shader.SetAlphaFunction(AlphaFunction.Greater, 0.0f);
+			float alphaFactor = distanceFactor * blendFactor;
+			shader.SetOpacity(inv255 * material.Color.A * alphaFactor);
+			VAO.Draw(drawMode, face.IboStartIndex, face.Vertices.Length);
+			RestoreBlendFunc();
+			RestoreAlphaFunc();
+		}
+
+		// Debug normals overlay (purple lines).
+		private void DrawNormalsOverlay(Shader shader, ObjectState state, MeshFace face, MeshMaterial material)
+		{
+			if (!OptionNormals)
+			{
+				return;
+			}
+			shader.DisableTexturing();
+			shader.SetBrightness(1.0f);
+			shader.SetOpacity(1.0f);
+			Mesh normalsMesh = state.Prototype.Mesh;
+			if (normalsMesh.NormalsVAO == null)
+			{
+				// Built lazily: holding it upfront would duplicate the vertex buffer in RAM.
+				VAOExtensions.CreateNormalsVAO(normalsMesh, state.Prototype.Dynamic, DefaultShader.VertexLayout, this);
+			}
+			VertexArrayObject normalsVao = (VertexArrayObject)normalsMesh.NormalsVAO;
+			if (normalsVao != null && face.IboStartIndex == 0)
+			{
+				// One call draws every line pair; force white emissive so the baked purple shows as-is.
+				shader.SetIsLight(false);
+				shader.SetMaterialAmbient(Color32.White);
+				shader.SetMaterialFlags(MaterialFlags.Emissive);
+				normalsVao.Bind();
+				lastVAO = normalsVao.handle;
+				normalsVao.DrawArrays(PrimitiveType.Lines, 0, normalsMesh.Vertices.Length > 0 ? normalsMesh.Faces.Sum(f => f.Vertices.Length) * 2 : 0);
+				shader.SetIsLight(OptionLighting);
+				shader.SetMaterialFlags(material.Flags);
+				shader.SetMaterialAmbient(material.Color);
+			}
 		}
 
 		/// <summary>Sets the current MouseCursor</summary>
