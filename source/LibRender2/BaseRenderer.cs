@@ -1243,6 +1243,17 @@ namespace LibRender2
 			RenderFace(shader, state, face, false, true);
 		}
 
+		// Binds a texture only when it isn't already bound (saves redundant GL calls).
+		private void BindTextureIfNeeded(Texture texture, OpenGlTextureWrapMode wrap)
+		{
+			OpenGlTexture slot = texture.OpenGlTextures[(int)wrap];
+			if (LastBoundTexture != slot)
+			{
+				GL.BindTexture(TextureTarget.Texture2D, slot.Name);
+				LastBoundTexture = slot;
+			}
+		}
+
 		/// <summary>Draws a face using the specified shader</summary>
 		/// <param name="shader">The shader to use</param>
 		/// <param name="state">The ObjectState to draw</param>
@@ -1276,25 +1287,21 @@ namespace LibRender2
 			{
 				GL.Disable(EnableCap.CullFace);
 			}
-			else if (OptionBackFaceCulling)
+			else
 			{
-				if ((face.Flags & FaceFlags.Face2Mask) == 0)
-				{
-					GL.Enable(EnableCap.CullFace);
-				}
+				GL.Enable(EnableCap.CullFace);
 			}
 
-			// model matricies
+			// Animated matrices (skip empty buffers: binding them throws InvalidValue).
 			if (state.Matricies != null && state.Matricies.Length > 0 && state != lastObjectState)
 			{
-				// n.b. if buffer has no data in it (matricies are of zero length), attempting to bind generates an InvalidValue
 				shader.SetCurrentAnimationMatricies(state);
 #pragma warning disable CS0618
 				GL.BindBufferBase(BufferTarget.UniformBuffer, 0, state.MatrixBufferIndex);
 #pragma warning restore CS0618
 			}
 
-			// matrix
+			// Push matrices once per object.
 			if (sendToShader)
 			{
 				shader.SetCurrentModelViewMatrix(lastModelViewMatrix);
@@ -1307,92 +1314,51 @@ namespace LibRender2
 				GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
 			}
 			
-			// lighting
+			// Material + lighting (ambient always follows color; rest needs lighting on).
 			shader.SetMaterialFlags(material.Flags);
-			if (OptionLighting)
+			if (material.Color != lastColor)
 			{
-				if (material.Color != lastColor)
+				shader.SetMaterialAmbient(material.Color);
+				if (OptionLighting)
 				{
-					shader.SetMaterialAmbient(material.Color);
 					shader.SetMaterialDiffuse(material.Color);
 					shader.SetMaterialSpecular((material.Flags & MaterialFlags.Specular) != 0 ? material.SpecularColor : material.Color);
 				}
+			}
+			if (OptionLighting)
+			{
 				if ((material.Flags & MaterialFlags.Emissive) != 0)
 				{
 					shader.SetMaterialEmission(material.EmissiveColor);
 				}
-
 				shader.SetMaterialShininess(1.0f);
-			}
-			else
-			{
-				if (material.Color != lastColor)
-				{
-					shader.SetMaterialAmbient(material.Color);
-				}
 			}
 
 			lastColor = material.Color;
-			PrimitiveType drawMode;
+			PrimitiveType drawMode = GetPrimitiveType(face.Flags);
 
-			switch (face.Flags & FaceFlags.FaceTypeMask)
-			{
-				case FaceFlags.Triangles:
-					drawMode = PrimitiveType.Triangles;
-					break;
-				case FaceFlags.TriangleStrip:
-					drawMode = PrimitiveType.TriangleStrip;
-					break;
-				case FaceFlags.Quads:
-					drawMode = PrimitiveType.Quads;
-					break;
-				case FaceFlags.QuadStrip:
-					drawMode = PrimitiveType.QuadStrip;
-					break;
-				default:
-					drawMode = PrimitiveType.Polygon;
-					break;
-			}
-
-			// blend factor
-			float distanceFactor;
-			if (material.GlowAttenuationData != 0)
-			{
-				distanceFactor = (float)Glow.GetDistanceFactor(lastModelMatrix, state.Prototype.Mesh.Vertices, ref face, material.GlowAttenuationData);
-			}
-			else
-			{
-				distanceFactor = 1.0f;
-			}
-
-			float blendFactor = inv255 * state.DaytimeNighttimeBlend + 1.0f - Lighting.OptionLightingResultingAmount;
-			if (blendFactor > 1.0)
-			{
-				blendFactor = 1.0f;
-			}
+			// Blend daytime/night textures by glow distance and lighting.
+			float distanceFactor = material.GlowAttenuationData != 0
+				? (float)Glow.GetDistanceFactor(lastModelMatrix, state.Prototype.Mesh.Vertices, ref face, material.GlowAttenuationData)
+				: 1.0f;
+			float blendFactor = Math.Min(inv255 * state.DaytimeNighttimeBlend + 1.0f - Lighting.OptionLightingResultingAmount, 1.0f);
 
 			// daytime polygon
 			{
-				// texture
 				// ReSharper disable once PossibleInvalidOperationException
 				if (material.DaytimeTexture != null && currentHost.LoadTexture(ref material.DaytimeTexture, (OpenGlTextureWrapMode)material.WrapMode))
 				{
-					if (LastBoundTexture != material.DaytimeTexture.OpenGlTextures[(int)material.WrapMode])
-					{
-						GL.BindTexture(TextureTarget.Texture2D,
-							material.DaytimeTexture.OpenGlTextures[(int)material.WrapMode].Name);
-						LastBoundTexture = material.DaytimeTexture.OpenGlTextures[(int)material.WrapMode];
-					}
+					BindTextureIfNeeded(material.DaytimeTexture, (OpenGlTextureWrapMode)material.WrapMode);
 				}
 				else
 				{
 					shader.DisableTexturing();
 				}
-				// Calculate the brightness of the poly to render
+				// Brightness for this poly.
 				float factor;
 				if (material.BlendMode == MeshMaterialBlendMode.Additive)
 				{
-					//Additive blending- Full brightness
+					// Additive: full brightness.
 					factor = 1.0f;
 					GL.Enable(EnableCap.Blend);
 					GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.One);
@@ -1405,7 +1371,7 @@ namespace LibRender2
 				}
 				else
 				{
-					//Valid nighttime texture- Blend the two textures by DNB at max brightness
+					// Night texture exists: day draws full-bright, night blends below.
 					factor = 1.0f;
 				}
 				shader.SetBrightness(factor);
@@ -1417,41 +1383,28 @@ namespace LibRender2
 				}
 
 				shader.SetOpacity(inv255 * material.Color.A * alphaFactor);
-
-				// render polygon
 				VAO.Draw(drawMode, face.IboStartIndex, face.Vertices.Length);
 			}
 
 			// nighttime polygon
 			if (blendFactor != 0 && material.NighttimeTexture != null && material.NighttimeTexture != material.DaytimeTexture && currentHost.LoadTexture(ref material.NighttimeTexture, (OpenGlTextureWrapMode)material.WrapMode))
 			{
-				// texture
-				if (LastBoundTexture != material.NighttimeTexture.OpenGlTextures[(int)material.WrapMode])
-				{
-					GL.BindTexture(TextureTarget.Texture2D, material.NighttimeTexture.OpenGlTextures[(int)material.WrapMode].Name);
-					LastBoundTexture = material.NighttimeTexture.OpenGlTextures[(int)material.WrapMode];
-				}
-
+				BindTextureIfNeeded(material.NighttimeTexture, (OpenGlTextureWrapMode)material.WrapMode);
 
 				GL.Enable(EnableCap.Blend);
 
-				// alpha test
+				// Fade the night layer in.
 				shader.SetAlphaTest(true);
 				shader.SetAlphaFunction(AlphaFunction.Greater, 0.0f);
-				
-				// blend mode
 				float alphaFactor = distanceFactor * blendFactor;
-
 				shader.SetOpacity(inv255 * material.Color.A * alphaFactor);
-
-				// render polygon
 				VAO.Draw(drawMode, face.IboStartIndex, face.Vertices.Length);
 				RestoreBlendFunc();
 				RestoreAlphaFunc();
 			}
 
 
-			// normals
+			// Debug normals overlay (purple lines).
 			if (OptionNormals)
 			{
 				shader.DisableTexturing();
@@ -1460,15 +1413,13 @@ namespace LibRender2
 				Mesh normalsMesh = state.Prototype.Mesh;
 				if (normalsMesh.NormalsVAO == null)
 				{
-					// Build the normals VAO lazily on first use to avoid holding a duplicate vertex buffer in RAM
+					// Built lazily: holding it upfront would duplicate the vertex buffer in RAM.
 					VAOExtensions.CreateNormalsVAO(normalsMesh, state.Prototype.Dynamic, DefaultShader.VertexLayout, this);
 				}
 				VertexArrayObject normalsVao = (VertexArrayObject)normalsMesh.NormalsVAO;
 				if (normalsVao != null && face.IboStartIndex == 0)
 				{
-					// Draw all normals for this mesh in a single call (the normals VAO is a contiguous list of line pairs).
-					// Solid purple overlay: disable lighting and force a white, emissive material so the shader
-					// outputs the baked per-vertex purple colour unchanged (finalColor *= oLightResult == white).
+					// One call draws every line pair; force white emissive so the baked purple shows as-is.
 					shader.SetIsLight(false);
 					shader.SetMaterialAmbient(Color32.White);
 					shader.SetMaterialFlags(MaterialFlags.Emissive);
@@ -1481,7 +1432,7 @@ namespace LibRender2
 				}
 			}
 
-			// finalize
+			// Restore per-material GL state.
 			if (material.BlendMode == MeshMaterialBlendMode.Additive)
 			{
 				RestoreBlendFunc();
