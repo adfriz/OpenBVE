@@ -159,6 +159,9 @@ namespace LibRender2.Lightings
 		private int cachedMax;
 		private FrustumPlane[] cachedFrustum;
 		private List<SceneLight> cachedSelection = new List<SceneLight>();
+		private Matrix4D uploadedViewMatrix;
+		private readonly List<SceneLight> uploadedSelection = new List<SceneLight>();
+		private bool hasUploadedSelection;
 
 		internal LightRegistry(BaseRenderer renderer)
 		{
@@ -311,6 +314,11 @@ namespace LibRender2.Lightings
 			Matrix4D viewProjection = viewMatrix * renderer.CurrentProjectionMatrix;
 			FrustumPlane[] frustum = FrustumUtils.GetFrustumPlanesWorldSpace(viewProjection);
 			List<SceneLight> selected = SelectNearest(cameraPosition, frustum, Shader.MaxDynamicLights);
+			// Same lights through the same view make the same uniforms: skip ~80 GL calls.
+			if (hasUploadedSelection && viewMatrix == uploadedViewMatrix && UploadEquals(uploadedSelection, selected))
+			{
+				return;
+			}
 			shader.SetDynamicLightCount(selected.Count);
 			for (int i = 0; i < selected.Count; i++)
 			{
@@ -330,6 +338,41 @@ namespace LibRender2.Lightings
 				}
 				shader.SetDynamicLight(i, position, direction, light.Color, light.Range, cutoff);
 			}
+			uploadedSelection.Clear();
+			uploadedSelection.AddRange(selected);
+			uploadedViewMatrix = viewMatrix;
+			hasUploadedSelection = true;
+		}
+
+		/// <summary>Forgets the last upload. Call after anything that zeroes the uniforms behind our back.</summary>
+		public void InvalidateUploads()
+		{
+			hasUploadedSelection = false;
+		}
+
+		// Only uploaded fields are compared, in order: anything else that leaves these
+		// untouched cannot change what the shader sees.
+		private static bool UploadEquals(List<SceneLight> a, List<SceneLight> b)
+		{
+			if (a.Count != b.Count)
+			{
+				return false;
+			}
+			for (int i = 0; i < a.Count; i++)
+			{
+				if (a[i].Type != b[i].Type
+					|| a[i].Position != b[i].Position
+					|| a[i].Direction != b[i].Direction
+					|| a[i].Color.R != b[i].Color.R
+					|| a[i].Color.G != b[i].Color.G
+					|| a[i].Color.B != b[i].Color.B
+					|| a[i].Range != b[i].Range
+					|| a[i].SpotCutoff != b[i].SpotCutoff)
+				{
+					return false;
+				}
+			}
+			return true;
 		}
 	}
 }

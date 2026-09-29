@@ -1156,6 +1156,7 @@ namespace LibRender2
 			shader.SetLightSpecular(Color24.White);
 			shader.SetLightModel(Lighting.LightModel);
 			shader.SetDynamicLightCount(0);
+			LightRegistry.InvalidateUploads();
 			shader.SetMaterialAmbient(Color24.White);
 			shader.SetMaterialDiffuse(Color24.White);
 			shader.SetMaterialSpecular(Color24.White);
