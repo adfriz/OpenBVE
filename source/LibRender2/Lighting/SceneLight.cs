@@ -4,7 +4,7 @@ using OpenBveApi.Math;
 
 namespace LibRender2.Lightings
 {
-	/// <summary>What kind of light this is. Mirrors the [Light] Type in PR #1328.</summary>
+	/// <summary>What kind of light this is. Same kinds as the [Light] blocks (PR #1328).</summary>
 	public enum LightType
 	{
 		Directional,
@@ -13,7 +13,7 @@ namespace LibRender2.Lightings
 		Area
 	}
 
-	/// <summary>Who wins when there are more lights than shader slots.</summary>
+	/// <summary>Who gets dropped first when lights outnumber shader slots.</summary>
 	public enum LightPriority
 	{
 		Head,
@@ -23,58 +23,53 @@ namespace LibRender2.Lightings
 		Ambient
 	}
 
-	/// <summary>One light in the scene, in world space. Shape follows PR #1328 ([Light] blocks).</summary>
+	/// <summary>One light in the scene, in world space. Same shape as the [Light] blocks (PR #1328).</summary>
 	public struct SceneLight
 	{
-		/// <summary>Physical output in Watts. Default is 4*pi, so a normalized light has intensity 1.</summary>
+		/// <summary>4*pi: with defaults, a normalized light shines at intensity 1.</summary>
 		public const float DefaultPower = 12.5663706f;
 
 		public LightType Type;
 		public LightPriority Priority;
-		/// <summary>Where the light sits (sun: where it shines from).</summary>
+		/// <summary>World position (sun: the direction it shines from).</summary>
 		public Vector3 Position;
-		/// <summary>Spot beam / area rect normal.</summary>
+		/// <summary>Spot beam, or the area rect normal.</summary>
 		public Vector3 Direction;
 		public Color24 Color;
 		public Color24 Ambient;
-		/// <summary>How far the light reaches, in meters.</summary>
+		/// <summary>Reach in meters.</summary>
 		public float Range;
-		/// <summary>Spot cone tightness, as cos(half-angle).</summary>
+		/// <summary>Spot cone width as cos(half-angle).</summary>
 		public float SpotCutoff;
-		/// <summary>Physical output in Watts. Applied as Power * exp2(Exposure).</summary>
+		/// <summary>Output in Watts. The shader sees Power * 2^Exposure.</summary>
 		public float Power;
-		/// <summary>Exposure multiplier, applied as exp2(Exposure). 0 means x1.</summary>
+		/// <summary>Brightness multiplier as 2^Exposure. 0 leaves it alone.</summary>
 		public float Exposure;
-		/// <summary>Divide spot power by its solid angle. Points always divide by 4*pi.</summary>
+		/// <summary>Spread power across the cone. Points always do.</summary>
 		public bool Normalize;
-		/// <summary>Physical source size in meters. Softens the d-squared falloff.</summary>
+		/// <summary>Source size in meters. Softens the falloff up close.</summary>
 		public float Radius;
-		/// <summary>Smooth fade near the range limit.</summary>
+		/// <summary>Fade out smoothly at the range edge.</summary>
 		public bool SoftFalloff;
-		/// <summary>Spot edge penumbra, 0 to 1.</summary>
+		/// <summary>Spot edge softness, 0 to 1.</summary>
 		public float Softness;
-		/// <summary>Rect size for area lights.</summary>
+		/// <summary>Rect size, area lights only.</summary>
 		public Vector2 AreaSize;
-		/// <summary>Debug helper cone. Never affects lighting.</summary>
+		/// <summary>Draw the debug cone. Lighting ignores it.</summary>
 		public bool ShowCone;
 		public bool CastsShadow;
-		/// <summary>Lights that are off get skipped. Factories switch this on.</summary>
+		/// <summary>Off lights are skipped. Factories switch this on.</summary>
 		public bool Enabled;
 
-		/// <summary>Shader-ready intensity. Mirrors the PR #1328 fragment math.</summary>
+		/// <summary>What the shader multiplies the color by. Same math as the PR #1328 fragment shader.</summary>
 		public float ShadingIntensity()
 		{
 			float intensity = Power * (float)Math.Pow(2.0, Exposure);
 			if (Type == LightType.Spot && Normalize)
 			{
-				float solidAngle = 6.2831853f * (1.0f - SpotCutoff);
-				return intensity / Math.Max(solidAngle, 0.0001f);
+				return intensity / Math.Max(6.2831853f * (1.0f - SpotCutoff), 0.0001f);
 			}
-			if (Type == LightType.Point)
-			{
-				return intensity / 12.5663706f;
-			}
-			return intensity;
+			return Type == LightType.Point ? intensity / DefaultPower : intensity;
 		}
 
 		// The one sun, built from the current sky.
@@ -100,7 +95,7 @@ namespace LibRender2.Lightings
 			};
 		}
 
-		// A plain point light, no shadows.
+		// Plain point light, no shadows.
 		public static SceneLight Point(Vector3 position, Color24 color, float range, LightPriority priority,
 			float power = DefaultPower, float exposure = 0.0f, bool normalize = true, float radius = 0.0f, bool softFalloff = true)
 		{
@@ -123,7 +118,7 @@ namespace LibRender2.Lightings
 			};
 		}
 
-		// A spot light. Pass the full cone width in degrees.
+		// Spot light. Cone width in degrees.
 		public static SceneLight Spot(Vector3 position, Vector3 direction, Color24 color, float range, double coneAngleDegrees, LightPriority priority,
 			float power = DefaultPower, float exposure = 0.0f, bool normalize = true, float radius = 0.0f, bool softFalloff = true, float softness = 1.0f)
 		{
@@ -148,7 +143,7 @@ namespace LibRender2.Lightings
 			};
 		}
 
-		// A rectangular area light. Direction is the rect normal.
+		// Rectangular area light facing along direction.
 		public static SceneLight Area(Vector3 position, Vector3 direction, Color24 color, float range, Vector2 areaSize, LightPriority priority,
 			float power = DefaultPower, float exposure = 0.0f, float radius = 0.0f, bool softFalloff = true)
 		{

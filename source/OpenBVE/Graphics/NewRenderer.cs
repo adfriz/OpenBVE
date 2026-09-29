@@ -76,10 +76,14 @@ namespace OpenBve.Graphics
 				case ViewportMode.Scenery:
 					double cd = Program.CurrentRoute.CurrentBackground is BackgroundObject b ? Math.Max(Program.CurrentRoute.CurrentBackground.BackgroundImageDistance, b.ClipDistance) : Program.CurrentRoute.CurrentBackground.BackgroundImageDistance;
 					double nearClipScenery = Math.Max(0.01, Interface.CurrentOptions.NearClipScenery);
+					CurrentNearPlane = nearClipScenery;
+					CurrentFarPlane = cd;
 					CurrentProjectionMatrix = Matrix4D.CreatePerspectiveFieldOfView(Camera.VerticalViewingAngle, Screen.AspectRatio, nearClipScenery, cd);
 					break;
 				case ViewportMode.Cab:
 					double nearClipCab = Math.Max(0.01, Interface.CurrentOptions.NearClipCab);
+					CurrentNearPlane = nearClipCab;
+					CurrentFarPlane = 50.0;
 					CurrentProjectionMatrix = Matrix4D.CreatePerspectiveFieldOfView(Camera.VerticalViewingAngle, Screen.AspectRatio, nearClipCab, 50.0);
 					break;
 			}
@@ -196,6 +200,7 @@ namespace OpenBve.Graphics
             {
 	            LightRegistry.UploadSun(DefaultShader, TransformedLightPosition, Lighting.OptionAmbientColor, Lighting.OptionDiffuseColor);
 	            LightRegistry.UploadDynamic(DefaultShader, CurrentViewMatrix, Camera.AbsolutePosition);
+	            Clusters.Dispatch();
             }
             Fog.Set();
             DefaultShader.SetTexture(0);

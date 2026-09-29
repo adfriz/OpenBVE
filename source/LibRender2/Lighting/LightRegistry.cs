@@ -173,9 +173,9 @@ namespace LibRender2.Lightings
 		}
 
 		/// <summary>Adds a light and returns its index.</summary>
-		/// <remarks>Producer contract (PR #1328): owners (animated objects, cars) push world-space
-		/// lights here, refresh animated ones via Update() each frame, and toggle Enabled for
-		/// time-of-day or headlight-state switches. Eviction order is LightPriority.</remarks>
+		/// <remarks>Owners (animated objects, cars) push world-space lights here, refresh them with
+		/// Update() each frame, and flip Enabled for time-of-day or headlight switches.
+		/// LightPriority decides who gets dropped first.</remarks>
 		public int Register(SceneLight light)
 		{
 			DynamicLights.Add(light);

@@ -3,10 +3,10 @@ using OpenBveApi.Math;
 
 namespace LibRender2.Lightings
 {
-	/// <summary>CPU mirror of the cluster grid in light_clusters.comp / light_cull.comp.</summary>
+	/// <summary>The cluster grid on the CPU. Same math as light_clusters.comp / light_cull.comp.</summary>
 	public static class ClusterGrid
 	{
-		/// <summary>Default grid: 16x9x24 like DOOM 2016. Passed as gridSize when dispatching.</summary>
+		/// <summary>16x9x24 like DOOM 2016. Sent as gridSize at dispatch.</summary>
 		public const int GridX = 16;
 		public const int GridY = 9;
 		public const int GridZ = 24;
@@ -16,19 +16,19 @@ namespace LibRender2.Lightings
 		/// <summary>Max lights per cluster. Must match CLUSTER_MAX_LIGHTS in both .comp files.</summary>
 		public const int MaxLightsPerCluster = 100;
 
-		/// <summary>Exponential slice boundary: zNear * (zFar/zNear)^(slice/sliceCount).</summary>
+		/// <summary>Where slice i starts: exponential split between near and far.</summary>
 		public static double SliceDepth(double zNear, double zFar, int slice, int sliceCount)
 		{
 			return zNear * Math.Pow(zFar / zNear, (double)slice / sliceCount);
 		}
 
-		/// <summary>Linear cluster index: x + y*GridX + z*GridX*GridY. Mirrors the compute shader.</summary>
+		/// <summary>Flat index: x + y*GridX + z*GridX*GridY.</summary>
 		public static int TileIndex(int x, int y, int z)
 		{
 			return x + y * GridX + z * GridX * GridY;
 		}
 
-		/// <summary>Depth slice for a view-space depth. Mirrors the fragment lookup.</summary>
+		/// <summary>Which depth slice a view-space depth falls in. Same formula the fragment shader uses.</summary>
 		public static int ZSliceForDepth(double viewDepth, double zNear, double zFar)
 		{
 			if (viewDepth <= zNear)
@@ -40,18 +40,10 @@ namespace LibRender2.Lightings
 				return GridZ - 1;
 			}
 			int slice = (int)(Math.Log(viewDepth / zNear) * GridZ / Math.Log(zFar / zNear));
-			if (slice < 0)
-			{
-				return 0;
-			}
-			if (slice >= GridZ)
-			{
-				return GridZ - 1;
-			}
-			return slice;
+			return Math.Min(Math.Max(slice, 0), GridZ - 1);
 		}
 
-		/// <summary>Screen tile for a pixel. gl_FragCoord convention: origin bottom-left.</summary>
+		/// <summary>Which screen tile a pixel falls in. Origin bottom-left, like gl_FragCoord.</summary>
 		public static void XyTileForPixel(double pixelX, double pixelY, double screenWidth, double screenHeight, out int tileX, out int tileY)
 		{
 			double tileSizeX = screenWidth / GridX;
@@ -62,19 +54,19 @@ namespace LibRender2.Lightings
 			tileY = Math.Min(Math.Max(ty, 0), GridY - 1);
 		}
 
-		/// <summary>Full cluster index for a fragment. Combines the XY tile with the depth slice.</summary>
+		/// <summary>Tile + slice combined: the one cluster a fragment lives in.</summary>
 		public static int ClusterIndexForFragment(double pixelX, double pixelY, double viewDepth, double screenWidth, double screenHeight, double zNear, double zFar)
 		{
 			XyTileForPixel(pixelX, pixelY, screenWidth, screenHeight, out int tx, out int ty);
 			return TileIndex(tx, ty, ZSliceForDepth(viewDepth, zNear, zFar));
 		}
 
-		/// <summary>Builds view-space cluster AABBs. Mirrors light_clusters.comp on the CPU.</summary>
+		/// <summary>View-space box for every cluster, same as the compute shader builds.</summary>
 		public static void BuildAabbs(Matrix4D inverseProjection, double screenWidth, double screenHeight, double zNear, double zFar, Vector3[] minPoints, Vector3[] maxPoints)
 		{
 			if (minPoints == null || minPoints.Length < ClusterCount || maxPoints == null || maxPoints.Length < ClusterCount)
 			{
-				throw new ArgumentException("AABB arrays must hold at least ClusterCount entries.");
+				throw new ArgumentException("Both AABB arrays need room for ClusterCount entries.");
 			}
 			double tileSizeX = screenWidth / GridX;
 			double tileSizeY = screenHeight / GridY;
@@ -93,8 +85,7 @@ namespace LibRender2.Lightings
 						Vector3 maxNear = LineIntersectionWithZPlane(maxTile, planeNear);
 						Vector3 maxFar = LineIntersectionWithZPlane(maxTile, planeFar);
 						int index = TileIndex(x, y, z);
-						// Matches light_clusters.comp exactly: min from the min-tile ray,
-						// max from the max-tile ray (not the min/max over all four points).
+						// Same as the shader: min from the min-tile ray, max from the max-tile ray.
 						minPoints[index] = Min(minNear, minFar);
 						maxPoints[index] = Max(maxNear, maxFar);
 					}
@@ -102,7 +93,7 @@ namespace LibRender2.Lightings
 			}
 		}
 
-		// NDC pinned on the near plane (-1 depth in OpenGL), then unprojected.
+		// Unproject a screen point pinned on the near plane.
 		private static Vector3 ScreenToView(double screenX, double screenY, Matrix4D inverseProjection, double screenWidth, double screenHeight)
 		{
 			Vector4 ndc = new Vector4(
@@ -118,7 +109,7 @@ namespace LibRender2.Lightings
 			return view.Xyz / view.W;
 		}
 
-		// Ray from the eye meets the plane perpendicular to Z at the given depth.
+		// Where the ray from the eye through the tile point crosses the depth plane.
 		private static Vector3 LineIntersectionWithZPlane(Vector3 tilePoint, double zDistance)
 		{
 			// Direction from the eye (origin) through the tile point; plane normal is (0,0,-1).

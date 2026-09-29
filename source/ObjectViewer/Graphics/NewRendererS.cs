@@ -112,6 +112,7 @@ namespace ObjectViewer.Graphics
             {
 	            LightRegistry.UploadSun(DefaultShader, TransformedLightPosition, Lighting.OptionAmbientColor, Lighting.OptionDiffuseColor);
 	            LightRegistry.UploadDynamic(DefaultShader, CurrentViewMatrix, Camera.AbsolutePosition);
+	            Clusters.Dispatch();
             }
             DefaultShader.SetTexture(0);
             DefaultShader.SetCurrentProjectionMatrix(CurrentProjectionMatrix);

@@ -122,6 +122,7 @@ namespace LibRender2
 		public CameraProperties Camera;
 		public Lighting Lighting;
 		public LightRegistry LightRegistry;
+		public ClusterManager Clusters;
 		public Background Background;
 		public Fog Fog;
 		public Marker Marker;
@@ -137,6 +138,11 @@ namespace LibRender2
 
 		public Matrix4D CurrentProjectionMatrix;
 		public Matrix4D CurrentViewMatrix;
+
+		/// <summary>Near clip of the current world pass. Feeds the cluster grid.</summary>
+		public double CurrentNearPlane = 0.1;
+		/// <summary>Far clip of the current world pass. Feeds the cluster grid.</summary>
+		public double CurrentFarPlane = 1000.0;
 
 		public Vector3 TransformedLightPosition;
 
@@ -364,6 +370,7 @@ namespace LibRender2
 			Camera = new CameraProperties(this);
 			Lighting = new Lighting(this);
 			LightRegistry = new LightRegistry(this);
+			Clusters = new ClusterManager(this);
 			Marker = new Marker(this);
 			Shadows = new Shadows(this);
 
@@ -514,6 +521,14 @@ namespace LibRender2
 			try
 			{
 				TextureManager?.UnloadAllTextures(false);
+			}
+			catch
+			{
+				// Ignored - best effort cleanup during shutdown
+			}
+			try
+			{
+				Clusters?.Dispose();
 			}
 			catch
 			{
@@ -1112,6 +1127,8 @@ namespace LibRender2
 			Screen.AspectRatio = Screen.Width / (double)Screen.Height;
 			Camera.HorizontalViewingAngle = 2.0 * Math.Atan(Math.Tan(0.5 * Camera.VerticalViewingAngle) * Screen.AspectRatio);
 			double nearClip = Math.Max(0.01, currentOptions.NearClipBase);
+			CurrentNearPlane = nearClip;
+			CurrentFarPlane = currentOptions.ViewingDistance;
 			CurrentProjectionMatrix = Matrix4D.CreatePerspectiveFieldOfView(Camera.VerticalViewingAngle, Screen.AspectRatio, nearClip, currentOptions.ViewingDistance);
 		}
 

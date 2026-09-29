@@ -2,7 +2,7 @@ using System.Runtime.InteropServices;
 
 namespace LibRender2.Lightings
 {
-	/// <summary>CPU mirror of ClusterLight in light_cull.comp. World space; the shader applies viewMatrix.</summary>
+	/// <summary>One light as the culling shader sees it. World space; the shader applies the view matrix.</summary>
 	[StructLayout(LayoutKind.Sequential)]
 	public struct ClusterLightData
 	{
@@ -19,10 +19,10 @@ namespace LibRender2.Lightings
 		public float Dz;
 		public float Cutoff;
 
-		/// <summary>Byte size of one entry. Must stay 48 (3 x vec3+float pairs).</summary>
+		/// <summary>48 bytes: three vec3+float pairs.</summary>
 		public const int Stride = 48;
 
-		/// <summary>Packs a scene light for the SSBO. False for entries the culler must skip.</summary>
+		/// <summary>Fills one entry. False for lights the culler must ignore.</summary>
 		public static bool TryPack(SceneLight light, out ClusterLightData data)
 		{
 			data = new ClusterLightData();
@@ -37,8 +37,7 @@ namespace LibRender2.Lightings
 			data.R = light.Color.R / 255.0f;
 			data.G = light.Color.G / 255.0f;
 			data.B = light.Color.B / 255.0f;
-			// Baked Power * exp2(Exposure) with solid-angle normalization (PR #1328 model).
-			// Radius / SoftFalloff / Softness / AreaSize need SSBO v2 + shader support; see PR #1328 frag.
+			// Baked per the PR #1328 model. Radius/softness/area need a wider SSBO and shader support first.
 			data.Intensity = light.ShadingIntensity();
 			data.Dx = (float)light.Direction.X;
 			data.Dy = (float)light.Direction.Y;
