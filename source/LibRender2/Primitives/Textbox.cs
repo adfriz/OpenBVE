@@ -8,40 +8,40 @@ using OpenBveApi.Math;
 
 namespace LibRender2.Primitives
 {
-	public class Textbox : GLControl
+	public class Textbox : TextControl
 	{
-		/// <summary>The font the items in this textbox are to be drawn with</summary>
+		/// <summary>Line font.</summary>
 		private readonly OpenGlFont myFont;
-		/// <summary>The font color</summary>
+		/// <summary>Line color.</summary>
 		private readonly Color128 myFontColor;
-		/// <summary>The color of the scrollbar handle</summary>
+		/// <summary>Scrollbar handle color.</summary>
 		private readonly Color128 myScrollbarColor;
-		/// <summary>The string contents of the textbox</summary>
+		/// <summary>Contents (setting resets the scroll).</summary>
 		public string Text
 		{
 			get => myText;
 			set
 			{
 				myText = value;
-				//reset the scroll value
 				topLine = 0;
 			}
 		}
-		/// <summary>Backing property for the textbox text</summary>
+		/// <summary>Backing text.</summary>
 		private string myText;
 
-		/// <summary>The border width of the textbox </summary>
+		/// <summary>Border width.</summary>
 		public readonly int Border;
-		/// <summary>The top line to be rendered</summary>
+		/// <summary>First visible line.</summary>
 		private int topLine;
-		/// <summary>Whether the textbox can scroll</summary>
+		/// <summary>Whether scrolling is possible.</summary>
 		public bool CanScroll;
-		/// <summary>Used for internal size calculations</summary>
+		/// <summary>Usable area (shrinks when the scrollbar shows).</summary>
 		private Vector2 internalSize => CanScroll ? new Vector2(Size.X, Size.Y - 12) : Size;
 
+		// Wraps text to fit a pixel width (also splits on newlines).
 		private List<string> WrappedLines(int width)
 		{
-			// string literal as well as escaped character as we may have loaded from language file
+			// Split on real newlines and on escaped ones from language files.
 			string[] firstSplit = Text.Split(new[] {"\r\n", "\n", @"\r\n"}, StringSplitOptions.None);
 			List<string> wrappedLines = new List<string>();
 			string currentLine = string.Empty;
@@ -55,7 +55,7 @@ namespace LibRender2.Primitives
 					{
 						if (currentLine.Any(char.IsWhiteSpace))
 						{
-							// Exceeded length, back up to last space
+							// Too long: back up to the last space.
 							int moveback = 1;
 							while (!char.IsWhiteSpace(currentLine[currentLine.Length - moveback]))
 							{
@@ -85,9 +85,10 @@ namespace LibRender2.Primitives
 			return wrappedLines;
 		}
 
-		public Textbox(BaseRenderer Renderer, OpenGlFont Font, Color128 FontColor, Color128 backgroundColor) : base(Renderer)
+		public Textbox(BaseRenderer Renderer, OpenGlFont font, Color128 FontColor, Color128 backgroundColor) : base(Renderer)
 		{
-			myFont = Font;
+			Font = font;
+			myFont = font;
 			myFontColor = FontColor;
 			Border = 5;
 			topLine = 0;
@@ -107,7 +108,7 @@ namespace LibRender2.Primitives
 
 		public override void Draw()
 		{
-			Renderer.Rectangle.Draw(Texture, Location, Size, BackgroundColor); //Draw the backing rectangle first
+			DrawFrame();
 			if (string.IsNullOrEmpty(Text))
 			{
 				return;
@@ -116,8 +117,8 @@ namespace LibRender2.Primitives
 			List<string> splitString = WrappedLines((int)internalSize.Y - Border * 2);
 			if (splitString.Count == 1)
 			{
-				//DRAW SINGLE LINE
-				Renderer.OpenGlString.Draw(myFont, Text, new Vector2(Location.X + Border, Location.Y + Border), TextAlignment.TopLeft, myFontColor);
+				// Single line.
+				DrawTextAt(myFont, Text, new Vector2(Location.X + Border, Location.Y + Border), myFontColor);
 				CanScroll = false;
 			}
 			else
@@ -130,19 +131,21 @@ namespace LibRender2.Primitives
 				CanScroll = maxFittingLines < splitString.Count;
 				if (CanScroll)
 				{
-					Renderer.Rectangle.Draw(null, new Vector2(Location.X + Size.X - 12, Location.Y + 2), new Vector2(8, Size.Y - 4), Color128.Grey); //Backing rectangle
+					// Scrollbar track.
+					Renderer.Rectangle.Draw(null, new Vector2(Location.X + Size.X - 12, Location.Y + 2), new Vector2(8, Size.Y - 4), Color128.Grey);
 				}
-				//DRAW SPLIT LINES
+				// Visible lines.
 				int currentLine = topLine;
 				int bottomLine = Math.Min(maxFittingLines, splitString.Count);
 				for (int i = 0; i < bottomLine; i++)
 				{
-					Renderer.OpenGlString.Draw(myFont, splitString[currentLine], new Vector2(Location.X + Border, Location.Y + Border + myFont.FontSize * i), TextAlignment.TopLeft, myFontColor);
+					DrawTextAt(myFont, splitString[currentLine], new Vector2(Location.X + Border, Location.Y + Border + myFont.FontSize * i), myFontColor);
 					currentLine++;
 				}
 
 				if (CanScroll)
 				{
+					// Scrollbar handle.
 					double scrollBarHeight = (Size.Y - 4) * maxFittingLines / splitString.Count;
 					double percentageScroll = topLine / (double)(splitString.Count - maxFittingLines);
 					Renderer.Rectangle.Draw(null, new Vector2(Location.X + Size.X - 13, Location.Y + (Size.Y - scrollBarHeight) * percentageScroll), new Vector2(10, scrollBarHeight), myScrollbarColor);
@@ -153,16 +156,8 @@ namespace LibRender2.Primitives
 
 		public override void MouseMove(int x, int y)
 		{
-			if (x > Location.X && x < Location.X + Size.X && y > Location.Y && y < Location.Y + Size.Y)
-			{
-				CurrentlySelected = true;
-				Renderer.SetCursor(CanScroll ? AvailableCursors.ScrollCursor : OpenTK.MouseCursor.Default); 
-			}
-			else
-			{
-				Renderer.SetCursor(OpenTK.MouseCursor.Default);
-				CurrentlySelected = false;
-			}
+			CurrentlySelected = HitTest(x, y);
+			Renderer.SetCursor(CurrentlySelected && CanScroll ? AvailableCursors.ScrollCursor : OpenTK.MouseCursor.Default);
 		}
 	}
 }

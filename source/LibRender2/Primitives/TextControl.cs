@@ -25,6 +25,7 @@
 using LibRender2.Text;
 using OpenBveApi.Colors;
 using OpenBveApi.Graphics;
+using OpenBveApi.Math;
 
 namespace LibRender2.Primitives
 {
@@ -62,7 +63,13 @@ namespace LibRender2.Primitives
 		// Draws the text over the background.
 		protected void DrawText(string text, Color128 color)
 		{
-			Renderer.OpenGlString.Draw(Font, text, Location + (Size * 0.15), TextAlignment.TopLeft, color);
+			DrawTextAt(Font, text, Location + (Size * 0.15), color);
+		}
+
+		// Draws text with an explicit font and position (multi-line controls).
+		protected void DrawTextAt(OpenGlFont font, string text, Vector2 position, Color128 color)
+		{
+			Renderer.OpenGlString.Draw(font, text, position, TextAlignment.TopLeft, color);
 		}
 	}
 }
