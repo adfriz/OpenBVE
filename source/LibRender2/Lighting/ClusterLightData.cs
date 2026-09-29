@@ -37,7 +37,9 @@ namespace LibRender2.Lightings
 			data.R = light.Color.R / 255.0f;
 			data.G = light.Color.G / 255.0f;
 			data.B = light.Color.B / 255.0f;
-			data.Intensity = 1.0f;
+			// Baked Power * exp2(Exposure) with solid-angle normalization (PR #1328 model).
+			// Radius / SoftFalloff / Softness / AreaSize need SSBO v2 + shader support; see PR #1328 frag.
+			data.Intensity = light.ShadingIntensity();
 			data.Dx = (float)light.Direction.X;
 			data.Dy = (float)light.Direction.Y;
 			data.Dz = (float)light.Direction.Z;

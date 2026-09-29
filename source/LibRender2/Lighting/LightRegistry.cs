@@ -147,7 +147,7 @@ namespace LibRender2.Lightings
 	{
 		private readonly BaseRenderer renderer;
 
-		/// <summary>Point/spot lights in world space. Empty until something registers one.</summary>
+		/// <summary>Point/spot/area lights in world space. Empty until something registers one.</summary>
 		public readonly List<SceneLight> DynamicLights = new List<SceneLight>();
 
 		/// <summary>How lights get picked. CPU by default; swap in ComputeLightSelector to try compute.</summary>
@@ -173,6 +173,9 @@ namespace LibRender2.Lightings
 		}
 
 		/// <summary>Adds a light and returns its index.</summary>
+		/// <remarks>Producer contract (PR #1328): owners (animated objects, cars) push world-space
+		/// lights here, refresh animated ones via Update() each frame, and toggle Enabled for
+		/// time-of-day or headlight-state switches. Eviction order is LightPriority.</remarks>
 		public int Register(SceneLight light)
 		{
 			DynamicLights.Add(light);
