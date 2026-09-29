@@ -119,5 +119,57 @@ namespace LibRender2.ShadowMapping
 			}
 			return Math.Sqrt(maxDistSq);
 		}
+
+		/// <summary>
+		/// Extracts the six frustum planes from a view-projection matrix.
+		/// Row-vector convention (clip = world * (view * projection)): planes come from matrix columns.
+		/// </summary>
+		public static FrustumPlane[] GetFrustumPlanesWorldSpace(Matrix4D viewProjection)
+		{
+			return new FrustumPlane[]
+			{
+				MakePlane(viewProjection.Row0.X + viewProjection.Row0.W, viewProjection.Row1.X + viewProjection.Row1.W, viewProjection.Row2.X + viewProjection.Row2.W, viewProjection.Row3.X + viewProjection.Row3.W),
+				MakePlane(viewProjection.Row0.W - viewProjection.Row0.X, viewProjection.Row1.W - viewProjection.Row1.X, viewProjection.Row2.W - viewProjection.Row2.X, viewProjection.Row3.W - viewProjection.Row3.X),
+				MakePlane(viewProjection.Row0.Y + viewProjection.Row0.W, viewProjection.Row1.Y + viewProjection.Row1.W, viewProjection.Row2.Y + viewProjection.Row2.W, viewProjection.Row3.Y + viewProjection.Row3.W),
+				MakePlane(viewProjection.Row0.W - viewProjection.Row0.Y, viewProjection.Row1.W - viewProjection.Row1.Y, viewProjection.Row2.W - viewProjection.Row2.Y, viewProjection.Row3.W - viewProjection.Row3.Y),
+				MakePlane(viewProjection.Row0.Z + viewProjection.Row0.W, viewProjection.Row1.Z + viewProjection.Row1.W, viewProjection.Row2.Z + viewProjection.Row2.W, viewProjection.Row3.Z + viewProjection.Row3.W),
+				MakePlane(viewProjection.Row0.W - viewProjection.Row0.Z, viewProjection.Row1.W - viewProjection.Row1.Z, viewProjection.Row2.W - viewProjection.Row2.Z, viewProjection.Row3.W - viewProjection.Row3.Z),
+			};
+		}
+
+		private static FrustumPlane MakePlane(double nx, double ny, double nz, double distance)
+		{
+			double length = Math.Sqrt(nx * nx + ny * ny + nz * nz);
+			if (length < 1e-10)
+			{
+				// Degenerate: keep everything rather than cull it.
+				return new FrustumPlane { Normal = Vector3.Zero, Distance = double.MaxValue };
+			}
+			return new FrustumPlane { Normal = new Vector3(nx / length, ny / length, nz / length), Distance = distance / length };
+		}
+
+		/// <summary>True when a sphere touches the frustum. Null planes disable culling.</summary>
+		public static bool SphereVisible(FrustumPlane[] planes, Vector3 center, double radius)
+		{
+			if (planes == null)
+			{
+				return true;
+			}
+			for (int i = 0; i < planes.Length; i++)
+			{
+				if (Vector3.Dot(planes[i].Normal, center) + planes[i].Distance < -radius)
+				{
+					return false;
+				}
+			}
+			return true;
+		}
+	}
+
+	/// <summary>One normalized frustum plane: Dot(Normal, p) + Distance >= 0 is inside.</summary>
+	public struct FrustumPlane
+	{
+		public Vector3 Normal;
+		public double Distance;
 	}
 }
