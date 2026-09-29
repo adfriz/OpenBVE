@@ -147,8 +147,10 @@ vec4 getLightResult()
 			if (cosA < dyn.cutoff) continue;
 			cone = (cosA - dyn.cutoff) / max(1.0 - dyn.cutoff, 1e-3);
 		}
-		float atten = 1.0 - dist / dyn.range;
-		atten *= atten;
+		float dr = dist / dyn.range;
+		// HRE-style smooth range window, without its 1/d^2 term: our colors are
+		// not HDR-scaled, so physical decay would dim everything to nothing.
+		float atten = pow(clamp(1.0 - dr * dr * dr * dr, 0.0, 1.0), 2.0);
 		float amount = nDotL * atten * cone;
 		finalColor.rgb += dyn.color * (amount * uMaterial.diffuse.rgb);
 		float pfDyn = pow(max(0.0, dot(vNormal, normalize(lDir + viewDir))), uMaterial.shininess);

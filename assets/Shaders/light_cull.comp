@@ -1,0 +1,91 @@
+// Clustered-forward light assignment for the Forward+ path.
+//
+// Not dispatched yet: the CPU selector in LightRegistry is active and this file
+// is only embedded for future use. Requires GL 4.3+, never macOS (GL 4.1 cap).
+// Gated at runtime by LightCapabilities.CanUseCompute with CPU fallback.
+// Verify against the driver log when wiring (ComputeLightSelector).
+//
+// Adapted from DaveH355/clustered-shading (MIT): one thread per cluster, each
+// thread writes only its own cluster, so no atomics or shared memory. Culling
+// is conservative on purpose: the range sphere only, never the spot cone.
+//
+// Consumer contract for the forward shader (per fragment):
+//   zTile = (log(|viewPos.z| / zNear) * gridSlices) / log(zFar / zNear)
+//   tile  = (gl_FragCoord.xy / tileSize, zTile)
+//   loop clusters[tile].lightIndices instead of the global uniform array.
+#version 430 core
+
+#define LOCAL_SIZE 128
+layout(local_size_x = LOCAL_SIZE, local_size_y = 1, local_size_z = 1) in;
+
+#define CLUSTER_MAX_LIGHTS 100
+
+// Matches DynamicLight in default.vert, in view space. std430-safe: every
+// vec3 is followed by a float, so each pair fills 16 bytes.
+struct ClusterLight
+{
+	vec3 position;
+	float range;
+	vec3 color;
+	float intensity; // reserved, 1.0 until producers scale HDR
+	vec3 direction;  // spot beam, ignored for points
+	float cutoff;    // cos(half-angle); negative = point light
+};
+
+struct Cluster
+{
+	vec4 minPoint; // AABB min in view space, from light_clusters.comp
+	vec4 maxPoint; // AABB max in view space
+	uint count;
+	uint lightIndices[CLUSTER_MAX_LIGHTS];
+};
+
+layout(std430, binding = 1) buffer clusterSSBO
+{
+	Cluster clusters[];
+};
+
+layout(std430, binding = 2) buffer lightSSBO
+{
+	ClusterLight clusterLight[];
+};
+
+uniform mat4 viewMatrix;
+
+bool testSphereAABB(uint i, Cluster cluster);
+
+// Each thread owns one cluster: dispatch size must cover the whole grid.
+void main()
+{
+	uint index = gl_WorkGroupID.x * LOCAL_SIZE + gl_LocalInvocationID.x;
+	if (index >= clusters.length())
+	{
+		return;
+	}
+	Cluster cluster = clusters[index];
+	cluster.count = 0; // culling runs every frame, never accumulate
+
+	uint lightCount = clusterLight.length();
+	for (uint i = 0; i < lightCount; i++)
+	{
+		if (cluster.count >= CLUSTER_MAX_LIGHTS)
+		{
+			break;
+		}
+		if (testSphereAABB(i, cluster))
+		{
+			cluster.lightIndices[cluster.count] = i;
+			cluster.count++;
+		}
+	}
+	clusters[index] = cluster;
+}
+
+bool testSphereAABB(uint i, Cluster cluster)
+{
+	vec3 center = vec3(viewMatrix * vec4(clusterLight[i].position, 1.0));
+	vec3 closest = clamp(center, cluster.minPoint.xyz, cluster.maxPoint.xyz);
+	vec3 diff = closest - center;
+	float radius = clusterLight[i].range;
+	return dot(diff, diff) <= radius * radius;
+}

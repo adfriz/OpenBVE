@@ -1,0 +1,81 @@
+// Cluster grid builder for the clustered-forward path.
+//
+// Not dispatched yet: the CPU selector in LightRegistry is active and this file
+// is only embedded for future use. Requires GL 4.3+, never macOS (GL 4.1 cap).
+// Verify against the driver log when wiring (ComputeLightSelector).
+//
+// Adapted from DaveH355/clustered-shading (MIT): one workgroup per cluster,
+// view-space AABBs from screen tiles x exponential depth slices. Types were
+// made explicit (no implicit uint->float) so strict drivers accept it.
+#version 430 core
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+struct Cluster
+{
+	vec4 minPoint; // AABB min in view space
+	vec4 maxPoint; // AABB max in view space
+	uint count;
+	uint lightIndices[100]; // capped per cluster, see light_cull.comp
+};
+
+layout(std430, binding = 1) buffer clusterSSBO
+{
+	Cluster clusters[];
+};
+
+uniform float zNear;
+uniform float zFar;
+uniform mat4 inverseProjection;
+uniform uvec3 gridSize; // e.g. 16x9x24 like DOOM 2016, or 12x12x24
+uniform uvec2 screenDimensions; // really the glViewport lighting runs under
+
+vec3 screenToView(vec2 screenCoord);
+vec3 lineIntersectionWithZPlane(vec3 startPoint, vec3 endPoint, float zDistance);
+
+void main()
+{
+	if (gl_WorkGroupID.x >= gridSize.x || gl_WorkGroupID.y >= gridSize.y || gl_WorkGroupID.z >= gridSize.z)
+	{
+		return;
+	}
+	uint tileIndex = gl_WorkGroupID.x + (gl_WorkGroupID.y * gridSize.x) +
+		(gl_WorkGroupID.z * gridSize.x * gridSize.y);
+	vec2 tileSize = vec2(screenDimensions) / vec2(gridSize.xy);
+
+	// Tile corners on the near plane, in view space.
+	vec2 minTile_screenspace = vec2(gl_WorkGroupID.xy) * tileSize;
+	vec2 maxTile_screenspace = (vec2(gl_WorkGroupID.xy) + vec2(1.0)) * tileSize;
+	vec3 minTile = screenToView(minTile_screenspace);
+	vec3 maxTile = screenToView(maxTile_screenspace);
+
+	float planeNear = zNear * pow(zFar / zNear, float(gl_WorkGroupID.z) / float(gridSize.z));
+	float planeFar = zNear * pow(zFar / zNear, (float(gl_WorkGroupID.z) + 1.0) / float(gridSize.z));
+
+	// Rays from the eye through the tile corners, cut at this cluster's depth planes.
+	vec3 minPointNear = lineIntersectionWithZPlane(vec3(0.0), minTile, planeNear);
+	vec3 minPointFar = lineIntersectionWithZPlane(vec3(0.0), minTile, planeFar);
+	vec3 maxPointNear = lineIntersectionWithZPlane(vec3(0.0), maxTile, planeNear);
+	vec3 maxPointFar = lineIntersectionWithZPlane(vec3(0.0), maxTile, planeFar);
+
+	clusters[tileIndex].minPoint = vec4(min(minPointNear, minPointFar), 0.0);
+	clusters[tileIndex].maxPoint = vec4(max(maxPointNear, maxPointFar), 0.0);
+	clusters[tileIndex].count = 0;
+}
+
+// Ray from the eye meets the plane perpendicular to Z at the given depth.
+vec3 lineIntersectionWithZPlane(vec3 startPoint, vec3 endPoint, float zDistance)
+{
+	vec3 direction = endPoint - startPoint;
+	vec3 normal = vec3(0.0, 0.0, -1.0);
+	float t = (zDistance - dot(normal, startPoint)) / dot(normal, direction);
+	return startPoint + t * direction;
+}
+
+vec3 screenToView(vec2 screenCoord)
+{
+	// To NDC, pinned on the near plane (-1 depth in OpenGL).
+	vec4 ndc = vec4(screenCoord / vec2(screenDimensions) * 2.0 - 1.0, -1.0, 1.0);
+	vec4 viewCoord = inverseProjection * ndc;
+	viewCoord /= viewCoord.w;
+	return viewCoord.xyz;
+}
