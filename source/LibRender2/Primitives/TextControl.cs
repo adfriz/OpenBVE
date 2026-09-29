@@ -1,6 +1,6 @@
-﻿//Simplified BSD License (BSD-2-Clause)
+//Simplified BSD License (BSD-2-Clause)
 //
-//Copyright (c) 2022, Christopher Lees, The OpenBVE Project
+//Copyright (c) 2023, Christopher Lees, The OpenBVE Project
 //
 //Redistribution and use in source and binary forms, with or without
 //modification, are permitted provided that the following conditions are met:
@@ -22,29 +22,47 @@
 //(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 //SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+using LibRender2.Text;
 using OpenBveApi.Colors;
+using OpenBveApi.Graphics;
 
 namespace LibRender2.Primitives
 {
-	public class Label : TextControl
+	/// <summary>Shared bits for text controls (buttons, labels).</summary>
+	public abstract class TextControl : GLControl
 	{
-		/// <summary>Text on the label.</summary>
-		public readonly string Text;
-		/// <summary>Text color.</summary>
-		public Color128 TextColor;
+		/// <summary>Font used for the text.</summary>
+		public OpenGlFont Font;
 
-		public Label(BaseRenderer renderer, string text) : base(renderer)
+		protected TextControl(BaseRenderer renderer) : base(renderer)
 		{
-			Text = text;
-			AutoSize(text);
+			Font = Renderer.Fonts.LargeFont;
 			// default colors to match GLMenu
-			TextColor = Color128.White;
+			BackgroundColor = Color128.Black;
 		}
 
-		public override void Draw()
+		// Sizes the control to fit its text.
+		protected void AutoSize(string text)
 		{
-			DrawFrame();
-			DrawText(Text, TextColor);
+			Size = Font.MeasureString(text) * 1.5;
+		}
+
+		// True when the mouse is inside the control.
+		protected bool HitTest(int x, int y)
+		{
+			return x > Location.X && x < Location.X + Size.X && y > Location.Y && y < Location.Y + Size.Y;
+		}
+
+		// Draws the background rectangle.
+		protected void DrawFrame()
+		{
+			Renderer.Rectangle.Draw(Texture, Location, Size, BackgroundColor);
+		}
+
+		// Draws the text over the background.
+		protected void DrawText(string text, Color128 color)
+		{
+			Renderer.OpenGlString.Draw(Font, text, Location + (Size * 0.15), TextAlignment.TopLeft, color);
 		}
 	}
 }

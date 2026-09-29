@@ -29,24 +29,24 @@ using OpenBveApi.Textures;
 
 namespace LibRender2.Primitives
 {
-	/// <summary>An abstract OpenGL based control</summary>
+	/// <summary>Base class for OpenGL controls.</summary>
 	public abstract class GLControl
 	{
-		/// <summary>Holds a reference to the base renderer</summary>
+		/// <summary>Renderer that owns this control.</summary>
 		internal readonly BaseRenderer Renderer;
-		/// <summary>The background color for the control</summary>
+		/// <summary>Background color.</summary>
 		public Color128 BackgroundColor;
-		/// <summary>The texture for the control</summary>
+		/// <summary>Optional texture.</summary>
 		public Texture Texture;
-		/// <summary>The stored location for the control</summary>
+		/// <summary>Position on screen.</summary>
 		public Vector2 Location;
-		/// <summary>The stored size for the control</summary>
+		/// <summary>Size on screen.</summary>
 		public Vector2 Size;
-		/// <summary>Whether the control is currently selected by the mouse</summary>
+		/// <summary>Whether the mouse is over the control.</summary>
 		public bool CurrentlySelected;
-		/// <summary>The event handler for the OnClick event</summary>
+		/// <summary>Fires on click.</summary>
 		public EventHandler OnClick;
-		/// <summary>Whether the control is currently visible</summary>
+		/// <summary>Hidden controls skip drawing (except labels).</summary>
 		public bool IsVisible;
 
 		protected GLControl(BaseRenderer renderer)

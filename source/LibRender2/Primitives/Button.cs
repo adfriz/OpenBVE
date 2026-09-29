@@ -23,47 +23,41 @@
 //SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
-using LibRender2.Text;
 using OpenBveApi.Colors;
-using OpenBveApi.Graphics;
 
 namespace LibRender2.Primitives
 {
-	public class Button : GLControl
+	public class Button : TextControl
 	{
-		/// <summary>The text displayed on the button</summary>
+		/// <summary>Text on the button (resizes to fit).</summary>
 		public string Text
 		{
 			get => _text;
 			set
 			{
 				_text = value;
-				Size = Font.MeasureString(Text) * 1.5 * Renderer.currentOptions.UserInterfaceScaleFactor;
+				AutoSize(value);
+				Size = Size * Renderer.currentOptions.UserInterfaceScaleFactor;
 			}
 		}
 
-		/// <summary>Backing property for the text</summary>
+		/// <summary>Backing text.</summary>
 		private string _text;
-		/// <summary> Whether the button is currently enabled</summary>
+		/// <summary>Whether the button responds to clicks.</summary>
 		public bool Enabled;
 
-		
-		/// <summary>The highlight color of the button</summary>
+		/// <summary>Highlight shown when hovered.</summary>
 		public Color128 HighlightColor;
-		/// <summary>The color of the text on the button, when enabled</summary>
+		/// <summary>Text color when enabled.</summary>
 		public Color128 EnabledTextColor;
-		/// <summary>The color of the text on the button, when disabled</summary>
+		/// <summary>Text color when disabled.</summary>
 		public Color128 DisabledTextColor;
-		/// <summary>The font for the button</summary>
-		public OpenGlFont Font;
 
 		public Button(BaseRenderer renderer, string text) : base(renderer)
 		{
-			Font = Renderer.Fonts.LargeFont;
 			Text = text;
 			Enabled = true;
 			// default colors to match GLMenu
-			BackgroundColor = Color128.Black;
 			HighlightColor = Color128.Orange;
 			EnabledTextColor = Color128.White;
 			DisabledTextColor = Color128.Grey;
@@ -75,17 +69,17 @@ namespace LibRender2.Primitives
 			{
 				return;
 			}
-			Renderer.Rectangle.Draw(Texture, Location, Size, BackgroundColor);
+			DrawFrame();
 			if (CurrentlySelected && Enabled)
 			{
 				Renderer.Rectangle.Draw(Texture, Location + Size * 0.1, Size - (Size * 0.2), HighlightColor);
 			}
-			Renderer.OpenGlString.Draw(Font, Text, Location + (Size * 0.15), TextAlignment.TopLeft, Enabled ?  EnabledTextColor : DisabledTextColor);
+			DrawText(Text, Enabled ? EnabledTextColor : DisabledTextColor);
 		}
 
 		public override void MouseMove(int x, int y)
 		{
-			CurrentlySelected = x > Location.X && x < Location.X + Size.X && y > Location.Y && y < Location.Y + Size.Y;
+			CurrentlySelected = HitTest(x, y);
 		}
 
 		public override void MouseDown(int x, int y)
