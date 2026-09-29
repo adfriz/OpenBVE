@@ -110,12 +110,7 @@ namespace ObjectViewer.Graphics
             BindCSMToDefaultShader();
             if (OptionLighting)
             {
-	            DefaultShader.SetIsLight(true);
-	            DefaultShader.SetLightPosition(TransformedLightPosition);
-	            DefaultShader.SetLightAmbient(Lighting.OptionAmbientColor);
-	            DefaultShader.SetLightDiffuse(Lighting.OptionDiffuseColor);
-	            DefaultShader.SetLightSpecular(Lighting.OptionSpecularColor);
-	            DefaultShader.SetLightModel(Lighting.LightModel);
+	            LightRegistry.UploadSun(DefaultShader, TransformedLightPosition, Lighting.OptionAmbientColor, Lighting.OptionDiffuseColor);
             }
             DefaultShader.SetTexture(0);
             DefaultShader.SetCurrentProjectionMatrix(CurrentProjectionMatrix);

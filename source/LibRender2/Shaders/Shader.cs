@@ -164,7 +164,7 @@ namespace LibRender2.Shaders
 		}
 		public UniformLayout GetUniformLayout()
 		{
-			return new UniformLayout
+			UniformLayout layout = new UniformLayout
 			{
 				CurrentAnimationMatricies = (short)GL.GetUniformBlockIndex(Handle, "uAnimationMatricies"),
 				CurrentProjectionMatrix = (short)GL.GetUniformLocation(Handle, "uCurrentProjectionMatrix"),
@@ -206,7 +206,22 @@ namespace LibRender2.Shaders
 				ShadowMap1 = (short)GL.GetUniformLocation(Handle, "uShadowMap1"),
 				ShadowMap2 = (short)GL.GetUniformLocation(Handle, "uShadowMap2"),
 				CurrentViewMatrix = (short)GL.GetUniformLocation(Handle, "uCurrentViewMatrix"),
+				DynamicLightCount = (short)GL.GetUniformLocation(Handle, "uDynamicLightCount"),
 			};
+			layout.DynamicLightPosition = new short[MaxDynamicLights];
+			layout.DynamicLightDirection = new short[MaxDynamicLights];
+			layout.DynamicLightColor = new short[MaxDynamicLights];
+			layout.DynamicLightRange = new short[MaxDynamicLights];
+			layout.DynamicLightCutoff = new short[MaxDynamicLights];
+			for (int i = 0; i < MaxDynamicLights; i++)
+			{
+				layout.DynamicLightPosition[i] = (short)GL.GetUniformLocation(Handle, "uDynamicLights[" + i + "].position");
+				layout.DynamicLightDirection[i] = (short)GL.GetUniformLocation(Handle, "uDynamicLights[" + i + "].direction");
+				layout.DynamicLightColor[i] = (short)GL.GetUniformLocation(Handle, "uDynamicLights[" + i + "].color");
+				layout.DynamicLightRange[i] = (short)GL.GetUniformLocation(Handle, "uDynamicLights[" + i + "].range");
+				layout.DynamicLightCutoff[i] = (short)GL.GetUniformLocation(Handle, "uDynamicLights[" + i + "].cutoff");
+			}
+			return layout;
 		}
 
 
@@ -334,6 +349,24 @@ namespace LibRender2.Shaders
 		public void SetLightModel(Vector4 LightModel)
 		{
 			GL.ProgramUniform4(Handle, UniformLayout.LightModel, (float)LightModel.X, (float)LightModel.Y, (float)LightModel.Z, (float)LightModel.W);
+		}
+
+		/// <summary>Maximum dynamic lights per frame. Keep in sync with MAX_DYNAMIC_LIGHTS in default.vert.</summary>
+		public const int MaxDynamicLights = 16;
+
+		public void SetDynamicLightCount(int count)
+		{
+			GL.ProgramUniform1(Handle, UniformLayout.DynamicLightCount, count);
+		}
+
+		// Uploads one dynamic light slot. Position/direction must already be in view space.
+		public void SetDynamicLight(int index, Vector3 position, Vector3 direction, Color24 color, float range, float cutoff)
+		{
+			GL.ProgramUniform3(Handle, UniformLayout.DynamicLightPosition[index], (float)position.X, (float)position.Y, (float)position.Z);
+			GL.ProgramUniform3(Handle, UniformLayout.DynamicLightDirection[index], (float)direction.X, (float)direction.Y, (float)direction.Z);
+			GL.ProgramUniform3(Handle, UniformLayout.DynamicLightColor[index], color.R / 255.0f, color.G / 255.0f, color.B / 255.0f);
+			GL.ProgramUniform1(Handle, UniformLayout.DynamicLightRange[index], range);
+			GL.ProgramUniform1(Handle, UniformLayout.DynamicLightCutoff[index], cutoff);
 		}
 
 		public void SetMaterialAmbient(Color32 MaterialAmbient)

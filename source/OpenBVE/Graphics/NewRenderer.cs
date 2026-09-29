@@ -194,12 +194,8 @@ namespace OpenBve.Graphics
             //Setup the shader for rendering the scene
             if (OptionLighting)
             {
-	            DefaultShader.SetIsLight(true);
-	            DefaultShader.SetLightPosition(TransformedLightPosition);
-	            DefaultShader.SetLightAmbient(Lighting.OptionAmbientColor);
-	            DefaultShader.SetLightDiffuse(Lighting.OptionDiffuseColor);
-	            DefaultShader.SetLightSpecular(Lighting.OptionSpecularColor);
-	            DefaultShader.SetLightModel(Lighting.LightModel);
+	            LightRegistry.UploadSun(DefaultShader, TransformedLightPosition, Lighting.OptionAmbientColor, Lighting.OptionDiffuseColor);
+	            LightRegistry.UploadDynamic(DefaultShader, CurrentViewMatrix, Camera.AbsolutePosition);
             }
             Fog.Set();
             DefaultShader.SetTexture(0);
@@ -356,13 +352,8 @@ namespace OpenBve.Graphics
 				Lighting.OptionAmbientColor = Color24.LightGrey;
 				Lighting.OptionDiffuseColor = Color24.LightGrey;
 
-				DefaultShader.SetIsLight(true);
 				TransformedLightPosition = new Vector3(Lighting.OptionLightPosition.X, Lighting.OptionLightPosition.Y, -Lighting.OptionLightPosition.Z);
-				DefaultShader.SetLightPosition(TransformedLightPosition);
-				DefaultShader.SetLightAmbient(Lighting.OptionAmbientColor);
-				DefaultShader.SetLightDiffuse(Lighting.OptionDiffuseColor);
-				DefaultShader.SetLightSpecular(Lighting.OptionSpecularColor);
-				DefaultShader.SetLightModel(Lighting.LightModel);
+				LightRegistry.UploadSun(DefaultShader, TransformedLightPosition, Lighting.OptionAmbientColor, Lighting.OptionDiffuseColor);
 
                 // overlay opaque face
                 foreach (FaceState face in overlayOpaqueFaces)

@@ -78,6 +78,20 @@ uniform Light uLight;
 uniform MaterialColor uMaterial;
 uniform int uMaterialFlags;
 
+// Dynamic point/spot lights (Forward+ foundation, CPU-selected for now).
+// Keep MAX_DYNAMIC_LIGHTS in sync with Shader.MaxDynamicLights.
+#define MAX_DYNAMIC_LIGHTS 16
+struct DynamicLight
+{
+	vec3 position;   // view space
+	vec3 direction;  // view space spot beam, ignored for points
+	vec3 color;
+	float range;     // meters, soft edge at the limit
+	float cutoff;    // cos(half-angle); negative = point light
+};
+uniform int uDynamicLightCount;
+uniform DynamicLight uDynamicLights[MAX_DYNAMIC_LIGHTS];
+
 layout (std140) uniform uAnimationMatricies {
     mat4 modelMatricies[128];
 };
@@ -111,6 +125,35 @@ vec4 getLightResult()
 
 	vec4 sceneColor = (uMaterialFlags & 1) != 0 ? vec4(uMaterial.emission, 1.0) + uMaterial.ambient * uLight.lightModel : uLight.lightModel;
 	vec4 finalColor = sceneColor + ambient * uMaterial.ambient + diffuse * uMaterial.diffuse + specular * uMaterial.specular;
+
+	// Dynamic lights: point and spot, no shadows, soft range falloff.
+	vec3 viewDir = -oViewPos.xyz;
+	float viewLen = length(viewDir);
+	viewDir = viewLen > 1e-4 ? viewDir / viewLen : vec3(0.0, 0.0, 1.0);
+	for (int i = 0; i < MAX_DYNAMIC_LIGHTS; i++)
+	{
+		if (i >= uDynamicLightCount) break;
+		DynamicLight dyn = uDynamicLights[i];
+		vec3 toLight = dyn.position - oViewPos.xyz;
+		float dist = length(toLight);
+		if (dist > dyn.range) continue;
+		vec3 lDir = toLight / max(dist, 1e-4);
+		float nDotL = max(0.0, dot(vNormal, lDir));
+		if (nDotL <= 0.0) continue;
+		float cone = 1.0;
+		if (dyn.cutoff >= 0.0)
+		{
+			float cosA = dot(-lDir, normalize(dyn.direction));
+			if (cosA < dyn.cutoff) continue;
+			cone = (cosA - dyn.cutoff) / max(1.0 - dyn.cutoff, 1e-3);
+		}
+		float atten = 1.0 - dist / dyn.range;
+		atten *= atten;
+		float amount = nDotL * atten * cone;
+		finalColor.rgb += dyn.color * (amount * uMaterial.diffuse.rgb);
+		float pfDyn = pow(max(0.0, dot(vNormal, normalize(lDir + viewDir))), uMaterial.shininess);
+		finalColor.rgb += dyn.color * (pfDyn * atten * cone) * uMaterial.specular.rgb;
+	}
 	return clamp(finalColor, 0.0, 1.0);
 }
 

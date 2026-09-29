@@ -175,12 +175,7 @@ namespace RouteViewer
             //Setup the shader for rendering the scene
             if (OptionLighting)
             {
-	            DefaultShader.SetIsLight(true);
-	            DefaultShader.SetLightPosition(TransformedLightPosition);
-	            DefaultShader.SetLightAmbient(Lighting.OptionAmbientColor);
-	            DefaultShader.SetLightDiffuse(Lighting.OptionDiffuseColor);
-	            DefaultShader.SetLightSpecular(Lighting.OptionSpecularColor);
-	            DefaultShader.SetLightModel(Lighting.LightModel);
+	            LightRegistry.UploadSun(DefaultShader, TransformedLightPosition, Lighting.OptionAmbientColor, Lighting.OptionDiffuseColor);
             }
 
             Fog.Set();

@@ -121,6 +121,7 @@ namespace LibRender2
 
 		public CameraProperties Camera;
 		public Lighting Lighting;
+		public LightRegistry LightRegistry;
 		public Background Background;
 		public Fog Fog;
 		public Marker Marker;
@@ -362,6 +363,7 @@ namespace LibRender2
 			Screen = new Screen(this);
 			Camera = new CameraProperties(this);
 			Lighting = new Lighting(this);
+			LightRegistry = new LightRegistry(this);
 			Marker = new Marker(this);
 			Shadows = new Shadows(this);
 
@@ -1136,6 +1138,7 @@ namespace LibRender2
 			shader.SetLightDiffuse(Color24.White);
 			shader.SetLightSpecular(Color24.White);
 			shader.SetLightModel(Lighting.LightModel);
+			shader.SetDynamicLightCount(0);
 			shader.SetMaterialAmbient(Color24.White);
 			shader.SetMaterialDiffuse(Color24.White);
 			shader.SetMaterialSpecular(Color24.White);

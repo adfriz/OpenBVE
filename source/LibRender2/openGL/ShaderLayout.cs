@@ -232,5 +232,35 @@ namespace LibRender2
 		/// The handle of "uCurrentViewMatrix" within the shader
 		/// </summary>
 		public short CurrentViewMatrix = -1;
+
+		/// <summary>
+		/// The handle of "uDynamicLightCount" within the shader
+		/// </summary>
+		public short DynamicLightCount = -1;
+
+		/// <summary>
+		/// Handles of "uDynamicLights[i].position" (one per slot)
+		/// </summary>
+		public short[] DynamicLightPosition;
+
+		/// <summary>
+		/// Handles of "uDynamicLights[i].direction" (one per slot)
+		/// </summary>
+		public short[] DynamicLightDirection;
+
+		/// <summary>
+		/// Handles of "uDynamicLights[i].color" (one per slot)
+		/// </summary>
+		public short[] DynamicLightColor;
+
+		/// <summary>
+		/// Handles of "uDynamicLights[i].range" (one per slot)
+		/// </summary>
+		public short[] DynamicLightRange;
+
+		/// <summary>
+		/// Handles of "uDynamicLights[i].cutoff" (one per slot)
+		/// </summary>
+		public short[] DynamicLightCutoff;
 	}
 }
