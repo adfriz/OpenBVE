@@ -13,6 +13,7 @@ using LibRender2.Fogs;
 using LibRender2.Lightings;
 using LibRender2.Loadings;
 using LibRender2.MotionBlurs;
+using LibRender2.PostProcessing;
 using LibRender2.Rendering;
 using LibRender2.Objects;
 using LibRender2.Overlays;
@@ -125,6 +126,9 @@ namespace LibRender2
 		public LightRegistry LightRegistry;
 		public ClusterManager Clusters;
 		public HdrPipeline Hdr;
+		public Tonemap Tonemap;
+		/// Post steps in order. Tonemap stays last.
+		public PostChain Post;
 		public Background Background;
 		public Fog Fog;
 		public Marker Marker;
@@ -377,6 +381,9 @@ namespace LibRender2
 			LightRegistry = new LightRegistry(this);
 			Clusters = new ClusterManager(this);
 			Hdr = new HdrPipeline(this);
+			Tonemap = new Tonemap(this);
+			Post = new PostChain();
+			Post.Add(Tonemap);
 			Marker = new Marker(this);
 			Shadows = new Shadows(this);
 
@@ -554,6 +561,14 @@ namespace LibRender2
 			try
 			{
 				Hdr?.Dispose();
+			}
+			catch
+			{
+				// Ignored - best effort cleanup during shutdown
+			}
+			try
+			{
+				Post?.Dispose();
 			}
 			catch
 			{
