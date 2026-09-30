@@ -3,17 +3,28 @@ using OpenTK.Graphics.OpenGL;
 
 namespace LibRender2.PostProcessing
 {
-	/// Last post step: HDR texture to screen. Real curves live here later.
+	/// Curve choice. None keeps the legacy copy look.
+	public enum TonemapMode
+	{
+		None = 0,
+		Reinhard = 1,
+		Aces = 2
+	}
+
+	/// Last step: HDR texture to screen with exposure, curve, and sRGB.
 	public class Tonemap : IPostEffect, System.IDisposable
 	{
 		private readonly BaseRenderer renderer;
 
-		/// 1 = copy as-is.
+		/// 1 = as-shot. Higher brightens before the curve.
 		public float Exposure = 1.0f;
+		/// Default ACES. Use None to get the old copy behavior back.
+		public TonemapMode Mode = TonemapMode.Aces;
 
 		private AbstractShader program;
 		private int uTexture = -1;
 		private int uExposure = -1;
+		private int uMode = -1;
 		private readonly FullscreenQuad quad = new FullscreenQuad();
 		private bool offForGood;
 
@@ -38,6 +49,7 @@ namespace LibRender2.PostProcessing
 				program = new AbstractShader(renderer, "tonemap", "tonemap", true, true);
 				uTexture = GL.GetUniformLocation(program.Handle, "uHdrBuffer");
 				uExposure = GL.GetUniformLocation(program.Handle, "uExposure");
+				uMode = GL.GetUniformLocation(program.Handle, "uMode");
 				quad.Ensure();
 				return true;
 			}
@@ -66,6 +78,10 @@ namespace LibRender2.PostProcessing
 			GL.BindTexture(TextureTarget.Texture2D, inputTexture);
 			GL.ProgramUniform1(program.Handle, uTexture, 0);
 			GL.ProgramUniform1(program.Handle, uExposure, Exposure);
+			if (uMode != -1)
+			{
+				GL.ProgramUniform1(program.Handle, uMode, (int)Mode);
+			}
 			GL.Disable(EnableCap.DepthTest);
 			GL.Disable(EnableCap.Blend);
 			quad.Draw();
