@@ -13,6 +13,7 @@ using LibRender2.Fogs;
 using LibRender2.Lightings;
 using LibRender2.Loadings;
 using LibRender2.MotionBlurs;
+using LibRender2.Rendering;
 using LibRender2.Objects;
 using LibRender2.Overlays;
 using LibRender2.Primitives;
@@ -123,6 +124,7 @@ namespace LibRender2
 		public Lighting Lighting;
 		public LightRegistry LightRegistry;
 		public ClusterManager Clusters;
+		public HdrPipeline Hdr;
 		public Background Background;
 		public Fog Fog;
 		public Marker Marker;
@@ -374,6 +376,7 @@ namespace LibRender2
 			Lighting = new Lighting(this);
 			LightRegistry = new LightRegistry(this);
 			Clusters = new ClusterManager(this);
+			Hdr = new HdrPipeline(this);
 			Marker = new Marker(this);
 			Shadows = new Shadows(this);
 
@@ -543,6 +546,14 @@ namespace LibRender2
 			try
 			{
 				Clusters?.Dispose();
+			}
+			catch
+			{
+				// Ignored - best effort cleanup during shutdown
+			}
+			try
+			{
+				Hdr?.Dispose();
 			}
 			catch
 			{

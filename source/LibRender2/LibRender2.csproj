@@ -89,6 +89,7 @@
     <Compile Include="Overlays\Marker.cs" />
     <Compile Include="Overlays\OverlayDisplayModes.cs" />
     <Compile Include="Overlays\RailPath.cs" />
+    <Compile Include="Rendering\HdrPipeline.cs" />
     <Compile Include="Primitives\Button.cs" />
     <Compile Include="Primitives\Cube.cs" />
     <Compile Include="Primitives\GLControl.cs" />
