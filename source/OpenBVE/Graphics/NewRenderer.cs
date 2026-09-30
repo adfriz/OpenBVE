@@ -118,9 +118,9 @@ namespace OpenBve.Graphics
 				GL.ClearColor(Interface.CurrentOptions.ClearColor.R * inv255, Interface.CurrentOptions.ClearColor.G * inv255, Interface.CurrentOptions.ClearColor.B * inv255, 1.0f);
 			}
 
-			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-			
-			// set up camera and lighting early for shadows
+			// Hdr.Begin clears the right target.
+
+			// Camera + lights first, shadows need them
 			CurrentViewMatrix = Matrix4D.LookAt(Vector3.Zero, new Vector3(Camera.AbsoluteDirection.X, Camera.AbsoluteDirection.Y, -Camera.AbsoluteDirection.Z), new Vector3(Camera.AbsoluteUp.X, Camera.AbsoluteUp.Y, -Camera.AbsoluteUp.Z));
 			TransformedLightPosition = new Vector3(Lighting.OptionLightPosition.X, Lighting.OptionLightPosition.Y, -Lighting.OptionLightPosition.Z);
 			TransformedLightPosition.Transform(CurrentViewMatrix);
@@ -163,6 +163,8 @@ namespace OpenBve.Graphics
 				Program.CurrentRoute.CurrentFog = Program.CurrentRoute.PreviousFog;
 			}
 
+			// World draws into HDR from here.
+			Hdr.Begin();
 			DefaultShader.Activate();
 			BindCSMToDefaultShader();
 
@@ -281,6 +283,7 @@ namespace OpenBve.Graphics
 
 			// motion blur
 			RestoreClassic(useClusters);
+			Post.Draw(Hdr.End());
 			ResetOpenGlState();
 			SetAlphaFunc(AlphaFunction.Greater, 0.0f);
 			GL.Disable(EnableCap.DepthTest);
