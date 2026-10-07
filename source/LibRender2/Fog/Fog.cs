@@ -6,6 +6,7 @@ namespace LibRender2.Fogs
 	{
 		/// <summary>Holds a reference to the base renderer</summary>
 		private readonly BaseRenderer Renderer;
+		private readonly System.Func<Shaders.AbstractShader> currentShaderProvider;
 
 		public bool Enabled;
 
@@ -29,14 +30,25 @@ namespace LibRender2.Fogs
 			Renderer = renderer;
 		}
 
+		/// <summary>Creates fog decoupled from the concrete renderer.</summary>
+		public Fog(System.Func<Shaders.AbstractShader> currentShaderProvider)
+		{
+			this.currentShaderProvider = currentShaderProvider;
+		}
+
 		public void Set()
 		{
 			if (!Enabled)
 			{
 				return;
 			}
-			Renderer.CurrentShader.SetFog(true);
-			Renderer.CurrentShader.SetFog(this);
+			Shaders.AbstractShader shader = currentShaderProvider?.Invoke() ?? Renderer?.CurrentShader;
+			if (shader == null)
+			{
+				return;
+			}
+			shader.SetFog(true);
+			shader.SetFog(this);
         }
 	}
 }

@@ -20,13 +20,19 @@ namespace LibRender2.Screens
 		public readonly List<ScreenResolution> AvailableResolutions;
 
 		internal Screen(BaseRenderer renderer)
+			: this(renderer.currentHost.Application)
+		{
+		}
+
+		/// <summary>Creates screen state from the host application only (no renderer dependency).</summary>
+		internal Screen(HostApplication application)
 		{
 			/*
 			 * TrainEditor2 uses a GLControl
 			 * On the Linux SLD2 backend, this crashes when attempting to get the list of supported screen resolutions
 			 * As we don't care about fullscreen here, just ignore
 			 */
-			if (renderer.currentHost.Application != HostApplication.TrainEditor2 && renderer.currentHost.Application != HostApplication.TrainEditor)
+			if (application != HostApplication.TrainEditor2 && application != HostApplication.TrainEditor)
 			{
 				//Find all resolutions our screen is capable of displaying, but don't store HZ info etc.
 				AvailableResolutions = new List<ScreenResolution>();

@@ -9,8 +9,6 @@ namespace LibRender2.Lightings
 {
 	public class Lighting
 	{
-		private readonly BaseRenderer renderer;
-
 		/// <summary>Whether the lighting model should re-initialize this frame</summary>
 		public bool ShouldInitialize = false;
 
@@ -36,9 +34,14 @@ namespace LibRender2.Lightings
 		/// <remarks>BEWARE: This is NOT the default set by GL1.2</remarks>
 		public Vector4 LightModel = new Vector4(0.0, 0.0, 0.0, 1.0);
 
-		internal Lighting(BaseRenderer Renderer)
+		internal Lighting(BaseRenderer renderer)
 		{
-			renderer = Renderer;
+			// No longer requires the renderer; overload retained for compatibility.
+		}
+
+		/// <summary>Creates lighting state without a renderer dependency.</summary>
+		public Lighting()
+		{
 		}
 
 		/// <summary>Updates the lighting model on a per frame basis</summary>

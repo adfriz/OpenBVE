@@ -58,6 +58,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Backgrounds\Background.cs" />
+    <Compile Include="Abstractions\RendererAbstractions.cs" />
+    <Compile Include="Rendering\FaceRenderer.cs" />
+    <Compile Include="Scene\VisibilityManager.cs" />
+    <Compile Include="State\RenderStateManager.cs" />
     <Compile Include="BaseRenderer.cs" />
     <Compile Include="Camera\Camera.cs" />
     <Compile Include="Camera\CameraAlignment.cs" />
