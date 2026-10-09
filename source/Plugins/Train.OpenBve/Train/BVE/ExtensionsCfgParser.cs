@@ -104,6 +104,11 @@ namespace Train.OpenBve
 						block.GetValue(ExtensionCfgKey.Reversed, out CarObjectsReversed[block.Index]);
 						block.GetValue(ExtensionCfgKey.VisibleFromInterior, out VisibleFromInterior[block.Index]);
 						block.GetValue(ExtensionCfgKey.LoadingSway, out Train.Cars[block.Index].EnableLoadingSway);
+						block.GetValue(ExtensionCfgKey.PhysicsMotion, out Train.Cars[block.Index].EnablePhysicsMotion);
+						if (block.GetValue(ExtensionCfgKey.PhysicsMotionScale, out double physicsMotionScale, NumberRange.NonNegative))
+						{
+							Train.Cars[block.Index].PhysicsMotionScale = physicsMotionScale;
+						}
 						if (block.GetVector2(ExtensionCfgKey.Axles, ',', out Vector2 carAxles))
 						{
 							if (carAxles.X >= carAxles.Y)

@@ -1,4 +1,4 @@
-﻿namespace Formats.OpenBve
+namespace Formats.OpenBve
 {
 	public enum TrainXMLKey
 	{
@@ -41,6 +41,8 @@
 		RearAxle,
 		Reversed,
 		LoadingSway,
+		PhysicsMotion,
+		PhysicsMotionScale,
 		DriverPosition,
 		InteriorDirection,
 		InteriorView,
