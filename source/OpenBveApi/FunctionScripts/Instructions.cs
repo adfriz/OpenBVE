@@ -1,4 +1,4 @@
-﻿// ReSharper disable InconsistentNaming
+// ReSharper disable InconsistentNaming
 namespace OpenBveApi.FunctionScripting
 {
 	/// <summary>The available instructions for use in a function script</summary>
@@ -66,6 +66,8 @@ namespace OpenBveApi.FunctionScripting
 		OverheadVoltsTarget, ThirdRailVoltsTarget, FourthRailVoltsTarget,
 		OverheadHeightTarget, ThirdRailHeightTarget, FourthRailHeightTarget,
 		OverheadAmpsTarget, ThirdRailAmpsTarget, FourthRailAmpsTarget,
+		PhysicsMotionRoll, PhysicsMotionRollIndex, PhysicsMotionSway, PhysicsMotionSwayIndex, PhysicsMotionBounce, PhysicsMotionBounceIndex,
+		PhysicsMotionPitch, PhysicsMotionPitchIndex, PhysicsMotionShift, PhysicsMotionShiftIndex,
 
 #pragma warning restore CS1591
 

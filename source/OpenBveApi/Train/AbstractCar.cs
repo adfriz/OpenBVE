@@ -42,6 +42,21 @@ namespace OpenBveApi.Trains
 		/// <summary>The current mass of any cargo in the car in kilograms</summary>
 		public double CargoMass;
 
+		/// <summary>Visual-only body roll in radians (positive = lean right). Updated every frame, safe for addons to read.</summary>
+		public double PhysicsMotionRollAngle;
+
+		/// <summary>Visual-only body lateral offset in meters (positive = right).</summary>
+		public double PhysicsMotionSway;
+
+		/// <summary>Visual-only body vertical offset in meters (positive = up).</summary>
+		public double PhysicsMotionBounce;
+
+		/// <summary>Visual-only body pitch in radians (positive = nose up).</summary>
+		public double PhysicsMotionPitchAngle;
+
+		/// <summary>Visual-only body longitudinal offset in meters (positive = forwards).</summary>
+		public double PhysicsMotionShift;
+
 		/// <summary>Contains the current brightness values</summary>
 		public Brightness Brightness;
 
