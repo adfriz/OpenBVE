@@ -181,8 +181,44 @@ namespace TrainManager.Trains
 				//Trigger point sounds if appropriate
 				for (int i = 0; i < Cars.Length; i++)
 				{
+					bool frontTriggered = Cars[i].FrontAxle.PointSoundTriggered;
+					bool rearTriggered = Cars[i].RearAxle.PointSoundTriggered;
+					// Visual body kicks for joints / switches (both axles, even when no sound defined)
+					if (frontTriggered || rearTriggered)
+					{
+						try
+						{
+							bool isSwitch = false;
+							try
+							{
+								int ti = Cars[i].FrontAxle.Follower.TrackIndex;
+								int le = Cars[i].FrontAxle.Follower.LastTrackElement;
+								if (TrainManagerBase.currentHost.Tracks.ContainsKey(ti))
+								{
+									var elems = TrainManagerBase.currentHost.Tracks[ti].Elements;
+									if (elems != null && le >= 0 && le < elems.Length && elems[le].ContainsSwitch)
+									{
+										isSwitch = true;
+									}
+								}
+							}
+							catch
+							{
+							}
+							double scale = Cars[i].EnablePhysicsMotion ? Cars[i].PhysicsMotionScale : 0.0;
+							if (scale != 0.0 && Cars[i].PhysicsMotion != null)
+							{
+								if (frontTriggered) Cars[i].PhysicsMotion.OnPointTrigger(isSwitch, CurrentSpeed, scale);
+								if (rearTriggered) Cars[i].PhysicsMotion.OnPointTrigger(isSwitch, CurrentSpeed, scale);
+							}
+						}
+						catch
+						{
+						}
+						if (rearTriggered) Cars[i].RearAxle.PointSoundTriggered = false;
+					}
 					CarSound c = null;
-					if (Cars[i].FrontAxle.PointSoundTriggered)
+					if (frontTriggered)
 					{
 						Cars[i].FrontAxle.PointSoundTriggered = false;
 						int bufferIndex = Cars[i].FrontAxle.RunIndex;
