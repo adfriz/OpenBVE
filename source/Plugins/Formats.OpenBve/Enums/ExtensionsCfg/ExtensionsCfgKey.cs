@@ -1,4 +1,4 @@
-﻿namespace Formats.OpenBve
+namespace Formats.OpenBve
 {
 	public enum ExtensionCfgKey
 	{
@@ -9,6 +9,8 @@
 		Reversed,
 		LoadingSway,
 		VisibleFromInterior,
-		Distances
+		Distances,
+		PhysicsMotion,
+		PhysicsMotionScale
 	}
 }
