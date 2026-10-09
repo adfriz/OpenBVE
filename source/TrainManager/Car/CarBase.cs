@@ -84,6 +84,12 @@ namespace TrainManager.Car
 		public CameraAlignment InteriorCamera;
 		/// <summary>Whether loading sway is enabled for this car</summary>
 		public bool EnableLoadingSway = true;
+		/// <summary>Whether visual body motion is enabled for this car</summary>
+		public bool EnablePhysicsMotion = true;
+		/// <summary>Per-car gain for visual body motion (1.0 = default, 0 = off)</summary>
+		public double PhysicsMotionScale = 1.0;
+		/// <summary>Visual-only body motion state for this car</summary>
+		public readonly PhysicsMotion PhysicsMotion;
 		/// <summary>Whether this car has an interior view</summary>
 		public bool HasInteriorView = false;
 		/// <summary>Contains the generic sounds attached to the car</summary>
@@ -120,6 +126,7 @@ namespace TrainManager.Car
 		public CarBase(TrainBase train, int index, double coefficientOfFriction, double coefficientOfRollingResistance, double aerodynamicDragCoefficient)
 		{
 			Specs = new CarPhysics();
+			PhysicsMotion = new PhysicsMotion(index * 7919 + 13);
 			Brightness = new Brightness(this);
 			baseTrain = train;
 			trainCarIndex = index;
@@ -152,6 +159,7 @@ namespace TrainManager.Car
 		{
 			baseTrain = train;
 			trainCarIndex = index;
+			PhysicsMotion = new PhysicsMotion(index * 7919 + 13);
 			CarSections = new Dictionary<CarSectionType, CarSection>();
 			CurrentCarSection = CarSectionType.NotVisible;
 			FrontAxle = new BVEAxle(TrainManagerBase.currentHost, train, this);
@@ -732,8 +740,35 @@ namespace TrainManager.Car
 
 			Vector3 p = new Vector3(0.5 * (FrontAxle.Follower.WorldPosition + RearAxle.Follower.WorldPosition));
 			p -= d * (0.5 * (FrontAxle.Position + RearAxle.Position));
+			// Visual-only body motion: offset/rotate copies, never the physics Up/WorldPosition
+			Vector3 vd = d;
+			Vector3 vs = s;
+			Vector3 vUp = Up;
+			Vector3 vp = p;
+			if (PhysicsMotion != null && EnablePhysicsMotion && PhysicsMotionScale != 0.0)
+			{
+				double roll = PhysicsMotion.RollAngle;
+				double pitch = PhysicsMotion.PitchAngle;
+				double sway = PhysicsMotion.Sway;
+				double bounce = PhysicsMotion.Bounce;
+				double shift = PhysicsMotion.Shift;
+				if (roll != 0.0 || pitch != 0.0 || sway != 0.0 || bounce != 0.0 || shift != 0.0)
+				{
+					if (roll != 0.0)
+					{
+						vs.Rotate(d, roll);
+						vUp.Rotate(d, roll);
+					}
+					if (pitch != 0.0)
+					{
+						vd.Rotate(vs, pitch);
+						vUp.Rotate(vs, pitch);
+					}
+					vp += vs * sway + vUp * bounce + vd * shift;
+				}
+			}
 			// determine visibility
-			Vector3 cd = new Vector3(p - TrainManagerBase.Renderer.Camera.AbsolutePosition);
+			Vector3 cd = new Vector3(vp - TrainManagerBase.Renderer.Camera.AbsolutePosition);
 			double dist = cd.NormSquared();
 			double bid = TrainManagerBase.Renderer.Camera.ViewingDistance + Length;
 			CurrentlyVisible = dist < bid * bid;
@@ -746,7 +781,7 @@ namespace TrainManager.Car
 				{
 					for (int i = 0; i < currentCarSection.Groups[0].Elements.Length; i++)
 					{
-						UpdateCarSectionElement(currentCarSection, 0, i, p, d, s, CurrentlyVisible, TimeElapsed, ForceUpdate, EnableDamping);
+						UpdateCarSectionElement(currentCarSection, 0, i, vp, vd, vs, vUp, CurrentlyVisible, TimeElapsed, ForceUpdate, EnableDamping);
 
 						// brightness change
 						if (currentCarSection.Groups[0].Elements[i].internalObject != null)
@@ -761,7 +796,7 @@ namespace TrainManager.Car
 				{
 					for (int i = 0; i < currentCarSection.Groups[add].Elements.Length; i++)
 					{
-						UpdateCarSectionElement(currentCarSection, add, i, p, d, s, CurrentlyVisible, TimeElapsed, ForceUpdate, EnableDamping);
+						UpdateCarSectionElement(currentCarSection, add, i, vp, vd, vs, vUp, CurrentlyVisible, TimeElapsed, ForceUpdate, EnableDamping);
 
 						// brightness change
 						if (currentCarSection.Groups[add].Elements[i].internalObject != null)
@@ -774,30 +809,30 @@ namespace TrainManager.Car
 					{
 						for (int i = 0; i < currentCarSection.Groups[add].TouchElements.Length; i++)
 						{
-							UpdateCarSectionTouchElement(currentCarSection, add, i, p, d, s, false, TimeElapsed, ForceUpdate, EnableDamping);
+							UpdateCarSectionTouchElement(currentCarSection, add, i, vp, vd, vs, vUp, false, TimeElapsed, ForceUpdate, EnableDamping);
 						}
 					}
 				}
 				if (currentCarSection.Groups[0].Keyframes != null)
 				{
-					currentCarSection.Groups[0].Keyframes.Update(TrackPosition, p, d, Up, s, TimeElapsed);
+					currentCarSection.Groups[0].Keyframes.Update(TrackPosition, vp, vd, vUp, vs, TimeElapsed);
 				}
 				if (currentCarSection.CurrentAdditionalGroup + 1 < currentCarSection.Groups.Length)
 				{
-					currentCarSection.Groups[currentCarSection.CurrentAdditionalGroup + 1].Keyframes?.Update(TrackPosition, p, d, Up, s, TimeElapsed);
+					currentCarSection.Groups[currentCarSection.CurrentAdditionalGroup + 1].Keyframes?.Update(TrackPosition, vp, vd, vUp, vs, TimeElapsed);
 				}
 			}
 			//Update camera restriction
 
 			CameraRestriction.AbsoluteBottomLeft = new Vector3(CameraRestriction.BottomLeft);
 			CameraRestriction.AbsoluteBottomLeft += Driver;
-			CameraRestriction.AbsoluteBottomLeft.Rotate(new Transformation(d, Up, s));
-			CameraRestriction.AbsoluteBottomLeft.Translate(p);
+			CameraRestriction.AbsoluteBottomLeft.Rotate(new Transformation(vd, vUp, vs));
+			CameraRestriction.AbsoluteBottomLeft.Translate(vp);
 
 			CameraRestriction.AbsoluteTopRight = new Vector3(CameraRestriction.TopRight);
 			CameraRestriction.AbsoluteTopRight += Driver;
-			CameraRestriction.AbsoluteTopRight.Rotate(new Transformation(d, Up, s));
-			CameraRestriction.AbsoluteTopRight.Translate(p);
+			CameraRestriction.AbsoluteTopRight.Rotate(new Transformation(vd, vUp, vs));
+			CameraRestriction.AbsoluteTopRight.Translate(vp);
 			
 		}
 
@@ -812,7 +847,7 @@ namespace TrainManager.Car
 		/// <param name="TimeElapsed"></param>
 		/// <param name="ForceUpdate"></param>
 		/// <param name="EnableDamping"></param>
-		private void UpdateCarSectionElement(CarSection CarSection, int GroupIndex, int ElementIndex, Vector3 Position, Vector3 Direction, Vector3 Side, bool Show, double TimeElapsed, bool ForceUpdate, bool EnableDamping)
+		private void UpdateCarSectionElement(CarSection CarSection, int GroupIndex, int ElementIndex, Vector3 Position, Vector3 Direction, Vector3 Side, Vector3 UpVector, bool Show, double TimeElapsed, bool ForceUpdate, bool EnableDamping)
 		{
 			Vector3 p;
 			if (CarSection.Type == ObjectType.Overlay & (TrainManagerBase.Renderer.Camera.CurrentRestriction != CameraRestrictionMode.NotAvailable && TrainManagerBase.Renderer.Camera.CurrentRestriction != CameraRestrictionMode.Restricted3D))
@@ -853,14 +888,14 @@ namespace TrainManager.Car
 				updatefunctions = true;
 			}
 
-			CarSection.Groups[GroupIndex].Elements[ElementIndex].Update(baseTrain, Index, FrontAxle.Follower.TrackPosition - FrontAxle.Position, p, Direction, Up, Side, updatefunctions, Show, timeDelta, EnableDamping, false, CarSection.Type == ObjectType.Overlay ? TrainManagerBase.Renderer.Camera : null);
+			CarSection.Groups[GroupIndex].Elements[ElementIndex].Update(baseTrain, Index, FrontAxle.Follower.TrackPosition - FrontAxle.Position, p, Direction, UpVector, Side, updatefunctions, Show, timeDelta, EnableDamping, false, CarSection.Type == ObjectType.Overlay ? TrainManagerBase.Renderer.Camera : null);
 			if (CarSection.Groups[GroupIndex].Elements[ElementIndex].UpdateVAO)
 			{
 				VAOExtensions.CreateOrUpdateVAO(CarSection.Groups[GroupIndex].Elements[ElementIndex].internalObject.Prototype.Mesh, true, TrainManagerBase.Renderer.DefaultShader.VertexLayout, TrainManagerBase.Renderer);
 			}
 		}
 
-		private void UpdateCarSectionTouchElement(CarSection CarSection, int GroupIndex, int ElementIndex, Vector3 Position, Vector3 Direction, Vector3 Side, bool Show, double TimeElapsed, bool ForceUpdate, bool EnableDamping)
+		private void UpdateCarSectionTouchElement(CarSection CarSection, int GroupIndex, int ElementIndex, Vector3 Position, Vector3 Direction, Vector3 Side, Vector3 UpVector, bool Show, double TimeElapsed, bool ForceUpdate, bool EnableDamping)
 		{
 			Vector3 p;
 			if (CarSection.Type == ObjectType.Overlay & (TrainManagerBase.Renderer.Camera.CurrentRestriction != CameraRestrictionMode.NotAvailable && TrainManagerBase.Renderer.Camera.CurrentRestriction != CameraRestrictionMode.Restricted3D))
@@ -901,7 +936,7 @@ namespace TrainManager.Car
 				updatefunctions = true;
 			}
 
-			CarSection.Groups[GroupIndex].TouchElements[ElementIndex].Element.Update(baseTrain, Index, FrontAxle.Follower.TrackPosition - FrontAxle.Position, p, Direction, Up, Side, updatefunctions, Show, timeDelta, EnableDamping, true, CarSection.Type == ObjectType.Overlay ? TrainManagerBase.Renderer.Camera : null);
+			CarSection.Groups[GroupIndex].TouchElements[ElementIndex].Element.Update(baseTrain, Index, FrontAxle.Follower.TrackPosition - FrontAxle.Position, p, Direction, UpVector, Side, updatefunctions, Show, timeDelta, EnableDamping, true, CarSection.Type == ObjectType.Overlay ? TrainManagerBase.Renderer.Camera : null);
 			if (CarSection.Groups[GroupIndex].TouchElements[ElementIndex].Element.UpdateVAO)
 			{
 				VAOExtensions.CreateOrUpdateVAO(CarSection.Groups[GroupIndex].TouchElements[ElementIndex].Element.internalObject.Prototype.Mesh, true, TrainManagerBase.Renderer.DefaultShader.VertexLayout, TrainManagerBase.Renderer);
@@ -1135,6 +1170,59 @@ namespace TrainManager.Car
 
 			Suspension.Update(TimeElapsed);
 			Flange.Update(TimeElapsed);
+			UpdatePhysicsMotion(TimeElapsed);
+		}
+
+		/// <summary>Updates the visual-only body motion state (never affects physics).</summary>
+		private void UpdatePhysicsMotion(double TimeElapsed)
+		{
+			if (PhysicsMotion == null) return;
+			try
+			{
+				double scale = EnablePhysicsMotion && !Derailed ? PhysicsMotionScale : 0.0;
+				double gauge = 1.435;
+				double accuracy = 2.0;
+				try
+				{
+					int ti = FrontAxle.Follower.TrackIndex;
+					if (TrainManagerBase.currentHost.Tracks.ContainsKey(ti))
+					{
+						gauge = TrainManagerBase.currentHost.Tracks[ti].RailGauge;
+						int le = FrontAxle.Follower.LastTrackElement;
+						var elems = TrainManagerBase.currentHost.Tracks[ti].Elements;
+						if (elems != null && le >= 0 && le < elems.Length)
+						{
+							accuracy = elems[le].CsvRwAccuracyLevel;
+						}
+					}
+				}
+				catch
+				{
+				}
+				bool leftOpen = false;
+				bool rightOpen = false;
+				try
+				{
+					if (Doors != null && Doors.Length > 0 && Doors[0] != null) leftOpen = Doors[0].State > 0.5;
+					if (Doors != null && Doors.Length > 1 && Doors[1] != null) rightOpen = Doors[1].State > 0.5;
+				}
+				catch
+				{
+				}
+				PhysicsMotion.Update(TimeElapsed, CurrentSpeed,
+					FrontAxle.Follower.CurveRadius, RearAxle.Follower.CurveRadius,
+					FrontAxle.Follower.CurveCant, RearAxle.Follower.CurveCant,
+					gauge, accuracy, leftOpen, rightOpen, CargoMass,
+					FrontAxle.Follower.TrackPosition, RearAxle.Follower.TrackPosition, scale);
+				PhysicsMotionRollAngle = PhysicsMotion.RollAngle;
+				PhysicsMotionSway = PhysicsMotion.Sway;
+				PhysicsMotionBounce = PhysicsMotion.Bounce;
+				PhysicsMotionPitchAngle = PhysicsMotion.PitchAngle;
+				PhysicsMotionShift = PhysicsMotion.Shift;
+			}
+			catch
+			{
+			}
 		}
 
 		/// <summary>Updates the position of the camera relative to this car</summary>
