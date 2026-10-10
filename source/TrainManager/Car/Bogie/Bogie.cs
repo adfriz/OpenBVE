@@ -82,6 +82,8 @@ namespace TrainManager.Car
 
 			Vector3 p = new Vector3(0.5 * (FrontAxle.Follower.WorldPosition + RearAxle.Follower.WorldPosition));
 			p -= d * (0.5 * (FrontAxle.Position + RearAxle.Position));
+			Vector3 up = Up;
+			baseCar.ApplyBodyMotion(ref p, ref d, ref s, ref up);
 			// determine visibility
 			Vector3 cd = new Vector3(p - TrainManagerBase.Renderer.Camera.AbsolutePosition);
 			double dist = cd.NormSquared();
@@ -96,7 +98,7 @@ namespace TrainManager.Car
 			{
 				for (int i = 0; i < CarSections[cs].Groups[0].Elements.Length; i++)
 				{
-					UpdateSectionElement(cs, i, p, d, s, CurrentlyVisible, TimeElapsed, ForceUpdate);
+					UpdateSectionElement(cs, i, p, d, s, up, CurrentlyVisible, TimeElapsed, ForceUpdate);
 
 					// brightness change
 					if (CarSections[cs].Groups[0].Elements[i].internalObject != null)
@@ -105,10 +107,10 @@ namespace TrainManager.Car
 					}
 				}
 
-				CarSections[cs].Groups[0].Keyframes?.Update(baseCar.TrackPosition, p, d, Up, s, TimeElapsed, true);
+				CarSections[cs].Groups[0].Keyframes?.Update(baseCar.TrackPosition, p, d, up, s, TimeElapsed, true);
 				if (CarSections[cs].CurrentAdditionalGroup + 1 < CarSections[cs].Groups.Length)
 				{
-					CarSections[cs].Groups[CarSections[cs].CurrentAdditionalGroup + 1].Keyframes?.Update(baseCar.TrackPosition, p, d, Up, s, TimeElapsed, true);
+					CarSections[cs].Groups[CarSections[cs].CurrentAdditionalGroup + 1].Keyframes?.Update(baseCar.TrackPosition, p, d, up, s, TimeElapsed, true);
 				}
 			}
 		}
@@ -176,7 +178,7 @@ namespace TrainManager.Car
 			UpdateObjects(0.0, true);
 		}
 
-		private void UpdateSectionElement(int SectionIndex, int ElementIndex, Vector3 Position, Vector3 Direction, Vector3 Side, bool Show, double TimeElapsed, bool ForceUpdate)
+		private void UpdateSectionElement(int SectionIndex, int ElementIndex, Vector3 Position, Vector3 Direction, Vector3 Side, Vector3 Up, bool Show, double TimeElapsed, bool ForceUpdate)
 		{
 			//TODO: Check whether the UP and SIDE vectors should actually be recalculated, as this just uses that of the root car
 			double timeDelta;

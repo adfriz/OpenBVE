@@ -72,6 +72,7 @@ namespace TrainManager.Car
 			}
 
 			Vector3 p = new Vector3(0.5 * (BaseCar.RearAxle.Follower.WorldPosition + ConnectedCar.FrontAxle.Follower.WorldPosition));
+			BaseCar.ApplyBodyMotion(ref p, ref d, ref s, ref u);
 			// determine visibility
 			Vector3 cd = new Vector3(p - TrainManagerBase.Renderer.Camera.AbsolutePosition);
 			double dist = cd.NormSquared();
