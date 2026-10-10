@@ -75,7 +75,7 @@ namespace TrainManager.Car.Systems
 		public const double StraightRollStdDeg = 0.12;
 		public const double StraightSwayStdM = 0.004;
 		public const double StraightBounceStdM = 0.0015;
-		public const double StraightMinSpeedKmh = 3.0;
+		public const double StraightMinSpeedKmh = 10.0;
 		public const double StraightReferenceSpeedKmh = 50.0;
 
 		// Turnout (switch frog) impacts
@@ -97,11 +97,15 @@ namespace TrainManager.Car.Systems
 		// Braking / stop nod
 		public const double StopMinDecel = 0.75;
 		public const double EmergencyDecel = 1.15;
-		public const double EmergencyJerk = 2.0;
 		public const double StopPitchPeakDeg = 0.45;
 		public const double StopShiftPeakM = 0.026;
 		public const double EmergencyPitchPeakDeg = 0.18;
 		public const double EmergencyShiftPeakM = 0.020;
+		// Two thresholds for "is it moving", far enough apart that a train coasting to a
+		// halt crosses them once instead of hovering on the boundary and nodding over and
+		// over. Rolling needs the higher one, anything under the lower one is stopped.
+		public const double RollingSpeedMps = 1.0;
+		public const double StopSpeedMps = 0.25;
 
 		// Passenger load tilt + levelling valve
 		public const double LoadRollDeg = 0.12;
