@@ -37,7 +37,8 @@ namespace TrainManager.Car.Systems
 		private double prevRadius;
 		private double prevLeanRoll;
 		private double recentDecel;
-		private double emergencyCooldown;
+		private double brakePitch;
+		private double brakeShift;
 		private MotionState motion = MotionState.Stopped;
 		private bool jointsInitialised;
 		private long lastFrontCell;
@@ -73,14 +74,8 @@ namespace TrainManager.Car.Systems
 		private readonly double curveSwayPeakVel;
 		private readonly double frogRollPeakVel;
 		private readonly double frogSwayPeakVel;
-		private readonly double toeRollPeakVel;
-		private readonly double toeSwayPeakVel;
 		private readonly double jointRollPeakVel;
 		private readonly double jointSwayPeakVel;
-		private readonly double stopPitchPeakVel;
-		private readonly double stopShiftPeakVel;
-		private readonly double emergencyPitchPeakVel;
-		private readonly double emergencyShiftPeakVel;
 		private readonly double loadKickRollVel;
 		private readonly double loadKickSinkVel;
 
@@ -97,14 +92,8 @@ namespace TrainManager.Car.Systems
 			curveSwayPeakVel = PeakToVelocity(PhysicsMotionTuning.PeakSwayM, PhysicsMotionTuning.SwayFrequencyHz, PhysicsMotionTuning.SwayDamping);
 			frogRollPeakVel = PeakToVelocity(PhysicsMotionTuning.FrogRollDeg * DegToRad, PhysicsMotionTuning.RollFrequencyHz, PhysicsMotionTuning.RollDamping);
 			frogSwayPeakVel = PeakToVelocity(PhysicsMotionTuning.FrogSwayM, PhysicsMotionTuning.SwayFrequencyHz, PhysicsMotionTuning.SwayDamping);
-			toeRollPeakVel = PeakToVelocity(PhysicsMotionTuning.ToeRollDeg * DegToRad, PhysicsMotionTuning.RollFrequencyHz, PhysicsMotionTuning.RollDamping);
-			toeSwayPeakVel = PeakToVelocity(PhysicsMotionTuning.ToeSwayM, PhysicsMotionTuning.SwayFrequencyHz, PhysicsMotionTuning.SwayDamping);
 			jointRollPeakVel = PeakToVelocity(PhysicsMotionTuning.JointRollDeg * DegToRad, PhysicsMotionTuning.RollFrequencyHz, PhysicsMotionTuning.RollDamping);
 			jointSwayPeakVel = PeakToVelocity(PhysicsMotionTuning.JointSwayM, PhysicsMotionTuning.SwayFrequencyHz, PhysicsMotionTuning.SwayDamping);
-			stopPitchPeakVel = PeakToVelocity(PhysicsMotionTuning.StopPitchPeakDeg * DegToRad, PhysicsMotionTuning.PitchFrequencyHz, PhysicsMotionTuning.PitchDamping);
-			stopShiftPeakVel = PeakToVelocity(PhysicsMotionTuning.StopShiftPeakM, PhysicsMotionTuning.ShiftFrequencyHz, PhysicsMotionTuning.ShiftDamping);
-			emergencyPitchPeakVel = PeakToVelocity(PhysicsMotionTuning.EmergencyPitchPeakDeg * DegToRad, PhysicsMotionTuning.PitchFrequencyHz, PhysicsMotionTuning.PitchDamping);
-			emergencyShiftPeakVel = PeakToVelocity(PhysicsMotionTuning.EmergencyShiftPeakM, PhysicsMotionTuning.ShiftFrequencyHz, PhysicsMotionTuning.ShiftDamping);
 			loadKickRollVel = PeakToVelocity(PhysicsMotionTuning.LoadKickRollDeg * DegToRad, PhysicsMotionTuning.RollFrequencyHz, PhysicsMotionTuning.RollDamping);
 			loadKickSinkVel = PeakToVelocity(PhysicsMotionTuning.LoadKickSinkM, PhysicsMotionTuning.BounceFrequencyHz, PhysicsMotionTuning.BounceDamping);
 		}
@@ -120,8 +109,9 @@ namespace TrainManager.Car.Systems
 			pitchPos = pitchVel = shiftPos = shiftVel = 0.0;
 			leanRoll = leanSway = loadRoll = loadSink = 0.0;
 			prevRadius = prevLeanRoll = recentDecel = 0.0;
+			brakePitch = brakeShift = 0.0;
 			motion = MotionState.Stopped;
-			emergencyCooldown = loadKickCooldown = 0.0;
+			loadKickCooldown = 0.0;
 			jointsInitialised = false;
 			prevDoorsOpen = false;
 			prevCargoMass = 0.0;
@@ -267,27 +257,16 @@ namespace TrainManager.Car.Systems
 				}
 			}
 
-			// ---- Braking / stop nod ----
+			// ---- Braking / acceleration load transfer ----
 			// Acceleration comes from the physics rather than being differenced here. Our own
 			// dt is clamped, so sampling speed across it and dividing would inflate the
 			// result whenever a frame ran long.
 			double decel = -acceleration;
 			recentDecel += (decel - recentDecel) * (1.0 - Math.Exp(-dt * 2.0));
 
-			emergencyCooldown -= dt;
-			if (emergencyCooldown <= 0.0 && decel < -PhysicsMotionTuning.EmergencyDecel && speedAbs > 2.0)
-			{
-				double dir = motion == MotionState.RollingReverse ? -1.0 : 1.0;
-				pitchVel += emergencyPitchPeakVel * dir * scale;
-				shiftVel += emergencyShiftPeakVel * dir * scale;
-				emergencyCooldown = 1.0;
-			}
-
 			// Work out how we're travelling. The two thresholds are deliberately far apart:
 			// one to be counted as moving and one to still count as moving, so a train
-			// coasting to a halt doesn't chatter across the boundary and nod repeatedly.
-			// Crossing from rolling to stopped is the only thing that makes the body nod.
-			MotionState previous = motion;
+			// coasting to a halt doesn't chatter across the boundary.
 			if (speedAbs <= PhysicsMotionTuning.StopSpeedMps)
 			{
 				motion = MotionState.Stopped;
@@ -297,14 +276,24 @@ namespace TrainManager.Car.Systems
 				motion = signedSpeedMps >= 0.0 ? MotionState.RollingForward : MotionState.RollingReverse;
 			}
 
-			if (previous != MotionState.Stopped && motion == MotionState.Stopped
-				&& recentDecel < -PhysicsMotionTuning.StopMinDecel)
+			// Pitch and shift follow the deceleration instead of being kicked by it. An
+			// emergency pull lasts many seconds, and a single impulse gave the body one jolt
+			// on the first frame and then nothing while the train was still stopping hard.
+			// Driving a spring with a target lets it dive, hold and rebound on its own.
+			double travelDir = motion == MotionState.RollingReverse ? -1.0 : 1.0;
+			double load = Tanh(-recentDecel / PhysicsMotionTuning.EmergencyDecel) * travelDir;
+			double pitchTarget = -load * PhysicsMotionTuning.LoadTransferPitchDeg * DegToRad;
+			double shiftTarget = load * PhysicsMotionTuning.LoadTransferShiftM;
+			// Positive pitch is nose up, so braking has to push the other way. Powering on
+			// squats the nose up, and the same expression covers it for free.
+			if (motion == MotionState.Stopped)
 			{
-				double strength = Clamp(Math.Abs(recentDecel) / PhysicsMotionTuning.EmergencyDecel, 0.35, 1.45) * scale;
-				double dir = previous == MotionState.RollingReverse ? -1.0 : 1.0;
-				pitchVel += stopPitchPeakVel * strength * dir;
-				shiftVel += stopShiftPeakVel * strength * dir;
+				pitchTarget = 0.0;
+				shiftTarget = 0.0;
 			}
+			double settle = 1.0 - Math.Exp(-dt / PhysicsMotionTuning.LoadTransferSmoothingS);
+			brakePitch += (pitchTarget - brakePitch) * settle;
+			brakeShift += (shiftTarget - brakeShift) * settle;
 
 			// ---- Passenger load tilt + levelling ----
 			bool doorsOpen = leftDoorsOpen || rightDoorsOpen;
@@ -363,6 +352,8 @@ namespace TrainManager.Car.Systems
 			double k = 1.0 - Math.Exp(-dt * 2.0);
 			leanRoll += (0.0 - leanRoll) * k;
 			leanSway += (0.0 - leanSway) * k;
+			brakePitch = 0.0;
+			brakeShift = 0.0;
 			loadRoll += (0.0 - loadRoll) * k;
 			loadSink += (0.0 - loadSink) * k;
 		}
@@ -372,8 +363,8 @@ namespace TrainManager.Car.Systems
 			RollAngle = SoftLimit(leanRoll + rollPos + loadRoll, PhysicsMotionTuning.MaxRollDeg * DegToRad);
 			Sway = SoftLimit(leanSway + swayPos, PhysicsMotionTuning.MaxSwayM);
 			Bounce = Clamp(bouncePos + loadSink, -PhysicsMotionTuning.MaxBounceM - PhysicsMotionTuning.LoadMaxSinkM, PhysicsMotionTuning.MaxBounceM);
-			PitchAngle = Clamp(pitchPos, -PhysicsMotionTuning.MaxPitchDeg * DegToRad, PhysicsMotionTuning.MaxPitchDeg * DegToRad);
-			Shift = Clamp(shiftPos, -PhysicsMotionTuning.MaxShiftM, PhysicsMotionTuning.MaxShiftM);
+			PitchAngle = Clamp(pitchPos + brakePitch, -PhysicsMotionTuning.MaxPitchDeg * DegToRad, PhysicsMotionTuning.MaxPitchDeg * DegToRad);
+			Shift = Clamp(shiftPos + brakeShift, -PhysicsMotionTuning.MaxShiftM, PhysicsMotionTuning.MaxShiftM);
 		}
 
 		private static double CombineRadius(double front, double rear)
