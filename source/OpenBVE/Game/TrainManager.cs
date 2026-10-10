@@ -70,6 +70,9 @@ namespace OpenBve
 						Trains[i].Cars[j].RearAxle.Follower.UpdateWorldCoordinates(true);
 						Trains[i].Cars[j].RearBogie.FrontAxle.Follower.UpdateWorldCoordinates(true);
 						Trains[i].Cars[j].RearBogie.RearAxle.Follower.UpdateWorldCoordinates(true);
+					// The body springs run even when the frame ran long. They bound the time
+					// internally, and skipping them left the body out of step with the train.
+					Trains[i].Cars[j].UpdatePhysicsMotion(TimeElapsed);
 						if (TimeElapsed == 0.0 | TimeElapsed > 0.5)
 						{
 							//Don't update the toppling etc. with excessive or no time
@@ -95,6 +98,7 @@ namespace OpenBve
 						Car.RearAxle.Follower.UpdateWorldCoordinates(true);
 						Car.RearBogie.FrontAxle.Follower.UpdateWorldCoordinates(true);
 						Car.RearBogie.RearAxle.Follower.UpdateWorldCoordinates(true);
+						Car.UpdatePhysicsMotion(TimeElapsed);
 						if (TimeElapsed == 0.0 | TimeElapsed > 0.5)
 						{
 							//Don't update the toppling etc. with excessive or no time

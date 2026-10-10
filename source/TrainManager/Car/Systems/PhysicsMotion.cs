@@ -113,6 +113,7 @@ namespace TrainManager.Car.Systems
 			motion = MotionState.Stopped;
 			loadKickCooldown = 0.0;
 			jointsInitialised = false;
+			hasSpareGaussian = false;
 			prevDoorsOpen = false;
 			prevCargoMass = 0.0;
 		}
@@ -122,7 +123,7 @@ namespace TrainManager.Car.Systems
 		{
 			if (scale <= 0.0) return;
 			double speedKmh = Math.Abs(speedMps) * 3.6;
-			if (speedKmh < PhysicsMotionTuning.StraightMinSpeedKmh) return;
+			if (speedKmh < PhysicsMotionTuning.JointMinSpeedKmh) return;
 			// Lorentzian falloff with speed (full effect slow, minimum retained fast)
 			double r = speedKmh / PhysicsMotionTuning.TurnoutFalloffKmh;
 			double factor = PhysicsMotionTuning.TurnoutMinSpeedFactor +
@@ -160,7 +161,9 @@ namespace TrainManager.Car.Systems
 				Publish();
 				return;
 			}
-			if (dt > 0.05) dt = 0.05;
+			// A long frame still gets integrated, just not all of it. Stepping in 5 ms slices
+			// keeps this stable however far the time is cut back to.
+			if (dt > 0.25) dt = 0.25;
 
 			double speedAbs = Math.Abs(signedSpeedMps);
 			double speedKmh = speedAbs * 3.6;
@@ -190,26 +193,29 @@ namespace TrainManager.Car.Systems
 
 			// Entry / exit / S-curve detection (radius is stepwise per element, so edges are clean)
 			// Sway takes the opposite sign to roll, same convention as above
+			// A bogie barely notices a curve at walking pace, so the jolt fades in with speed
+			// rather than arriving at full strength the moment the axle crosses over.
+			double kick = Clamp(speedAbs / PhysicsMotionTuning.MinSpeedMps, 0.0, 1.0) * scale;
 			if (prevRadius == 0.0 && curR != 0.0)
 			{
-			 double dir = targetLeanRollDeg != 0.0 ? Math.Sign(targetLeanRollDeg) : -Math.Sign(curR);
-				rollVel += curveRollPeakVel * dir * scale;
-				swayVel -= curveSwayPeakVel * dir * scale;
+				double dir = targetLeanRollDeg != 0.0 ? Math.Sign(targetLeanRollDeg) : -Math.Sign(curR);
+				rollVel += curveRollPeakVel * dir * kick;
+				swayVel -= curveSwayPeakVel * dir * kick;
 			}
 			else if (prevRadius != 0.0 && curR == 0.0)
 			{
 				double dir = prevLeanRoll != 0.0 ? Math.Sign(prevLeanRoll) : Math.Sign(prevRadius);
-				rollVel -= curveRollPeakVel * PhysicsMotionTuning.ExitResponseFactor * dir * scale;
-				swayVel += curveSwayPeakVel * PhysicsMotionTuning.ExitResponseFactor * dir * scale;
+				rollVel -= curveRollPeakVel * PhysicsMotionTuning.ExitResponseFactor * dir * kick;
+				swayVel += curveSwayPeakVel * PhysicsMotionTuning.ExitResponseFactor * dir * kick;
 			}
 			else if (prevRadius != 0.0 && curR != 0.0 && Math.Sign(prevRadius) != Math.Sign(curR))
 			{
 				double oldDir = prevLeanRoll != 0.0 ? Math.Sign(prevLeanRoll) : Math.Sign(prevRadius);
-				rollVel -= curveRollPeakVel * PhysicsMotionTuning.ExitResponseFactor * oldDir * scale;
-				swayVel += curveSwayPeakVel * PhysicsMotionTuning.ExitResponseFactor * oldDir * scale;
+				rollVel -= curveRollPeakVel * PhysicsMotionTuning.ExitResponseFactor * oldDir * kick;
+				swayVel += curveSwayPeakVel * PhysicsMotionTuning.ExitResponseFactor * oldDir * kick;
 				double newDir = targetLeanRollDeg != 0.0 ? Math.Sign(targetLeanRollDeg) : -Math.Sign(curR);
-				rollVel += curveRollPeakVel * newDir * scale;
-				swayVel -= curveSwayPeakVel * newDir * scale;
+				rollVel += curveRollPeakVel * newDir * kick;
+				swayVel -= curveSwayPeakVel * newDir * kick;
 			}
 			prevRadius = curR;
 			prevLeanRoll = targetLeanRollDeg;
@@ -231,7 +237,7 @@ namespace TrainManager.Car.Systems
 			}
 
 			// ---- Distance-based rail joints (covers plain track with no events) ----
-			if (speedAbs > 1.0 && accuracy > 0.01)
+			if (speedKmh >= PhysicsMotionTuning.JointMinSpeedKmh && accuracy > 0.01)
 			{
 				double spacing = PhysicsMotionTuning.JointSpacingM;
 				long fc = (long)Math.Floor(frontTrackPos / spacing);
@@ -302,7 +308,8 @@ namespace TrainManager.Car.Systems
 			else if (rightDoorsOpen && !leftDoorsOpen) doorTarget = -PhysicsMotionTuning.LoadRollDeg * DegToRad;
 			double loadRate = doorsOpen ? 1.0 / Math.Max(0.05, PhysicsMotionTuning.LoadSmoothS) : 1.0 / Math.Max(0.1, PhysicsMotionTuning.LoadLevelTimeS);
 			loadRoll += (doorTarget - loadRoll) * (1.0 - Math.Exp(-dt * loadRate));
-			double sinkTarget = -Math.Min(PhysicsMotionTuning.LoadMaxSinkM, Math.Max(0.0, cargoMass) * 0.0015 / 70.0);
+			double sinkTarget = -PhysicsMotionTuning.LoadMaxSinkM
+				* Clamp(cargoMass / PhysicsMotionTuning.LoadRatedCargoMass, 0.0, 1.0);
 			loadSink += (sinkTarget - loadSink) * (1.0 - Math.Exp(-dt * loadRate));
 			loadKickCooldown -= dt;
 			if (loadKickCooldown <= 0.0)
@@ -352,8 +359,8 @@ namespace TrainManager.Car.Systems
 			double k = 1.0 - Math.Exp(-dt * 2.0);
 			leanRoll += (0.0 - leanRoll) * k;
 			leanSway += (0.0 - leanSway) * k;
-			brakePitch = 0.0;
-			brakeShift = 0.0;
+			brakePitch += (0.0 - brakePitch) * k;
+			brakeShift += (0.0 - brakeShift) * k;
 			loadRoll += (0.0 - loadRoll) * k;
 			loadSink += (0.0 - loadSink) * k;
 		}

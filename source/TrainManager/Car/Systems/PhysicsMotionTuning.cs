@@ -77,6 +77,10 @@ namespace TrainManager.Car.Systems
 		public const double StraightBounceStdM = 0.0015;
 		public const double StraightMinSpeedKmh = 10.0;
 		public const double StraightReferenceSpeedKmh = 50.0;
+		// Below this the train is either crawling or standing still, and a joint passes
+		// without the bogies ever noticing it. Shared by the distance-triggered joints and
+		// the route's point sounds so the two agree on when a joint counts.
+		public const double JointMinSpeedKmh = 10.0;
 
 		// Turnout (switch frog) impacts
 		public const double TurnoutMinSpeedFactor = 0.45;
@@ -113,5 +117,8 @@ namespace TrainManager.Car.Systems
 		public const double LoadKickSinkM = 0.002;
 		public const double LoadMaxRollDeg = 0.80;
 		public const double LoadMaxSinkM = 0.010;
+		// Load at which the car sits at its full sink. The previous scaling saturated at
+		// well under half a tonne, so every loaded car was pinned to the maximum.
+		public const double LoadRatedCargoMass = 20000.0;
 	}
 }
