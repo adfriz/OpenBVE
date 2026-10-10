@@ -183,7 +183,9 @@ namespace TrainManager.Trains
 				{
 					bool frontTriggered = Cars[i].FrontAxle.PointSoundTriggered;
 					bool rearTriggered = Cars[i].RearAxle.PointSoundTriggered;
-					// Visual body kicks for joints / switches (both axles, even when no sound defined)
+					// Kicks the body over joints and through turnouts. Both axles count, and we
+					// don't care whether a sound was defined for the point - the shudder should
+					// happen either way.
 					if (frontTriggered || rearTriggered)
 					{
 						try
