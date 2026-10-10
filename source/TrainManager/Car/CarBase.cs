@@ -1207,6 +1207,41 @@ namespace TrainManager.Car
 			vp += vs * PhysicsMotion.Sway + vUp * PhysicsMotion.Bounce + vd * PhysicsMotion.Shift;
 		}
 
+		/// <summary>Carries a part that's bolted to the body - bogies, couplers - along with it.</summary>
+		/// <remarks>
+		/// These build their own frame from the track and never see the body springs, so
+		/// without this the body slides around on top of its own running gear.
+		/// </remarks>
+		internal void ApplyBodyMotion(ref Vector3 position, ref Vector3 direction, ref Vector3 side, ref Vector3 up)
+		{
+			if (PhysicsMotion == null || !EnablePhysicsMotion || PhysicsMotionScale == 0.0) return;
+			double roll = PhysicsMotion.RollAngle;
+			double pitch = PhysicsMotion.PitchAngle;
+			if (roll == 0.0 && pitch == 0.0) return;
+
+			Vector3 right = FrontAxle.Follower.WorldPosition - RearAxle.Follower.WorldPosition;
+			if (right.NormSquared() <= 0.0) return;
+			right.Normalize();
+			Vector3 centre = 0.5 * (FrontAxle.Follower.WorldPosition + RearAxle.Follower.WorldPosition);
+
+			// Turn the part with the body, then take it the same way the body went.
+			Vector3 offset = position - centre;
+			if (roll != 0.0)
+			{
+				offset.Rotate(right, roll);
+				direction.Rotate(right, roll);
+				side.Rotate(right, roll);
+				up.Rotate(right, roll);
+			}
+			if (pitch != 0.0)
+			{
+				offset.Rotate(side, pitch);
+				direction.Rotate(side, pitch);
+				up.Rotate(side, pitch);
+			}
+			position = centre + offset + side * PhysicsMotion.Sway + up * PhysicsMotion.Bounce + direction * PhysicsMotion.Shift;
+		}
+
 		/// <summary>Advances the body springs. Nothing here reaches the physics.</summary>
 		public void UpdatePhysicsMotion(double TimeElapsed)
 		{
