@@ -8,6 +8,7 @@ using LibRender2.Smoke;
 using LibRender2.Trains;
 using OpenBveApi;
 using OpenBveApi.Graphics;
+using OpenBveApi.Hosts;
 using OpenBveApi.Math;
 using OpenBveApi.Motor;
 using OpenBveApi.Objects;
@@ -32,8 +33,28 @@ namespace TrainManager.Car
 	 */
 	public class CarBase : AbstractCar
 	{
+		/// <summary>Standard gauge, used when the route can't tell us otherwise</summary>
+		private const double DefaultRailGaugeM = 1.435;
+		/// <summary>Accuracy level assumed when the route doesn't say, matching TrackElement's own default</summary>
+		private const double DefaultAccuracyLevel = 2.0;
+
+		private TrainBase train;
+
 		/// <summary>A reference to the base train</summary>
-		public TrainBase baseTrain;
+		/// <remarks>
+		/// Moving to a different train means different speed, direction and neighbours, so
+		/// the body springs start again rather than carrying their old motion across.
+		/// </remarks>
+		public TrainBase baseTrain
+		{
+			get => train;
+			set
+			{
+				if (ReferenceEquals(train, value)) return;
+				train = value;
+				PhysicsMotion?.Reset();
+			}
+		}
 		/// <summary>The front bogie</summary>
 		public Bogie FrontBogie;
 		/// <summary>The rear bogie</summary>
@@ -1147,7 +1168,6 @@ namespace TrainManager.Car
 
 			Suspension.Update(TimeElapsed);
 			Flange.Update(TimeElapsed);
-			UpdatePhysicsMotion(TimeElapsed);
 		}
 
 		/// <summary>Works out where the body sits once the springs have had their say.</summary>
@@ -1188,55 +1208,49 @@ namespace TrainManager.Car
 		}
 
 		/// <summary>Advances the body springs. Nothing here reaches the physics.</summary>
-		private void UpdatePhysicsMotion(double TimeElapsed)
+		public void UpdatePhysicsMotion(double TimeElapsed)
 		{
 			if (PhysicsMotion == null) return;
-			try
+			double scale = EnablePhysicsMotion && !Derailed ? PhysicsMotionScale : 0.0;
+
+			// Route data can be absent or half-built while a route loads, so ask for it
+			// defensively rather than letting a bad lookup take the whole update down. This
+			// used to be wrapped in a catch that swallowed everything, which meant a broken
+			// body simply stopped moving with nothing in the log to say why.
+			double gauge = DefaultRailGaugeM;
+			double accuracy = DefaultAccuracyLevel;
+			TrackFollower follower = FrontAxle.Follower;
+			HostInterface host = TrainManagerBase.currentHost;
+			Track track = null;
+			if (follower != null && host != null && host.Tracks != null && follower.TrackIndex >= 0)
 			{
-				double scale = EnablePhysicsMotion && !Derailed ? PhysicsMotionScale : 0.0;
-				double gauge = 1.435;
-				double accuracy = 2.0;
-				try
-				{
-					int ti = FrontAxle.Follower.TrackIndex;
-					if (TrainManagerBase.currentHost.Tracks.ContainsKey(ti))
-					{
-						gauge = TrainManagerBase.currentHost.Tracks[ti].RailGauge;
-						int le = FrontAxle.Follower.LastTrackElement;
-						var elems = TrainManagerBase.currentHost.Tracks[ti].Elements;
-						if (elems != null && le >= 0 && le < elems.Length)
-						{
-							accuracy = elems[le].CsvRwAccuracyLevel;
-						}
-					}
-				}
-				catch
-				{
-				}
-				bool leftOpen = false;
-				bool rightOpen = false;
-				try
-				{
-					if (Doors != null && Doors.Length > 0 && Doors[0] != null) leftOpen = Doors[0].State > 0.5;
-					if (Doors != null && Doors.Length > 1 && Doors[1] != null) rightOpen = Doors[1].State > 0.5;
-				}
-				catch
-				{
-				}
-				PhysicsMotion.Update(TimeElapsed, CurrentSpeed, baseTrain.Specs.CurrentAverageAcceleration,
-					FrontAxle.Follower.CurveRadius, RearAxle.Follower.CurveRadius,
-					FrontAxle.Follower.CurveCant, RearAxle.Follower.CurveCant,
-					gauge, accuracy, leftOpen, rightOpen, CargoMass,
-					FrontAxle.Follower.TrackPosition, RearAxle.Follower.TrackPosition, scale);
-				PhysicsMotionRollAngle = PhysicsMotion.RollAngle;
-				PhysicsMotionSway = PhysicsMotion.Sway;
-				PhysicsMotionBounce = PhysicsMotion.Bounce;
-				PhysicsMotionPitchAngle = PhysicsMotion.PitchAngle;
-				PhysicsMotionShift = PhysicsMotion.Shift;
+				host.Tracks.TryGetValue(follower.TrackIndex, out track);
 			}
-			catch
+			if (track != null)
 			{
+				gauge = track.RailGauge;
+				TrackElement[] elements = track.Elements;
+				int last = follower.LastTrackElement;
+				if (elements != null && last >= 0 && last < elements.Length)
+				{
+					accuracy = elements[last].CsvRwAccuracyLevel;
+				}
 			}
+
+			bool leftOpen = Doors.Length > 0 && Doors[0] != null && Doors[0].State > 0.5;
+			bool rightOpen = Doors.Length > 1 && Doors[1] != null && Doors[1].State > 0.5;
+
+			PhysicsMotion.Update(TimeElapsed, CurrentSpeed, baseTrain.Specs.CurrentAverageAcceleration,
+				follower.CurveRadius, RearAxle.Follower.CurveRadius,
+				follower.CurveCant, RearAxle.Follower.CurveCant,
+				gauge, accuracy, leftOpen, rightOpen, CargoMass,
+				follower.TrackPosition, RearAxle.Follower.TrackPosition, scale);
+
+			PhysicsMotionRollAngle = PhysicsMotion.RollAngle;
+			PhysicsMotionSway = PhysicsMotion.Sway;
+			PhysicsMotionBounce = PhysicsMotion.Bounce;
+			PhysicsMotionPitchAngle = PhysicsMotion.PitchAngle;
+			PhysicsMotionShift = PhysicsMotion.Shift;
 		}
 
 		/// <summary>Updates the position of the camera relative to this car</summary>
