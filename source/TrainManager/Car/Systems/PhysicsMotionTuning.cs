@@ -56,8 +56,8 @@ namespace TrainManager.Car.Systems
 		public const double MaxRollDeg = 3.0;
 		public const double MaxSwayM = 0.085;
 		public const double MaxBounceM = 0.012;
-		public const double MaxPitchDeg = 0.65;
-		public const double MaxShiftM = 0.040;
+		public const double MaxPitchDeg = 1.50;
+		public const double MaxShiftM = 0.060;
 
 		// Curve: sustained lean + entry jolt from cant deficiency
 		public const double LeanRollDeg = 1.20;
@@ -81,9 +81,6 @@ namespace TrainManager.Car.Systems
 		// Turnout (switch frog) impacts
 		public const double TurnoutMinSpeedFactor = 0.45;
 		public const double TurnoutFalloffKmh = 60.0;
-		public const double ToeRollDeg = 0.20;
-		public const double ToeSwayM = 0.005;
-		public const double ToeBounceVel = 0.038;
 		public const double FrogRollDeg = 0.60;
 		public const double FrogSwayM = 0.015;
 		public const double FrogBounceVel = 0.128;
@@ -94,13 +91,14 @@ namespace TrainManager.Car.Systems
 		public const double JointSwayM = 0.003;
 		public const double JointBounceVel = 0.025;
 
-		// Braking / stop nod
-		public const double StopMinDecel = 0.75;
+		// Braking / acceleration load transfer
 		public const double EmergencyDecel = 1.15;
-		public const double StopPitchPeakDeg = 0.45;
-		public const double StopShiftPeakM = 0.026;
-		public const double EmergencyPitchPeakDeg = 0.18;
-		public const double EmergencyShiftPeakM = 0.020;
+		// Peak dive at full braking, reached asymptotically as deceleration approaches
+		// EmergencyDecel. Tanh does the interpolating, so a gentle stop takes a little of
+		// this and a panic pull takes nearly all of it, with nothing to tune in between.
+		public const double LoadTransferPitchDeg = 1.00;
+		public const double LoadTransferShiftM = 0.045;
+		public const double LoadTransferSmoothingS = 0.35;
 		// Two thresholds for "is it moving", far enough apart that a train coasting to a
 		// halt crosses them once instead of hovering on the boundary and nodding over and
 		// over. Rolling needs the higher one, anything under the lower one is stopped.
