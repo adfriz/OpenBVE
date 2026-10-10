@@ -36,16 +36,29 @@ namespace TrainManager.Car.Systems
 
 		private double prevRadius;
 		private double prevLeanRoll;
-		private double prevSignedSpeed;
-		private double prevDecel;
 		private double recentDecel;
 		private double emergencyCooldown;
+		private MotionState motion = MotionState.Stopped;
 		private bool jointsInitialised;
 		private long lastFrontCell;
 		private long lastRearCell;
 		private bool prevDoorsOpen;
 		private double prevCargoMass;
 		private double loadKickCooldown;
+
+		/// <summary>Which way the train is going, as far as the body is concerned.</summary>
+		/// <remarks>
+		/// Stopping and running backwards sweep through the same speeds, so the only way
+		/// to tell them apart is to remember which way we were already travelling. Getting
+		/// this wrong makes the car kick as though it had stopped when the driver simply
+		/// changed direction.
+		/// </remarks>
+		private enum MotionState
+		{
+			Stopped,
+			RollingForward,
+			RollingReverse
+		}
 
 		private readonly Random rng;
 		private bool hasSpareGaussian;
@@ -106,7 +119,8 @@ namespace TrainManager.Car.Systems
 			rollPos = rollVel = swayPos = swayVel = bouncePos = bounceVel = 0.0;
 			pitchPos = pitchVel = shiftPos = shiftVel = 0.0;
 			leanRoll = leanSway = loadRoll = loadSink = 0.0;
-			prevRadius = prevLeanRoll = prevSignedSpeed = prevDecel = recentDecel = 0.0;
+			prevRadius = prevLeanRoll = recentDecel = 0.0;
+			motion = MotionState.Stopped;
 			emergencyCooldown = loadKickCooldown = 0.0;
 			jointsInitialised = false;
 			prevDoorsOpen = false;
@@ -141,7 +155,7 @@ namespace TrainManager.Car.Systems
 			}
 		}
 
-		public void Update(double dt, double signedSpeedMps, double frontRadius, double rearRadius,
+		public void Update(double dt, double signedSpeedMps, double acceleration, double frontRadius, double rearRadius,
 			double frontCant, double rearCant, double gauge, double accuracy,
 			bool leftDoorsOpen, bool rightDoorsOpen, double cargoMass,
 			double frontTrackPos, double rearTrackPos, double scale)
@@ -254,32 +268,43 @@ namespace TrainManager.Car.Systems
 			}
 
 			// ---- Braking / stop nod ----
-			double decel = (signedSpeedMps - prevSignedSpeed) / dt;
-			// Longitudinal decel opposes motion; use signed projection
-			if (prevSignedSpeed != 0.0 && Math.Sign(signedSpeedMps) != Math.Sign(prevSignedSpeed) && speedAbs < 0.5)
-			{
-				decel = -Math.Abs(decel);
-			}
+			// Acceleration comes from the physics rather than being differenced here. Our own
+			// dt is clamped, so sampling speed across it and dividing would inflate the
+			// result whenever a frame ran long.
+			double decel = -acceleration;
 			recentDecel += (decel - recentDecel) * (1.0 - Math.Exp(-dt * 2.0));
-			double jerk = (decel - prevDecel) / dt;
+
 			emergencyCooldown -= dt;
-			if (emergencyCooldown <= 0.0 && decel < -PhysicsMotionTuning.EmergencyDecel && jerk < -PhysicsMotionTuning.EmergencyJerk && speedAbs > 2.0)
+			if (emergencyCooldown <= 0.0 && decel < -PhysicsMotionTuning.EmergencyDecel && speedAbs > 2.0)
 			{
-				double dir = prevSignedSpeed >= 0.0 ? 1.0 : -1.0;
+				double dir = motion == MotionState.RollingReverse ? -1.0 : 1.0;
 				pitchVel += emergencyPitchPeakVel * dir * scale;
 				shiftVel += emergencyShiftPeakVel * dir * scale;
 				emergencyCooldown = 1.0;
 			}
-			double prevAbs = Math.Abs(prevSignedSpeed);
-			if (prevAbs > 1.0 && speedAbs <= 0.5 && recentDecel < -PhysicsMotionTuning.StopMinDecel)
+
+			// Work out how we're travelling. The two thresholds are deliberately far apart:
+			// one to be counted as moving and one to still count as moving, so a train
+			// coasting to a halt doesn't chatter across the boundary and nod repeatedly.
+			// Crossing from rolling to stopped is the only thing that makes the body nod.
+			MotionState previous = motion;
+			if (speedAbs <= PhysicsMotionTuning.StopSpeedMps)
 			{
-				double s = Clamp(Math.Abs(recentDecel) / PhysicsMotionTuning.EmergencyDecel, 0.5, 1.45) * scale;
-				double dir = prevSignedSpeed >= 0.0 ? 1.0 : -1.0;
-				pitchVel += stopPitchPeakVel * s * dir;
-				shiftVel += stopShiftPeakVel * s * dir;
+				motion = MotionState.Stopped;
 			}
-			prevSignedSpeed = signedSpeedMps;
-			prevDecel = decel;
+			else if (speedAbs >= PhysicsMotionTuning.RollingSpeedMps)
+			{
+				motion = signedSpeedMps >= 0.0 ? MotionState.RollingForward : MotionState.RollingReverse;
+			}
+
+			if (previous != MotionState.Stopped && motion == MotionState.Stopped
+				&& recentDecel < -PhysicsMotionTuning.StopMinDecel)
+			{
+				double strength = Clamp(Math.Abs(recentDecel) / PhysicsMotionTuning.EmergencyDecel, 0.35, 1.45) * scale;
+				double dir = previous == MotionState.RollingReverse ? -1.0 : 1.0;
+				pitchVel += stopPitchPeakVel * strength * dir;
+				shiftVel += stopShiftPeakVel * strength * dir;
+			}
 
 			// ---- Passenger load tilt + levelling ----
 			bool doorsOpen = leftDoorsOpen || rightDoorsOpen;
@@ -355,10 +380,18 @@ namespace TrainManager.Car.Systems
 		{
 			if (front != 0.0 && rear != 0.0)
 			{
-				if (Math.Sign(front) != Math.Sign(rear)) return front;
-				return Math.Sqrt(Math.Abs(front * rear)) * Math.Sign(front + rear);
+				// Near-equal and opposite radii means an S-curve with the pivot between the
+				// axles. Taking the sign of the sum gives zero there, which reads as "on
+				// straight track" and is exactly where the body needs to move most, so fall
+				// back to whichever axle is tighter.
+				double combined = Math.Sqrt(Math.Abs(front * rear));
+				if (Math.Abs(front) >= Math.Abs(rear))
+				{
+					return combined * Math.Sign(front);
+				}
+				return combined * Math.Sign(rear);
 			}
-			if (front != 0.0) return Math.Abs(front) > 0.0 ? front : 0.0;
+			if (front != 0.0) return front;
 			if (rear != 0.0) return rear;
 			return 0.0;
 		}

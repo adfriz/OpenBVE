@@ -1223,7 +1223,7 @@ namespace TrainManager.Car
 				catch
 				{
 				}
-				PhysicsMotion.Update(TimeElapsed, CurrentSpeed,
+				PhysicsMotion.Update(TimeElapsed, CurrentSpeed, baseTrain.Specs.CurrentAverageAcceleration,
 					FrontAxle.Follower.CurveRadius, RearAxle.Follower.CurveRadius,
 					FrontAxle.Follower.CurveCant, RearAxle.Follower.CurveCant,
 					gauge, accuracy, leftOpen, rightOpen, CargoMass,
