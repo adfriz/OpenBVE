@@ -84,11 +84,11 @@ namespace TrainManager.Car
 		public CameraAlignment InteriorCamera;
 		/// <summary>Whether loading sway is enabled for this car</summary>
 		public bool EnableLoadingSway = true;
-		/// <summary>Whether visual body motion is enabled for this car</summary>
+		/// <summary>Whether body motion is enabled for this car</summary>
 		public bool EnablePhysicsMotion = true;
-		/// <summary>Per-car gain for visual body motion (1.0 = default, 0 = off)</summary>
+		/// <summary>How much body motion this car gets, as a multiple of the default (0 turns it off)</summary>
 		public double PhysicsMotionScale = 1.0;
-		/// <summary>Visual-only body motion state for this car</summary>
+		/// <summary>Body motion state for this car</summary>
 		public readonly PhysicsMotion PhysicsMotion;
 		/// <summary>Whether this car has an interior view</summary>
 		public bool HasInteriorView = false;
@@ -740,33 +740,10 @@ namespace TrainManager.Car
 
 			Vector3 p = new Vector3(0.5 * (FrontAxle.Follower.WorldPosition + RearAxle.Follower.WorldPosition));
 			p -= d * (0.5 * (FrontAxle.Position + RearAxle.Position));
-			// Visual-only body motion: offset/rotate copies, never the physics Up/WorldPosition
-			Vector3 vd = d;
-			Vector3 vs = s;
-			Vector3 vUp = Up;
-			Vector3 vp = p;
-			if (PhysicsMotion != null && EnablePhysicsMotion && PhysicsMotionScale != 0.0)
-			{
-				double roll = PhysicsMotion.RollAngle;
-				double pitch = PhysicsMotion.PitchAngle;
-				double sway = PhysicsMotion.Sway;
-				double bounce = PhysicsMotion.Bounce;
-				double shift = PhysicsMotion.Shift;
-				if (roll != 0.0 || pitch != 0.0 || sway != 0.0 || bounce != 0.0 || shift != 0.0)
-				{
-					if (roll != 0.0)
-					{
-						vs.Rotate(d, roll);
-						vUp.Rotate(d, roll);
-					}
-					if (pitch != 0.0)
-					{
-						vd.Rotate(vs, pitch);
-						vUp.Rotate(vs, pitch);
-					}
-					vp += vs * sway + vUp * bounce + vd * shift;
-				}
-			}
+			// The body moves for looks only, so shift copies of the vectors and leave
+			// the physics ones (Up, WorldPosition) alone.
+			Vector3 vp, vd, vs, vUp;
+			GetVisualTransform(d, s, p, 1.0, out vp, out vd, out vs, out vUp);
 			// determine visibility
 			Vector3 cd = new Vector3(vp - TrainManagerBase.Renderer.Camera.AbsolutePosition);
 			double dist = cd.NormSquared();
@@ -1173,7 +1150,44 @@ namespace TrainManager.Car
 			UpdatePhysicsMotion(TimeElapsed);
 		}
 
-		/// <summary>Updates the visual-only body motion state (never affects physics).</summary>
+		/// <summary>Works out where the body sits once the springs have had their say.</summary>
+		/// <param name="d">Right vector</param>
+		/// <param name="s">Side vector</param>
+		/// <param name="p">Centre of the car</param>
+		/// <param name="rotationScale">Scales back the lean and nod, leaving the bobbing alone</param>
+		private void GetVisualTransform(Vector3 d, Vector3 s, Vector3 p, double rotationScale,
+			out Vector3 vp, out Vector3 vd, out Vector3 vs, out Vector3 vUp)
+		{
+			// Nothing moves until we know the springs are actually doing something
+			vd = d;
+			vs = s;
+			vUp = Up;
+			vp = p;
+			if (PhysicsMotion == null || !EnablePhysicsMotion || PhysicsMotionScale == 0.0)
+			{
+				return;
+			}
+			double roll = PhysicsMotion.RollAngle * rotationScale;
+			double pitch = PhysicsMotion.PitchAngle * rotationScale;
+			if (roll == 0.0 && pitch == 0.0 && PhysicsMotion.Sway == 0.0
+				&& PhysicsMotion.Bounce == 0.0 && PhysicsMotion.Shift == 0.0)
+			{
+				return;
+			}
+			if (roll != 0.0)
+			{
+				vs.Rotate(d, roll);
+				vUp.Rotate(d, roll);
+			}
+			if (pitch != 0.0)
+			{
+				vd.Rotate(vs, pitch);
+				vUp.Rotate(vs, pitch);
+			}
+			vp += vs * PhysicsMotion.Sway + vUp * PhysicsMotion.Bounce + vd * PhysicsMotion.Shift;
+		}
+
+		/// <summary>Advances the body springs. Nothing here reaches the physics.</summary>
 		private void UpdatePhysicsMotion(double TimeElapsed)
 		{
 			if (PhysicsMotion == null) return;
@@ -1255,9 +1269,23 @@ namespace TrainManager.Car
 			Vector3 worldDirection = FrontAxle.Follower.WorldPosition - RearAxle.Follower.WorldPosition;
 			worldDirection.Normalize();
 			Vector3 worldSide = Vector3.Cross(Up, worldDirection);
-			Vector3 worldPosition = 0.5 * (FrontAxle.Follower.WorldPosition + RearAxle.Follower.WorldPosition);
+			Vector3 worldUp = new Vector3(Up);
+			Vector3 centre = 0.5 * (FrontAxle.Follower.WorldPosition + RearAxle.Follower.WorldPosition);
+			// Sitting in the cab you should be able to feel the body moving under you,
+			// so the camera rides along. Views from outside stay put on the track, or the
+			// whole scene would wobble about.
+			if (CurrentCarSection == CarSectionType.Interior)
+			{
+				Vector3 vp, vd, vs, vUp;
+				GetVisualTransform(worldDirection, worldSide, centre, PhysicsMotionTuning.CameraRotationScale, out vp, out vd, out vs, out vUp);
+				centre = vp;
+				worldDirection = vd;
+				worldSide = vs;
+				worldUp = vUp;
+			}
+			Vector3 worldPosition = centre;
 			Vector3 driverPosition = HasInteriorView ? Driver : baseTrain.Cars[baseTrain.DriverCar].Driver;
-			worldPosition += worldSide * driverPosition.X + Up * driverPosition.Y + worldDirection * driverPosition.Z;
+			worldPosition += worldSide * driverPosition.X + worldUp * driverPosition.Y + worldDirection * driverPosition.Z;
 			double interpolationRatio = (Driver.Z - RearAxle.Position) / (FrontAxle.Position - RearAxle.Position);
 			if (double.IsNaN(interpolationRatio))
 			{
@@ -1265,7 +1293,7 @@ namespace TrainManager.Car
 				interpolationRatio = 0;
 			}
 			double trackPosition = (1.0 - interpolationRatio) * RearAxle.Follower.TrackPosition + interpolationRatio * FrontAxle.Follower.TrackPosition;
-			return (worldPosition, worldDirection, new Vector3(Up), worldSide, trackPosition);
+			return (worldPosition, worldDirection, worldUp, worldSide, trackPosition);
 		}
 
 		public void UpdateSpeed(double TimeElapsed, double DecelerationDueToMotor, double DecelerationDueToBrake, out double Speed)

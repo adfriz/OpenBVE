@@ -3,14 +3,15 @@ using System;
 namespace TrainManager.Car.Systems
 {
 	/// <summary>
-	/// Visual-only car body motion (suspension feel).
-	/// Adds curve lean + rebound, straight-track shake, turnout and rail-joint
-	/// kicks, braking nod and passenger-load tilt. Never touches physics:
-	/// outputs are applied only to the rendered body position in CarBase.UpdateObjects.
+	/// How the car body sits on its springs. Leans into curves and springs back out,
+	/// shakes on jointed straight track, kicks over turnouts, nods under the brakes and
+	/// settles a little when the passengers pile in.
+	/// Purely cosmetic - CarBase applies the results to the body it draws, and the
+	/// physics never sees them.
 	/// </summary>
 	public class PhysicsMotion
 	{
-		// Outputs: radians for angles, meters for offsets
+		// Angles in radians, the rest in meters
 		public double RollAngle;
 		public double Sway;
 		public double Bounce;

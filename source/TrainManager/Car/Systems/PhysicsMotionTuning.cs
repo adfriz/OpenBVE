@@ -1,12 +1,12 @@
 namespace TrainManager.Car.Systems
 {
-	/// <summary>Default tuning for the visual-only physics motion (carbody feel).</summary>
+	/// <summary>How lively the body is by default.</summary>
 	/// <remarks>
-	/// Values are modelled on measured vehicle behaviour (body natural frequencies,
-	/// damping and peak amplitudes). All cars share these defaults so existing
-	/// addons work with no edits; per-car Scale / Enable flags adjust them.
-	/// Angles in degrees here are converted to radians inside PhysicsMotion.
-	/// Sources (all independent engineering references):
+	/// Frequencies, damping and amplitudes are taken from measured vehicles rather
+	/// than picked by eye. Every car starts from these numbers, so addons need no
+	/// changes to get the full effect - scale it down per car if it reads as too much.
+	/// Angles are in degrees for readability and converted in PhysicsMotion.
+	/// Where the numbers came from:
 	/// - Body frequencies / damping: soft secondary suspensions place rigid-body
 	///   modes from 1.5 Hz down to below 1 Hz:
 	///   https://rosap.ntl.bts.gov/view/dot/11695/dot_11695_DS1.pdf
@@ -45,6 +45,12 @@ namespace TrainManager.Car.Systems
 		public const double PitchDamping = 0.14;
 		public const double ShiftFrequencyHz = 0.78;
 		public const double ShiftDamping = 0.28;
+
+		// A driver's head rides the body a bit more softly than the body itself moves.
+		// Rolling the camera all the way with the car tilts the horizon, which is both
+		// unpleasant to sit through and rough on 2D cab overlays. Bouncing and swaying
+		// are left at full strength because that part reads as motion, not as nausea.
+		public const double CameraRotationScale = 0.6;
 
 		// Output caps (visual only, never affects physics)
 		public const double MaxRollDeg = 3.0;
