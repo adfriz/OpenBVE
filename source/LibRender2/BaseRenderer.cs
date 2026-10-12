@@ -400,7 +400,16 @@ namespace LibRender2
 				// PBR map samplers live on fixed units (0 is albedo, 4-7 shadows)
 				DefaultShader.SetPBRMapUnits(1, 2, 3, 8);
 				DefaultShader.SetEnvMapUnit(9);
-				LoadEnvironment();
+				// Environment uploads lazily on the first PBR face: no PBR on screen,
+				// no HDR decode, no VRAM spent.
+				try
+				{
+					DefaultShader.SetHasEnv(false);
+				}
+				catch
+				{
+					// ignored
+				}
 				lastColor = Color32.White;
 				DefaultShader.Deactivate();
 				dummyVao = new VertexArrayObject();
@@ -1259,10 +1268,15 @@ namespace LibRender2
 		private Matrix4D lastModelViewMatrix;
 		private bool sendToShader;
 
-		/// <summary>Loads the shipped HDR environment for PBR image-based lighting</summary>
+		/// <summary>Whether the environment upload has been attempted (success or failure)</summary>
+		private bool environmentAttempted;
+
+		/// <summary>Loads the shipped HDR environment on first PBR use, then never again</summary>
 		/// <remarks>Soft-fails to analytic-sun-only: IBL is garnish, never load-bearing.</remarks>
-		private void LoadEnvironment()
+		private void EnsureEnvironment(Shader shader)
 		{
+			if (environmentAttempted) return;
+			environmentAttempted = true;
 			try
 			{
 				Assembly assembly = Assembly.GetExecutingAssembly();
@@ -1273,24 +1287,13 @@ namespace LibRender2
 				}
 				if (Environment != null && Environment.IsReady)
 				{
-					DefaultShader.SetEnvMaxLod(Environment.MaxLod);
-					DefaultShader.SetHasEnv(true);
+					shader.SetEnvMaxLod(Environment.MaxLod);
+					shader.SetHasEnv(true);
 				}
 			}
 			catch
 			{
 				Environment = null;
-			}
-			if (Environment == null || !Environment.IsReady)
-			{
-				try
-				{
-					DefaultShader.SetHasEnv(false);
-				}
-				catch
-				{
-					// ignored
-				}
 			}
 		}
 
@@ -1499,6 +1502,7 @@ namespace LibRender2
 					if (BindPBRTexture(material.EmissiveTexture, TextureUnit.Texture3, material.WrapMode)) pbrMaps |= 4;
 					if (BindPBRTexture(material.MetallicRoughnessTexture, TextureUnit.Texture8, material.WrapMode)) pbrMaps |= 8;
 					shader.SetPBRMaps(pbrMaps);
+					EnsureEnvironment(shader);
 					if (Environment != null && Environment.IsReady)
 					{
 						Environment.Bind(TextureUnit.Texture9);
