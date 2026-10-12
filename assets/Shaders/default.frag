@@ -392,26 +392,20 @@ vec3 PBRLighting(vec3 albedoSrgb, float shadow)
 	{
 		emissive *= pow(texture(uEmissiveMap, oUv).rgb, vec3(2.2));
 	}
-	vec3 linear;
 	if (uHasEnv != 0)
 	{
-		// Environment carries its own sun and sky (like three.js): analytic direct
-		// light is dropped to avoid a double sun. Env is not shadowed; day/night
-		// dimming still applies via uBrightness.
+		// IBL as reflections only: the scene sun keeps driving diffuse (so shadows
+		// and day/night keep working on PBR), the environment adds speculars.
+		// No env diffuse (that would double the sun), no analytic/env double sun:
+		// metals are all-reflection, dielectrics add a tight sun glint on top.
 		vec3 Nw = normalize(vWorldNormal);
 		vec3 Vw = normalize(uCameraWorldPos - vWorldPos);
 		vec3 Rw = reflect(-Vw, Nw);
-		vec3 irradiance = textureLod(uEnvMap, PBR_EnvUV(Nw), uEnvMaxLod).rgb;
 		vec3 radiance = textureLod(uEnvMap, PBR_EnvUV(Rw), roughness * uEnvMaxLod).rgb;
 		vec3 Fenv = PBR_F_Schlick(max(dot(Nw, Vw), 0.0), F0);
-		vec3 diffIBL = irradiance * albedo * (vec3(1.0) - Fenv) * (1.0 - metallic);
-		vec3 specIBL = radiance * Fenv;
-		linear = (diffIBL + specIBL) * uBrightness + emissive;
+		Lo += radiance * Fenv;
 	}
-	else
-	{
-		linear = (Lo + analyticAmbient) * shadow * uBrightness + emissive;
-	}
+	vec3 linear = (Lo + analyticAmbient) * shadow * uBrightness + emissive;
 	return pow(clamp(PBR_ACES(linear), 0.0, 1.0), vec3(1.0 / 2.2));
 }
 
