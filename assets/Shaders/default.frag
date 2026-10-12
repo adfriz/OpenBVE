@@ -280,16 +280,15 @@ float CalculateShadowFactor()
 
 const float PBR_PI = 3.14159265359;
 
-// ACES filmic tone map (Narkowicz approx): what makes web viewers look "right".
-// Compresses HDR reflections and desaturates hot spots; gamma encode follows.
+// Filmic tone map (Hejl–Burgess-Dawson, Uncharted 2): S-curve with a real toe,
+// so mids stay dense and highlights roll off instead of washing to milk.
+// Replaces the Narkowicz ACES approx, which is low-contrast by design and made
+// PBR read plasticky under hot studio HDRs. PBR path only; gamma follows.
 vec3 PBR_ACES(vec3 x)
 {
-	const float a = 2.51;
-	const float b = 0.03;
-	const float c = 2.43;
-	const float d = 0.59;
-	const float e = 0.14;
-	return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
+	vec3 v = max(x, vec3(0.0)) - vec3(0.004);
+	v = (v * (6.2 * v + 0.5)) / (v * (6.2 * v + 1.7) + 0.06);
+	return clamp(v, 0.0, 1.0);
 }
 
 // TBN-free normal mapping (Mikkelsen derivative basis, no tangents needed)
