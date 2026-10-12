@@ -322,11 +322,13 @@ vec3 PBR_F_Schlick(float cosTheta, vec3 F0)
 	return F0 + (vec3(1.0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
-// Equirect direction -> UV (matches RGBE layout: u wraps, v pole-to-pole)
+// Equirect direction -> UV (matches RGBE layout: u wraps, v pole-to-pole).
+// Note the negation: OpenBVE is Y-DOWN (Up = (0,-1,0)), so the sky (-Y) must
+// hit image row 0. Without this, up-facing surfaces sample the grass.
 vec2 PBR_EnvUV(vec3 d)
 {
 	float u = atan(d.z, d.x) / (2.0 * PBR_PI) + 0.5;
-	float v = acos(clamp(d.y, -1.0, 1.0)) / PBR_PI;
+	float v = acos(clamp(-d.y, -1.0, 1.0)) / PBR_PI;
 	return vec2(u, v);
 }
 
