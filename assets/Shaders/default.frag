@@ -334,15 +334,12 @@ vec3 PBR_F_Schlick(float cosTheta, vec3 F0)
 	return F0 + (vec3(1.0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
-// Equirect direction -> UV. World is Y-up (glTF passes straight through).
-// V convention is EMPIRICAL: the RGBE decode stores the sky in data row 0 but
-// in practice row 0 lands at t=1 (same reason three.js flipY's HDR uploads),
-// so +Y must map to v=1, hence -d.y. Without this, up-facing normals sample
-// the grass and mirror balls render upside-down (verified on mirrorball.glb).
+// Equirect direction -> UV. World is Y-up (glTF passes straight through):
+// +Y (sky) maps to v=0, -Y (ground) to v=1, matching the RGBE layout.
 vec2 PBR_EnvUV(vec3 d)
 {
 	float u = atan(d.z, d.x) / (2.0 * PBR_PI) + 0.5;
-	float v = acos(clamp(-d.y, -1.0, 1.0)) / PBR_PI;
+	float v = acos(clamp(d.y, -1.0, 1.0)) / PBR_PI;
 	return vec2(u, v);
 }
 
