@@ -1503,9 +1503,19 @@ namespace LibRender2
 					shader.SetIsLight(false);
 					shader.SetMaterialAmbient(Color32.White);
 					shader.SetMaterialFlags(MaterialFlags.Emissive);
+					/*
+					 * This draw runs inside the per-face loop, so it inherits whatever alpha test
+					 * the current pass set up. The blended-face passes use AlphaFunction.Less
+					 * against 1.0, which discards fragments with alpha >= 1.0 - and we set the
+					 * overlay opacity to exactly 1.0 above, so every normal line was thrown away
+					 * for anything drawn through the alpha path. Drop the test for the overlay
+					 * draw and restore it immediately afterwards.
+					 */
+					UnsetAlphaFunc();
 					normalsVao.Bind();
 					lastVAO = normalsVao.handle;
 					normalsVao.DrawArrays(PrimitiveType.Lines, 0, normalsMesh.Vertices.Length > 0 ? normalsMesh.Faces.Sum(f => f.Vertices.Length) * 2 : 0);
+					RestoreAlphaFunc();
 					shader.SetIsLight(OptionLighting);
 					shader.SetMaterialFlags(material.Flags);
 					shader.SetMaterialAmbient(material.Color);
