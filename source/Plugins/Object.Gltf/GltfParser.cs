@@ -266,7 +266,14 @@ namespace Object.Gltf
 				if (!model.DisabledFeatures.Contains(feature))
 				{
 					model.DisabledFeatures.Add(feature);
-					Warn(feature + " is parsed but disabled in OpenBVE, using bind-pose/static fallback.");
+					if (feature == "compressed-glb-draco" || feature == "compressed-glb-meshopt" || feature == "KHR_draco_mesh_compression")
+					{
+						Warn("Compressed GLB is not supported, please use an uncompressed .gltf (export without Draco / mesh compression).");
+					}
+					else
+					{
+						Warn(feature + " is parsed but disabled in OpenBVE, using bind-pose/static fallback.");
+					}
 				}
 			}
 
@@ -428,6 +435,11 @@ namespace Object.Gltf
 							{
 								JObject pr = pt as JObject;
 								if (pr == null) continue;
+								JObject prExt = pr["extensions"] as JObject;
+								if (prExt != null && prExt["KHR_draco_mesh_compression"] != null)
+									Disabled("compressed-glb-draco");
+								if (prExt != null && prExt["EXT_meshopt_compression"] != null)
+									Disabled("compressed-glb-meshopt");
 								JArray ta = pr["targets"] as JArray;
 								if (ta != null && ta.Count > 0 && !options.EnableMorphTargets) Disabled("morph-targets");
 								JObject attrs = pr["attributes"] as JObject;
@@ -1104,6 +1116,12 @@ namespace Object.Gltf
 					return;
 				}
 				JObject attributes = ObjectOf(primitive, "attributes");
+				JObject primExt = ObjectOf(primitive, "extensions");
+				if (primExt != null && (primExt["KHR_draco_mesh_compression"] != null || primExt["EXT_meshopt_compression"] != null))
+				{
+					Disabled(primExt["KHR_draco_mesh_compression"] != null ? "compressed-glb-draco" : "compressed-glb-meshopt");
+					return;
+				}
 				if (attributes == null)
 				{
 					return;
