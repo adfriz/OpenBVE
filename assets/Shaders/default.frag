@@ -70,9 +70,14 @@ uniform sampler2D uNormalMap;
 uniform sampler2D uOcclusionMap;
 uniform sampler2D uEmissiveMap;
 uniform sampler2D uMetallicRoughnessMap; // ARM: R occlusion, G roughness, B metallic
-uniform int       uPBRMaps; // bit0 normal, bit1 occlusion, bit2 emissive, bit3 metallic-roughness
+uniform sampler2D uSpecularMap; // KHR_materials_specular: specular factor in alpha
+uniform sampler2D uSpecularColorMap; // KHR_materials_specular: F0 color in sRGB RGB
+uniform int       uPBRMaps; // bit0 normal, bit1 occlusion, bit2 emissive, bit3 metallic-roughness, bit4 specular, bit5 specular-color
 uniform float     uPBRNormalScale;
 uniform float     uPBROcclusionStrength;
+uniform float     uPBRSpecular; // KHR_materials_specular weight 0-1
+uniform vec3      uPBRSpecularColor; // KHR_materials_specular F0 color, linear (may exceed 1)
+uniform float     uPBRIor; // KHR_materials_ior (1.5 when unset, air outside at 1.0)
 // Image-based lighting: one shipped equirect HDR, mipmaps stand in for a prefilter.
 // uHasEnv 0 = analytic sun only; 1 = analytic + env (split-sum with analytic BRDF).
 uniform sampler2D uEnvMap;
@@ -356,9 +361,9 @@ vec2 PBR_EnvBRDF(float NoV, float perceptualRoughness)
 	return vec2(-1.04, 1.04) * a004 + r.zw;
 }
 
-vec3 PBR_F_Schlick(float cosTheta, vec3 F0)
+vec3 PBR_F_Schlick(float cosTheta, vec3 F0, vec3 F90)
 {
-	return F0 + (vec3(1.0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+	return F0 + (F90 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
 // Equirect direction -> UV. World is Y-up (glTF passes straight through):
@@ -398,7 +403,31 @@ vec3 PBRLighting(vec3 albedoSrgb, float shadow)
 		roughness = clamp(roughness, 0.04, 1.0);
 		metallic = clamp(metallic, 0.0, 1.0);
 	}
-	vec3 F0 = mix(vec3(0.04), albedo, metallic);
+	vec3 F0;
+	vec3 F90;
+	{
+		// KHR_materials_specular + KHR_materials_ior: F0 = min(f0_ior * specColor, 1) * spec.
+		// f0_ior = ((ior - 1) / (ior + 1))^2 (outside air at 1.0; 1.5 gives 0.04).
+		// ior 0 (spec-gloss conversion) yields f0 1, handing full control to specColor.
+		float spec = clamp(uPBRSpecular, 0.0, 1.0);
+		vec3 specColor = uPBRSpecularColor;
+		if ((uPBRMaps & 32) != 0)
+		{
+			specColor *= pow(texture(uSpecularColorMap, oUv).rgb, vec3(2.2));
+		}
+		if ((uPBRMaps & 16) != 0)
+		{
+			spec *= texture(uSpecularMap, oUv).a;
+			spec = clamp(spec, 0.0, 1.0);
+		}
+		float ior = max(uPBRIor, 0.0);
+		float f0ior = ((ior - 1.0) / (ior + 1.0));
+		f0ior *= f0ior;
+		vec3 F0dielectric = min(f0ior * specColor, vec3(1.0)) * spec;
+		// Metals ignore specular (spec §exclusions): F0 = albedo, F90 = 1 below.
+		F0 = mix(F0dielectric, albedo, metallic);
+		F90 = mix(vec3(spec), vec3(1.0), metallic);
+	}
 	// Filament Parameterization: perceptual (glTF) roughness squared once here;
 	// D and V below both take alpha, the env LOD/BRDF below take perceptual.
 	float perceptualRoughness = roughness;
@@ -408,11 +437,13 @@ vec3 PBRLighting(vec3 albedoSrgb, float shadow)
 	float NdotV = max(dot(N, V), 0.0);
 	float NDF = PBR_D_GGX(max(dot(N, H), 0.0), alpha);
 	float Vis = PBR_V_SmithGGX(NdotV, NdotL, alpha);
-	vec3 F = PBR_F_Schlick(max(dot(H, V), 0.0), F0);
+	vec3 F = PBR_F_Schlick(max(dot(H, V), 0.0), F0, F90);
 	vec3 kS = F;
 	// Thin glass attenuates diffuse only (Filament thin-cubemap behavior):
 	// specular/reflection stay full strength so glass keeps its sheen.
-	vec3 kD = (vec3(1.0) - kS) * (1.0 - metallic) * (1.0 - glassTrans);
+	// Base weight uses max(F) per KHR_materials_specular (directional energy).
+	float kSmax = max(kS.r, max(kS.g, kS.b));
+	vec3 kD = vec3(1.0 - kSmax) * (1.0 - metallic) * (1.0 - glassTrans);
 	vec3 Lo = (kD * albedo / PBR_PI + NDF * Vis * F) * uLight.diffuse * NdotL;
 	float occlusion = armOcclusion;
 	if ((uPBRMaps & 2) != 0)
@@ -442,12 +473,13 @@ vec3 PBRLighting(vec3 albedoSrgb, float shadow)
 		// Linear lod smeared the studio softbox and flattened the streaks.
 		float envLod = uEnvMaxLod * perceptualRoughness * (2.0 - perceptualRoughness);
 		vec3 radiance = textureLod(uEnvMap, PBR_EnvUV(Rw), envLod).rgb;
-		// Split-sum without LUT: envF = F0 * scale + bias (Nadrin parity).
+		// Split-sum without LUT: envF = F0 * scale + F90 * bias (Nadrin parity,
+		// F90 = specular for dielectrics per KHR_materials_specular, 1 for metals).
 		// Raw Schlick over-reflects at mid roughness, which was the other half
 		// of the plastic look.
 		float NoVw = max(dot(Nw, Vw), 0.0);
 		vec2 envAB = PBR_EnvBRDF(NoVw, perceptualRoughness);
-		vec3 Fenv = F0 * envAB.x + envAB.y;
+		vec3 Fenv = F0 * envAB.x + F90 * envAB.y;
 		Lo += radiance * Fenv;
 		if (glassTrans > 0.001)
 		{

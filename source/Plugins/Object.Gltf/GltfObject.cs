@@ -134,7 +134,10 @@ namespace Plugin
 				RoughnessFactor = material.RoughnessFactor,
 				EmissiveColor = new Color32(ToByte(material.EmissiveR * 255.0f), ToByte(material.EmissiveG * 255.0f), ToByte(material.EmissiveB * 255.0f), (byte)255),
 				NormalScale = material.NormalScale,
-				OcclusionStrength = material.OcclusionStrength
+				OcclusionStrength = material.OcclusionStrength,
+				SpecularFactor = material.SpecularFactor,
+				SpecularColorFactor = new Vector3(material.SpecularR, material.SpecularG, material.SpecularB),
+				Ior = material.Ior
 			};
 			if (result.DaytimeTexture == null && material.ImageBytes != null)
 			{
@@ -170,10 +173,14 @@ namespace Plugin
 			result.OcclusionTexture = material.OcclusionTexture ?? CacheImageSoft(material.OcclusionBytes, material.OcclusionMime);
 			result.EmissiveTexture = material.EmissiveTexture ?? CacheImageSoft(material.EmissiveBytes, material.EmissiveMime);
 			result.MetallicRoughnessTexture = material.MetallicRoughnessTexture ?? CacheImageSoft(material.MetallicRoughnessBytes, material.MetallicRoughnessMime);
+			result.SpecularTexture = material.SpecularTexture ?? CacheImageSoft(material.SpecularBytes, material.SpecularMime);
+			result.SpecularColorTexture = material.SpecularColorTexture ?? CacheImageSoft(material.SpecularColorBytes, material.SpecularColorMime);
 			// PBR shading path when the file carries PBR data (factors off default or maps present)
 			if (material.MetallicFactor != 1.0f || material.RoughnessFactor != 1.0f || material.HasAdvancedData ||
+				material.SpecularFactor != 1.0f || material.SpecularR != 1.0f || material.SpecularG != 1.0f || material.SpecularB != 1.0f ||
+				material.Ior != 1.5f ||
 				result.NormalTexture != null || result.OcclusionTexture != null || result.EmissiveTexture != null ||
-				result.MetallicRoughnessTexture != null)
+				result.MetallicRoughnessTexture != null || result.SpecularTexture != null || result.SpecularColorTexture != null)
 			{
 				result.Flags |= MaterialFlags.PBR;
 			}

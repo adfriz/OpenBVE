@@ -397,8 +397,8 @@ namespace LibRender2
 				DefaultShader.SetMaterialAmbient(Color32.White);
 				DefaultShader.SetMaterialDiffuse(Color32.White);
 				DefaultShader.SetMaterialSpecular(Color32.White);
-				// PBR map samplers live on fixed units (0 is albedo, 4-7 shadows)
-				DefaultShader.SetPBRMapUnits(1, 2, 3, 8);
+				// PBR map samplers live on fixed units (0 is albedo, 4-7 shadows, 9 env)
+				DefaultShader.SetPBRMapUnits(1, 2, 3, 8, 10, 11);
 				DefaultShader.SetEnvMapUnit(9);
 				// Environment uploads lazily on the first PBR face: no PBR on screen,
 				// no HDR decode, no VRAM spent.
@@ -1459,6 +1459,7 @@ namespace LibRender2
 				shader.SetPBREmissive(material.EmissiveColor);
 				shader.SetPBRScales(material.NormalScale, material.OcclusionStrength);
 				shader.SetPBRTransmission(material.TransmissionFactor);
+				shader.SetPBRSpecular(material.SpecularFactor, material.SpecularColorFactor, material.Ior);
 			}
 			if (OptionLighting)
 			{
@@ -1539,7 +1540,7 @@ namespace LibRender2
 				{
 					shader.DisableTexturing();
 				}
-				// PBR detail maps on units 1-3 + 8 (missing map = white pixel = neutral)
+				// PBR detail maps on units 1-3 + 8/10/11 (missing map = white pixel = neutral)
 				if ((material.Flags & MaterialFlags.PBR) != 0 && OptionLighting)
 				{
 					int pbrMaps = 0;
@@ -1547,6 +1548,8 @@ namespace LibRender2
 					if (BindPBRTexture(material.OcclusionTexture, TextureUnit.Texture2, material.WrapMode)) pbrMaps |= 2;
 					if (BindPBRTexture(material.EmissiveTexture, TextureUnit.Texture3, material.WrapMode)) pbrMaps |= 4;
 					if (BindPBRTexture(material.MetallicRoughnessTexture, TextureUnit.Texture8, material.WrapMode)) pbrMaps |= 8;
+					if (BindPBRTexture(material.SpecularTexture, TextureUnit.Texture10, material.WrapMode)) pbrMaps |= 16;
+					if (BindPBRTexture(material.SpecularColorTexture, TextureUnit.Texture11, material.WrapMode)) pbrMaps |= 32;
 					shader.SetPBRMaps(pbrMaps);
 					EnsureIblEnvironment(shader);
 					if (IblEnvironment != null && IblEnvironment.IsReady)

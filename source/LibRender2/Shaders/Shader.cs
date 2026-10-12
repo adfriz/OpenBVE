@@ -221,6 +221,11 @@ namespace LibRender2.Shaders
 				HasEnv = (short)GL.GetUniformLocation(Handle, "uHasEnv"),
 				CameraWorldPos = (short)GL.GetUniformLocation(Handle, "uCameraWorldPos"),
 				PBRTransmission = (short)GL.GetUniformLocation(Handle, "uPBRTransmission"),
+				PBRIor = (short)GL.GetUniformLocation(Handle, "uPBRIor"),
+				PBRSpecular = (short)GL.GetUniformLocation(Handle, "uPBRSpecular"),
+				PBRSpecularColor = (short)GL.GetUniformLocation(Handle, "uPBRSpecularColor"),
+				SpecularMap = (short)GL.GetUniformLocation(Handle, "uSpecularMap"),
+				SpecularColorMap = (short)GL.GetUniformLocation(Handle, "uSpecularColorMap"),
 			};
 		}
 
@@ -383,12 +388,14 @@ namespace LibRender2.Shaders
 		}
 
 		/// <summary>Binds the PBR map samplers to fixed texture units (call once after init)</summary>
-		public void SetPBRMapUnits(int normalUnit, int occlusionUnit, int emissiveUnit, int armUnit)
+		public void SetPBRMapUnits(int normalUnit, int occlusionUnit, int emissiveUnit, int armUnit, int specularUnit, int specularColorUnit)
 		{
 			if (UniformLayout.NormalMap >= 0) GL.ProgramUniform1(Handle, UniformLayout.NormalMap, normalUnit);
 			if (UniformLayout.OcclusionMap >= 0) GL.ProgramUniform1(Handle, UniformLayout.OcclusionMap, occlusionUnit);
 			if (UniformLayout.EmissiveMap >= 0) GL.ProgramUniform1(Handle, UniformLayout.EmissiveMap, emissiveUnit);
 			if (UniformLayout.MetallicRoughnessMap >= 0) GL.ProgramUniform1(Handle, UniformLayout.MetallicRoughnessMap, armUnit);
+			if (UniformLayout.SpecularMap >= 0) GL.ProgramUniform1(Handle, UniformLayout.SpecularMap, specularUnit);
+			if (UniformLayout.SpecularColorMap >= 0) GL.ProgramUniform1(Handle, UniformLayout.SpecularColorMap, specularColorUnit);
 		}
 
 		public void SetPBRFactors(float metallic, float roughness)
@@ -400,6 +407,13 @@ namespace LibRender2.Shaders
 		public void SetPBRTransmission(float transmission)
 		{
 			if (UniformLayout.PBRTransmission >= 0) GL.ProgramUniform1(Handle, UniformLayout.PBRTransmission, transmission);
+		}
+
+		public void SetPBRSpecular(float specularFactor, Vector3 specularColorFactor, float ior)
+		{
+			if (UniformLayout.PBRSpecular >= 0) GL.ProgramUniform1(Handle, UniformLayout.PBRSpecular, specularFactor);
+			if (UniformLayout.PBRSpecularColor >= 0) GL.ProgramUniform3(Handle, UniformLayout.PBRSpecularColor, (float)specularColorFactor.X, (float)specularColorFactor.Y, (float)specularColorFactor.Z);
+			if (UniformLayout.PBRIor >= 0) GL.ProgramUniform1(Handle, UniformLayout.PBRIor, ior);
 		}
 
 		public void SetPBREmissive(Color32 emissive)

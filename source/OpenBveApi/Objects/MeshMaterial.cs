@@ -51,6 +51,16 @@ namespace OpenBveApi.Objects
 		public Texture MetallicRoughnessTexture;
 		/// <summary>Thin-glass transmission factor 0-1 (KHR_materials_transmission approx, file-agnostic)</summary>
 		public float TransmissionFactor;
+		/// <summary>Dielectric specular weight 0-1 (KHR_materials_specular, file-agnostic)</summary>
+		public float SpecularFactor;
+		/// <summary>Dielectric F0 color factor, linear RGB, may exceed 1 (KHR_materials_specular, file-agnostic)</summary>
+		public OpenBveApi.Math.Vector3 SpecularColorFactor;
+		/// <summary>Index of refraction, 1.5 when unset (KHR_materials_ior, file-agnostic)</summary>
+		public float Ior;
+		/// <summary>The PBR specular-factor texture (alpha channel): specularFactor * alpha</summary>
+		public Texture SpecularTexture;
+		/// <summary>The PBR specular-color texture (sRGB RGB): specularColorFactor * linear(sample)</summary>
+		public Texture SpecularColorTexture;
 
 		/// <summary>Returns whether two MeshMaterial structs are equal</summary>
 		public static bool operator ==(MeshMaterial A, MeshMaterial B)
@@ -75,6 +85,11 @@ namespace OpenBveApi.Objects
 			if (A.EmissiveTexture != B.EmissiveTexture) return false;
 			if (A.MetallicRoughnessTexture != B.MetallicRoughnessTexture) return false;
 			if (A.TransmissionFactor != B.TransmissionFactor) return false;
+			if (A.SpecularFactor != B.SpecularFactor) return false;
+			if (A.SpecularColorFactor != B.SpecularColorFactor) return false;
+			if (A.Ior != B.Ior) return false;
+			if (A.SpecularTexture != B.SpecularTexture) return false;
+			if (A.SpecularColorTexture != B.SpecularColorTexture) return false;
 			return true;
 		}
 
@@ -101,6 +116,11 @@ namespace OpenBveApi.Objects
 			if (A.EmissiveTexture != B.EmissiveTexture) return true;
 			if (A.MetallicRoughnessTexture != B.MetallicRoughnessTexture) return true;
 			if (A.TransmissionFactor != B.TransmissionFactor) return true;
+			if (A.SpecularFactor != B.SpecularFactor) return true;
+			if (A.SpecularColorFactor != B.SpecularColorFactor) return true;
+			if (A.Ior != B.Ior) return true;
+			if (A.SpecularTexture != B.SpecularTexture) return true;
+			if (A.SpecularColorTexture != B.SpecularColorTexture) return true;
 			return false;
 		}
 	}

@@ -42,6 +42,16 @@ namespace OpenBveApi.Objects
 		public string MetallicRoughnessTexture;
 		/// <summary>Thin-glass transmission factor 0-1 (KHR_materials_transmission approx, file-agnostic)</summary>
 		public float TransmissionFactor;
+		/// <summary>Dielectric specular weight 0-1 (KHR_materials_specular, file-agnostic)</summary>
+		public float SpecularFactor;
+		/// <summary>Dielectric F0 color factor, linear RGB, may exceed 1 (KHR_materials_specular, file-agnostic)</summary>
+		public OpenBveApi.Math.Vector3 SpecularColorFactor;
+		/// <summary>Index of refraction, 1.5 when unset (KHR_materials_ior, file-agnostic)</summary>
+		public float Ior;
+		/// <summary>The absolute on-disk path to the specular-factor texture (alpha channel)</summary>
+		public string SpecularTexture;
+		/// <summary>The absolute on-disk path to the specular-color texture (sRGB RGB)</summary>
+		public string SpecularColorTexture;
 		/// <summary>The blend mode to be used</summary>
 		public MeshMaterialBlendMode BlendMode;
 		/// <summary>The wrap mode, or a null reference if not in use</summary>
@@ -89,6 +99,11 @@ namespace OpenBveApi.Objects
 			this.EmissiveTexture = null;
 			this.MetallicRoughnessTexture = null;
 			this.TransmissionFactor = 0.0f;
+			this.SpecularFactor = 1.0f;
+			this.SpecularColorFactor = new OpenBveApi.Math.Vector3(1.0, 1.0, 1.0);
+			this.Ior = 1.5f;
+			this.SpecularTexture = null;
+			this.SpecularColorTexture = null;
 		}
 
 		/// <summary>Creates a new material from the specified texture file with default properties</summary>
@@ -117,6 +132,11 @@ namespace OpenBveApi.Objects
 			this.EmissiveTexture = null;
 			this.MetallicRoughnessTexture = null;
 			this.TransmissionFactor = 0.0f;
+			this.SpecularFactor = 1.0f;
+			this.SpecularColorFactor = new OpenBveApi.Math.Vector3(1.0, 1.0, 1.0);
+			this.Ior = 1.5f;
+			this.SpecularTexture = null;
+			this.SpecularColorTexture = null;
 			this.DaytimeTexture = textureFile;
 		}
 
@@ -145,6 +165,11 @@ namespace OpenBveApi.Objects
 			this.EmissiveTexture = prototypeMaterial.EmissiveTexture;
 			this.MetallicRoughnessTexture = prototypeMaterial.MetallicRoughnessTexture;
 			this.TransmissionFactor = prototypeMaterial.TransmissionFactor;
+			this.SpecularFactor = prototypeMaterial.SpecularFactor;
+			this.SpecularColorFactor = prototypeMaterial.SpecularColorFactor;
+			this.Ior = prototypeMaterial.Ior;
+			this.SpecularTexture = prototypeMaterial.SpecularTexture;
+			this.SpecularColorTexture = prototypeMaterial.SpecularColorTexture;
 		}
 	}
 }

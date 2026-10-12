@@ -37,8 +37,8 @@
  *  - POSITION / NORMAL / TEXCOORD_0 in float or normalized ints, indexed or not,
  *    including sparse accessors and no-bufferView (zero-filled) accessors
  *  - Materials: full PBR inventory parsed (base color + texture, metallic/roughness,
- *    normal/occlusion/emissive, alphaMode/cutoff, KHR extensions recorded); OpenBVE
- *    applies base color + texture + alpha + doubleSided, the rest stays disabled
+ *    normal/occlusion/emissive, alphaMode/cutoff, transmission/specular/ior);
+ *    OpenBVE applies them on the PBR path, unknown KHR/EXT extensions warn
  *  - Skins, morph targets, animations, cameras, lights: parsed/counted, disabled by
  *    default (bind-pose/static fallback), enable via GltfOptions if a consumer
  *    ever wants them. See https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html
@@ -103,8 +103,9 @@ namespace Object.Gltf
 	}
 
 	/// <summary>One material out of the file. Holds the full glTF 2.0 PBR set;
-	/// OpenBVE only consumes base color + texture + alpha + doubleSided, the rest
-	/// is parsed so files validate but stays disabled (see GltfOptions).</summary>
+	/// OpenBVE consumes base color + texture + alpha + doubleSided plus the PBR
+	/// path (metallic/roughness, normal, occlusion, emissive, transmission,
+	/// specular, ior); see GltfOptions for the bind-pose/static fallbacks.</summary>
 	public sealed class GltfMaterial
 	{
 		/// <summary>Base color red, 0-255</summary>
@@ -165,6 +166,24 @@ namespace Object.Gltf
 		public string MetallicRoughnessMime;
 		/// <summary>KHR_materials_transmission factor 0-1 (thin-glass approx in GltfObject; no refraction pass)</summary>
 		public float TransmissionFactor;
+		/// <summary>KHR_materials_specular strength 0-1 (dielectric specular weight)</summary>
+		public float SpecularFactor = 1.0f;
+		/// <summary>KHR_materials_specular F0 color, linear RGB (may exceed 1 per spec)</summary>
+		public float SpecularR = 1.0f, SpecularG = 1.0f, SpecularB = 1.0f;
+		/// <summary>KHR_materials_ior index of refraction (default 1.5, air outside at 1.0)</summary>
+		public float Ior = 1.5f;
+		/// <summary>Absolute path to an external specular-factor texture, or null (alpha channel)</summary>
+		public string SpecularTexture;
+		/// <summary>Embedded specular-factor bytes, or null</summary>
+		public byte[] SpecularBytes;
+		/// <summary>Specular-factor mime type</summary>
+		public string SpecularMime;
+		/// <summary>Absolute path to an external specular-color texture, or null (sRGB RGB)</summary>
+		public string SpecularColorTexture;
+		/// <summary>Embedded specular-color bytes, or null</summary>
+		public byte[] SpecularColorBytes;
+		/// <summary>Specular-color mime type</summary>
+		public string SpecularColorMime;
 	}
 
 	/// <summary>Feature switches. Everything glTF 2.0 is *parsed*, but OpenBVE can only
@@ -946,14 +965,47 @@ namespace Object.Gltf
 						material.HasAdvancedData = true;
 						foreach (JProperty p in extensions.Properties())
 						{
-							JObject transmission = p.Value as JObject;
-							if (p.Name == "KHR_materials_transmission" && transmission != null)
+							JObject ext = p.Value as JObject;
+							if (p.Name == "KHR_materials_transmission" && ext != null)
 							{
 								// No refraction pass in OpenBVE: GltfObject turns the
 								// factor into a thin-glass transparency approx.
-								JToken tFactor = transmission["transmissionFactor"];
+								JToken tFactor = ext["transmissionFactor"];
 								if (tFactor != null && (tFactor.Type == JTokenType.Float || tFactor.Type == JTokenType.Integer))
 									material.TransmissionFactor = (float)(double)tFactor;
+							}
+							else if (p.Name == "KHR_materials_specular" && ext != null)
+							{
+								// Dielectric F0 weight + color (spec §KHR_materials_specular):
+								// specularFactor * alpha, specularColorFactor * sRGB texture.
+								JToken sFactor = ext["specularFactor"];
+								if (sFactor != null && (sFactor.Type == JTokenType.Float || sFactor.Type == JTokenType.Integer))
+									material.SpecularFactor = (float)(double)sFactor;
+								JToken sColor = ext["specularColorFactor"];
+								if (sColor != null && sColor.Type == JTokenType.Array)
+								{
+									material.SpecularR = (float)NumberAt(sColor, 0, 1.0);
+									material.SpecularG = (float)NumberAt(sColor, 1, 1.0);
+									material.SpecularB = (float)NumberAt(sColor, 2, 1.0);
+								}
+								JObject sTex = ObjectOf(ext, "specularTexture");
+								if (sTex != null)
+								{
+									ResolveTexture(IntOf(sTex, "index", -1), out material.SpecularTexture, out material.SpecularBytes, out material.SpecularMime);
+									if (IntOf(sTex, "texCoord", 0) != 0) Disabled("multi-texcoord");
+								}
+								JObject scTex = ObjectOf(ext, "specularColorTexture");
+								if (scTex != null)
+								{
+									ResolveTexture(IntOf(scTex, "index", -1), out material.SpecularColorTexture, out material.SpecularColorBytes, out material.SpecularColorMime);
+									if (IntOf(scTex, "texCoord", 0) != 0) Disabled("multi-texcoord");
+								}
+							}
+							else if (p.Name == "KHR_materials_ior" && ext != null)
+							{
+								JToken ior = ext["ior"];
+								if (ior != null && (ior.Type == JTokenType.Float || ior.Type == JTokenType.Integer))
+									material.Ior = (float)(double)ior;
 							}
 							else
 							{

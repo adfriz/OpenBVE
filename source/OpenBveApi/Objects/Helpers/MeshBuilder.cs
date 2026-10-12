@@ -209,6 +209,27 @@ namespace OpenBveApi.Objects
 						Object.Mesh.Materials[mm + i].MetallicRoughnessTexture = null;
 					}
 					Object.Mesh.Materials[mm + i].TransmissionFactor = Materials[i].TransmissionFactor;
+					Object.Mesh.Materials[mm + i].SpecularFactor = Materials[i].SpecularFactor;
+					Object.Mesh.Materials[mm + i].SpecularColorFactor = Materials[i].SpecularColorFactor;
+					Object.Mesh.Materials[mm + i].Ior = Materials[i].Ior;
+					if (!string.IsNullOrWhiteSpace(Materials[i].SpecularTexture))
+					{
+						currentHost.RegisterTexture(Materials[i].SpecularTexture, parameters, out Texture tspec);
+						Object.Mesh.Materials[mm + i].SpecularTexture = tspec;
+					}
+					else
+					{
+						Object.Mesh.Materials[mm + i].SpecularTexture = null;
+					}
+					if (!string.IsNullOrWhiteSpace(Materials[i].SpecularColorTexture))
+					{
+						currentHost.RegisterTexture(Materials[i].SpecularColorTexture, parameters, out Texture tspecColor);
+						Object.Mesh.Materials[mm + i].SpecularColorTexture = tspecColor;
+					}
+					else
+					{
+						Object.Mesh.Materials[mm + i].SpecularColorTexture = null;
+					}
 				}
 			}
 		}

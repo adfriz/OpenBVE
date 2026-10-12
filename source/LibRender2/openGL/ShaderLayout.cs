@@ -307,5 +307,30 @@ namespace LibRender2
 		/// The handle of "uPBRTransmission" within the shader
 		/// </summary>
 		public short PBRTransmission = -1;
+
+		/// <summary>
+		/// The handle of "uPBRIor" within the shader
+		/// </summary>
+		public short PBRIor = -1;
+
+		/// <summary>
+		/// The handle of "uPBRSpecular" within the shader
+		/// </summary>
+		public short PBRSpecular = -1;
+
+		/// <summary>
+		/// The handle of "uPBRSpecularColor" within the shader
+		/// </summary>
+		public short PBRSpecularColor = -1;
+
+		/// <summary>
+		/// The handle of "uSpecularMap" within the shader
+		/// </summary>
+		public short SpecularMap = -1;
+
+		/// <summary>
+		/// The handle of "uSpecularColorMap" within the shader
+		/// </summary>
+		public short SpecularColorMap = -1;
 	}
 }
