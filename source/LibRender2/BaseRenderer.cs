@@ -1507,6 +1507,9 @@ namespace LibRender2
 					{
 						IblEnvironment.Bind(TextureUnit.Texture9);
 						shader.SetCameraWorldPos(Camera.AbsolutePosition);
+						// uCurrentViewMatrix is otherwise only uploaded for shadows:
+						// the IBL world reconstruction needs the real per-frame view.
+						shader.SetCurrentViewMatrix(CurrentViewMatrix);
 					}
 				}
 				// Calculate the brightness of the poly to render
