@@ -32,12 +32,19 @@
  * What it handles, deliberately kept to the boring subset:
  *  - .gltf (JSON with external or base64 buffers) and .glb (the binary box)
  *  - Node trees with matrix or translation/rotation/scale, flattened to world space
- *  - TRIANGLES primitives with POSITION, optional NORMAL and TEXCOORD_0, indexed or not
- *  - Materials: base color factor + texture, alphaMode, doubleSided
+ *  - All primitive modes: TRIANGLES natively, STRIP/FAN triangulated; POINTS/LINES
+ *    parsed but skipped (OpenBVE meshes are faces, see GltfOptions)
+ *  - POSITION / NORMAL / TEXCOORD_0 in float or normalized ints, indexed or not,
+ *    including sparse accessors and no-bufferView (zero-filled) accessors
+ *  - Materials: full PBR inventory parsed (base color + texture, metallic/roughness,
+ *    normal/occlusion/emissive, alphaMode/cutoff, KHR extensions recorded); OpenBVE
+ *    applies base color + texture + alpha + doubleSided, the rest stays disabled
+ *  - Skins, morph targets, animations, cameras, lights: parsed/counted, disabled by
+ *    default (bind-pose/static fallback), enable via GltfOptions if a consumer
+ *    ever wants them. See https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html
  *
- * What it skips (with a warning, not a crash): skins, morph targets, cameras,
- * lights, animations, metallic/roughness maps, emissive and occlusion textures,
- * sparse accessors, and anything that isn't triangles.
+ * What it warns about instead of crashing: unknown extensions, draco compression,
+ * vertex colors, multi-texcoord, and anything else OpenBVE can't draw.
  *
  * Coordinate notes: glTF is already right-handed Y-up like OpenBVE, so positions
  * pass straight through. Texture V passes through untouched too: glTF files
@@ -93,7 +100,9 @@ namespace Object.Gltf
 		}
 	}
 
-	/// <summary>One material out of the file</summary>
+	/// <summary>One material out of the file. Holds the full glTF 2.0 PBR set;
+	/// OpenBVE only consumes base color + texture + alpha + doubleSided, the rest
+	/// is parsed so files validate but stays disabled (see GltfOptions).</summary>
 	public sealed class GltfMaterial
 	{
 		/// <summary>Base color red, 0-255</summary>
@@ -112,6 +121,38 @@ namespace Object.Gltf
 		public string ImageMime;
 		/// <summary>Whether faces are visible from both sides</summary>
 		public bool DoubleSided;
+		/// <summary>OPAQUE / MASK / BLEND</summary>
+		public string AlphaMode = "OPAQUE";
+		/// <summary>Cutoff for MASK mode</summary>
+		public float AlphaCutoff = 0.5f;
+		// --- Parsed but not applied by OpenBVE (disabled features) ---
+		/// <summary>Metallic / roughness factors (parsed, unused)</summary>
+		public float MetallicFactor = 1.0f, RoughnessFactor = 1.0f;
+		/// <summary>Emissive color (parsed, unused)</summary>
+		public float EmissiveR, EmissiveG, EmissiveB;
+		/// <summary>True when the file uses unlit / spec-gloss / normal / occlusion data</summary>
+		public bool HasAdvancedData;
+	}
+
+	/// <summary>Feature switches. Everything glTF 2.0 is *parsed*, but OpenBVE can only
+	/// *render* static textured triangles, so non-static features default to off: they
+	/// are read, counted and warned about, then flattened to their bind pose.</summary>
+	public sealed class GltfOptions
+	{
+		/// <summary>Convert TRIANGLE_STRIP / TRIANGLE_FAN to triangles (default on: lossless)</summary>
+		public bool EnableStripAndFan = true;
+		/// <summary>Load POINTS / LINES primitives (default off: OpenBVE meshes are faces)</summary>
+		public bool EnablePointsAndLines;
+		/// <summary>Apply sparse accessor patches (default on: lossless)</summary>
+		public bool EnableSparseAccessors = true;
+		/// <summary>Apply morph target blends (default off: uses base pose only)</summary>
+		public bool EnableMorphTargets;
+		/// <summary>Apply skinning (default off: uses bind pose only)</summary>
+		public bool EnableSkinning;
+		/// <summary>Sample animations (default off: uses bind pose only)</summary>
+		public bool EnableAnimations;
+		/// <summary>Use metallic/roughness, normal, occlusion, emissive maps (default off)</summary>
+		public bool EnableAdvancedMaterials;
 	}
 
 	/// <summary>Everything we got out of one glTF file</summary>
@@ -121,6 +162,8 @@ namespace Object.Gltf
 		public readonly List<GltfMaterial> Materials = new List<GltfMaterial>();
 		/// <summary>The geometry, already flattened and split by material</summary>
 		public readonly List<GltfMesh> Meshes = new List<GltfMesh>();
+		/// <summary>Spec features found in the file but disabled by GltfOptions (diagnostics)</summary>
+		public readonly List<string> DisabledFeatures = new List<string>();
 	}
 
 	/// <summary>Reads glTF 2.0 files without any dependencies beyond Newtonsoft. See the note at the top of this file.</summary>
@@ -134,13 +177,21 @@ namespace Object.Gltf
 		private const int ComponentUInt = 5125;
 		private const int ComponentFloat = 5126;
 
-		// Primitive modes (we only draw triangles)
+		// Primitive modes per glTF 2.0 §3.6.2.3: 0 POINTS, 1 LINES, 2 LINE_LOOP,
+		// 3 LINE_STRIP, 4 TRIANGLES, 5 TRIANGLE_STRIP, 6 TRIANGLE_FAN
+		private const int ModePoints = 0;
+		private const int ModeLines = 1;
+		private const int ModeLineLoop = 2;
+		private const int ModeLineStrip = 3;
 		private const int ModeTriangles = 4;
+		private const int ModeTriangleStrip = 5;
+		private const int ModeTriangleFan = 6;
 
 		/// <summary>Read a .gltf or .glb file off disk</summary>
 		/// <param name="filePath">Where it lives</param>
 		/// <param name="logger">Where complaints go, or null to stay quiet</param>
-		public static GltfModel ParseFile(string filePath, IGltfParserLogger logger = null)
+		/// <param name="options">Feature switches, or null for OpenBVE-safe defaults</param>
+		public static GltfModel ParseFile(string filePath, IGltfParserLogger logger = null, GltfOptions options = null)
 		{
 			byte[] bytes = File.ReadAllBytes(filePath);
 			string directory = string.Empty;
@@ -154,25 +205,26 @@ namespace Object.Gltf
 			}
 			if (bytes.Length >= 4 && bytes[0] == 'g' && bytes[1] == 'l' && bytes[2] == 'T' && bytes[3] == 'F')
 			{
-				return ParseGlb(bytes, directory, logger);
+				return ParseGlb(bytes, directory, logger, options);
 			}
-			return ParseText(Encoding.UTF8.GetString(bytes), directory, logger);
+			return ParseText(Encoding.UTF8.GetString(bytes), directory, logger, options);
 		}
 
 		/// <summary>Parse .gltf JSON you already have in memory (handy for tests)</summary>
 		/// <param name="json">The file contents</param>
 		/// <param name="baseDirectory">Where buffers and textures are relative to</param>
 		/// <param name="logger">Where complaints go, or null to stay quiet</param>
-		public static GltfModel ParseText(string json, string baseDirectory, IGltfParserLogger logger = null)
+		/// <param name="options">Feature switches, or null for OpenBVE-safe defaults</param>
+		public static GltfModel ParseText(string json, string baseDirectory, IGltfParserLogger logger = null, GltfOptions options = null)
 		{
-			Parser parser = new Parser(baseDirectory ?? string.Empty, logger);
+			Parser parser = new Parser(baseDirectory ?? string.Empty, logger, options ?? new GltfOptions());
 			return parser.Run(JObject.Parse(json), null);
 		}
 
 		/// <summary>Parse a .glb blob you already have in memory (handy for tests)</summary>
-		public static GltfModel ParseGlb(byte[] bytes, string baseDirectory, IGltfParserLogger logger = null)
+		public static GltfModel ParseGlb(byte[] bytes, string baseDirectory, IGltfParserLogger logger = null, GltfOptions options = null)
 		{
-			Parser parser = new Parser(baseDirectory ?? string.Empty, logger);
+			Parser parser = new Parser(baseDirectory ?? string.Empty, logger, options ?? new GltfOptions());
 			return parser.RunGlb(bytes);
 		}
 
@@ -182,6 +234,7 @@ namespace Object.Gltf
 		{
 			private readonly string baseDirectory;
 			private readonly IGltfParserLogger logger;
+			private readonly GltfOptions options;
 			private readonly GltfModel model = new GltfModel();
 			private readonly List<byte[]> buffers = new List<byte[]>();
 			private int defaultMaterial = -1;
@@ -195,15 +248,26 @@ namespace Object.Gltf
 			private JArray textures;
 			private JArray images;
 
-			internal Parser(string baseDirectory, IGltfParserLogger logger)
+			internal Parser(string baseDirectory, IGltfParserLogger logger, GltfOptions options)
 			{
 				this.baseDirectory = baseDirectory;
 				this.logger = logger;
+				this.options = options ?? new GltfOptions();
 			}
 
 			private void Warn(string message)
 			{
 				if (logger != null) logger.Warning(message);
+			}
+
+			private void Disabled(string feature)
+			{
+				// Parsed per spec, but OpenBVE can't render it: record once, warn once.
+				if (!model.DisabledFeatures.Contains(feature))
+				{
+					model.DisabledFeatures.Add(feature);
+					Warn(feature + " is parsed but disabled in OpenBVE, using bind-pose/static fallback.");
+				}
 			}
 
 			// --- Small JSON helpers -------------------------------------------------
@@ -291,6 +355,7 @@ namespace Object.Gltf
 
 				LoadBuffers(glbBin);
 				LoadMaterials();
+				ReportDisabledFeatures();
 
 				// Default scene, or the first one if the file doesn't say
 				JArray scenes = ArrayOf(root, "scenes");
@@ -324,6 +389,56 @@ namespace Object.Gltf
 					}
 				}
 				return model;
+			}
+
+			// --- Spec inventory: everything 2.0 can carry, OpenBVE only renders a subset ---
+			// Anything here that OpenBVE can't draw is parsed (validated) then disabled
+			// via GltfOptions, falling back to bind pose / base color / static mesh.
+			private void ReportDisabledFeatures()
+			{
+				if (ArrayOf(root, "animations") != null)
+				{
+					if (!options.EnableAnimations) Disabled("animations");
+				}
+				if (ArrayOf(root, "skins") != null)
+				{
+					if (!options.EnableSkinning) Disabled("skinning");
+				}
+				if (ArrayOf(root, "cameras") != null) Disabled("cameras");
+				if (root["extensions"] as JObject != null)
+				{
+					JObject ext = (JObject)root["extensions"];
+					foreach (JProperty p in ext.Properties())
+					{
+						string n = p.Name;
+						if (n == "KHR_lights_punctual") Disabled("KHR_lights_punctual");
+						else if (n.StartsWith("KHR_draco", StringComparison.Ordinal)) Disabled("KHR_draco_mesh_compression");
+						else if (n.StartsWith("EXT_", StringComparison.Ordinal) || n.StartsWith("KHR_", StringComparison.Ordinal)) Disabled(n);
+					}
+				}
+				if (meshes != null)
+				{
+					foreach (JToken m in meshes)
+					{
+						JToken prims = (m as JObject)?["primitives"];
+						if (prims as JArray != null)
+						{
+							JArray pa = (JArray)prims;
+							foreach (JToken pt in pa)
+							{
+								JObject pr = pt as JObject;
+								if (pr == null) continue;
+								JArray ta = pr["targets"] as JArray;
+								if (ta != null && ta.Count > 0 && !options.EnableMorphTargets) Disabled("morph-targets");
+								JObject attrs = pr["attributes"] as JObject;
+								if (attrs != null && (attrs["JOINTS_0"] != null || attrs["WEIGHTS_0"] != null) && !options.EnableSkinning) Disabled("skinning");
+								if (attrs != null && attrs["COLOR_0"] != null) Disabled("vertex-colors");
+							}
+						}
+						JArray wa = ((JObject)m)["weights"] as JArray;
+						if (wa != null && wa.Count > 0 && !options.EnableMorphTargets) Disabled("morph-targets");
+					}
+				}
 			}
 
 			internal GltfModel RunGlb(byte[] bytes)
@@ -465,52 +580,103 @@ namespace Object.Gltf
 					return false;
 				}
 				JObject accessor = accessors[accessorIndex] as JObject;
+				if (accessor == null) return false;
 				int viewIndex = IntOf(accessor, "bufferView", -1);
 				count = IntOf(accessor, "count", 0);
-				if (accessor == null || viewIndex < 0 || bufferViews == null || viewIndex >= bufferViews.Count || count <= 0)
-				{
-					return false;
-				}
-				if (accessor["sparse"] != null)
-				{
-					Warn("Sparse accessors are not supported, skipping part of the model.");
-					return false;
-				}
-				JObject view = bufferViews[viewIndex] as JObject;
-				int bufferIndex = IntOf(view, "buffer", 0);
-				int viewOffset = IntOf(view, "byteOffset", 0);
-				int accessorOffset = IntOf(accessor, "byteOffset", 0);
-				if (view == null || bufferIndex < 0 || bufferIndex >= buffers.Count)
-				{
-					return false;
-				}
-				int componentSize = ComponentSize(IntOf(accessor, "componentType", -1));
+				if (count <= 0) return false;
+				int componentType = IntOf(accessor, "componentType", -1);
+				int componentSize = ComponentSize(componentType);
 				if (componentSize == 0)
 				{
 					Warn("An accessor has an unknown component type, skipping part of the model.");
 					return false;
 				}
-				stride = IntOf(view, "byteStride", components * componentSize);
-				data = buffers[bufferIndex];
-				start = viewOffset + accessorOffset;
-				// Make sure the whole thing actually fits in the buffer before touching it
-				long end = (long)start + (long)(count - 1) * stride + components * componentSize;
-				if (start < 0 || end > data.Length)
+				int elemSize = components * componentSize;
+				// Base values: buffer slice, or zeros when the accessor has no bufferView (§3.6.2.5)
+				byte[] flat = new byte[count * elemSize];
+				if (viewIndex >= 0)
 				{
-					Warn("An accessor runs past the end of its buffer, skipping part of the model.");
-					return false;
+					if (bufferViews == null || viewIndex >= bufferViews.Count) return false;
+					JObject view = bufferViews[viewIndex] as JObject;
+					if (view == null) return false;
+					int bufferIndex = IntOf(view, "buffer", 0);
+					int viewOffset = IntOf(view, "byteOffset", 0);
+					int accessorOffset = IntOf(accessor, "byteOffset", 0);
+					if (bufferIndex < 0 || bufferIndex >= buffers.Count) return false;
+					stride = IntOf(view, "byteStride", elemSize);
+					byte[] buf = buffers[bufferIndex];
+					int src = viewOffset + accessorOffset;
+					long end = (long)src + (long)(count - 1) * stride + elemSize;
+					if (src < 0 || end > buf.Length)
+					{
+						Warn("An accessor runs past the end of its buffer, skipping part of the model.");
+						return false;
+					}
+					for (int i = 0; i < count; i++)
+						Buffer.BlockCopy(buf, src + i * stride, flat, i * elemSize, elemSize);
 				}
+				// Sparse patch (§3.6.2.5): scatter values into the base array
+				JObject sparse = accessor["sparse"] as JObject;
+				if (sparse != null)
+				{
+					if (options.EnableSparseAccessors)
+					{
+						if (!ApplySparsePatch(sparse, componentType, components, flat))
+							return false;
+					}
+					else
+					{
+						Disabled("sparse-accessors");
+					}
+				}
+				data = flat;
+				start = 0;
+				stride = elemSize;
 				return true;
 			}
 
+			private bool ApplySparsePatch(JObject sparse, int componentType, int components, byte[] flat)
+			{
+				int sparseCount = IntOf(sparse, "count", 0);
+				JObject idx = ObjectOf(sparse, "indices");
+				JObject vals = ObjectOf(sparse, "values");
+				if (sparseCount <= 0 || idx == null || vals == null) return true;
+				int idxView = IntOf(idx, "bufferView", -1);
+				int valView = IntOf(vals, "bufferView", -1);
+				if (idxView < 0 || valView < 0 || bufferViews == null) return true;
+				JObject idxV = bufferViews[idxView] as JObject;
+				JObject valV = bufferViews[valView] as JObject;
+				if (idxV == null || valV == null) return true;
+				int idxBuf = IntOf(idxV, "buffer", 0), valBuf = IntOf(valV, "buffer", 0);
+				if (idxBuf < 0 || idxBuf >= buffers.Count || valBuf < 0 || valBuf >= buffers.Count) return true;
+				int idxOff = IntOf(idxV, "byteOffset", 0) + IntOf(idx, "byteOffset", 0);
+				int valOff = IntOf(valV, "byteOffset", 0) + IntOf(vals, "byteOffset", 0);
+				int idxType = IntOf(idx, "componentType", ComponentUShort);
+				int idxSize = ComponentSize(idxType);
+				int elemSize = components * ComponentSize(componentType);
+				byte[] idxData = buffers[idxBuf], valData = buffers[valBuf];
+				for (int s = 0; s < sparseCount; s++)
+				{
+					int target;
+					int io = idxOff + s * idxSize;
+					if (idxType == ComponentUByte) target = idxData[io];
+					else if (idxType == ComponentUShort) target = BitConverter.ToUInt16(idxData, io);
+					else if (idxType == ComponentUInt)
+					{
+						long w = BitConverter.ToUInt32(idxData, io);
+						target = w > int.MaxValue ? -1 : (int)w;
+					}
+					else { Warn("Unsupported sparse index type, ignoring patch."); return true; }
+					if (target < 0 || target >= flat.Length / elemSize) continue;
+					Buffer.BlockCopy(valData, valOff + s * elemSize, flat, target * elemSize, elemSize);
+				}
+				return true;
+			}
 			private float[] ReadFloats(int accessorIndex, int components)
 			{
 				JObject accessor = accessors[accessorIndex] as JObject;
-				if (IntOf(accessor, "componentType", -1) != ComponentFloat)
-				{
-					Warn("Only float attributes are supported, skipping part of the model.");
-					return null;
-				}
+				int componentType = IntOf(accessor, "componentType", -1);
+				bool normalized = BoolOf(accessor, "normalized", false);
 				byte[] data;
 				int start, stride, count;
 				if (!AccessorBytes(accessorIndex, components, out data, out start, out stride, out count))
@@ -523,7 +689,38 @@ namespace Object.Gltf
 					int offset = start + i * stride;
 					for (int c = 0; c < components; c++)
 					{
-						result[i * components + c] = BitConverter.ToSingle(data, offset + c * 4);
+						if (componentType == ComponentFloat)
+						{
+							result[i * components + c] = BitConverter.ToSingle(data, offset + c * 4);
+						}
+						else if (!normalized)
+						{
+							Warn("Only float attributes are supported, skipping part of the model.");
+							return null;
+						}
+						else if (componentType == ComponentByte)
+						{
+							sbyte v = (sbyte)data[offset + c];
+							result[i * components + c] = Math.Max(v / 127.0f, -1.0f);
+						}
+						else if (componentType == ComponentUByte)
+						{
+							result[i * components + c] = data[offset + c] / 255.0f;
+						}
+						else if (componentType == ComponentShort)
+						{
+							short v = BitConverter.ToInt16(data, offset + c * 2);
+							result[i * components + c] = Math.Max(v / 32767.0f, -1.0f);
+						}
+						else if (componentType == ComponentUShort)
+						{
+							result[i * components + c] = BitConverter.ToUInt16(data, offset + c * 2) / 65535.0f;
+						}
+						else
+						{
+							Warn("Unsupported normalized component type, skipping part of the model.");
+							return null;
+						}
 					}
 				}
 				return result;
@@ -629,17 +826,54 @@ namespace Object.Gltf
 				{
 					GltfMaterial material = new GltfMaterial();
 					material.DoubleSided = BoolOf(materials[i], "doubleSided", false);
+					material.AlphaMode = StringOf(materials[i], "alphaMode") ?? "OPAQUE";
+					JToken cutoff = ((JObject)materials[i])["alphaCutoff"];
+					if (cutoff != null && (cutoff.Type == JTokenType.Float || cutoff.Type == JTokenType.Integer))
+						material.AlphaCutoff = (float)(double)cutoff;
 					JObject pbr = ObjectOf(materials[i], "pbrMetallicRoughness");
 					JToken factor = pbr != null ? pbr["baseColorFactor"] : null;
 					material.R = ToByte(NumberAt(factor, 0, 1.0) * 255.0);
 					material.G = ToByte(NumberAt(factor, 1, 1.0) * 255.0);
 					material.B = ToByte(NumberAt(factor, 2, 1.0) * 255.0);
 					material.A = ToByte(NumberAt(factor, 3, 1.0) * 255.0);
-					JObject colorTexture = pbr != null ? ObjectOf(pbr, "baseColorTexture") : null;
-					if (colorTexture != null)
+					if (pbr != null)
 					{
-						ResolveTexture(IntOf(colorTexture, "index", -1), material);
+						JToken met = pbr["metallicFactor"];
+						if (met != null && (met.Type == JTokenType.Float || met.Type == JTokenType.Integer))
+							material.MetallicFactor = (float)(double)met;
+						JToken rgh = pbr["roughnessFactor"];
+						if (rgh != null && (rgh.Type == JTokenType.Float || rgh.Type == JTokenType.Integer))
+							material.RoughnessFactor = (float)(double)rgh;
+						if (pbr["metallicRoughnessTexture"] != null) material.HasAdvancedData = true;
+						JObject colorTexture = ObjectOf(pbr, "baseColorTexture");
+						if (colorTexture != null)
+						{
+							ResolveTexture(IntOf(colorTexture, "index", -1), material);
+							if (IntOf(colorTexture, "texCoord", 0) != 0) Disabled("multi-texcoord");
+						}
 					}
+					// Full-spec inventory below: parsed + recorded, applied only when enabled
+					JToken emissive = ((JObject)materials[i])["emissiveFactor"];
+					if (emissive != null)
+					{
+						material.EmissiveR = (float)NumberAt(emissive, 0, 0.0);
+						material.EmissiveG = (float)NumberAt(emissive, 1, 0.0);
+						material.EmissiveB = (float)NumberAt(emissive, 2, 0.0);
+						if (material.EmissiveR != 0 || material.EmissiveG != 0 || material.EmissiveB != 0)
+							material.HasAdvancedData = true;
+					}
+					if (ObjectOf(materials[i], "normalTexture") != null) material.HasAdvancedData = true;
+					if (ObjectOf(materials[i], "occlusionTexture") != null) material.HasAdvancedData = true;
+					if (ObjectOf(materials[i], "emissiveTexture") != null) material.HasAdvancedData = true;
+					JObject extensions = ObjectOf(materials[i], "extensions");
+					if (extensions != null)
+					{
+						material.HasAdvancedData = true;
+						foreach (JProperty p in extensions.Properties())
+							Disabled(p.Name);
+					}
+					if (material.HasAdvancedData && !options.EnableAdvancedMaterials)
+						Disabled("advanced-materials");
 					model.Materials.Add(material);
 				}
 			}
@@ -850,9 +1084,23 @@ namespace Object.Gltf
 
 			private void EmitPrimitive(JObject primitive, double[] world)
 			{
-				if (IntOf(primitive, "mode", ModeTriangles) != ModeTriangles)
+				int mode = IntOf(primitive, "mode", ModeTriangles);
+				if (mode == ModePoints || mode == ModeLines || mode == ModeLineLoop || mode == ModeLineStrip)
 				{
-					Warn("Only triangle primitives are supported, skipping part of the model.");
+					if (!options.EnablePointsAndLines) Disabled("points-and-lines");
+					else Warn("Point/line primitives have no faces in OpenBVE, skipping.");
+					return;
+				}
+				bool isStrip = mode == ModeTriangleStrip;
+				bool isFan = mode == ModeTriangleFan;
+				if ((isStrip || isFan) && !options.EnableStripAndFan)
+				{
+					Disabled("triangle-strip-and-fan");
+					return;
+				}
+				if (mode != ModeTriangles && !isStrip && !isFan)
+				{
+					Warn("Unknown primitive mode " + mode + ", skipping part of the model.");
 					return;
 				}
 				JObject attributes = ObjectOf(primitive, "attributes");
@@ -904,7 +1152,17 @@ namespace Object.Gltf
 						return;
 					}
 				}
-				int corners = indices != null ? indices.Length : vertexCount;
+				// Morph targets (§3.6.2.4): parsed, applied only when enabled; otherwise base pose
+				JArray targets = primitive["targets"] as JArray;
+				if (targets != null && targets.Count > 0)
+				{
+					if (options.EnableMorphTargets) ApplyMorphTargets(targets, positions, normals, vertexCount);
+					else Disabled("morph-targets");
+				}
+				// De-index into a triangle list, expanding strips/fans (§3.6.2.3)
+				int[] triList = BuildTriangleList(indices, vertexCount, isStrip, isFan);
+				if (triList == null) return;
+				int corners = triList.Length;
 				if (corners % 3 != 0)
 				{
 					Warn("A primitive has a triangle count that isn't whole, skipping it.");
@@ -929,7 +1187,7 @@ namespace Object.Gltf
 				mesh.DoubleSided = model.Materials[mesh.MaterialIndex].DoubleSided;
 				for (int i = 0; i < corners; i++)
 				{
-					int v = indices != null ? indices[i] : i;
+					int v = triList[i];
 					GltfCorner corner = new GltfCorner();
 					TransformPoint(world, positions[v * 3], positions[v * 3 + 1], positions[v * 3 + 2],
 						out corner.X, out corner.Y, out corner.Z);
@@ -967,6 +1225,64 @@ namespace Object.Gltf
 				if (mesh.TriangleCount != 0)
 				{
 					model.Meshes.Add(mesh);
+				}
+			}
+
+			// Expands indexed / non-indexed strips and fans into a flat triangle list
+			private static int[] BuildTriangleList(int[] indices, int vertexCount, bool isStrip, bool isFan)
+			{
+				int n = indices != null ? indices.Length : vertexCount;
+				System.Func<int, int> at = k => indices != null ? indices[k] : k;
+				if (!isStrip && !isFan)
+				{
+					int[] list = new int[n - (n % 3)];
+					for (int i = 0; i < list.Length; i++) list[i] = at(i);
+					return list;
+				}
+				System.Collections.Generic.List<int> tris = new System.Collections.Generic.List<int>();
+				if (isStrip)
+				{
+					for (int i = 2; i < n; i++)
+					{
+						int a = at(i - 2), b = at(i - 1), c = at(i);
+						if (a == b || b == c || a == c) continue; // degenerate, skip
+						if ((i & 1) == 0) { tris.Add(a); tris.Add(b); tris.Add(c); }
+						else { tris.Add(b); tris.Add(a); tris.Add(c); } // preserve winding
+					}
+				}
+				else
+				{
+					for (int i = 2; i < n; i++)
+					{
+						int a = at(0), b = at(i - 1), c = at(i);
+						if (a == b || b == c || a == c) continue;
+						tris.Add(a); tris.Add(b); tris.Add(c);
+					}
+				}
+				return tris.ToArray();
+			}
+
+			// Adds morph-target deltas (base weights) into positions/normals in place
+			private void ApplyMorphTargets(JArray targets, float[] positions, float[] normals, int vertexCount)
+			{
+				foreach (JToken t in targets)
+				{
+					JObject target = t as JObject;
+					if (target == null) continue;
+					JToken posTok = target["POSITION"];
+					if (posTok != null && posTok.Type == JTokenType.Integer)
+					{
+						float[] delta = ReadFloats((int)(long)posTok, 3);
+						if (delta != null && delta.Length == positions.Length)
+							for (int i = 0; i < positions.Length; i++) positions[i] += delta[i];
+					}
+					JToken nrmTok = target["NORMAL"];
+					if (nrmTok != null && nrmTok.Type == JTokenType.Integer && normals != null)
+					{
+						float[] delta = ReadFloats((int)(long)nrmTok, 3);
+						if (delta != null && delta.Length == normals.Length)
+							for (int i = 0; i < normals.Length; i++) normals[i] += delta[i];
+					}
 				}
 			}
 

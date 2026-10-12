@@ -122,7 +122,8 @@ namespace Plugin
 			}
 		}
 
-		// Parsed material -> MeshBuilder material. Most of what we keep is color + texture.
+		// Parsed material -> MeshBuilder material. OpenBVE consumes color + texture +
+		// alpha; metallic/roughness, normal/occlusion/emissive stay parsed-but-disabled.
 		private static Material ConvertMaterial(GltfMaterial material)
 		{
 			Material result = new Material
