@@ -216,6 +216,10 @@ namespace LibRender2.Shaders
 				PBRMaps = (short)GL.GetUniformLocation(Handle, "uPBRMaps"),
 				PBRNormalScale = (short)GL.GetUniformLocation(Handle, "uPBRNormalScale"),
 				PBROcclusionStrength = (short)GL.GetUniformLocation(Handle, "uPBROcclusionStrength"),
+				EnvMap = (short)GL.GetUniformLocation(Handle, "uEnvMap"),
+				EnvMaxLod = (short)GL.GetUniformLocation(Handle, "uEnvMaxLod"),
+				HasEnv = (short)GL.GetUniformLocation(Handle, "uHasEnv"),
+				CameraWorldPos = (short)GL.GetUniformLocation(Handle, "uCameraWorldPos"),
 			};
 		}
 
@@ -406,6 +410,27 @@ namespace LibRender2.Shaders
 		{
 			if (UniformLayout.PBRNormalScale >= 0) GL.ProgramUniform1(Handle, UniformLayout.PBRNormalScale, normalScale);
 			if (UniformLayout.PBROcclusionStrength >= 0) GL.ProgramUniform1(Handle, UniformLayout.PBROcclusionStrength, occlusionStrength);
+		}
+
+		/// <summary>Binds the environment sampler to its unit (call once after init)</summary>
+		public void SetEnvMapUnit(int unit)
+		{
+			if (UniformLayout.EnvMap >= 0) GL.ProgramUniform1(Handle, UniformLayout.EnvMap, unit);
+		}
+
+		public void SetEnvMaxLod(float maxLod)
+		{
+			if (UniformLayout.EnvMaxLod >= 0) GL.ProgramUniform1(Handle, UniformLayout.EnvMaxLod, maxLod);
+		}
+
+		public void SetHasEnv(bool hasEnv)
+		{
+			if (UniformLayout.HasEnv >= 0) GL.ProgramUniform1(Handle, UniformLayout.HasEnv, hasEnv ? 1 : 0);
+		}
+
+		public void SetCameraWorldPos(Vector3 position)
+		{
+			if (UniformLayout.CameraWorldPos >= 0) GL.ProgramUniform3(Handle, UniformLayout.CameraWorldPos, (float)position.X, (float)position.Y, (float)position.Z);
 		}
 
 		public override void SetFog(bool enabled)

@@ -282,5 +282,25 @@ namespace LibRender2
 		/// The handle of "uPBROcclusionStrength" within the shader
 		/// </summary>
 		public short PBROcclusionStrength = -1;
+
+		/// <summary>
+		/// The handle of "uEnvMap" within the shader
+		/// </summary>
+		public short EnvMap = -1;
+
+		/// <summary>
+		/// The handle of "uEnvMaxLod" within the shader
+		/// </summary>
+		public short EnvMaxLod = -1;
+
+		/// <summary>
+		/// The handle of "uHasEnv" within the shader
+		/// </summary>
+		public short HasEnv = -1;
+
+		/// <summary>
+		/// The handle of "uCameraWorldPos" within the shader
+		/// </summary>
+		public short CameraWorldPos = -1;
 	}
 }

@@ -159,6 +159,9 @@ namespace LibRender2
 		public AbstractShader CurrentShader;
 
 		public Shader DefaultShader;
+
+		/// <summary>Image-based lighting environment (one shipped HDR). Null when unavailable.</summary>
+		public EnvironmentMap Environment;
 		
 		/// <summary>Manages the Cascaded Shadow Mapping (CSM) system.</summary>
 		public Shadows Shadows;
@@ -396,6 +399,8 @@ namespace LibRender2
 				DefaultShader.SetMaterialSpecular(Color32.White);
 				// PBR map samplers live on fixed units (0 is albedo, 4-7 shadows)
 				DefaultShader.SetPBRMapUnits(1, 2, 3, 8);
+				DefaultShader.SetEnvMapUnit(9);
+				LoadEnvironment();
 				lastColor = Color32.White;
 				DefaultShader.Deactivate();
 				dummyVao = new VertexArrayObject();
@@ -1254,6 +1259,41 @@ namespace LibRender2
 		private Matrix4D lastModelViewMatrix;
 		private bool sendToShader;
 
+		/// <summary>Loads the shipped HDR environment for PBR image-based lighting</summary>
+		/// <remarks>Soft-fails to analytic-sun-only: IBL is garnish, never load-bearing.</remarks>
+		private void LoadEnvironment()
+		{
+			try
+			{
+				Assembly assembly = Assembly.GetExecutingAssembly();
+				using (Stream stream = assembly.GetManifestResourceStream("LibRender2.pine_picnic_1k.hdr"))
+				{
+					if (stream == null) return;
+					Environment = EnvironmentMap.TryLoad(stream);
+				}
+				if (Environment != null && Environment.IsReady)
+				{
+					DefaultShader.SetEnvMaxLod(Environment.MaxLod);
+					DefaultShader.SetHasEnv(true);
+				}
+			}
+			catch
+			{
+				Environment = null;
+			}
+			if (Environment == null || !Environment.IsReady)
+			{
+				try
+				{
+					DefaultShader.SetHasEnv(false);
+				}
+				catch
+				{
+					// ignored
+				}
+			}
+		}
+
 		/// <summary>Binds a PBR detail texture to a fixed unit, or white when absent (neutral for the BRDF)</summary>
 		/// <returns>True when a real texture was bound</returns>
 		private bool BindPBRTexture(Texture texture, TextureUnit unit, OpenGlTextureWrapMode? wrapMode)
@@ -1459,6 +1499,11 @@ namespace LibRender2
 					if (BindPBRTexture(material.EmissiveTexture, TextureUnit.Texture3, material.WrapMode)) pbrMaps |= 4;
 					if (BindPBRTexture(material.MetallicRoughnessTexture, TextureUnit.Texture8, material.WrapMode)) pbrMaps |= 8;
 					shader.SetPBRMaps(pbrMaps);
+					if (Environment != null && Environment.IsReady)
+					{
+						Environment.Bind(TextureUnit.Texture9);
+						shader.SetCameraWorldPos(Camera.AbsolutePosition);
+					}
 				}
 				// Calculate the brightness of the poly to render
 				float factor;

@@ -91,6 +91,9 @@ out vec4 vPosLightSpace1;
 out vec4 vPosLightSpace2;
 out vec4 vPosLightSpace3;
 out vec3 vNormal;
+// World-space position/normal for image-based lighting (PBR path only)
+out vec3 vWorldPos;
+out vec3 vWorldNormal;
 
 vec3 safeNormalizeVec3(vec3 v) {
 	float l2 = dot(v, v);
@@ -228,6 +231,11 @@ void main()
 	// Pass normal to fragment shader (un-negated Z to match lighting expected convention)
 	// safeNormalize: Cube/ground and any VAO with zero normals must not produce NaN on Mesa.
 	vNormal = safeNormalizeVec3(mat3(transpose(inverse(uCurrentModelViewMatrix))) * vec3(iNormal.x, iNormal.y, -iNormal.z));
+	// World-space pair for IBL: view rotation is orthonormal so transpose == inverse.
+	// uModelMatrix is not bound for regular meshes, so derive world from the view matrix.
+	vec4 worldPos4 = inverse(uCurrentViewMatrix) * oViewPos;
+	vWorldPos = worldPos4.xyz / max(worldPos4.w, 1e-6);
+	vWorldNormal = transpose(mat3(uCurrentViewMatrix)) * vNormal;
 
 	if (uShadowEnabled)
 	{

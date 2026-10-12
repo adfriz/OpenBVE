@@ -72,6 +72,12 @@ uniform sampler2D uMetallicRoughnessMap; // ARM: R occlusion, G roughness, B met
 uniform int       uPBRMaps; // bit0 normal, bit1 occlusion, bit2 emissive, bit3 metallic-roughness
 uniform float     uPBRNormalScale;
 uniform float     uPBROcclusionStrength;
+// Image-based lighting: one shipped equirect HDR, mipmaps stand in for a prefilter.
+// uHasEnv 0 = analytic sun only; 1 = analytic + env (split-sum without BRDF LUT).
+uniform sampler2D uEnvMap;
+uniform float     uEnvMaxLod;
+uniform int       uHasEnv;
+uniform vec3      uCameraWorldPos;
 
 struct Light
 {
@@ -85,6 +91,8 @@ uniform Light uLight;
 
 // Inputs from vertex shader
 in vec3  vNormal;
+in vec3  vWorldPos;
+in vec3  vWorldNormal;
 in vec4  vPosLightSpace0;
 in vec4  vPosLightSpace1;
 in vec4  vPosLightSpace2;
@@ -314,6 +322,14 @@ vec3 PBR_F_Schlick(float cosTheta, vec3 F0)
 	return F0 + (vec3(1.0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
+// Equirect direction -> UV (matches RGBE layout: u wraps, v pole-to-pole)
+vec2 PBR_EnvUV(vec3 d)
+{
+	float u = atan(d.z, d.x) / (2.0 * PBR_PI) + 0.5;
+	float v = acos(clamp(d.y, -1.0, 1.0)) / PBR_PI;
+	return vec2(u, v);
+}
+
 // albedo = baseColor x texture (finalColor.rgb at this point, sRGB); view-space math
 // matching the existing uLight convention (position is a view-space direction).
 // Linear workflow (approx gamma 2.2): web viewers render glTF in linear space with
@@ -361,6 +377,20 @@ vec3 PBRLighting(vec3 albedoSrgb, float shadow)
 	if ((uPBRMaps & 4) != 0)
 	{
 		emissive *= pow(texture(uEmissiveMap, oUv).rgb, vec3(2.2));
+	}
+	if (uHasEnv != 0)
+	{
+		// Split-sum approx without a BRDF LUT: irradiance from the smallest mip,
+		// specular from a roughness LOD, scaled by Fresnel. Puts the "room" into
+		// metals and lifts rough dielectrics the way web viewers do.
+		vec3 Nw = normalize(vWorldNormal);
+		vec3 Vw = normalize(uCameraWorldPos - vWorldPos);
+		vec3 Rw = reflect(-Vw, Nw);
+		vec3 irradiance = textureLod(uEnvMap, PBR_EnvUV(Nw), uEnvMaxLod).rgb;
+		vec3 radiance = textureLod(uEnvMap, PBR_EnvUV(Rw), roughness * uEnvMaxLod).rgb;
+		vec3 Fenv = PBR_F_Schlick(max(dot(Nw, Vw), 0.0), F0);
+		ambient += irradiance * albedo * (vec3(1.0) - Fenv) * (1.0 - metallic);
+		Lo += radiance * Fenv;
 	}
 	vec3 linear = (ambient + Lo) * shadow * uBrightness + emissive;
 	return pow(clamp(linear, 0.0, 8.0), vec3(1.0 / 2.2));
