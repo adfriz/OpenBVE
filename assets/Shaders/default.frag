@@ -314,10 +314,13 @@ vec3 PBR_F_Schlick(float cosTheta, vec3 F0)
 	return F0 + (vec3(1.0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
-// albedo = baseColor x texture (finalColor.rgb at this point); view-space math
+// albedo = baseColor x texture (finalColor.rgb at this point, sRGB); view-space math
 // matching the existing uLight convention (position is a view-space direction).
-vec3 PBRLighting(vec3 albedo, float shadow)
+// Linear workflow (approx gamma 2.2): web viewers render glTF in linear space with
+// ACES tone mapping. We keep the shared sRGB framebuffer and convert at the edges.
+vec3 PBRLighting(vec3 albedoSrgb, float shadow)
 {
+	vec3 albedo = pow(albedoSrgb, vec3(2.2));
 	vec3 N = normalize(vNormal);
 	if ((uPBRMaps & 1) != 0)
 	{
@@ -354,12 +357,13 @@ vec3 PBRLighting(vec3 albedo, float shadow)
 		occlusion = mix(1.0, texture(uOcclusionMap, oUv).r, clamp(uPBROcclusionStrength, 0.0, 1.0));
 	}
 	vec3 ambient = uLight.ambient * albedo * occlusion;
-	vec3 emissive = uPBREmissive;
+	vec3 emissive = pow(uPBREmissive, vec3(2.2));
 	if ((uPBRMaps & 4) != 0)
 	{
-		emissive *= texture(uEmissiveMap, oUv).rgb;
+		emissive *= pow(texture(uEmissiveMap, oUv).rgb, vec3(2.2));
 	}
-	return (ambient + Lo) * shadow * uBrightness + emissive;
+	vec3 linear = (ambient + Lo) * shadow * uBrightness + emissive;
+	return pow(clamp(linear, 0.0, 8.0), vec3(1.0 / 2.2));
 }
 
 void main(void)
@@ -375,9 +379,10 @@ void main(void)
 		finalColor = vec4(oColor.rgb, 1.0) * vec4(texture(uTexture, oUv).xyz, 1.0);
 	}
 
-	if((uMaterialFlags & 1) == 0 && (uMaterialFlags & 4) == 0)
+	if((uMaterialFlags & 1) == 0 && (uMaterialFlags & 4) == 0 && (uMaterialFlags & 128) == 0)
 	{
 		//Material is not emissive and lighting is enabled, so multiply by brightness
+		//(PBR applies brightness itself inside PBRLighting - doing it here would darken twice)
 		finalColor.rgb *= uBrightness;
 	}
 	
