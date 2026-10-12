@@ -334,13 +334,15 @@ vec3 PBR_F_Schlick(float cosTheta, vec3 F0)
 	return F0 + (vec3(1.0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
-// Equirect direction -> UV (matches RGBE layout: u wraps, v pole-to-pole).
-// Model space is Y-up (glTF passes straight through), and GL t=0 is the first
-// uploaded row (image top = sky), so +Y samples the sky with no flip.
+// Equirect direction -> UV. World is Y-up (glTF passes straight through).
+// Row-order note: GL t=0 is the LAST uploaded row, and our RGBE decode stores
+// top-first, so image row 0 (sky) lands at t=1: +Y must map to v=1, hence -d.y.
+// (Forgetting this samples the grass for up-facing normals: green everything,
+//  white sky smeared across the bottom of mirror balls.)
 vec2 PBR_EnvUV(vec3 d)
 {
 	float u = atan(d.z, d.x) / (2.0 * PBR_PI) + 0.5;
-	float v = acos(clamp(d.y, -1.0, 1.0)) / PBR_PI;
+	float v = acos(clamp(-d.y, -1.0, 1.0)) / PBR_PI;
 	return vec2(u, v);
 }
 
