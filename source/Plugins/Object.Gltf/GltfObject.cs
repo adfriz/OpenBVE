@@ -151,15 +151,19 @@ namespace Plugin
 			}
 			if (material.TransmissionFactor > 0.0f)
 			{
-				// Thin-glass approx: OpenBVE has no transmission framebuffer, so the
-				// factor lowers opacity instead. The lowered alpha routes the face
-				// through the transparent pass (interior shows through) while the PBR
-				// env reflection on top keeps it reading as glass, not a hole.
+				// Thin-glass approx (Filament thin-cubemap style, no refraction pass):
+				// the factor rides uPBRTransmission (diffuse attenuated, transmitted
+				// env lobe added in-shader) while a softened alpha routes the face
+				// through the transparent pass so the interior shows through.
+				// Alpha floor raised vs the old near-zero: 0.03 erased the IBL
+				// reflection in the blend, 0.15 keeps sheen visible without the
+				// Fresnel-driven white-out. No shader alpha manipulation.
 				float glass = material.TransmissionFactor;
 				if (glass < 0.0f) glass = 0.0f;
 				if (glass > 1.0f) glass = 1.0f;
-				byte alpha = ToByte((1.0f - glass) * 255.0f);
-				if (alpha < 8) alpha = 8;
+				result.TransmissionFactor = glass;
+				byte alpha = ToByte((1.0f - glass * 0.85f) * 255.0f);
+				if (alpha < 38) alpha = 38;
 				result.Color = new Color32(result.Color.R, result.Color.G, result.Color.B, alpha);
 			}
 			result.NormalTexture = material.NormalTexture ?? CacheImageSoft(material.NormalBytes, material.NormalMime);

@@ -220,6 +220,7 @@ namespace LibRender2.Shaders
 				EnvMaxLod = (short)GL.GetUniformLocation(Handle, "uEnvMaxLod"),
 				HasEnv = (short)GL.GetUniformLocation(Handle, "uHasEnv"),
 				CameraWorldPos = (short)GL.GetUniformLocation(Handle, "uCameraWorldPos"),
+				PBRTransmission = (short)GL.GetUniformLocation(Handle, "uPBRTransmission"),
 			};
 		}
 
@@ -394,6 +395,11 @@ namespace LibRender2.Shaders
 		{
 			if (UniformLayout.PBRMetallic >= 0) GL.ProgramUniform1(Handle, UniformLayout.PBRMetallic, metallic);
 			if (UniformLayout.PBRRoughness >= 0) GL.ProgramUniform1(Handle, UniformLayout.PBRRoughness, roughness);
+		}
+
+		public void SetPBRTransmission(float transmission)
+		{
+			if (UniformLayout.PBRTransmission >= 0) GL.ProgramUniform1(Handle, UniformLayout.PBRTransmission, transmission);
 		}
 
 		public void SetPBREmissive(Color32 emissive)

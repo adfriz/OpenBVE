@@ -60,10 +60,9 @@ uniform sampler2D uTexture;
 
 // --- PBR metallic-roughness (glTF and friends), GLSL 410 / macOS 4.1 safe ---
 // BRDF after Filament (google/filament, Apache 2.0): GGX NDF + height-correlated
-// Smith visibility + Schlick Fresnel. Nadrin/PBR (MIT, (c) Michal Siejak) as
-// the original structural reference.
-// Analytic sun only (no IBL); per-fragment, coexists with the Blinn-Phong path
-// via MaterialFlags.PBR (128). uLight/uBrightness/shadow/fog plumbing is shared.
+// Smith visibility (exact) + Schlick Fresnel. Nadrin/PBR (MIT, (c) Michal Siejak)
+// as the original structural reference; split-sum env uses the Karis UE4
+// analytic BRDF (no LUT texture) and a Filament quadratic LOD.
 uniform float     uPBRMetallic;
 uniform float     uPBRRoughness;
 uniform vec3      uPBREmissive;
@@ -75,11 +74,12 @@ uniform int       uPBRMaps; // bit0 normal, bit1 occlusion, bit2 emissive, bit3 
 uniform float     uPBRNormalScale;
 uniform float     uPBROcclusionStrength;
 // Image-based lighting: one shipped equirect HDR, mipmaps stand in for a prefilter.
-// uHasEnv 0 = analytic sun only; 1 = analytic + env (split-sum without BRDF LUT).
+// uHasEnv 0 = analytic sun only; 1 = analytic + env (split-sum with analytic BRDF).
 uniform sampler2D uEnvMap;
 uniform float     uEnvMaxLod;
 uniform int       uHasEnv;
 uniform vec3      uCameraWorldPos;
+uniform float     uPBRTransmission; // thin-glass factor 0-1 (KHR_materials_transmission approx)
 
 struct Light
 {
@@ -323,7 +323,7 @@ vec3 PBRMappedNormal(vec3 surfPos, vec3 surfNorm, vec2 uv, float scale)
 }
 
 // Filament standard model (google/filament, Apache 2.0): GGX NDF, height-
-// correlated Smith visibility (sqrt-free fast form), Schlick Fresnel.
+// correlated Smith visibility (exact form), Schlick Fresnel.
 // `alpha` is roughness remapped: Filament Parameterization squares the
 // perceptual (glTF) roughness ONCE, then D and V both take alpha.
 float PBR_D_GGX(float NoH, float alpha)
@@ -335,9 +335,25 @@ float PBR_D_GGX(float NoH, float alpha)
 
 float PBR_V_SmithGGX(float NoV, float NoL, float alpha)
 {
-	float GGXV = NoL * (NoV * (1.0 - alpha) + alpha);
-	float GGXL = NoV * (NoL * (1.0 - alpha) + alpha);
-	return 0.5 / max(GGXV + GGXL, 1e-4);
+	// Exact height-correlated form (Heitz 2014, Filament HIGH path).
+	// The sqrt-free fast variant over-brightens at grazing and reads as
+	// plastic under hot studio HDRs, so the two sqrt ALU is worth it.
+	float a2 = alpha * alpha;
+	float lambdaV = NoL * sqrt(NoV * NoV * (1.0 - a2) + a2);
+	float lambdaL = NoV * sqrt(NoL * NoL * (1.0 - a2) + a2);
+	return 0.5 / max(lambdaV + lambdaL, 1e-4);
+}
+
+// Split-sum scale/bias without a BRDF LUT (Karis 2013 UE4 approx, 4.1-safe).
+// Takes PERCEPTUAL roughness + NoV, returns (scale, bias) so that
+// envF = F0 * x + y matches Nadrin's (F0*DFG1+DFG2) without the texture.
+vec2 PBR_EnvBRDF(float NoV, float perceptualRoughness)
+{
+	const vec4 c0 = vec4(-1.0, -0.0275, -0.572, 0.022);
+	const vec4 c1 = vec4(1.0, 0.0425, 1.04, -0.04);
+	vec4 r = perceptualRoughness * c0 + c1;
+	float a004 = min(r.x * r.x, exp2(-9.28 * NoV)) * r.x + r.y;
+	return vec2(-1.04, 1.04) * a004 + r.zw;
 }
 
 vec3 PBR_F_Schlick(float cosTheta, vec3 F0)
@@ -384,23 +400,26 @@ vec3 PBRLighting(vec3 albedoSrgb, float shadow)
 	}
 	vec3 F0 = mix(vec3(0.04), albedo, metallic);
 	// Filament Parameterization: perceptual (glTF) roughness squared once here;
-	// D and V below both take alpha. (Passing perceptual straight into the
-	// geometry term widens highlights and reads as plastic.)
+	// D and V below both take alpha, the env LOD/BRDF below take perceptual.
+	float perceptualRoughness = roughness;
 	float alpha = roughness * roughness;
+	float glassTrans = clamp(uPBRTransmission, 0.0, 1.0);
 	float NdotL = max(dot(N, L), 0.0);
 	float NdotV = max(dot(N, V), 0.0);
 	float NDF = PBR_D_GGX(max(dot(N, H), 0.0), alpha);
 	float Vis = PBR_V_SmithGGX(NdotV, NdotL, alpha);
 	vec3 F = PBR_F_Schlick(max(dot(H, V), 0.0), F0);
 	vec3 kS = F;
-	vec3 kD = (vec3(1.0) - kS) * (1.0 - metallic);
+	// Thin glass attenuates diffuse only (Filament thin-cubemap behavior):
+	// specular/reflection stay full strength so glass keeps its sheen.
+	vec3 kD = (vec3(1.0) - kS) * (1.0 - metallic) * (1.0 - glassTrans);
 	vec3 Lo = (kD * albedo / PBR_PI + NDF * Vis * F) * uLight.diffuse * NdotL;
 	float occlusion = armOcclusion;
 	if ((uPBRMaps & 2) != 0)
 	{
 		occlusion = mix(1.0, texture(uOcclusionMap, oUv).r, clamp(uPBROcclusionStrength, 0.0, 1.0));
 	}
-	vec3 analyticAmbient = uLight.ambient * albedo * occlusion * (1.0 - metallic);
+	vec3 analyticAmbient = uLight.ambient * albedo * occlusion * (1.0 - metallic) * (1.0 - glassTrans);
 	vec3 emissive = pow(uPBREmissive, vec3(2.2));
 	if ((uPBRMaps & 4) != 0)
 	{
@@ -419,9 +438,30 @@ vec3 PBRLighting(vec3 albedoSrgb, float shadow)
 		// reflections view-dependently (worst on the Z axis).
 		vec3 Vw = normalize(-vWorldPos);
 		vec3 Rw = reflect(-Vw, Nw);
-		vec3 radiance = textureLod(uEnvMap, PBR_EnvUV(Rw), roughness * uEnvMaxLod).rgb;
-		vec3 Fenv = PBR_F_Schlick(max(dot(Nw, Vw), 0.0), F0);
+		// Filament quadratic LOD: sharp at low roughness, blurrier mid-range.
+		// Linear lod smeared the studio softbox and flattened the streaks.
+		float envLod = uEnvMaxLod * perceptualRoughness * (2.0 - perceptualRoughness);
+		vec3 radiance = textureLod(uEnvMap, PBR_EnvUV(Rw), envLod).rgb;
+		// Split-sum without LUT: envF = F0 * scale + bias (Nadrin parity).
+		// Raw Schlick over-reflects at mid roughness, which was the other half
+		// of the plastic look.
+		float NoVw = max(dot(Nw, Vw), 0.0);
+		vec2 envAB = PBR_EnvBRDF(NoVw, perceptualRoughness);
+		vec3 Fenv = F0 * envAB.x + envAB.y;
 		Lo += radiance * Fenv;
+		if (glassTrans > 0.001)
+		{
+			// Filament thin-glass cubemap path: transmitted env from the
+			// refracted direction, weighted by what the reflection didn't take
+			// ((1-E) * albedo * transmission). Alpha blending still handles the
+			// actual see-through; this lobe tints the glass with the HDR so the
+			// IBL reads on the lens instead of vanishing through the low alpha.
+			vec3 Tr = refract(-Vw, Nw, 0.6667);
+			if (dot(Tr, Tr) < 0.5) Tr = Rw;
+			vec3 transRadiance = textureLod(uEnvMap, PBR_EnvUV(Tr), envLod).rgb;
+			vec3 oneMinusE = clamp(vec3(1.0) - Fenv, vec3(0.0), vec3(1.0));
+			Lo += transRadiance * oneMinusE * albedo * glassTrans;
+		}
 	}
 	vec3 linear = (Lo + analyticAmbient) * shadow * uBrightness + emissive;
 	return pow(clamp(PBR_ACES(linear), 0.0, 1.0), vec3(1.0 / 2.2));

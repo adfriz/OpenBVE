@@ -417,6 +417,7 @@ namespace LibRender2.Primitives
 			// face, otherwise the axes inherit the PBR flag and sample the env map.
 			renderer.DefaultShader.SetMaterialFlags(MaterialFlags.None);
 			renderer.DefaultShader.SetPBRMaps(0);
+			renderer.DefaultShader.SetPBRTransmission(0.0f);
 			// matrix
 			renderer.DefaultShader.SetCurrentProjectionMatrix(renderer.CurrentProjectionMatrix);
 			renderer.DefaultShader.SetCurrentModelViewMatrix(Matrix4D.Scale(Size) * (Matrix4D)new Transformation(Direction, Up, Side) * Matrix4D.CreateTranslation(Position.X - Camera.X, Position.Y - Camera.Y, -Position.Z + Camera.Z) * renderer.CurrentViewMatrix);

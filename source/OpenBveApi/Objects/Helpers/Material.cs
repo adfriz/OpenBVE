@@ -40,6 +40,8 @@ namespace OpenBveApi.Objects
 		public string EmissiveTexture;
 		/// <summary>The absolute on-disk path to the PBR metallic-roughness (ARM) texture</summary>
 		public string MetallicRoughnessTexture;
+		/// <summary>Thin-glass transmission factor 0-1 (KHR_materials_transmission approx, file-agnostic)</summary>
+		public float TransmissionFactor;
 		/// <summary>The blend mode to be used</summary>
 		public MeshMaterialBlendMode BlendMode;
 		/// <summary>The wrap mode, or a null reference if not in use</summary>
@@ -86,6 +88,7 @@ namespace OpenBveApi.Objects
 			this.OcclusionStrength = 1.0f;
 			this.EmissiveTexture = null;
 			this.MetallicRoughnessTexture = null;
+			this.TransmissionFactor = 0.0f;
 		}
 
 		/// <summary>Creates a new material from the specified texture file with default properties</summary>
@@ -113,6 +116,7 @@ namespace OpenBveApi.Objects
 			this.OcclusionStrength = 1.0f;
 			this.EmissiveTexture = null;
 			this.MetallicRoughnessTexture = null;
+			this.TransmissionFactor = 0.0f;
 			this.DaytimeTexture = textureFile;
 		}
 
@@ -140,6 +144,7 @@ namespace OpenBveApi.Objects
 			this.OcclusionStrength = prototypeMaterial.OcclusionStrength;
 			this.EmissiveTexture = prototypeMaterial.EmissiveTexture;
 			this.MetallicRoughnessTexture = prototypeMaterial.MetallicRoughnessTexture;
+			this.TransmissionFactor = prototypeMaterial.TransmissionFactor;
 		}
 	}
 }

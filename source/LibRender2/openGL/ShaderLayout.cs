@@ -302,5 +302,10 @@ namespace LibRender2
 		/// The handle of "uCameraWorldPos" within the shader
 		/// </summary>
 		public short CameraWorldPos = -1;
+
+		/// <summary>
+		/// The handle of "uPBRTransmission" within the shader
+		/// </summary>
+		public short PBRTransmission = -1;
 	}
 }

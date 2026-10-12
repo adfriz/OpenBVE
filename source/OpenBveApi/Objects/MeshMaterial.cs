@@ -49,6 +49,8 @@ namespace OpenBveApi.Objects
 		public Texture EmissiveTexture;
 		/// <summary>The PBR metallic-roughness (ARM) texture: R occlusion, G roughness, B metallic</summary>
 		public Texture MetallicRoughnessTexture;
+		/// <summary>Thin-glass transmission factor 0-1 (KHR_materials_transmission approx, file-agnostic)</summary>
+		public float TransmissionFactor;
 
 		/// <summary>Returns whether two MeshMaterial structs are equal</summary>
 		public static bool operator ==(MeshMaterial A, MeshMaterial B)
@@ -72,6 +74,7 @@ namespace OpenBveApi.Objects
 			if (A.OcclusionStrength != B.OcclusionStrength) return false;
 			if (A.EmissiveTexture != B.EmissiveTexture) return false;
 			if (A.MetallicRoughnessTexture != B.MetallicRoughnessTexture) return false;
+			if (A.TransmissionFactor != B.TransmissionFactor) return false;
 			return true;
 		}
 
@@ -97,6 +100,7 @@ namespace OpenBveApi.Objects
 			if (A.OcclusionStrength != B.OcclusionStrength) return true;
 			if (A.EmissiveTexture != B.EmissiveTexture) return true;
 			if (A.MetallicRoughnessTexture != B.MetallicRoughnessTexture) return true;
+			if (A.TransmissionFactor != B.TransmissionFactor) return true;
 			return false;
 		}
 	}

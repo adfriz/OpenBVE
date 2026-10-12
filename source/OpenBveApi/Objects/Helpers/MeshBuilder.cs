@@ -208,6 +208,7 @@ namespace OpenBveApi.Objects
 					{
 						Object.Mesh.Materials[mm + i].MetallicRoughnessTexture = null;
 					}
+					Object.Mesh.Materials[mm + i].TransmissionFactor = Materials[i].TransmissionFactor;
 				}
 			}
 		}

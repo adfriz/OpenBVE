@@ -1458,6 +1458,7 @@ namespace LibRender2
 				shader.SetPBRFactors(material.MetallicFactor, material.RoughnessFactor);
 				shader.SetPBREmissive(material.EmissiveColor);
 				shader.SetPBRScales(material.NormalScale, material.OcclusionStrength);
+				shader.SetPBRTransmission(material.TransmissionFactor);
 			}
 			if (OptionLighting)
 			{
