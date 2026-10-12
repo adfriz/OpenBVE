@@ -128,9 +128,9 @@ namespace Object.Gltf
 		/// <summary>Cutoff for MASK mode</summary>
 		public float AlphaCutoff = 0.5f;
 		// --- Parsed but not applied by OpenBVE (disabled features) ---
-		/// <summary>Metallic / roughness factors (parsed, unused)</summary>
+		/// <summary>Metallic / roughness factors (consumed by the PBR path)</summary>
 		public float MetallicFactor = 1.0f, RoughnessFactor = 1.0f;
-		/// <summary>Emissive color (parsed, unused)</summary>
+		/// <summary>Emissive color (consumed by the PBR path)</summary>
 		public float EmissiveR, EmissiveG, EmissiveB;
 		/// <summary>True when the file uses unlit / spec-gloss / normal / occlusion data</summary>
 		public bool HasAdvancedData;
@@ -163,6 +163,8 @@ namespace Object.Gltf
 		public byte[] MetallicRoughnessBytes;
 		/// <summary>Metallic-roughness mime type</summary>
 		public string MetallicRoughnessMime;
+		/// <summary>KHR_materials_transmission factor 0-1 (thin-glass approx in GltfObject; no refraction pass)</summary>
+		public float TransmissionFactor;
 	}
 
 	/// <summary>Feature switches. Everything glTF 2.0 is *parsed*, but OpenBVE can only
@@ -943,7 +945,21 @@ namespace Object.Gltf
 					{
 						material.HasAdvancedData = true;
 						foreach (JProperty p in extensions.Properties())
-							Disabled(p.Name);
+						{
+							JObject transmission = p.Value as JObject;
+							if (p.Name == "KHR_materials_transmission" && transmission != null)
+							{
+								// No refraction pass in OpenBVE: GltfObject turns the
+								// factor into a thin-glass transparency approx.
+								JToken tFactor = transmission["transmissionFactor"];
+								if (tFactor != null && (tFactor.Type == JTokenType.Float || tFactor.Type == JTokenType.Integer))
+									material.TransmissionFactor = (float)(double)tFactor;
+							}
+							else
+							{
+								Disabled(p.Name);
+							}
+						}
 					}
 					if (material.HasAdvancedData && !options.EnableAdvancedMaterials)
 						Disabled("advanced-materials");

@@ -149,6 +149,19 @@ namespace Plugin
 					// Temp file trouble- drop the texture rather than the whole object
 				}
 			}
+			if (material.TransmissionFactor > 0.0f)
+			{
+				// Thin-glass approx: OpenBVE has no transmission framebuffer, so the
+				// factor lowers opacity instead. The lowered alpha routes the face
+				// through the transparent pass (interior shows through) while the PBR
+				// env reflection on top keeps it reading as glass, not a hole.
+				float glass = material.TransmissionFactor;
+				if (glass < 0.0f) glass = 0.0f;
+				if (glass > 1.0f) glass = 1.0f;
+				byte alpha = ToByte((1.0f - glass) * 255.0f);
+				if (alpha < 8) alpha = 8;
+				result.Color = new Color32(result.Color.R, result.Color.G, result.Color.B, alpha);
+			}
 			result.NormalTexture = material.NormalTexture ?? CacheImageSoft(material.NormalBytes, material.NormalMime);
 			result.OcclusionTexture = material.OcclusionTexture ?? CacheImageSoft(material.OcclusionBytes, material.OcclusionMime);
 			result.EmissiveTexture = material.EmissiveTexture ?? CacheImageSoft(material.EmissiveBytes, material.EmissiveMime);
