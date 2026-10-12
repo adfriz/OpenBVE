@@ -161,7 +161,7 @@ namespace LibRender2
 		public Shader DefaultShader;
 
 		/// <summary>Image-based lighting environment (one shipped HDR). Null when unavailable.</summary>
-		public EnvironmentMap Environment;
+		public EnvironmentMap IblEnvironment;
 		
 		/// <summary>Manages the Cascaded Shadow Mapping (CSM) system.</summary>
 		public Shadows Shadows;
@@ -1273,7 +1273,7 @@ namespace LibRender2
 
 		/// <summary>Loads the shipped HDR environment on first PBR use, then never again</summary>
 		/// <remarks>Soft-fails to analytic-sun-only: IBL is garnish, never load-bearing.</remarks>
-		private void EnsureEnvironment(Shader shader)
+		private void EnsureIblEnvironment(Shader shader)
 		{
 			if (environmentAttempted) return;
 			environmentAttempted = true;
@@ -1283,17 +1283,17 @@ namespace LibRender2
 				using (Stream stream = assembly.GetManifestResourceStream("LibRender2.pine_picnic_1k.hdr"))
 				{
 					if (stream == null) return;
-					Environment = EnvironmentMap.TryLoad(stream);
+					IblEnvironment = EnvironmentMap.TryLoad(stream);
 				}
-				if (Environment != null && Environment.IsReady)
+				if (IblEnvironment != null && IblEnvironment.IsReady)
 				{
-					shader.SetEnvMaxLod(Environment.MaxLod);
+					shader.SetEnvMaxLod(IblEnvironment.MaxLod);
 					shader.SetHasEnv(true);
 				}
 			}
 			catch
 			{
-				Environment = null;
+				IblEnvironment = null;
 			}
 		}
 
@@ -1502,10 +1502,10 @@ namespace LibRender2
 					if (BindPBRTexture(material.EmissiveTexture, TextureUnit.Texture3, material.WrapMode)) pbrMaps |= 4;
 					if (BindPBRTexture(material.MetallicRoughnessTexture, TextureUnit.Texture8, material.WrapMode)) pbrMaps |= 8;
 					shader.SetPBRMaps(pbrMaps);
-					EnsureEnvironment(shader);
-					if (Environment != null && Environment.IsReady)
+					EnsureIblEnvironment(shader);
+					if (IblEnvironment != null && IblEnvironment.IsReady)
 					{
-						Environment.Bind(TextureUnit.Texture9);
+						IblEnvironment.Bind(TextureUnit.Texture9);
 						shader.SetCameraWorldPos(Camera.AbsolutePosition);
 					}
 				}
