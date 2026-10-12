@@ -280,15 +280,31 @@ float CalculateShadowFactor()
 
 const float PBR_PI = 3.14159265359;
 
-// Filmic tone map (Hejl–Burgess-Dawson, Uncharted 2): S-curve with a real toe,
-// so mids stay dense and highlights roll off instead of washing to milk.
-// Replaces the Narkowicz ACES approx, which is low-contrast by design and made
-// PBR read plasticky under hot studio HDRs. PBR path only; gamma follows.
+// Real ACES (Stephen Hill RRT+ODT fit, same as three.js ACESFilmicToneMapping
+// and the OCIO ACES output transform family): proper Academy transfer with
+// sRGB in/out matrices, NOT the washed-out Narkowicz approximation.
+// (Contrast "variants" live in AgX/Neutral, not ACES; three.js parity is what
+//  matters here since web viewers are the reference.) Gamma encode follows.
 vec3 PBR_ACES(vec3 x)
 {
-	vec3 v = max(x, vec3(0.0)) - vec3(0.004);
-	v = (v * (6.2 * v + 0.5)) / (v * (6.2 * v + 1.7) + 0.06);
-	return clamp(v, 0.0, 1.0);
+	const mat3 ACESInputMat = mat3(
+		vec3(0.59719, 0.07600, 0.02840),
+		vec3(0.35458, 0.90834, 0.13383),
+		vec3(0.04823, 0.01566, 0.83777)
+	);
+	const mat3 ACESOutputMat = mat3(
+		vec3(1.60475, -0.10208, -0.00327),
+		vec3(-0.53108, 1.10813, -0.07276),
+		vec3(-0.07367, -0.00605, 1.07602)
+	);
+	// three.js brighter-viewing-environment tweak (1/0.6, see three.js #19621)
+	vec3 c = x * (1.0 / 0.6);
+	c = ACESInputMat * c;
+	vec3 a = c * (c + 0.0245786) - 0.000090537;
+	vec3 b = c * (0.983729 * c + 0.4329510) + 0.238081;
+	c = a / b;
+	c = ACESOutputMat * c;
+	return clamp(c, 0.0, 1.0);
 }
 
 // TBN-free normal mapping (Mikkelsen derivative basis, no tangents needed)
