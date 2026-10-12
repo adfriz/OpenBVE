@@ -79,6 +79,8 @@ namespace Object.Gltf
 		public double X, Y, Z;
 		/// <summary>World-space normal</summary>
 		public double NX, NY, NZ;
+		/// <summary>World-space tangent (xyz) + handedness (w); TW 0 when absent</summary>
+		public double TX, TY, TZ, TW;
 		/// <summary>Texture co-ordinates, exactly as the file stores them</summary>
 		public double U, V;
 	}
@@ -132,6 +134,28 @@ namespace Object.Gltf
 		public float EmissiveR, EmissiveG, EmissiveB;
 		/// <summary>True when the file uses unlit / spec-gloss / normal / occlusion data</summary>
 		public bool HasAdvancedData;
+		/// <summary>Absolute path to an external normal map texture, or null</summary>
+		public string NormalTexture;
+		/// <summary>Embedded normal map bytes, or null</summary>
+		public byte[] NormalBytes;
+		/// <summary>Normal map mime type</summary>
+		public string NormalMime;
+		/// <summary>Normal map strength scale</summary>
+		public float NormalScale = 1.0f;
+		/// <summary>Absolute path to an external occlusion texture, or null</summary>
+		public string OcclusionTexture;
+		/// <summary>Embedded occlusion bytes, or null</summary>
+		public byte[] OcclusionBytes;
+		/// <summary>Occlusion mime type</summary>
+		public string OcclusionMime;
+		/// <summary>Occlusion strength</summary>
+		public float OcclusionStrength = 1.0f;
+		/// <summary>Absolute path to an external emissive texture, or null</summary>
+		public string EmissiveTexture;
+		/// <summary>Embedded emissive bytes, or null</summary>
+		public byte[] EmissiveBytes;
+		/// <summary>Emissive mime type</summary>
+		public string EmissiveMime;
 	}
 
 	/// <summary>Feature switches. Everything glTF 2.0 is *parsed*, but OpenBVE can only
@@ -151,8 +175,8 @@ namespace Object.Gltf
 		public bool EnableSkinning;
 		/// <summary>Sample animations (default off: uses bind pose only)</summary>
 		public bool EnableAnimations;
-		/// <summary>Use metallic/roughness, normal, occlusion, emissive maps (default off)</summary>
-		public bool EnableAdvancedMaterials;
+		/// <summary>Use metallic/roughness, normal, occlusion, emissive maps (default on: consumed by the PBR path)</summary>
+		public bool EnableAdvancedMaterials = true;
 	}
 
 	/// <summary>Everything we got out of one glTF file</summary>
@@ -860,7 +884,7 @@ namespace Object.Gltf
 						JObject colorTexture = ObjectOf(pbr, "baseColorTexture");
 						if (colorTexture != null)
 						{
-							ResolveTexture(IntOf(colorTexture, "index", -1), material);
+							ResolveTexture(IntOf(colorTexture, "index", -1), out material.DaytimeTexture, out material.ImageBytes, out material.ImageMime);
 							if (IntOf(colorTexture, "texCoord", 0) != 0) Disabled("multi-texcoord");
 						}
 					}
@@ -874,9 +898,33 @@ namespace Object.Gltf
 						if (material.EmissiveR != 0 || material.EmissiveG != 0 || material.EmissiveB != 0)
 							material.HasAdvancedData = true;
 					}
-					if (ObjectOf(materials[i], "normalTexture") != null) material.HasAdvancedData = true;
-					if (ObjectOf(materials[i], "occlusionTexture") != null) material.HasAdvancedData = true;
-					if (ObjectOf(materials[i], "emissiveTexture") != null) material.HasAdvancedData = true;
+					JObject normalInfo = ObjectOf(materials[i], "normalTexture");
+					if (normalInfo != null)
+					{
+						material.HasAdvancedData = true;
+						ResolveTexture(IntOf(normalInfo, "index", -1), out material.NormalTexture, out material.NormalBytes, out material.NormalMime);
+						JToken scale = normalInfo["scale"];
+						if (scale != null && (scale.Type == JTokenType.Float || scale.Type == JTokenType.Integer))
+							material.NormalScale = (float)(double)scale;
+						if (IntOf(normalInfo, "texCoord", 0) != 0) Disabled("multi-texcoord");
+					}
+					JObject occlusionInfo = ObjectOf(materials[i], "occlusionTexture");
+					if (occlusionInfo != null)
+					{
+						material.HasAdvancedData = true;
+						ResolveTexture(IntOf(occlusionInfo, "index", -1), out material.OcclusionTexture, out material.OcclusionBytes, out material.OcclusionMime);
+						JToken strength = occlusionInfo["strength"];
+						if (strength != null && (strength.Type == JTokenType.Float || strength.Type == JTokenType.Integer))
+							material.OcclusionStrength = (float)(double)strength;
+						if (IntOf(occlusionInfo, "texCoord", 0) != 0) Disabled("multi-texcoord");
+					}
+					JObject emissiveInfo = ObjectOf(materials[i], "emissiveTexture");
+					if (emissiveInfo != null)
+					{
+						material.HasAdvancedData = true;
+						ResolveTexture(IntOf(emissiveInfo, "index", -1), out material.EmissiveTexture, out material.EmissiveBytes, out material.EmissiveMime);
+						if (IntOf(emissiveInfo, "texCoord", 0) != 0) Disabled("multi-texcoord");
+					}
 					JObject extensions = ObjectOf(materials[i], "extensions");
 					if (extensions != null)
 					{
@@ -890,8 +938,11 @@ namespace Object.Gltf
 				}
 			}
 
-			private void ResolveTexture(int textureIndex, GltfMaterial material)
+			private void ResolveTexture(int textureIndex, out string path, out byte[] bytes, out string mime)
 			{
+				path = null;
+				bytes = null;
+				mime = null;
 				if (textures == null || textureIndex < 0 || textureIndex >= textures.Count)
 				{
 					return;
@@ -913,10 +964,10 @@ namespace Object.Gltf
 					{
 						int comma = uri.IndexOf(',');
 						int semicolon = uri.IndexOf(';');
-						material.ImageMime = semicolon > 5 ? uri.Substring(5, semicolon - 5) : null;
+						mime = semicolon > 5 ? uri.Substring(5, semicolon - 5) : null;
 						try
 						{
-							material.ImageBytes = comma >= 0 ? Convert.FromBase64String(uri.Substring(comma + 1)) : null;
+							bytes = comma >= 0 ? Convert.FromBase64String(uri.Substring(comma + 1)) : null;
 						}
 						catch
 						{
@@ -924,25 +975,25 @@ namespace Object.Gltf
 						}
 						return;
 					}
-					string path;
+					string filePath;
 					try
 					{
-						path = Path.Combine(baseDirectory, uri);
+						filePath = Path.Combine(baseDirectory, uri);
 					}
 					catch
 					{
 						Warn("A texture has an unusable path.");
 						return;
 					}
-					if (File.Exists(path))
+					if (File.Exists(filePath))
 					{
 						try
 						{
-							material.DaytimeTexture = Path.GetFullPath(path);
+							path = Path.GetFullPath(filePath);
 						}
 						catch
 						{
-							material.DaytimeTexture = path;
+							path = filePath;
 						}
 					}
 					else
@@ -966,9 +1017,9 @@ namespace Object.Gltf
 					Warn("A texture's buffer view runs past the end of its buffer.");
 					return;
 				}
-				material.ImageBytes = new byte[length];
-				Buffer.BlockCopy(buffers[bufferIndex], offset, material.ImageBytes, 0, length);
-				material.ImageMime = StringOf(image, "mimeType");
+				bytes = new byte[length];
+				Buffer.BlockCopy(buffers[bufferIndex], offset, bytes, 0, length);
+				mime = StringOf(image, "mimeType");
 			}
 
 			// --- Nodes and meshes ---------------------------------------------------------------
@@ -1160,6 +1211,17 @@ namespace Object.Gltf
 						uvs = null;
 					}
 				}
+				float[] tangents = null;
+				JToken tangentToken = attributes["TANGENT"];
+				if (tangentToken != null && tangentToken.Type == JTokenType.Integer)
+				{
+					tangents = ReadFloats((int)(long)tangentToken, 4);
+					if (tangents != null && tangents.Length != vertexCount * 4)
+					{
+						Warn("A primitive has mismatched positions and tangents, ignoring its tangents.");
+						tangents = null;
+					}
+				}
 				int[] indices = null;
 				JToken indexToken = primitive["indices"];
 				if (indexToken != null && indexToken.Type == JTokenType.Integer)
@@ -1213,6 +1275,12 @@ namespace Object.Gltf
 					{
 						TransformNormal(world, normals[v * 3], normals[v * 3 + 1], normals[v * 3 + 2],
 							out corner.NX, out corner.NY, out corner.NZ);
+					}
+					if (tangents != null)
+					{
+						TransformNormal(world, tangents[v * 4], tangents[v * 4 + 1], tangents[v * 4 + 2],
+							out corner.TX, out corner.TY, out corner.TZ);
+						corner.TW = tangents[v * 4 + 3];
 					}
 					if (uvs != null)
 					{

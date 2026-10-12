@@ -394,6 +394,8 @@ namespace LibRender2
 				DefaultShader.SetMaterialAmbient(Color32.White);
 				DefaultShader.SetMaterialDiffuse(Color32.White);
 				DefaultShader.SetMaterialSpecular(Color32.White);
+				// PBR map samplers live on fixed units (0 is albedo, 4-7 shadows)
+				DefaultShader.SetPBRMapUnits(1, 2, 3);
 				lastColor = Color32.White;
 				DefaultShader.Deactivate();
 				dummyVao = new VertexArrayObject();
@@ -1252,6 +1254,28 @@ namespace LibRender2
 		private Matrix4D lastModelViewMatrix;
 		private bool sendToShader;
 
+		/// <summary>Binds a PBR detail texture to a fixed unit, or white when absent (neutral for the BRDF)</summary>
+		/// <returns>True when a real texture was bound</returns>
+		private bool BindPBRTexture(Texture texture, TextureUnit unit, OpenGlTextureWrapMode? wrapMode)
+		{
+			GL.ActiveTexture(unit);
+			try
+			{
+				if (texture != null && currentHost.LoadTexture(ref texture, (OpenGlTextureWrapMode)wrapMode))
+				{
+					GL.BindTexture(TextureTarget.Texture2D, texture.OpenGlTextures[(int)wrapMode].Name);
+					return true;
+				}
+				currentHost.LoadTexture(ref whitePixel, OpenGlTextureWrapMode.ClampClamp);
+				GL.BindTexture(TextureTarget.Texture2D, whitePixel.OpenGlTextures[(int)OpenGlTextureWrapMode.ClampClamp].Name);
+				return false;
+			}
+			finally
+			{
+				GL.ActiveTexture(TextureUnit.Texture0);
+			}
+		}
+
 		/// <summary>Draws a face using the current shader</summary>
 		/// <param name="state">The FaceState to draw</param>
 		/// <param name="isDebugTouchMode">Whether debug touch mode</param>
@@ -1340,6 +1364,13 @@ namespace LibRender2
 			
 			// lighting
 			shader.SetMaterialFlags(material.Flags);
+			if ((material.Flags & MaterialFlags.PBR) != 0)
+			{
+				// File-agnostic PBR factors (glTF, FBX, ... all land here via Material)
+				shader.SetPBRFactors(material.MetallicFactor, material.RoughnessFactor);
+				shader.SetPBREmissive(material.EmissiveColor);
+				shader.SetPBRScales(material.NormalScale, material.OcclusionStrength);
+			}
 			if (OptionLighting)
 			{
 				if (material.Color != lastColor)
@@ -1418,6 +1449,15 @@ namespace LibRender2
 				else
 				{
 					shader.DisableTexturing();
+				}
+				// PBR detail maps on units 1-3 (missing map = white pixel = neutral)
+				if ((material.Flags & MaterialFlags.PBR) != 0 && OptionLighting)
+				{
+					int pbrMaps = 0;
+					if (BindPBRTexture(material.NormalTexture, TextureUnit.Texture1, material.WrapMode)) pbrMaps |= 1;
+					if (BindPBRTexture(material.OcclusionTexture, TextureUnit.Texture2, material.WrapMode)) pbrMaps |= 2;
+					if (BindPBRTexture(material.EmissiveTexture, TextureUnit.Texture3, material.WrapMode)) pbrMaps |= 4;
+					shader.SetPBRMaps(pbrMaps);
 				}
 				// Calculate the brightness of the poly to render
 				float factor;

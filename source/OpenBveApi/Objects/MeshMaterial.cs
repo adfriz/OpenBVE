@@ -33,6 +33,20 @@ namespace OpenBveApi.Objects
 		public ushort GlowAttenuationData;
 		/// <summary>The wrap mode, or null to allow the renderer to decide</summary>
 		public OpenGlTextureWrapMode? WrapMode;
+		/// <summary>Metallic factor for PBR materials (0 dielectric - 1 metal)</summary>
+		public float MetallicFactor;
+		/// <summary>Roughness factor for PBR materials (0 smooth - 1 rough)</summary>
+		public float RoughnessFactor;
+		/// <summary>The PBR normal map texture</summary>
+		public Texture NormalTexture;
+		/// <summary>Normal map strength scale</summary>
+		public float NormalScale;
+		/// <summary>The PBR occlusion texture</summary>
+		public Texture OcclusionTexture;
+		/// <summary>Occlusion strength</summary>
+		public float OcclusionStrength;
+		/// <summary>The PBR emissive texture</summary>
+		public Texture EmissiveTexture;
 
 		/// <summary>Returns whether two MeshMaterial structs are equal</summary>
 		public static bool operator ==(MeshMaterial A, MeshMaterial B)
@@ -48,6 +62,13 @@ namespace OpenBveApi.Objects
 			if (A.BlendMode != B.BlendMode) return false;
 			if (A.GlowAttenuationData != B.GlowAttenuationData) return false;
 			if (A.WrapMode != B.WrapMode) return false;
+			if (A.MetallicFactor != B.MetallicFactor) return false;
+			if (A.RoughnessFactor != B.RoughnessFactor) return false;
+			if (A.NormalTexture != B.NormalTexture) return false;
+			if (A.NormalScale != B.NormalScale) return false;
+			if (A.OcclusionTexture != B.OcclusionTexture) return false;
+			if (A.OcclusionStrength != B.OcclusionStrength) return false;
+			if (A.EmissiveTexture != B.EmissiveTexture) return false;
 			return true;
 		}
 
@@ -65,6 +86,13 @@ namespace OpenBveApi.Objects
 			if (A.BlendMode != B.BlendMode) return true;
 			if (A.GlowAttenuationData != B.GlowAttenuationData) return true;
 			if (A.WrapMode != B.WrapMode) return true;
+			if (A.MetallicFactor != B.MetallicFactor) return true;
+			if (A.RoughnessFactor != B.RoughnessFactor) return true;
+			if (A.NormalTexture != B.NormalTexture) return true;
+			if (A.NormalScale != B.NormalScale) return true;
+			if (A.OcclusionTexture != B.OcclusionTexture) return true;
+			if (A.OcclusionStrength != B.OcclusionStrength) return true;
+			if (A.EmissiveTexture != B.EmissiveTexture) return true;
 			return false;
 		}
 	}

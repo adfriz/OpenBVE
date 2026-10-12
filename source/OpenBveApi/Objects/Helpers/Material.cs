@@ -24,6 +24,20 @@ namespace OpenBveApi.Objects
 		public string TransparencyTexture;
 		/// <summary>The absolute on-disk path to the light map texture</summary>
 		public string LightMap;
+		/// <summary>Metallic factor for PBR materials (0 dielectric - 1 metal)</summary>
+		public float MetallicFactor;
+		/// <summary>Roughness factor for PBR materials (0 smooth - 1 rough)</summary>
+		public float RoughnessFactor;
+		/// <summary>The absolute on-disk path to the PBR normal map texture</summary>
+		public string NormalTexture;
+		/// <summary>Normal map strength scale</summary>
+		public float NormalScale;
+		/// <summary>The absolute on-disk path to the PBR occlusion texture</summary>
+		public string OcclusionTexture;
+		/// <summary>Occlusion strength</summary>
+		public float OcclusionStrength;
+		/// <summary>The absolute on-disk path to the PBR emissive texture</summary>
+		public string EmissiveTexture;
 		/// <summary>The blend mode to be used</summary>
 		public MeshMaterialBlendMode BlendMode;
 		/// <summary>The wrap mode, or a null reference if not in use</summary>
@@ -62,6 +76,13 @@ namespace OpenBveApi.Objects
 			this.TextPadding = new Vector2(0, 0);
 			this.Font = "Arial";
 			this.WrapMode = null;
+			this.MetallicFactor = 1.0f;
+			this.RoughnessFactor = 1.0f;
+			this.NormalTexture = null;
+			this.NormalScale = 1.0f;
+			this.OcclusionTexture = null;
+			this.OcclusionStrength = 1.0f;
+			this.EmissiveTexture = null;
 		}
 
 		/// <summary>Creates a new material from the specified texture file with default properties</summary>
@@ -81,6 +102,13 @@ namespace OpenBveApi.Objects
 			this.TextPadding = new Vector2(0, 0);
 			this.Font = "Arial";
 			this.WrapMode = null;
+			this.MetallicFactor = 1.0f;
+			this.RoughnessFactor = 1.0f;
+			this.NormalTexture = null;
+			this.NormalScale = 1.0f;
+			this.OcclusionTexture = null;
+			this.OcclusionStrength = 1.0f;
+			this.EmissiveTexture = null;
 			this.DaytimeTexture = textureFile;
 		}
 
@@ -100,6 +128,13 @@ namespace OpenBveApi.Objects
 			this.TextPadding = prototypeMaterial.TextPadding;
 			this.Font = prototypeMaterial.Font;
 			this.WrapMode = prototypeMaterial.WrapMode;
+			this.MetallicFactor = prototypeMaterial.MetallicFactor;
+			this.RoughnessFactor = prototypeMaterial.RoughnessFactor;
+			this.NormalTexture = prototypeMaterial.NormalTexture;
+			this.NormalScale = prototypeMaterial.NormalScale;
+			this.OcclusionTexture = prototypeMaterial.OcclusionTexture;
+			this.OcclusionStrength = prototypeMaterial.OcclusionStrength;
+			this.EmissiveTexture = prototypeMaterial.EmissiveTexture;
 		}
 	}
 }

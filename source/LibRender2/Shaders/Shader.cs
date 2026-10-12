@@ -206,6 +206,15 @@ namespace LibRender2.Shaders
 				ShadowMap1 = (short)GL.GetUniformLocation(Handle, "uShadowMap1"),
 				ShadowMap2 = (short)GL.GetUniformLocation(Handle, "uShadowMap2"),
 				CurrentViewMatrix = (short)GL.GetUniformLocation(Handle, "uCurrentViewMatrix"),
+				PBRMetallic = (short)GL.GetUniformLocation(Handle, "uPBRMetallic"),
+				PBRRoughness = (short)GL.GetUniformLocation(Handle, "uPBRRoughness"),
+				PBREmissive = (short)GL.GetUniformLocation(Handle, "uPBREmissive"),
+				NormalMap = (short)GL.GetUniformLocation(Handle, "uNormalMap"),
+				OcclusionMap = (short)GL.GetUniformLocation(Handle, "uOcclusionMap"),
+				EmissiveMap = (short)GL.GetUniformLocation(Handle, "uEmissiveMap"),
+				PBRMaps = (short)GL.GetUniformLocation(Handle, "uPBRMaps"),
+				PBRNormalScale = (short)GL.GetUniformLocation(Handle, "uPBRNormalScale"),
+				PBROcclusionStrength = (short)GL.GetUniformLocation(Handle, "uPBROcclusionStrength"),
 			};
 		}
 
@@ -365,6 +374,36 @@ namespace LibRender2.Shaders
 		public void SetMaterialFlags(MaterialFlags Flags)
 		{
 			GL.ProgramUniform1(Handle, UniformLayout.MaterialFlags, (int)Flags);
+		}
+
+		/// <summary>Binds the PBR map samplers to fixed texture units (call once after init)</summary>
+		public void SetPBRMapUnits(int normalUnit, int occlusionUnit, int emissiveUnit)
+		{
+			if (UniformLayout.NormalMap >= 0) GL.ProgramUniform1(Handle, UniformLayout.NormalMap, normalUnit);
+			if (UniformLayout.OcclusionMap >= 0) GL.ProgramUniform1(Handle, UniformLayout.OcclusionMap, occlusionUnit);
+			if (UniformLayout.EmissiveMap >= 0) GL.ProgramUniform1(Handle, UniformLayout.EmissiveMap, emissiveUnit);
+		}
+
+		public void SetPBRFactors(float metallic, float roughness)
+		{
+			if (UniformLayout.PBRMetallic >= 0) GL.ProgramUniform1(Handle, UniformLayout.PBRMetallic, metallic);
+			if (UniformLayout.PBRRoughness >= 0) GL.ProgramUniform1(Handle, UniformLayout.PBRRoughness, roughness);
+		}
+
+		public void SetPBREmissive(Color32 emissive)
+		{
+			if (UniformLayout.PBREmissive >= 0) GL.ProgramUniform3(Handle, UniformLayout.PBREmissive, emissive.R / 255.0f, emissive.G / 255.0f, emissive.B / 255.0f);
+		}
+
+		public void SetPBRMaps(int mapMask)
+		{
+			if (UniformLayout.PBRMaps >= 0) GL.ProgramUniform1(Handle, UniformLayout.PBRMaps, mapMask);
+		}
+
+		public void SetPBRScales(float normalScale, float occlusionStrength)
+		{
+			if (UniformLayout.PBRNormalScale >= 0) GL.ProgramUniform1(Handle, UniformLayout.PBRNormalScale, normalScale);
+			if (UniformLayout.PBROcclusionStrength >= 0) GL.ProgramUniform1(Handle, UniformLayout.PBROcclusionStrength, occlusionStrength);
 		}
 
 		public override void SetFog(bool enabled)

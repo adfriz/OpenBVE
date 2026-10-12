@@ -122,14 +122,19 @@ namespace Plugin
 			}
 		}
 
-		// Parsed material -> MeshBuilder material. OpenBVE consumes color + texture +
-		// alpha; metallic/roughness, normal/occlusion/emissive stay parsed-but-disabled.
+		// Parsed material -> MeshBuilder material. File-agnostic PBR contract: factors,
+		// emissive and texture paths ride the shared Material, any importer can fill them.
 		private static Material ConvertMaterial(GltfMaterial material)
 		{
 			Material result = new Material
 			{
 				Color = new Color32(material.R, material.G, material.B, material.A),
-				DaytimeTexture = material.DaytimeTexture
+				DaytimeTexture = material.DaytimeTexture,
+				MetallicFactor = material.MetallicFactor,
+				RoughnessFactor = material.RoughnessFactor,
+				EmissiveColor = new Color32(ToByte(material.EmissiveR * 255.0f), ToByte(material.EmissiveG * 255.0f), ToByte(material.EmissiveB * 255.0f), (byte)255),
+				NormalScale = material.NormalScale,
+				OcclusionStrength = material.OcclusionStrength
 			};
 			if (result.DaytimeTexture == null && material.ImageBytes != null)
 			{
@@ -144,7 +149,36 @@ namespace Plugin
 					// Temp file trouble- drop the texture rather than the whole object
 				}
 			}
+			result.NormalTexture = material.NormalTexture ?? CacheImageSoft(material.NormalBytes, material.NormalMime);
+			result.OcclusionTexture = material.OcclusionTexture ?? CacheImageSoft(material.OcclusionBytes, material.OcclusionMime);
+			result.EmissiveTexture = material.EmissiveTexture ?? CacheImageSoft(material.EmissiveBytes, material.EmissiveMime);
+			// PBR shading path when the file carries PBR data (factors off default or maps present)
+			if (material.MetallicFactor != 1.0f || material.RoughnessFactor != 1.0f || material.HasAdvancedData ||
+				result.NormalTexture != null || result.OcclusionTexture != null || result.EmissiveTexture != null)
+			{
+				result.Flags |= MaterialFlags.PBR;
+			}
 			return result;
+		}
+
+		private static byte ToByte(float value)
+		{
+			if (value < 0) return 0;
+			if (value > 255) return 255;
+			return (byte)(value + 0.5f);
+		}
+
+		private static string CacheImageSoft(byte[] bytes, string mime)
+		{
+			if (bytes == null) return null;
+			try
+			{
+				return CacheImage(bytes, mime);
+			}
+			catch
+			{
+				return null;
+			}
 		}
 
 		private static string CacheImage(byte[] bytes, string mime)

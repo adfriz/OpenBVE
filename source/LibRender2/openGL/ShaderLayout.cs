@@ -232,5 +232,50 @@ namespace LibRender2
 		/// The handle of "uCurrentViewMatrix" within the shader
 		/// </summary>
 		public short CurrentViewMatrix = -1;
+
+		/// <summary>
+		/// The handle of "uPBRMetallic" within the shader (-1 when the program has no PBR path)
+		/// </summary>
+		public short PBRMetallic = -1;
+
+		/// <summary>
+		/// The handle of "uPBRRoughness" within the shader
+		/// </summary>
+		public short PBRRoughness = -1;
+
+		/// <summary>
+		/// The handle of "uPBREmissive" within the shader
+		/// </summary>
+		public short PBREmissive = -1;
+
+		/// <summary>
+		/// The handle of "uNormalMap" within the shader
+		/// </summary>
+		public short NormalMap = -1;
+
+		/// <summary>
+		/// The handle of "uOcclusionMap" within the shader
+		/// </summary>
+		public short OcclusionMap = -1;
+
+		/// <summary>
+		/// The handle of "uEmissiveMap" within the shader
+		/// </summary>
+		public short EmissiveMap = -1;
+
+		/// <summary>
+		/// The handle of "uPBRMaps" within the shader
+		/// </summary>
+		public short PBRMaps = -1;
+
+		/// <summary>
+		/// The handle of "uPBRNormalScale" within the shader
+		/// </summary>
+		public short PBRNormalScale = -1;
+
+		/// <summary>
+		/// The handle of "uPBROcclusionStrength" within the shader
+		/// </summary>
+		public short PBROcclusionStrength = -1;
 	}
 }

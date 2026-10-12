@@ -167,6 +167,38 @@ namespace OpenBveApi.Objects
 					Object.Mesh.Materials[mm + i].BlendMode = Materials[i].BlendMode;
 					Object.Mesh.Materials[mm + i].GlowAttenuationData = Materials[i].GlowAttenuationData;
 					Object.Mesh.Materials[mm + i].WrapMode = Materials[i].WrapMode;
+					// PBR metallic-roughness model (file-agnostic: any plugin can fill these)
+					Object.Mesh.Materials[mm + i].MetallicFactor = Materials[i].MetallicFactor;
+					Object.Mesh.Materials[mm + i].RoughnessFactor = Materials[i].RoughnessFactor;
+					Object.Mesh.Materials[mm + i].NormalScale = Materials[i].NormalScale;
+					Object.Mesh.Materials[mm + i].OcclusionStrength = Materials[i].OcclusionStrength;
+					if (!string.IsNullOrWhiteSpace(Materials[i].NormalTexture))
+					{
+						currentHost.RegisterTexture(Materials[i].NormalTexture, parameters, out Texture tnormal);
+						Object.Mesh.Materials[mm + i].NormalTexture = tnormal;
+					}
+					else
+					{
+						Object.Mesh.Materials[mm + i].NormalTexture = null;
+					}
+					if (!string.IsNullOrWhiteSpace(Materials[i].OcclusionTexture))
+					{
+						currentHost.RegisterTexture(Materials[i].OcclusionTexture, parameters, out Texture tocc);
+						Object.Mesh.Materials[mm + i].OcclusionTexture = tocc;
+					}
+					else
+					{
+						Object.Mesh.Materials[mm + i].OcclusionTexture = null;
+					}
+					if (!string.IsNullOrWhiteSpace(Materials[i].EmissiveTexture))
+					{
+						currentHost.RegisterTexture(Materials[i].EmissiveTexture, parameters, out Texture temissive);
+						Object.Mesh.Materials[mm + i].EmissiveTexture = temissive;
+					}
+					else
+					{
+						Object.Mesh.Materials[mm + i].EmissiveTexture = null;
+					}
 				}
 			}
 		}

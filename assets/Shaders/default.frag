@@ -58,6 +58,20 @@ uniform float             uShadowNormalBias3;
 uniform vec2              uAlphaTest;
 uniform sampler2D uTexture;
 
+// --- PBR metallic-roughness (glTF and friends), GLSL 410 / macOS 4.1 safe ---
+// BRDF after Nadrin/PBR (MIT, (c) Michal Siejak): GGX + Schlick-GGX + Schlick.
+// Analytic sun only (no IBL); per-fragment, coexists with the Blinn-Phong path
+// via MaterialFlags.PBR (128). uLight/uBrightness/shadow/fog plumbing is shared.
+uniform float     uPBRMetallic;
+uniform float     uPBRRoughness;
+uniform vec3      uPBREmissive;
+uniform sampler2D uNormalMap;
+uniform sampler2D uOcclusionMap;
+uniform sampler2D uEmissiveMap;
+uniform int       uPBRMaps; // bit0 normal, bit1 occlusion, bit2 emissive
+uniform float     uPBRNormalScale;
+uniform float     uPBROcclusionStrength;
+
 struct Light
 {
 	vec3 position;
@@ -253,6 +267,89 @@ float CalculateShadowFactor()
     return mix(1.0, shadow, uShadowStrength);
 }
 
+const float PBR_PI = 3.14159265359;
+
+// TBN-free normal mapping (Mikkelsen derivative basis, no tangents needed)
+vec3 PBRMappedNormal(vec3 surfPos, vec3 surfNorm, vec2 uv, float scale)
+{
+	vec3 map = texture(uNormalMap, uv).xyz * 2.0 - 1.0;
+	vec2 dH = map.xy * scale;
+	vec3 vSigmaX = dFdx(surfPos);
+	vec3 vSigmaY = dFdy(surfPos);
+	vec3 R1 = cross(vSigmaY, surfNorm);
+	vec3 R2 = cross(surfNorm, vSigmaX);
+	float fDet = dot(vSigmaX, R1);
+	if (!gl_FrontFacing) fDet = -fDet;
+	vec3 vGrad = sign(fDet) * (dH.x * R1 + dH.y * R2);
+	return normalize(abs(fDet) * surfNorm - vGrad);
+}
+
+float PBR_D_GGX(vec3 N, vec3 H, float roughness)
+{
+	float a = roughness * roughness;
+	float a2 = a * a;
+	float NdotH = max(dot(N, H), 0.0);
+	float NdotH2 = NdotH * NdotH;
+	float denom = NdotH2 * (a2 - 1.0) + 1.0;
+	return a2 / (PBR_PI * denom * denom);
+}
+
+float PBR_G_SchlickGGX(float NdotV, float roughness)
+{
+	float r = roughness + 1.0;
+	float k = (r * r) / 8.0;
+	return NdotV / (NdotV * (1.0 - k) + k);
+}
+
+float PBR_G_Smith(vec3 N, vec3 V, vec3 L, float roughness)
+{
+	float NdotV = max(dot(N, V), 0.0);
+	float NdotL = max(dot(N, L), 0.0);
+	return PBR_G_SchlickGGX(NdotV, roughness) * PBR_G_SchlickGGX(NdotL, roughness);
+}
+
+vec3 PBR_F_Schlick(float cosTheta, vec3 F0)
+{
+	return F0 + (vec3(1.0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
+// albedo = baseColor x texture (finalColor.rgb at this point); view-space math
+// matching the existing uLight convention (position is a view-space direction).
+vec3 PBRLighting(vec3 albedo, float shadow)
+{
+	vec3 N = normalize(vNormal);
+	if ((uPBRMaps & 1) != 0)
+	{
+		N = PBRMappedNormal(oViewPos.xyz, N, oUv, uPBRNormalScale);
+	}
+	vec3 V = normalize(-oViewPos.xyz);
+	vec3 L = normalize(uLight.position);
+	vec3 H = normalize(V + L);
+	float roughness = clamp(uPBRRoughness, 0.04, 1.0);
+	float metallic = clamp(uPBRMetallic, 0.0, 1.0);
+	vec3 F0 = mix(vec3(0.04), albedo, metallic);
+	float NDF = PBR_D_GGX(N, H, roughness);
+	float G = PBR_G_Smith(N, V, L, roughness);
+	vec3 F = PBR_F_Schlick(max(dot(H, V), 0.0), F0);
+	vec3 kS = F;
+	vec3 kD = (vec3(1.0) - kS) * (1.0 - metallic);
+	float NdotL = max(dot(N, L), 0.0);
+	float NdotV = max(dot(N, V), 0.0);
+	vec3 Lo = (kD * albedo / PBR_PI + NDF * G * F / max(4.0 * NdotV * NdotL, 0.001)) * uLight.diffuse * NdotL;
+	float occlusion = 1.0;
+	if ((uPBRMaps & 2) != 0)
+	{
+		occlusion = mix(1.0, texture(uOcclusionMap, oUv).r, clamp(uPBROcclusionStrength, 0.0, 1.0));
+	}
+	vec3 ambient = uLight.ambient * albedo * occlusion;
+	vec3 emissive = uPBREmissive;
+	if ((uPBRMaps & 4) != 0)
+	{
+		emissive *= texture(uEmissiveMap, oUv).rgb;
+	}
+	return (ambient + Lo) * shadow * uBrightness + emissive;
+}
+
 void main(void)
 {
 	vec4 finalColor;
@@ -315,7 +412,13 @@ void main(void)
 	 */
 	float shadow = CalculateShadowFactor();
 	
-	if ((uMaterialFlags & 1) == 0 && (uMaterialFlags & 4) == 0)
+	if ((uMaterialFlags & 128) != 0 && (uMaterialFlags & 4) == 0)
+	{
+		// PBR metallic-roughness path (file-agnostic: glTF, FBX, ...). Lighting is
+		// computed per-fragment here; oLightResult (per-vertex Blinn-Phong) is ignored.
+		finalColor.rgb = PBRLighting(finalColor.rgb, shadow);
+	}
+	else if ((uMaterialFlags & 1) == 0 && (uMaterialFlags & 4) == 0)
 	{
 		// Material is not emissive, apply shadow to the light factor
 		finalColor.rgb *= (oLightResult.rgb * shadow);
