@@ -335,13 +335,14 @@ vec3 PBR_F_Schlick(float cosTheta, vec3 F0)
 }
 
 // Equirect direction -> UV. World is Y-up (glTF passes straight through).
-// Row-order fact: GL t=0 is the FIRST uploaded row, and our RGBE decode stores
-// top-first, so image row 0 (sky) is at t=0 and +Y maps to v=0 with no flip.
-// (A previous commit claimed the opposite and flipped grass onto the sky. It lied.)
+// V convention is EMPIRICAL: the RGBE decode stores the sky in data row 0 but
+// in practice row 0 lands at t=1 (same reason three.js flipY's HDR uploads),
+// so +Y must map to v=1, hence -d.y. Without this, up-facing normals sample
+// the grass and mirror balls render upside-down (verified on mirrorball.glb).
 vec2 PBR_EnvUV(vec3 d)
 {
 	float u = atan(d.z, d.x) / (2.0 * PBR_PI) + 0.5;
-	float v = acos(clamp(d.y, -1.0, 1.0)) / PBR_PI;
+	float v = acos(clamp(-d.y, -1.0, 1.0)) / PBR_PI;
 	return vec2(u, v);
 }
 
@@ -400,7 +401,11 @@ vec3 PBRLighting(vec3 albedoSrgb, float shadow)
 		// No env diffuse (that would double the sun), no analytic/env double sun:
 		// metals are all-reflection, dielectrics add a tight sun glint on top.
 		vec3 Nw = normalize(vWorldNormal);
-		vec3 Vw = normalize(uCameraWorldPos - vWorldPos);
+		// vWorldPos is camera-relative (the engine bakes -camera into the model
+		// matrix), so the camera sits at the ORIGIN here: V = -P. Using the
+		// absolute camera position instead offsets V by 2*Camera and bends the
+		// reflections view-dependently (worst on the Z axis).
+		vec3 Vw = normalize(-vWorldPos);
 		vec3 Rw = reflect(-Vw, Nw);
 		vec3 radiance = textureLod(uEnvMap, PBR_EnvUV(Rw), roughness * uEnvMaxLod).rgb;
 		vec3 Fenv = PBR_F_Schlick(max(dot(Nw, Vw), 0.0), F0);
