@@ -74,6 +74,18 @@ namespace Plugin
 				    CurrentHost.AddMessage(MessageType.Error, false, "The new Obj parser raised the following exception: " + ex);
 			    }
 		    }
+		    else if (currentObjParser == ObjParsers.NewObjParser)
+		    {
+			    try
+			    {
+				    unifiedObject = NewObjParserObject.ReadObject(path, textEncoding);
+				    return true;
+			    }
+			    catch (Exception ex)
+			    {
+				    CurrentHost.AddMessage(MessageType.Error, false, "The NewObjParser raised the following exception: " + ex);
+			    }
+		    }
 		    try
 		    {   
 			    unifiedObject = WavefrontObjParser.ReadObject(path, textEncoding);

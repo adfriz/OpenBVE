@@ -495,7 +495,8 @@ namespace RouteViewer
             this.comboBoxNewObjParser.FormattingEnabled = true;
             this.comboBoxNewObjParser.Items.AddRange(new object[] {
             "OriginalObjParser",
-            "AssimpObjParser"});
+            "AssimpObjParser",
+            "NewObjParser"});
             this.comboBoxNewObjParser.Location = new System.Drawing.Point(160, 366);
             this.comboBoxNewObjParser.Name = "comboBoxNewObjParser";
             this.comboBoxNewObjParser.Size = new System.Drawing.Size(121, 21);

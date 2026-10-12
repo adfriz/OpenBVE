@@ -3140,7 +3140,8 @@ namespace OpenBve {
             this.comboBoxObjparser.FormattingEnabled = true;
             this.comboBoxObjparser.Items.AddRange(new object[] {
             "Original",
-            "Assimp"});
+            "Assimp",
+            "NewObjParser"});
             this.comboBoxObjparser.Location = new System.Drawing.Point(127, 44);
             this.comboBoxObjparser.Name = "comboBoxObjparser";
             this.comboBoxObjparser.Size = new System.Drawing.Size(170, 21);
