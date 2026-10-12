@@ -212,6 +212,7 @@ namespace LibRender2.Shaders
 				NormalMap = (short)GL.GetUniformLocation(Handle, "uNormalMap"),
 				OcclusionMap = (short)GL.GetUniformLocation(Handle, "uOcclusionMap"),
 				EmissiveMap = (short)GL.GetUniformLocation(Handle, "uEmissiveMap"),
+				MetallicRoughnessMap = (short)GL.GetUniformLocation(Handle, "uMetallicRoughnessMap"),
 				PBRMaps = (short)GL.GetUniformLocation(Handle, "uPBRMaps"),
 				PBRNormalScale = (short)GL.GetUniformLocation(Handle, "uPBRNormalScale"),
 				PBROcclusionStrength = (short)GL.GetUniformLocation(Handle, "uPBROcclusionStrength"),
@@ -377,11 +378,12 @@ namespace LibRender2.Shaders
 		}
 
 		/// <summary>Binds the PBR map samplers to fixed texture units (call once after init)</summary>
-		public void SetPBRMapUnits(int normalUnit, int occlusionUnit, int emissiveUnit)
+		public void SetPBRMapUnits(int normalUnit, int occlusionUnit, int emissiveUnit, int armUnit)
 		{
 			if (UniformLayout.NormalMap >= 0) GL.ProgramUniform1(Handle, UniformLayout.NormalMap, normalUnit);
 			if (UniformLayout.OcclusionMap >= 0) GL.ProgramUniform1(Handle, UniformLayout.OcclusionMap, occlusionUnit);
 			if (UniformLayout.EmissiveMap >= 0) GL.ProgramUniform1(Handle, UniformLayout.EmissiveMap, emissiveUnit);
+			if (UniformLayout.MetallicRoughnessMap >= 0) GL.ProgramUniform1(Handle, UniformLayout.MetallicRoughnessMap, armUnit);
 		}
 
 		public void SetPBRFactors(float metallic, float roughness)

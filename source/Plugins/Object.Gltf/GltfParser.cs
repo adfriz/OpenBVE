@@ -156,6 +156,13 @@ namespace Object.Gltf
 		public byte[] EmissiveBytes;
 		/// <summary>Emissive mime type</summary>
 		public string EmissiveMime;
+		/// <summary>Absolute path to an external metallic-roughness (ARM) texture, or null.
+		/// glTF packs occlusion in R, roughness in G, metallic in B; factors multiply it.</summary>
+		public string MetallicRoughnessTexture;
+		/// <summary>Embedded metallic-roughness bytes, or null</summary>
+		public byte[] MetallicRoughnessBytes;
+		/// <summary>Metallic-roughness mime type</summary>
+		public string MetallicRoughnessMime;
 	}
 
 	/// <summary>Feature switches. Everything glTF 2.0 is *parsed*, but OpenBVE can only
@@ -886,6 +893,12 @@ namespace Object.Gltf
 						{
 							ResolveTexture(IntOf(colorTexture, "index", -1), out material.DaytimeTexture, out material.ImageBytes, out material.ImageMime);
 							if (IntOf(colorTexture, "texCoord", 0) != 0) Disabled("multi-texcoord");
+						}
+						JObject armTexture = ObjectOf(pbr, "metallicRoughnessTexture");
+						if (armTexture != null)
+						{
+							ResolveTexture(IntOf(armTexture, "index", -1), out material.MetallicRoughnessTexture, out material.MetallicRoughnessBytes, out material.MetallicRoughnessMime);
+							if (IntOf(armTexture, "texCoord", 0) != 0) Disabled("multi-texcoord");
 						}
 					}
 					// Full-spec inventory below: parsed + recorded, applied only when enabled

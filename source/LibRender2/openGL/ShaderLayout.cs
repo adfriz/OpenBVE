@@ -264,6 +264,11 @@ namespace LibRender2
 		public short EmissiveMap = -1;
 
 		/// <summary>
+		/// The handle of "uMetallicRoughnessMap" within the shader
+		/// </summary>
+		public short MetallicRoughnessMap = -1;
+
+		/// <summary>
 		/// The handle of "uPBRMaps" within the shader
 		/// </summary>
 		public short PBRMaps = -1;

@@ -152,9 +152,11 @@ namespace Plugin
 			result.NormalTexture = material.NormalTexture ?? CacheImageSoft(material.NormalBytes, material.NormalMime);
 			result.OcclusionTexture = material.OcclusionTexture ?? CacheImageSoft(material.OcclusionBytes, material.OcclusionMime);
 			result.EmissiveTexture = material.EmissiveTexture ?? CacheImageSoft(material.EmissiveBytes, material.EmissiveMime);
+			result.MetallicRoughnessTexture = material.MetallicRoughnessTexture ?? CacheImageSoft(material.MetallicRoughnessBytes, material.MetallicRoughnessMime);
 			// PBR shading path when the file carries PBR data (factors off default or maps present)
 			if (material.MetallicFactor != 1.0f || material.RoughnessFactor != 1.0f || material.HasAdvancedData ||
-				result.NormalTexture != null || result.OcclusionTexture != null || result.EmissiveTexture != null)
+				result.NormalTexture != null || result.OcclusionTexture != null || result.EmissiveTexture != null ||
+				result.MetallicRoughnessTexture != null)
 			{
 				result.Flags |= MaterialFlags.PBR;
 			}

@@ -47,6 +47,8 @@ namespace OpenBveApi.Objects
 		public float OcclusionStrength;
 		/// <summary>The PBR emissive texture</summary>
 		public Texture EmissiveTexture;
+		/// <summary>The PBR metallic-roughness (ARM) texture: R occlusion, G roughness, B metallic</summary>
+		public Texture MetallicRoughnessTexture;
 
 		/// <summary>Returns whether two MeshMaterial structs are equal</summary>
 		public static bool operator ==(MeshMaterial A, MeshMaterial B)
@@ -69,6 +71,7 @@ namespace OpenBveApi.Objects
 			if (A.OcclusionTexture != B.OcclusionTexture) return false;
 			if (A.OcclusionStrength != B.OcclusionStrength) return false;
 			if (A.EmissiveTexture != B.EmissiveTexture) return false;
+			if (A.MetallicRoughnessTexture != B.MetallicRoughnessTexture) return false;
 			return true;
 		}
 
@@ -93,6 +96,7 @@ namespace OpenBveApi.Objects
 			if (A.OcclusionTexture != B.OcclusionTexture) return true;
 			if (A.OcclusionStrength != B.OcclusionStrength) return true;
 			if (A.EmissiveTexture != B.EmissiveTexture) return true;
+			if (A.MetallicRoughnessTexture != B.MetallicRoughnessTexture) return true;
 			return false;
 		}
 	}

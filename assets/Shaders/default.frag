@@ -68,7 +68,8 @@ uniform vec3      uPBREmissive;
 uniform sampler2D uNormalMap;
 uniform sampler2D uOcclusionMap;
 uniform sampler2D uEmissiveMap;
-uniform int       uPBRMaps; // bit0 normal, bit1 occlusion, bit2 emissive
+uniform sampler2D uMetallicRoughnessMap; // ARM: R occlusion, G roughness, B metallic
+uniform int       uPBRMaps; // bit0 normal, bit1 occlusion, bit2 emissive, bit3 metallic-roughness
 uniform float     uPBRNormalScale;
 uniform float     uPBROcclusionStrength;
 
@@ -327,6 +328,17 @@ vec3 PBRLighting(vec3 albedo, float shadow)
 	vec3 H = normalize(V + L);
 	float roughness = clamp(uPBRRoughness, 0.04, 1.0);
 	float metallic = clamp(uPBRMetallic, 0.0, 1.0);
+	float armOcclusion = 1.0;
+	if ((uPBRMaps & 8) != 0)
+	{
+		// glTF metallicRoughnessTexture: factors multiply the sampled channels
+		vec3 arm = texture(uMetallicRoughnessMap, oUv).rgb;
+		metallic *= arm.b;
+		roughness *= arm.g;
+		armOcclusion = arm.r;
+		roughness = clamp(roughness, 0.04, 1.0);
+		metallic = clamp(metallic, 0.0, 1.0);
+	}
 	vec3 F0 = mix(vec3(0.04), albedo, metallic);
 	float NDF = PBR_D_GGX(N, H, roughness);
 	float G = PBR_G_Smith(N, V, L, roughness);
@@ -336,7 +348,7 @@ vec3 PBRLighting(vec3 albedo, float shadow)
 	float NdotL = max(dot(N, L), 0.0);
 	float NdotV = max(dot(N, V), 0.0);
 	vec3 Lo = (kD * albedo / PBR_PI + NDF * G * F / max(4.0 * NdotV * NdotL, 0.001)) * uLight.diffuse * NdotL;
-	float occlusion = 1.0;
+	float occlusion = armOcclusion;
 	if ((uPBRMaps & 2) != 0)
 	{
 		occlusion = mix(1.0, texture(uOcclusionMap, oUv).r, clamp(uPBROcclusionStrength, 0.0, 1.0));

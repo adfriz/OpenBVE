@@ -395,7 +395,7 @@ namespace LibRender2
 				DefaultShader.SetMaterialDiffuse(Color32.White);
 				DefaultShader.SetMaterialSpecular(Color32.White);
 				// PBR map samplers live on fixed units (0 is albedo, 4-7 shadows)
-				DefaultShader.SetPBRMapUnits(1, 2, 3);
+				DefaultShader.SetPBRMapUnits(1, 2, 3, 8);
 				lastColor = Color32.White;
 				DefaultShader.Deactivate();
 				dummyVao = new VertexArrayObject();
@@ -1450,13 +1450,14 @@ namespace LibRender2
 				{
 					shader.DisableTexturing();
 				}
-				// PBR detail maps on units 1-3 (missing map = white pixel = neutral)
+				// PBR detail maps on units 1-3 + 8 (missing map = white pixel = neutral)
 				if ((material.Flags & MaterialFlags.PBR) != 0 && OptionLighting)
 				{
 					int pbrMaps = 0;
 					if (BindPBRTexture(material.NormalTexture, TextureUnit.Texture1, material.WrapMode)) pbrMaps |= 1;
 					if (BindPBRTexture(material.OcclusionTexture, TextureUnit.Texture2, material.WrapMode)) pbrMaps |= 2;
 					if (BindPBRTexture(material.EmissiveTexture, TextureUnit.Texture3, material.WrapMode)) pbrMaps |= 4;
+					if (BindPBRTexture(material.MetallicRoughnessTexture, TextureUnit.Texture8, material.WrapMode)) pbrMaps |= 8;
 					shader.SetPBRMaps(pbrMaps);
 				}
 				// Calculate the brightness of the poly to render

@@ -199,6 +199,15 @@ namespace OpenBveApi.Objects
 					{
 						Object.Mesh.Materials[mm + i].EmissiveTexture = null;
 					}
+					if (!string.IsNullOrWhiteSpace(Materials[i].MetallicRoughnessTexture))
+					{
+						currentHost.RegisterTexture(Materials[i].MetallicRoughnessTexture, parameters, out Texture tarm);
+						Object.Mesh.Materials[mm + i].MetallicRoughnessTexture = tarm;
+					}
+					else
+					{
+						Object.Mesh.Materials[mm + i].MetallicRoughnessTexture = null;
+					}
 				}
 			}
 		}
