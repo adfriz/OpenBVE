@@ -99,6 +99,8 @@ namespace ObjectViewer
             this.comboBoxShadowFilterRadius = new System.Windows.Forms.ComboBox();
             this.labelShadowFilterCascades = new System.Windows.Forms.Label();
             this.checkBoxShadowFilterCascades = new System.Windows.Forms.CheckBox();
+            this.labelEnvironment = new System.Windows.Forms.Label();
+            this.comboBoxEnvironment = new System.Windows.Forms.ComboBox();
             this.labelVSync = new System.Windows.Forms.Label();
             this.comboBoxVSync = new System.Windows.Forms.ComboBox();
             this.labelFPSLimit = new System.Windows.Forms.Label();
@@ -536,10 +538,13 @@ namespace ObjectViewer
                     { this.comboBoxShadowFilterRadius, 1, 7 },
                     { this.labelShadowFilterCascades, 0, 8 },
                     { this.checkBoxShadowFilterCascades, 1, 8 },
+                    // PBR image-based lighting environment
+                    { this.labelEnvironment, 0, 9 },
+                    { this.comboBoxEnvironment, 1, 9 },
                     // Sun Direction
-                    { this.labelSunDirection, 0, 9 },
-                    { this.labelSunAzimuth, 0, 10 },
-                    { this.labelSunElevation, 0, 12 }
+                    { this.labelSunDirection, 0, 10 },
+                    { this.labelSunAzimuth, 0, 11 },
+                    { this.labelSunElevation, 0, 13 }
                 }
             };
             tlpShadows.SetColumnSpan(this.labelSunDirection, 2);
@@ -562,7 +567,7 @@ namespace ObjectViewer
                 }
             };
             this.trackBarSunAzimuth.Anchor = System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
-            tlpShadows.Controls.Add(azimuthPanel, 0, 11);
+            tlpShadows.Controls.Add(azimuthPanel, 0, 12);
             tlpShadows.SetColumnSpan(azimuthPanel, 2);
             var elevationPanel = new System.Windows.Forms.TableLayoutPanel
             {
@@ -581,7 +586,7 @@ namespace ObjectViewer
                 }
             };
             this.trackBarSunElevation.Anchor = System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
-            tlpShadows.Controls.Add(elevationPanel, 0, 13);
+            tlpShadows.Controls.Add(elevationPanel, 0, 14);
             tlpShadows.SetColumnSpan(elevationPanel, 2);
             this.tabPageShadows.Controls.Add(tlpShadows);
             this.tabPageShadows.AutoScroll = true;
@@ -1190,7 +1195,26 @@ namespace ObjectViewer
             this.checkBoxShadowFilterCascades.Size = new System.Drawing.Size(15, 14);
             this.checkBoxShadowFilterCascades.TabIndex = 59;
             this.checkBoxShadowFilterCascades.UseVisualStyleBackColor = true;
-            // 
+            //
+            // labelEnvironment
+            //
+            this.labelEnvironment.AutoSize = true;
+            this.labelEnvironment.Location = new System.Drawing.Point(6, 249);
+            this.labelEnvironment.Name = "labelEnvironment";
+            this.labelEnvironment.Size = new System.Drawing.Size(96, 13);
+            this.labelEnvironment.TabIndex = 60;
+            this.labelEnvironment.Text = "Environment (IBL):";
+            //
+            // comboBoxEnvironment
+            //
+            this.comboBoxEnvironment.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboBoxEnvironment.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.comboBoxEnvironment.FormattingEnabled = true;
+            this.comboBoxEnvironment.Location = new System.Drawing.Point(160, 249);
+            this.comboBoxEnvironment.Name = "comboBoxEnvironment";
+            this.comboBoxEnvironment.Size = new System.Drawing.Size(121, 21);
+            this.comboBoxEnvironment.TabIndex = 61;
+            //
             // formOptions
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
@@ -1304,6 +1328,8 @@ namespace ObjectViewer
 		private System.Windows.Forms.Label labelAutoReloadChanged;
 		private System.Windows.Forms.Label labelShadowFilterCascades;
 		private System.Windows.Forms.Label labelShadowFilterRadius;
+		private System.Windows.Forms.Label labelEnvironment;
+		private System.Windows.Forms.ComboBox comboBoxEnvironment;
 		private System.Windows.Forms.CheckBox checkBoxShadowFilterCascades;
 		private System.Windows.Forms.Label labelVSync;
 		private System.Windows.Forms.ComboBox comboBoxVSync;

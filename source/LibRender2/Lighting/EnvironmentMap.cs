@@ -26,12 +26,14 @@
  * EnvironmentMap
  * --------------
  * Image-based lighting for the PBR path, deliberately kept small:
- *  - One shipped equirect .hdr (Radiance RGBE, pure C# decode, no native deps)
+ *  - Shipped equirect .hdrs (Radiance RGBE, pure C# decode, no native deps),
+ *    selectable at runtime (ObjectViewer lighting tab)
  *  - Uploaded once as a half-float texture with mipmaps; roughness picks the LOD
  *  - No cubemap prefilter pass, no BRDF LUT: diffuse reads the smallest mip,
  *    specular reads LOD ~ roughness * maxLod (box-filter approx, good enough for v1)
  *
- * The shipped file is pine_picnic_1k.hdr by Poly Haven (CC0, no attribution required).
+ * The shipped files are pine_picnic_1k.hdr and studio_small_08_1k.hdr,
+ * both by Poly Haven (CC0, no attribution required).
  * Everything here is GLSL 410 / OpenGL 4.1 safe (macOS included).
  */
 

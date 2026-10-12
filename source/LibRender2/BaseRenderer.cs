@@ -1271,7 +1271,50 @@ namespace LibRender2
 		/// <summary>Whether the environment upload has been attempted (success or failure)</summary>
 		private bool environmentAttempted;
 
-		/// <summary>Loads the shipped HDR environment on first PBR use, then never again</summary>
+		/// <summary>Embedded HDR environments offered to PBR (resource names, same order as <see cref="IblEnvironmentNames"/>)</summary>
+		public static readonly string[] IblEnvironmentResources =
+		{
+			"LibRender2.pine_picnic_1k.hdr",
+			"LibRender2.studio_small_08_1k.hdr",
+		};
+
+		/// <summary>Display names for the embedded HDR environments (ObjectViewer lighting tab)</summary>
+		public static readonly string[] IblEnvironmentNames =
+		{
+			"Pine Picnic (outdoor)",
+			"Studio Small (indoor)",
+		};
+
+		/// <summary>Selected embedded HDR environment (index into <see cref="IblEnvironmentResources"/>). Session state, not persisted.</summary>
+		public int IblEnvironmentIndex;
+
+		/// <summary>Switches the IBL environment. The old GL texture is released and the new HDR loads lazily on the next PBR face.</summary>
+		/// <remarks>Must be called from the UI thread: the GL work is marshalled to the render thread. Never throws.</remarks>
+		/// <param name="index">Index into <see cref="IblEnvironmentResources"/></param>
+		public void SwitchEnvironment(int index)
+		{
+			if (index < 0 || index >= IblEnvironmentResources.Length) return;
+			if (index == IblEnvironmentIndex && IblEnvironment != null && IblEnvironment.IsReady) return;
+			try
+			{
+				RunInRenderThread(() =>
+				{
+					IblEnvironmentIndex = index;
+					if (IblEnvironment != null)
+					{
+						IblEnvironment.Dispose();
+						IblEnvironment = null;
+					}
+					environmentAttempted = false;
+				}, 2000);
+			}
+			catch
+			{
+				// Best-effort: worst case the old environment stays live
+			}
+		}
+
+		/// <summary>Loads the selected HDR environment on first PBR use, then never again</summary>
 		/// <remarks>Soft-fails to analytic-sun-only: IBL is garnish, never load-bearing.</remarks>
 		private void EnsureIblEnvironment(Shader shader)
 		{
@@ -1279,8 +1322,10 @@ namespace LibRender2
 			environmentAttempted = true;
 			try
 			{
+				int index = IblEnvironmentIndex;
+				if (index < 0 || index >= IblEnvironmentResources.Length) index = 0;
 				Assembly assembly = Assembly.GetExecutingAssembly();
-				using (Stream stream = assembly.GetManifestResourceStream("LibRender2.pine_picnic_1k.hdr"))
+				using (Stream stream = assembly.GetManifestResourceStream(IblEnvironmentResources[index]))
 				{
 					if (stream == null) return;
 					IblEnvironment = EnvironmentMap.TryLoad(stream);
