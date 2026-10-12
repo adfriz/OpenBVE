@@ -386,27 +386,32 @@ vec3 PBRLighting(vec3 albedoSrgb, float shadow)
 	{
 		occlusion = mix(1.0, texture(uOcclusionMap, oUv).r, clamp(uPBROcclusionStrength, 0.0, 1.0));
 	}
-	vec3 ambient = uLight.ambient * albedo * occlusion;
+	vec3 analyticAmbient = uLight.ambient * albedo * occlusion;
 	vec3 emissive = pow(uPBREmissive, vec3(2.2));
 	if ((uPBRMaps & 4) != 0)
 	{
 		emissive *= pow(texture(uEmissiveMap, oUv).rgb, vec3(2.2));
 	}
+	vec3 linear;
 	if (uHasEnv != 0)
 	{
-		// Split-sum approx without a BRDF LUT: irradiance from the smallest mip,
-		// specular from a roughness LOD, scaled by Fresnel. Puts the "room" into
-		// metals and lifts rough dielectrics the way web viewers do.
+		// Environment carries its own sun and sky (like three.js): analytic direct
+		// light is dropped to avoid a double sun. Env is not shadowed; day/night
+		// dimming still applies via uBrightness.
 		vec3 Nw = normalize(vWorldNormal);
 		vec3 Vw = normalize(uCameraWorldPos - vWorldPos);
 		vec3 Rw = reflect(-Vw, Nw);
 		vec3 irradiance = textureLod(uEnvMap, PBR_EnvUV(Nw), uEnvMaxLod).rgb;
 		vec3 radiance = textureLod(uEnvMap, PBR_EnvUV(Rw), roughness * uEnvMaxLod).rgb;
 		vec3 Fenv = PBR_F_Schlick(max(dot(Nw, Vw), 0.0), F0);
-		ambient += irradiance * albedo * (vec3(1.0) - Fenv) * (1.0 - metallic);
-		Lo += radiance * Fenv;
+		vec3 diffIBL = irradiance * albedo * (vec3(1.0) - Fenv) * (1.0 - metallic);
+		vec3 specIBL = radiance * Fenv;
+		linear = (diffIBL + specIBL) * uBrightness + emissive;
 	}
-	vec3 linear = (ambient + Lo) * shadow * uBrightness + emissive;
+	else
+	{
+		linear = (Lo + analyticAmbient) * shadow * uBrightness + emissive;
+	}
 	return pow(clamp(PBR_ACES(linear), 0.0, 1.0), vec3(1.0 / 2.2));
 }
 
