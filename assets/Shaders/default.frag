@@ -386,7 +386,7 @@ vec3 PBRLighting(vec3 albedoSrgb, float shadow)
 	{
 		occlusion = mix(1.0, texture(uOcclusionMap, oUv).r, clamp(uPBROcclusionStrength, 0.0, 1.0));
 	}
-	vec3 analyticAmbient = uLight.ambient * albedo * occlusion;
+	vec3 analyticAmbient = uLight.ambient * albedo * occlusion * (1.0 - metallic);
 	vec3 emissive = pow(uPBREmissive, vec3(2.2));
 	if ((uPBRMaps & 4) != 0)
 	{
