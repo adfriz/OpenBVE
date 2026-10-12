@@ -278,6 +278,18 @@ float CalculateShadowFactor()
 
 const float PBR_PI = 3.14159265359;
 
+// ACES filmic tone map (Narkowicz approx): what makes web viewers look "right".
+// Compresses HDR reflections and desaturates hot spots; gamma encode follows.
+vec3 PBR_ACES(vec3 x)
+{
+	const float a = 2.51;
+	const float b = 0.03;
+	const float c = 2.43;
+	const float d = 0.59;
+	const float e = 0.14;
+	return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
+}
+
 // TBN-free normal mapping (Mikkelsen derivative basis, no tangents needed)
 vec3 PBRMappedNormal(vec3 surfPos, vec3 surfNorm, vec2 uv, float scale)
 {
@@ -395,7 +407,7 @@ vec3 PBRLighting(vec3 albedoSrgb, float shadow)
 		Lo += radiance * Fenv;
 	}
 	vec3 linear = (ambient + Lo) * shadow * uBrightness + emissive;
-	return pow(clamp(linear, 0.0, 8.0), vec3(1.0 / 2.2));
+	return pow(clamp(PBR_ACES(linear), 0.0, 1.0), vec3(1.0 / 2.2));
 }
 
 void main(void)
