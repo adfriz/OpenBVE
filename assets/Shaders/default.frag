@@ -59,7 +59,9 @@ uniform vec2              uAlphaTest;
 uniform sampler2D uTexture;
 
 // --- PBR metallic-roughness (glTF and friends), GLSL 410 / macOS 4.1 safe ---
-// BRDF after Nadrin/PBR (MIT, (c) Michal Siejak): GGX + Schlick-GGX + Schlick.
+// BRDF after Filament (google/filament, Apache 2.0): GGX NDF + height-correlated
+// Smith visibility + Schlick Fresnel. Nadrin/PBR (MIT, (c) Michal Siejak) as
+// the original structural reference.
 // Analytic sun only (no IBL); per-fragment, coexists with the Blinn-Phong path
 // via MaterialFlags.PBR (128). uLight/uBrightness/shadow/fog plumbing is shared.
 uniform float     uPBRMetallic;
@@ -305,28 +307,22 @@ vec3 PBRMappedNormal(vec3 surfPos, vec3 surfNorm, vec2 uv, float scale)
 	return normalize(abs(fDet) * surfNorm - vGrad);
 }
 
-float PBR_D_GGX(vec3 N, vec3 H, float roughness)
+// Filament standard model (google/filament, Apache 2.0): GGX NDF, height-
+// correlated Smith visibility (sqrt-free fast form), Schlick Fresnel.
+// `alpha` is roughness remapped: Filament Parameterization squares the
+// perceptual (glTF) roughness ONCE, then D and V both take alpha.
+float PBR_D_GGX(float NoH, float alpha)
 {
-	float a = roughness * roughness;
-	float a2 = a * a;
-	float NdotH = max(dot(N, H), 0.0);
-	float NdotH2 = NdotH * NdotH;
-	float denom = NdotH2 * (a2 - 1.0) + 1.0;
-	return a2 / (PBR_PI * denom * denom);
+	float a2 = alpha * alpha;
+	float f = (NoH * a2 - NoH) * NoH + 1.0;
+	return a2 / (PBR_PI * f * f);
 }
 
-float PBR_G_SchlickGGX(float NdotV, float roughness)
+float PBR_V_SmithGGX(float NoV, float NoL, float alpha)
 {
-	float r = roughness + 1.0;
-	float k = (r * r) / 8.0;
-	return NdotV / (NdotV * (1.0 - k) + k);
-}
-
-float PBR_G_Smith(vec3 N, vec3 V, vec3 L, float roughness)
-{
-	float NdotV = max(dot(N, V), 0.0);
-	float NdotL = max(dot(N, L), 0.0);
-	return PBR_G_SchlickGGX(NdotV, roughness) * PBR_G_SchlickGGX(NdotL, roughness);
+	float GGXV = NoL * (NoV * (1.0 - alpha) + alpha);
+	float GGXL = NoV * (NoL * (1.0 - alpha) + alpha);
+	return 0.5 / max(GGXV + GGXL, 1e-4);
 }
 
 vec3 PBR_F_Schlick(float cosTheta, vec3 F0)
@@ -372,14 +368,18 @@ vec3 PBRLighting(vec3 albedoSrgb, float shadow)
 		metallic = clamp(metallic, 0.0, 1.0);
 	}
 	vec3 F0 = mix(vec3(0.04), albedo, metallic);
-	float NDF = PBR_D_GGX(N, H, roughness);
-	float G = PBR_G_Smith(N, V, L, roughness);
+	// Filament Parameterization: perceptual (glTF) roughness squared once here;
+	// D and V below both take alpha. (Passing perceptual straight into the
+	// geometry term widens highlights and reads as plastic.)
+	float alpha = roughness * roughness;
+	float NdotL = max(dot(N, L), 0.0);
+	float NdotV = max(dot(N, V), 0.0);
+	float NDF = PBR_D_GGX(max(dot(N, H), 0.0), alpha);
+	float Vis = PBR_V_SmithGGX(NdotV, NdotL, alpha);
 	vec3 F = PBR_F_Schlick(max(dot(H, V), 0.0), F0);
 	vec3 kS = F;
 	vec3 kD = (vec3(1.0) - kS) * (1.0 - metallic);
-	float NdotL = max(dot(N, L), 0.0);
-	float NdotV = max(dot(N, V), 0.0);
-	vec3 Lo = (kD * albedo / PBR_PI + NDF * G * F / max(4.0 * NdotV * NdotL, 0.001)) * uLight.diffuse * NdotL;
+	vec3 Lo = (kD * albedo / PBR_PI + NDF * Vis * F) * uLight.diffuse * NdotL;
 	float occlusion = armOcclusion;
 	if ((uPBRMaps & 2) != 0)
 	{
