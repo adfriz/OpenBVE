@@ -302,8 +302,10 @@ vec3 PBR_ACES(vec3 x)
 		vec3(-0.53108, 1.10813, -0.07276),
 		vec3(-0.07367, -0.00605, 1.07602)
 	);
-	// three.js brighter-viewing-environment tweak (1/0.6, see three.js #19621)
-	vec3 c = x * (1.0 / 0.6);
+	// three.js used a 1/0.6 viewing-environment tweak in its legacy-lights era
+	// (see three.js #19621); current three.js and Blender apply no such
+	// boost, and keeping it overexposes rims/highlights vs both. Exposure 1.
+	vec3 c = x;
 	c = ACESInputMat * c;
 	vec3 a = c * (c + 0.0245786) - 0.000090537;
 	vec3 b = c * (0.983729 * c + 0.4329510) + 0.238081;
@@ -312,19 +314,27 @@ vec3 PBR_ACES(vec3 x)
 	return clamp(c, 0.0, 1.0);
 }
 
-// TBN-free normal mapping (Mikkelsen derivative basis, no tangents needed)
+// TBN-free normal mapping: Mikkelsen derivative frame, the same math as
+// three.js perturbNormal2Arb (reference-viewer baseline). Magnitude is
+// zoom-independent: the previous code fed the raw tangent slope where a
+// per-pixel gradient belongs, so bumps inflated ~10x on close-ups (at 1:1
+// texel:pixel it accidentally looked right).
 vec3 PBRMappedNormal(vec3 surfPos, vec3 surfNorm, vec2 uv, float scale)
 {
-	vec3 map = texture(uNormalMap, uv).xyz * 2.0 - 1.0;
-	vec2 dH = map.xy * scale;
-	vec3 vSigmaX = dFdx(surfPos);
-	vec3 vSigmaY = dFdy(surfPos);
-	vec3 R1 = cross(vSigmaY, surfNorm);
-	vec3 R2 = cross(surfNorm, vSigmaX);
-	float fDet = dot(vSigmaX, R1);
-	if (!gl_FrontFacing) fDet = -fDet;
-	vec3 vGrad = sign(fDet) * (dH.x * R1 + dH.y * R2);
-	return normalize(abs(fDet) * surfNorm - vGrad);
+	vec3 mapN = texture(uNormalMap, uv).xyz * 2.0 - 1.0;
+	vec3 N = normalize(surfNorm);
+	if (!gl_FrontFacing) N = -N;
+	vec3 q0 = dFdx(surfPos);
+	vec3 q1 = dFdy(surfPos);
+	vec2 st0 = dFdx(uv);
+	vec2 st1 = dFdy(uv);
+	vec3 q1perp = cross(q1, N);
+	vec3 q0perp = cross(N, q0);
+	vec3 T = q1perp * st0.x + q0perp * st1.x;
+	vec3 B = q1perp * st0.y + q0perp * st1.y;
+	float det = max(dot(T, T), dot(B, B));
+	float tscale = det == 0.0 ? 0.0 : inversesqrt(det);
+	return normalize(T * (mapN.x * scale * tscale) + B * (mapN.y * scale * tscale) + N * mapN.z);
 }
 
 // Filament standard model (google/filament, Apache 2.0): GGX NDF, height-
@@ -444,7 +454,15 @@ vec3 PBRLighting(vec3 albedoSrgb, float shadow)
 	// Base weight uses max(F) per KHR_materials_specular (directional energy).
 	float kSmax = max(kS.r, max(kS.g, kS.b));
 	vec3 kD = vec3(1.0 - kSmax) * (1.0 - metallic) * (1.0 - glassTrans);
-	vec3 Lo = (kD * albedo / PBR_PI + NDF * Vis * F) * uLight.diffuse * NdotL;
+	vec3 Lo = kD * albedo / PBR_PI * uLight.diffuse * NdotL;
+	if (uHasEnv == 0)
+	{
+		// No IBL: the analytic sun is the only reflection source.
+		// With IBL the environment owns reflections; keeping the sun's
+		// micro-glints too doubles every sparkle into white glitter, so the
+		// sun keeps diffuse (day/night, shadows) but not specular there.
+		Lo += NDF * Vis * F * uLight.diffuse * NdotL;
+	}
 	float occlusion = armOcclusion;
 	if ((uPBRMaps & 2) != 0)
 	{
@@ -463,6 +481,13 @@ vec3 PBRLighting(vec3 albedoSrgb, float shadow)
 		// No env diffuse (that would double the sun), no analytic/env double sun:
 		// metals are all-reflection, dielectrics add a tight sun glint on top.
 		vec3 Nw = normalize(vWorldNormal);
+		if ((uPBRMaps & 1) != 0)
+		{
+			// Same TBN-free mapping as the analytic path, but in world space:
+			// the IBL reflection/refraction lobes must follow the bump detail.
+			// The geometric normal alone smears the whole env into one sheet.
+			Nw = PBRMappedNormal(vWorldPos, Nw, oUv, uPBRNormalScale);
+		}
 		// vWorldPos is camera-relative (the engine bakes -camera into the model
 		// matrix), so the camera sits at the ORIGIN here: V = -P. Using the
 		// absolute camera position instead offsets V by 2*Camera and bends the
@@ -480,7 +505,7 @@ vec3 PBRLighting(vec3 albedoSrgb, float shadow)
 		float NoVw = max(dot(Nw, Vw), 0.0);
 		vec2 envAB = PBR_EnvBRDF(NoVw, perceptualRoughness);
 		vec3 Fenv = F0 * envAB.x + F90 * envAB.y;
-		Lo += radiance * Fenv;
+		Lo += radiance * Fenv * occlusion;
 		if (glassTrans > 0.001)
 		{
 			// Filament thin-glass cubemap path: transmitted env from the
