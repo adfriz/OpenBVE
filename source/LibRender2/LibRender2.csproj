@@ -137,6 +137,10 @@
   <ItemGroup>
     <EmbeddedResource Include="..\..\assets\Shaders\default.frag" />
     <EmbeddedResource Include="..\..\assets\Shaders\default.vert" />
+    <EmbeddedResource Include="..\..\assets\Shaders\pbr.glsl" />
+    <EmbeddedResource Include="..\..\assets\Shaders\tonemap\tonemap.glsl">
+      <LogicalName>LibRender2.tonemap.tonemap.glsl</LogicalName>
+    </EmbeddedResource>
     <EmbeddedResource Include="..\..\assets\Shaders\picking.frag" />
     <EmbeddedResource Include="..\..\assets\Shaders\rectangle.frag" />
     <EmbeddedResource Include="..\..\assets\Shaders\rectangle.vert" />
