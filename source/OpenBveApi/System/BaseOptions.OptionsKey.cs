@@ -131,6 +131,13 @@ namespace OpenBveApi
 		Order,
 		Passes,
 		Tunings,
-		Hdr
+		Hdr,
+		// Upscaling
+		UpscalerMode,
+		UpscalerQuality,
+		UpscalerSharpnessFsr,
+		UpscalerSharpnessNis,
+		UpscalerSharpnessSgsr,
+		UpscalerDenoise
     }
 }
