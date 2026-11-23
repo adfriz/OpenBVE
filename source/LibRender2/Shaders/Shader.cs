@@ -252,16 +252,8 @@ namespace LibRender2.Shaders
 				matriciesToShader[i] = ConvertToMatrix4(objectState.Matricies[i]);
 			}
 
-			unsafe
-			{
-				if (objectState.MatrixBufferIndex == 0)
-				{
-					objectState.MatrixBufferIndex = GL.GenBuffer();
-				}
-
-				GL.BindBuffer(BufferTarget.UniformBuffer, objectState.MatrixBufferIndex);
-				GL.BufferData(BufferTarget.UniformBuffer, sizeof(Matrix4) * matriciesToShader.Length, matriciesToShader, BufferUsageHint.StaticDraw);
-			}
+			// Persistent-mapped upload on GL 4.4+, BufferSubData fallback on GL 4.1.
+			UniformBufferStore.Upload(Renderer, objectState, matriciesToShader);
 
 		}
 

@@ -72,19 +72,19 @@ namespace LibRender2.Shaders
 		public void SetLightSpaceMatrix(OpenBveApi.Math.Matrix4D m)
 		{
 			OpenTK.Matrix4 matrix = ConvertToMatrix4(m);
-			GL.UniformMatrix4(uLightSpaceMatrix, false, ref matrix);
+			GL.ProgramUniformMatrix4(Handle, uLightSpaceMatrix, false, ref matrix);
 		}
 
 		public void SetModelMatrix(OpenBveApi.Math.Matrix4D m)
 		{
 			OpenTK.Matrix4 matrix = ConvertToMatrix4(m);
-			GL.UniformMatrix4(uModelMatrix, false, ref matrix);
+			GL.ProgramUniformMatrix4(Handle, uModelMatrix, false, ref matrix);
 		}
 
 		public void SetTextureMatrix(OpenBveApi.Math.Matrix4D m)
 		{
 			OpenTK.Matrix4 matrix = ConvertToMatrix4(m);
-			GL.UniformMatrix4(uTextureMatrix, false, ref matrix);
+			GL.ProgramUniformMatrix4(Handle, uTextureMatrix, false, ref matrix);
 		}
 
 		/// <summary>Selects whether the vertex shader should read the per-instance matrix block (via gl_InstanceID) instead of the uniform model matrix.</summary>
@@ -98,29 +98,29 @@ namespace LibRender2.Shaders
 
 		public void SetTexture(int unit)
 		{
-			GL.Uniform1(uTexture, unit);
+			GL.ProgramUniform1(Handle,uTexture, unit);
 		}
 
 		public void SetHasTexture(bool hasTexture)
 		{
-			GL.Uniform1(uHasTexture, hasTexture ? 1 : 0);
+			GL.ProgramUniform1(Handle,uHasTexture, hasTexture ? 1 : 0);
 		}
 
 		public void SetAlphaCutoff(float cutoff)
 		{
-			GL.Uniform1(uAlphaCutoff, cutoff);
+			GL.ProgramUniform1(Handle,uAlphaCutoff, cutoff);
 		}
 
 		/// <summary>Sets the material color alpha (0.0–1.0) for semi-transparent shadow discard</summary>
 		public void SetMaterialAlpha(float alpha)
 		{
-			GL.Uniform1(uMaterialAlpha, alpha);
+			GL.ProgramUniform1(Handle,uMaterialAlpha, alpha);
 		}
 
 		/// <summary>Sets the material flags for shadow discard</summary>
 		public void SetMaterialFlags(MaterialFlags flags)
 		{
-			GL.Uniform1(uMaterialFlags, (int)flags);
+			GL.ProgramUniform1(Handle,uMaterialFlags, (int)flags);
 		}
 
 		public void SetCurrentAnimationMatricies(ObjectState objectState)
@@ -132,16 +132,8 @@ namespace LibRender2.Shaders
 				matriciesToShader[i] = ConvertToMatrix4(objectState.Matricies[i]);
 			}
 
-			unsafe
-			{
-				if (objectState.MatrixBufferIndex == 0)
-				{
-					objectState.MatrixBufferIndex = GL.GenBuffer();
-				}
-
-				GL.BindBuffer(BufferTarget.UniformBuffer, objectState.MatrixBufferIndex);
-				GL.BufferData(BufferTarget.UniformBuffer, sizeof(OpenTK.Matrix4) * matriciesToShader.Length, matriciesToShader, BufferUsageHint.StaticDraw);
-			}
+			// Persistent-mapped upload on GL 4.4+, BufferSubData fallback on GL 4.1.
+			UniformBufferStore.Upload(Renderer, objectState, matriciesToShader);
 		}
 
 		private static OpenTK.Matrix4 ConvertToMatrix4(OpenBveApi.Math.Matrix4D mat)

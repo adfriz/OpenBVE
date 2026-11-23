@@ -557,6 +557,7 @@ namespace LibRender2
 		{
 			// Release GL objects while the context is still alive.
 			Compositor?.Dispose();
+			UniformBufferStore.DisposeAll();
 			// Flush caches while the GL context is alive. Don't dispose GameWindow here: this runs from
 			// OnClosing inside Run(), and disposing it mid-loop throws ObjectDisposedException.
 			try
