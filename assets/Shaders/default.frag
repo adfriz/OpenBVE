@@ -40,6 +40,13 @@ uniform sampler2DShadow   uShadowMap1;
 uniform sampler2DShadow   uShadowMap2;
 uniform sampler2DShadow   uShadowMap3;
 
+// GL 4.3 compute path: blurred raw caster depth, sampled with regular sampler2D.
+uniform bool              uShadowFiltered;
+uniform sampler2D         uShadowFilter0;
+uniform sampler2D         uShadowFilter1;
+uniform sampler2D         uShadowFilter2;
+uniform sampler2D         uShadowFilter3;
+
 uniform float             uShadowSplit0;      // Boundary where cascade 0 ends and 1 begins
 uniform float             uShadowSplit1;      // Boundary where cascade 1 ends and 2 begins
 uniform float             uShadowSplit2;      // Boundary where cascade 2 ends and 3 begins
@@ -182,9 +189,48 @@ float GetCascadeShadowFactor(sampler2DShadow shadowMap, vec4 posLightSpace, floa
     }
 }
 
+/// Samples the GL 4.3 compute-blurred depth. The per-pixel bias (including the slope term)
+/// is still applied here, so shadow acne handling stays identical to the 4.1 path.
+float GetCascadeShadowFactorFiltered(int idx, vec4 posLightSpace, float bias, float normalBias)
+{
+    vec3 projCoords = posLightSpace.xyz / posLightSpace.w;
+    projCoords = projCoords * 0.5 + 0.5;
+
+    if (projCoords.x < 0.0 || projCoords.x > 1.0 ||
+        projCoords.y < 0.0 || projCoords.y > 1.0 ||
+        projCoords.z < 0.0 || projCoords.z > 1.0)
+    {
+        return 1.0;
+    }
+
+    vec3 lightDir = uLight.position;
+    float nLen2 = dot(vNormal, vNormal);
+    vec3 normal = nLen2 < 1e-10 ? lightDir : vNormal * inversesqrt(nLen2);
+    float slope = clamp(1.0 - dot(normal, lightDir), 0.0, 1.0);
+    float activeBias = bias * (1.0 + slope * clamp(normalBias, 0.0, 1.5));
+    float biasedDepth = projCoords.z - activeBias;
+
+    float storedDepth = 0.0;
+    if (idx == 0) storedDepth = texture(uShadowFilter0, projCoords.xy).r;
+    else if (idx == 1) storedDepth = texture(uShadowFilter1, projCoords.xy).r;
+    else if (idx == 2) storedDepth = texture(uShadowFilter2, projCoords.xy).r;
+    else if (idx == 3) storedDepth = texture(uShadowFilter3, projCoords.xy).r;
+    else return 1.0;
+
+    return biasedDepth <= storedDepth ? 1.0 : 0.0;
+}
+
 /// Helper to sample a cascade by index.
 float SampleCascadeByIndex(int idx)
 {
+    if (uShadowFiltered)
+    {
+        if (idx == 0) return GetCascadeShadowFactorFiltered(0, vPosLightSpace0, uShadowBias0, uShadowNormalBias0);
+        if (idx == 1) return GetCascadeShadowFactorFiltered(1, vPosLightSpace1, uShadowBias1, uShadowNormalBias1);
+        if (idx == 2) return GetCascadeShadowFactorFiltered(2, vPosLightSpace2, uShadowBias2, uShadowNormalBias2);
+        if (idx == 3) return GetCascadeShadowFactorFiltered(3, vPosLightSpace3, uShadowBias3, uShadowNormalBias3);
+        return 1.0;
+    }
     if (idx == 0) return GetCascadeShadowFactor(uShadowMap0, vPosLightSpace0, uShadowBias0, uShadowNormalBias0);
     if (idx == 1) return GetCascadeShadowFactor(uShadowMap1, vPosLightSpace1, uShadowBias1, uShadowNormalBias1);
     if (idx == 2) return GetCascadeShadowFactor(uShadowMap2, vPosLightSpace2, uShadowBias2, uShadowNormalBias2);

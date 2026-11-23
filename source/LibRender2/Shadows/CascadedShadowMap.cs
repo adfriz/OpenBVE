@@ -27,6 +27,12 @@ namespace LibRender2.ShadowMapping
         /// <summary>
         /// Creates cascaded shadow maps.
         /// </summary>
+        /// <summary>Per-cascade blurred-depth textures produced by the GL 4.3 compute path.</summary>
+        public int[] FilteredTextures { get; private set; }
+
+        /// <summary>Whether the compute filter textures have been allocated.</summary>
+        public bool FilteringEnabled { get; private set; }
+
         /// <param name="cascadeCount">Number of cascades (typically 3 or 4).</param>
         /// <param name="resolution">Base resolution of the nearest cascade's depth texture.</param>
         /// <param name="autoResolution">Whether farther cascades use progressively lower resolutions.</param>
@@ -171,8 +177,84 @@ namespace LibRender2.ShadowMapping
             return resolutions;
         }
 
+        /// <summary>
+        /// Switches the depth textures between shadow-sampler mode (GL 4.1 hardware PCF path)
+        /// and plain depth mode (GL 4.3 compute path, which needs raw depth values).
+        /// </summary>
+        public void SetShadowCompareMode(bool enabled)
+        {
+            for (int i = 0; i < CascadeCount; i++)
+            {
+                GL.BindTexture(TextureTarget.Texture2D, DepthTextures[i]);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureCompareMode,
+                    (int)(enabled ? TextureCompareMode.CompareRefToTexture : TextureCompareMode.None));
+            }
+            GL.BindTexture(TextureTarget.Texture2D, 0);
+        }
+
+        /// <summary>Allocates the float textures that receive the compute-blurred depth.</summary>
+        public void EnableFiltering()
+        {
+            if (FilteredTextures != null)
+            {
+                return;
+            }
+            FilteredTextures = new int[CascadeCount];
+            for (int i = 0; i < CascadeCount; i++)
+            {
+                FilteredTextures[i] = GL.GenTexture();
+                GL.BindTexture(TextureTarget.Texture2D, FilteredTextures[i]);
+                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.R32f,
+                    Resolutions[i], Resolutions[i], 0, PixelFormat.Red, PixelType.Float, IntPtr.Zero);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
+            }
+            GL.BindTexture(TextureTarget.Texture2D, 0);
+            FilteringEnabled = true;
+        }
+
+        /// <summary>Releases the compute filter textures and returns to the hardware PCF path.</summary>
+        public void DisableFiltering()
+        {
+            if (FilteredTextures == null)
+            {
+                return;
+            }
+            for (int i = 0; i < FilteredTextures.Length; i++)
+            {
+                if (FilteredTextures[i] != 0)
+                {
+                    GL.DeleteTexture(FilteredTextures[i]);
+                    FilteredTextures[i] = 0;
+                }
+            }
+            FilteredTextures = null;
+            FilteringEnabled = false;
+        }
+
+        /// <summary>Binds one blurred-depth texture as the compute shader's output image.</summary>
+        public void BindFilteredForWriting(int cascadeIndex, int imageUnit)
+        {
+            GL.BindImageTexture(imageUnit, FilteredTextures[cascadeIndex], 0, false, 0,
+                TextureAccess.WriteOnly, SizedInternalFormat.R32f);
+        }
+
+        /// <summary>Binds all blurred-depth textures sequentially from the given texture unit.</summary>
+        public void BindFilteredForReading(TextureUnit baseUnit)
+        {
+            for (int i = 0; i < CascadeCount; i++)
+            {
+                GL.ActiveTexture(baseUnit + i);
+                GL.BindTexture(TextureTarget.Texture2D, FilteredTextures[i]);
+            }
+            GL.ActiveTexture(TextureUnit.Texture0);
+        }
+
         public void Dispose()
         {
+            DisableFiltering();
             for (int i = 0; i < CascadeCount; i++)
             {
                 if (FBOs[i] != 0)

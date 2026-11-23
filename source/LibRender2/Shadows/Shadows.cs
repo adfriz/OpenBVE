@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.ExceptionServices;
 using LibRender2.Objects;
 using LibRender2.Shaders;
 using OpenBveApi.Interface;
@@ -23,6 +24,13 @@ namespace LibRender2.ShadowMapping
 		internal CascadedShadowCaster Caster;
 		/// <summary>The shader used for rendering the shadow depth pass.</summary>
 		internal ShadowDepthShader DepthShader;
+
+		/// <summary>Optional GL 4.3 compute shader used to blur caster depth once per cascade.</summary>
+		private ComputeShader filterShader;
+		private bool computeValidated;
+		private bool computeAvailable;
+		private const int FilterImageUnit = 0;
+		private const int FilterRadius = 1;
 
 		/// <summary>Whether shadows are currently active.</summary>
 		public bool Enabled;
@@ -95,6 +103,34 @@ namespace LibRender2.ShadowMapping
 					DepthShader = new ShadowDepthShader(renderer, "shadow_depth", "shadow_depth", true);
 				}
 
+				// Select the implementation from the capabilities of the actual context. The GL 4.1
+				// depth/PCF path is the default; compute is only used after a successful canary.
+				bool supportsCompute = renderer.Capabilities != null && renderer.Capabilities.IsAtLeast(4, 3);
+				if (!computeValidated)
+				{
+					computeAvailable = supportsCompute && ValidateComputePath();
+					computeValidated = true;
+				}
+				else
+				{
+					// A runtime failure may have disposed the compute program; keep it disabled
+					// for the session, but restore it when shadows are simply toggled back on.
+					computeAvailable = supportsCompute && filterShader != null;
+				}
+
+				if (computeAvailable)
+				{
+					Map.SetShadowCompareMode(false);
+					Map.EnableFiltering();
+					renderer.fileSystem.AppendToLogFile("[CSM] Using GL 4.3 compute depth filter.");
+				}
+				else
+				{
+					Map.SetShadowCompareMode(true);
+					Map.DisableFiltering();
+					renderer.fileSystem.AppendToLogFile("[CSM] Using GL 4.1 hardware PCF path.");
+				}
+
 				Enabled = true;
 				string cascadeResolutions = string.Join(", ", Map.Resolutions);
 				renderer.fileSystem.AppendToLogFile($"[CSM] Initialized: {cascadeCount} cascades [{cascadeResolutions}] (auto={autoResolution}), distance={shadowDistance}m, strength={Strength:P0}");
@@ -105,6 +141,96 @@ namespace LibRender2.ShadowMapping
 				Enabled = false;
 				GL.GetError();
 			}
+		}
+
+		/// <summary>
+		/// Compiles and dispatches the compute shader once against a 1x1 texture before it is used
+		/// in production. Drivers that report 4.3 but fail here are silently routed to 4.1.
+		/// </summary>
+		[HandleProcessCorruptedStateExceptions]
+		private bool ValidateComputePath()
+		{
+			try
+			{
+				ComputeShader shader = new ComputeShader("shadow_filter");
+				int canary = GL.GenTexture();
+				GL.ActiveTexture(TextureUnit.Texture0);
+				GL.BindTexture(TextureTarget.Texture2D, canary);
+				GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.R32f, 1, 1, 0,
+					OpenTK.Graphics.OpenGL.PixelFormat.Red, PixelType.Float, IntPtr.Zero);
+				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
+				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
+				GL.BindImageTexture(FilterImageUnit, canary, 0, false, 0, TextureAccess.WriteOnly, SizedInternalFormat.R32f);
+
+				shader.Activate();
+				shader.SetInt("uRadius", FilterRadius);
+				shader.Dispatch(1, 1, 1);
+				GL.MemoryBarrier(MemoryBarrierFlags.ShaderImageAccessBarrierBit | MemoryBarrierFlags.TextureFetchBarrierBit);
+				ComputeShader.Deactivate();
+
+				GL.BindImageTexture(FilterImageUnit, 0, 0, false, 0, TextureAccess.WriteOnly, SizedInternalFormat.R32f);
+				GL.BindTexture(TextureTarget.Texture2D, 0);
+				ErrorCode error = GL.GetError();
+				GL.DeleteTexture(canary);
+				if (error != ErrorCode.NoError)
+				{
+					shader.Dispose();
+					renderer.fileSystem.AppendToLogFile("[CSM] Compute canary failed with GL error: " + error);
+					return false;
+				}
+				filterShader = shader;
+				return true;
+			}
+			catch (Exception ex)
+			{
+				GL.GetError();
+				renderer.fileSystem.AppendToLogFile("[CSM] Compute canary unavailable: " + ex.Message);
+				return false;
+			}
+		}
+
+		/// <summary>Blurs each cascade's raw depth on the GPU after the depth pass.</summary>
+		private void RunComputeFilter()
+		{
+			try
+			{
+				renderer.dummyVao?.Bind();
+				filterShader.Activate();
+				filterShader.SetInt("uRadius", FilterRadius);
+				GL.ActiveTexture(TextureUnit.Texture0);
+				int groups = (Map.Resolution + 7) / 8;
+
+				for (int i = 0; i < Map.CascadeCount; i++)
+				{
+					GL.BindTexture(TextureTarget.Texture2D, Map.DepthTextures[i]);
+					Map.BindFilteredForWriting(i, FilterImageUnit);
+					filterShader.Dispatch(groups, groups, 1);
+				}
+				GL.MemoryBarrier(MemoryBarrierFlags.ShaderImageAccessBarrierBit | MemoryBarrierFlags.TextureFetchBarrierBit);
+				GL.BindImageTexture(FilterImageUnit, 0, 0, false, 0, TextureAccess.WriteOnly, SizedInternalFormat.R32f);
+				ComputeShader.Deactivate();
+
+				ErrorCode error = GL.GetError();
+				if (error != ErrorCode.NoError)
+				{
+					throw new InvalidOperationException("Compute filter reported GL error " + error);
+				}
+			}
+			catch (Exception ex)
+			{
+				renderer.fileSystem.AppendToLogFile("[CSM] Compute filter failed, reverting to GL 4.1: " + ex.Message);
+				DisableComputePath();
+			}
+		}
+
+		/// <summary>Permanently disables compute for this session and restores hardware PCF state.</summary>
+		private void DisableComputePath()
+		{
+			computeAvailable = false;
+			Map?.SetShadowCompareMode(true);
+			Map?.DisableFiltering();
+			filterShader?.Dispose();
+			filterShader = null;
 		}
 
 		/// <summary>
@@ -183,6 +309,13 @@ namespace LibRender2.ShadowMapping
 					renderer.RenderShadowFaces(DepthShader, renderer.VisibleObjects.AlphaFaces, maxDistanceSquared, ref lastVAO);
 				}
 				Map.Unbind();
+			}
+
+			// The GL 4.3 path blurs raw caster depth once per cascade, so the main shader can
+			// compare with a single fetch instead of a multi-tap PCF loop for every fragment.
+			if (computeAvailable && Map.FilteringEnabled && filterShader != null)
+			{
+				RunComputeFilter();
 			}
 
 			// 4. Restore state
@@ -296,12 +429,15 @@ namespace LibRender2.ShadowMapping
 			if (!Enabled || Map == null || Caster == null)
 			{
 				shader.SetShadowEnabled(false);
+				shader.SetShadowFiltered(false);
 				// To satisfy strict OpenGL drivers, always bind something to the shadow map units
 				// even if shadow is disabled, to avoid "sampler collision" errors.
 				for (int i = 0; i < 4; i++)
 				{
 					GL.ActiveTexture(TextureUnit.Texture4 + i);
 					GL.BindTexture(TextureTarget.Texture2D, renderer.nullDepthMap);
+					GL.ActiveTexture(TextureUnit.Texture8 + i);
+					GL.BindTexture(TextureTarget.Texture2D, 0);
 				}
 				GL.ActiveTexture(TextureUnit.Texture0);
 				return;
@@ -314,7 +450,30 @@ namespace LibRender2.ShadowMapping
 			shader.SetShadowFilterRadius(ComputeEffectiveFilterRadius());
 			shader.SetCurrentViewMatrix(renderer.CurrentViewMatrix);
 
-			Map.BindAllCascadesForReading(TextureUnit.Texture4);
+			if (computeAvailable && Map.FilteringEnabled)
+			{
+				// The depth textures have compare mode disabled for raw reads in the compute pass,
+				// so the legacy sampler2DShadow uniforms must not reference them.
+				for (int i = 0; i < 4; i++)
+				{
+					GL.ActiveTexture(TextureUnit.Texture4 + i);
+					GL.BindTexture(TextureTarget.Texture2D, renderer.nullDepthMap);
+				}
+				GL.ActiveTexture(TextureUnit.Texture0);
+				shader.SetShadowFiltered(true);
+				Map.BindFilteredForReading(TextureUnit.Texture8);
+			}
+			else
+			{
+				Map.BindAllCascadesForReading(TextureUnit.Texture4);
+				shader.SetShadowFiltered(false);
+				for (int i = 0; i < 4; i++)
+				{
+					GL.ActiveTexture(TextureUnit.Texture8 + i);
+					GL.BindTexture(TextureTarget.Texture2D, 0);
+				}
+				GL.ActiveTexture(TextureUnit.Texture0);
+			}
 
 			int cascadeCount = Caster.CascadeCount;
 			// Normal bias is in Unity-style texel units (typical 0.3-1.0). Clamp so a stale
@@ -370,6 +529,9 @@ namespace LibRender2.ShadowMapping
 		/// </summary>
 		public void Dispose()
 		{
+			filterShader?.Dispose();
+			filterShader = null;
+			computeAvailable = false;
 			Map?.Dispose();
 			Map = null;
 			DepthShader?.Dispose();

@@ -47,10 +47,12 @@ namespace LibRender2.Shaders
 		private readonly int uShadowCascadeCountLocation;
 		private readonly int uShadowSmoothLocation;
 		private readonly int uShadowFilterRadiusLocation;
+		private readonly int uShadowFilteredLocation;
 		private readonly int uCurrentViewMatrixLocation;
 		private readonly int uInstancedLocation;
 		private readonly int[] uLightSpaceMatrixLocations;
 		private readonly int[] uShadowMapLocations;
+		private readonly int[] uShadowFilterLocations;
 		private readonly int[] uShadowSplitLocations;
 		private readonly int[] uShadowBiasLocations;
 		private readonly int[] uShadowNormalBiasLocations;
@@ -71,7 +73,12 @@ namespace LibRender2.Shaders
 			uShadowCascadeCountLocation = GL.GetUniformLocation(Handle, "uShadowCascadeCount");
 			uShadowSmoothLocation = GL.GetUniformLocation(Handle, "uShadowSmooth");
 			uShadowFilterRadiusLocation = GL.GetUniformLocation(Handle, "uShadowFilterRadius");
+			uShadowFilteredLocation = GL.GetUniformLocation(Handle, "uShadowFiltered");
 			int uShadowMap0Location1 = GL.GetUniformLocation(Handle, "uShadowMap0");
+			int uShadowFilter0Location = GL.GetUniformLocation(Handle, "uShadowFilter0");
+			int uShadowFilter1Location = GL.GetUniformLocation(Handle, "uShadowFilter1");
+			int uShadowFilter2Location = GL.GetUniformLocation(Handle, "uShadowFilter2");
+			int uShadowFilter3Location = GL.GetUniformLocation(Handle, "uShadowFilter3");
 			int uShadowMap1Location1 = GL.GetUniformLocation(Handle, "uShadowMap1");
 			int uShadowMap2Location1 = GL.GetUniformLocation(Handle, "uShadowMap2");
 			int uShadowMap3Location1 = GL.GetUniformLocation(Handle, "uShadowMap3");
@@ -110,6 +117,7 @@ namespace LibRender2.Shaders
 			}
 			uLightSpaceMatrixLocations = new[] { uLightSpaceMatrix0Location, uLightSpaceMatrix1Location, uLightSpaceMatrix2Location, uLightSpaceMatrix3Location };
 			uShadowMapLocations = new[] { uShadowMap0Location1, uShadowMap1Location1, uShadowMap2Location1, uShadowMap3Location1 };
+			uShadowFilterLocations = new[] { uShadowFilter0Location, uShadowFilter1Location, uShadowFilter2Location, uShadowFilter3Location };
 			uShadowSplitLocations = new[] { uShadowSplit0Location1, uShadowSplit1Location1, uShadowSplit2Location1, uShadowSplit3Location };
 			uShadowBiasLocations = new[] { uShadowBias0Location, uShadowBias1Location, uShadowBias2Location, uShadowBias3Location };
 			uShadowNormalBiasLocations = new[] { uShadowNormalBias0Location, uShadowNormalBias1Location, uShadowNormalBias2Location, uShadowNormalBias3Location };
@@ -124,6 +132,16 @@ namespace LibRender2.Shaders
 			GL.ProgramUniform1(Handle, uShadowMap1Location1, 5);
 			GL.ProgramUniform1(Handle, uShadowMap2Location1, 6);
 			GL.ProgramUniform1(Handle, uShadowMap3Location1, 7);
+			// The GL 4.3 compute filter textures use a separate unit range: sampler2D and
+			// sampler2DShadow may not target the same texture unit.
+			for (int i = 0; i < uShadowFilterLocations.Length; i++)
+			{
+				if (uShadowFilterLocations[i] != -1)
+				{
+					GL.ProgramUniform1(Handle, uShadowFilterLocations[i], 8 + i);
+				}
+			}
+			if (uShadowFilteredLocation != -1) GL.ProgramUniform1(Handle, uShadowFilteredLocation, 0);
 			// Also ensure shadow is disabled by default
 			GL.ProgramUniform1(Handle, uShadowEnabledLocation, 0);
 			GL.ProgramUniform1(Handle, uShadowCascadeCountLocation, 0);
@@ -527,6 +545,18 @@ namespace LibRender2.Shaders
 		public void SetShadowFilterRadius(float radius)
 		{
 			if (uShadowFilterRadiusLocation != -1) GL.ProgramUniform1(Handle, uShadowFilterRadiusLocation, radius);
+		}
+
+		/// <summary>Enables sampling of the GL 4.3 compute-blurred depth instead of the 4.1 PCF loop.</summary>
+		public void SetShadowFiltered(bool enabled)
+		{
+			if (uShadowFilteredLocation != -1) GL.ProgramUniform1(Handle, uShadowFilteredLocation, enabled ? 1 : 0);
+		}
+
+		public void SetCascadeFilterUnit(int cascade, int textureUnit)
+		{
+			int loc = CascadeLocation(uShadowFilterLocations, cascade);
+			if (loc != -1) GL.ProgramUniform1(Handle, loc, textureUnit);
 		}
 
 		public void SetCurrentViewMatrix(Matrix4D viewMatrix)

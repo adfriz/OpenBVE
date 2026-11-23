@@ -1,0 +1,64 @@
+//Simplified BSD License (BSD-2-Clause)
+//
+//Copyright (c) 2026, The OpenBVE Project
+//
+//Redistribution and use in source and binary forms, with or without
+//modification, are permitted provided that the following conditions are met:
+//
+//1. Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer.
+//2. Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+//
+//THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+//ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+//WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+//DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+//ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+//(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+//LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+//ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+//(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+//SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+#version 430 core
+
+// GL 4.3 compute path for cascaded shadow maps.
+// Blurs the raw caster depth once per cascade after the depth pass, so the main shader can
+// compare against a soft depth with a single fetch instead of running a multi-tap PCF loop
+// per fragment. The GL 4.1 path (5-tap Vogel / 4-tap grid in default.frag) remains unchanged
+// and is used whenever this shader is unavailable.
+
+layout(local_size_x = 8, local_size_y = 8) in;
+
+layout(r32f, binding = 0) uniform image2D uFilteredDepth;
+uniform sampler2D uDepth;
+uniform int uRadius;
+
+void main()
+{
+	ivec2 size = imageSize(uFilteredDepth);
+	ivec2 p = ivec2(gl_GlobalInvocationID.xy);
+	if (p.x >= size.x || p.y >= size.y)
+	{
+		return;
+	}
+
+	float sum = 0.0;
+	float totalWeight = 0.0;
+	ivec2 upper = size - ivec2(1);
+
+	for (int y = -uRadius; y <= uRadius; ++y)
+	{
+		for (int x = -uRadius; x <= uRadius; ++x)
+		{
+			ivec2 tap = clamp(p + ivec2(x, y), ivec2(0), upper);
+			float weight = 1.0 / (1.0 + float(x * x + y * y));
+			sum += texelFetch(uDepth, tap, 0).r * weight;
+			totalWeight += weight;
+		}
+	}
+
+	imageStore(uFilteredDepth, p, vec4(sum / totalWeight, 0.0, 0.0, 1.0));
+}

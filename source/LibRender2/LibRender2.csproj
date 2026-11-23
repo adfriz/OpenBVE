@@ -116,6 +116,7 @@
     <Compile Include="Shaders\ShadowDepthShader.cs" />
     <Compile Include="Smoke\Particle.cs" />
     <Compile Include="Smoke\ParticleSource.cs" />
+    <Compile Include="Shaders\ComputeShader.cs" />
     <Compile Include="Smoke\ParticleType.cs" />
     <Compile Include="Shadows\CascadedShadowCaster.cs" />
     <Compile Include="Shadows\CascadedShadowMap.cs" />
@@ -154,6 +155,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="..\..\assets\Shaders\shadow_filter.comp" />
     <Folder Include="Overlays\Messages\" />
   </ItemGroup>
   <ItemGroup>
