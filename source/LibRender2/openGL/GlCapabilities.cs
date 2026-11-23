@@ -23,6 +23,13 @@ namespace LibRender2
 			new[] { 4, 1 }
 		};
 
+		/// <summary>macOS never exposes a GL context above 4.1; asking for more there is pointless
+		/// and can upset the driver. Keep the request list to the only version macOS can give.</summary>
+		private static readonly int[][] AppleCandidateVersions =
+		{
+			new[] { 4, 1 }
+		};
+
 		public int Major { get; private set; }
 		public int Minor { get; private set; }
 		public string VersionString { get; private set; }
@@ -101,16 +108,23 @@ namespace LibRender2
 		/// Tries to create a window at the highest supported GL version, falling back one version at a
 		/// time and finally to the host's original (legacy) constructor. The factory receives the
 		/// requested major/minor; (0, 0) means "use the legacy constructor".
+		/// <paramref name="capAt41"/> limits requests to GL 4.1 (used on macOS).
 		/// </summary>
 		[HandleProcessCorruptedStateExceptions]
-		public static GameWindow CreateWindow(Func<int, int, GameWindow> factory, out GlCapabilities capabilities, Action<string> log = null)
+		public static GameWindow CreateWindow(Func<int, int, GameWindow> factory, out GlCapabilities capabilities, Action<string> log = null, bool capAt41 = false)
 		{
 			if (factory == null)
 			{
 				throw new ArgumentNullException(nameof(factory));
 			}
 
-			foreach (int[] version in CandidateVersions)
+			int[][] candidates = capAt41 ? AppleCandidateVersions : CandidateVersions;
+			if (capAt41 && log != null)
+			{
+				log("[GL] macOS: limiting GL context requests to 4.1.");
+			}
+
+			foreach (int[] version in candidates)
 			{
 				try
 				{

@@ -60,6 +60,7 @@ namespace RouteViewer
         public static RouteViewer Create(int width, int height, GraphicsMode mode, string title)
         {
             bool forwardCompatible = IsApple64 || Interface.CurrentOptions.ForceForwardsCompatibleContext;
+            bool capAt41 = Program.CurrentHost.Platform == HostPlatform.AppleOSX;
             GlCapabilities capabilities;
             return (RouteViewer)GlCapabilities.CreateWindow((major, minor) =>
             {
@@ -71,7 +72,7 @@ namespace RouteViewer
                 }
                 return new RouteViewer(width, height, mode, title, GameWindowFlags.Default,
                     major, minor, forwardCompatible ? GraphicsContextFlags.ForwardCompatible : GraphicsContextFlags.Default);
-            }, out capabilities, message => Program.FileSystem.AppendToLogFile(message));
+            }, out capabilities, message => Program.FileSystem.AppendToLogFile(message), capAt41: capAt41);
         }
 
         //Default Properties

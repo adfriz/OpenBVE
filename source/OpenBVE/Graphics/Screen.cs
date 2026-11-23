@@ -23,6 +23,7 @@ namespace OpenBve
 		private static GameWindow CreateGameWindow(int width, int height, bool forwardCompatible)
 		{
 			GlCapabilities capabilities;
+			bool apple = Program.CurrentHost.Platform == HostPlatform.AppleOSX;
 			return GlCapabilities.CreateWindow((major, minor) =>
 			{
 				if (major == 0)
@@ -33,7 +34,7 @@ namespace OpenBve
 				}
 				return new OpenBVEGame(width, height, Program.Renderer.GraphicsMode, GameWindowFlags.Default,
 					major, minor, forwardCompatible ? GraphicsContextFlags.ForwardCompatible : GraphicsContextFlags.Default);
-			}, out capabilities, message => Program.FileSystem.AppendToLogFile(message));
+			}, out capabilities, message => Program.FileSystem.AppendToLogFile(message), capAt41: apple);
 		}
 
 		/// <summary>Initializes the default values of the screen.</summary>
