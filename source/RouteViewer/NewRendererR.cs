@@ -278,11 +278,17 @@ namespace RouteViewer
 					Interface.AddMessage(MessageType.Error, false, "Event markers have been disabled after an error: " + ex.Message);
 				}
 			}
+		}
 
-            // render overlays
-            DefaultShader.Deactivate();
+		/// <summary>
+		/// Draws the HUD, statistics and menu. Called by the frame loop AFTER the compositor has
+		/// presented the post-processed scene, so post-processing never affects the interface.
+		/// </summary>
+		internal void RenderOverlayUI(double timeElapsed)
+		{
+			DefaultShader.Deactivate();
 
-            ResetOpenGlState();
+			ResetOpenGlState();
 			OptionLighting = false;
 			Fog.Enabled = false;
 			UnsetAlphaFunc();

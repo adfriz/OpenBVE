@@ -31,6 +31,7 @@ namespace LibRender2.PostProcessing
 		private int width;
 		private int height;
 		private bool disposed;
+		private bool loggedFrame;
 
 		/// <summary>Whether the compositor's targets were created successfully.</summary>
 		public bool Available { get; private set; }
@@ -191,6 +192,13 @@ namespace LibRender2.PostProcessing
 				}
 			}
 			buffers[0].Bind();
+			if (!loggedFrame)
+			{
+				loggedFrame = true;
+				renderer.fileSystem?.AppendToLogFile("[PostFX] Scene target FBO=" + buffers[0].Framebuffer +
+					" texture=" + buffers[0].ColorTexture + " targets=" + buffers.Count +
+					" err=" + GL.GetError());
+			}
 		}
 
 		/// <summary>Runs the pass chain and presents the result to the default framebuffer.</summary>
@@ -208,6 +216,12 @@ namespace LibRender2.PostProcessing
 			{
 				// Passes may have been enabled/disabled since the last frame.
 				EnsureBuffers();
+				// Full-screen passes must not inherit scene depth/cull/blend state: a depth test
+				// against a target without a depth attachment, or SrcAlpha blending against an
+				// empty destination, silently turns the chain black.
+				GL.Disable(EnableCap.DepthTest);
+				GL.Disable(EnableCap.CullFace);
+				GL.Disable(EnableCap.Blend);
 				int nextBuffer = 0;
 				RenderTarget current = buffers[nextBuffer++];
 				if (colorMode == CompositorColorMode.HdrInternal)

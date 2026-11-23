@@ -34,6 +34,10 @@ namespace LibRender2.PostProcessing
 		{
 			Framebuffer = GL.GenFramebuffer();
 			GL.BindFramebuffer(FramebufferTarget.Framebuffer, Framebuffer);
+			// Be explicit: a draw buffer of NONE left over from a shadow FBO would make every
+			// full-screen pass a no-op and present an empty (black) target.
+			GL.DrawBuffer(DrawBufferMode.ColorAttachment0);
+			GL.ReadBuffer(ReadBufferMode.ColorAttachment0);
 
 			ColorTexture = GL.GenTexture();
 			GL.BindTexture(TextureTarget.Texture2D, ColorTexture);

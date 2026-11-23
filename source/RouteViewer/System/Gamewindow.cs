@@ -164,6 +164,7 @@ namespace RouteViewer
 		            Program.Renderer.BeginFrame();
 		            Program.Renderer.RenderScene(PausedElapsed);
 		            Program.Renderer.EndFrame();
+		            Program.Renderer.RenderOverlayUI(PausedElapsed);
 		            TrySwapBuffers();
 	            }
 	            return;
@@ -184,6 +185,7 @@ namespace RouteViewer
             Program.Renderer.BeginFrame();
             Program.Renderer.RenderScene(TimeElapsed);
             Program.Renderer.EndFrame();
+            Program.Renderer.RenderOverlayUI(TimeElapsed);
             MessageManager.UpdateMessages(TimeElapsed);
             TrySwapBuffers();
             

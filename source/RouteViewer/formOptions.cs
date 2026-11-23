@@ -1,3 +1,4 @@
+using LibRender2.PostProcessing;
 using LibRender2.Viewports;
 using OpenBveApi;
 using OpenBveApi.Graphics;
@@ -15,6 +16,7 @@ namespace RouteViewer
     {
         private bool suppressSunEvents = false;
         private bool suppressShadowEvents = false;
+        private CheckBox checkBoxPostProcessing;
 
         public FormOptions()
         {
@@ -114,13 +116,110 @@ namespace RouteViewer
 				default: comboBoxFPSLimit.SelectedIndex = 0; break;
 			}
 			UpdateFPSLimitEnabled();
+            SetupPostProcessingTab();
             // Wire realtime handlers last, after every control reflects the
             // current options, so init itself never flags live changes.
             SetupSunRealtime();
             SetupShadowRealtime();
         }
 
+        /// <summary>
+        /// Builds the Post Processing tab from the compositor's registered passes. Pass entries are
+        /// generated from Compositor.Passes so new passes appear here without touching this dialog.
+        /// </summary>
+        private void SetupPostProcessingTab()
+        {
+            Compositor compositor = Program.Renderer?.Compositor;
+            var page = new TabPage("Post Processing") { AutoScroll = true, Padding = new Padding(10) };
+            tabControl1.TabPages.Add(page);
 
+            var table = new TableLayoutPanel
+            {
+                AutoSize = true,
+                Dock = DockStyle.Top,
+                ColumnCount = 2,
+                Padding = new Padding(4),
+                ColumnStyles =
+                {
+                    new ColumnStyle(SizeType.Percent, 80F),
+                    new ColumnStyle(SizeType.Percent, 20F)
+                }
+            };
+
+            var globalLabel = new Label
+            {
+                Text = "Enable post processing",
+                AutoSize = true,
+                Dock = DockStyle.Fill
+            };
+            checkBoxPostProcessing = new CheckBox { AutoSize = true, Dock = DockStyle.Fill };
+            table.Controls.Add(globalLabel, 0, 0);
+            table.Controls.Add(checkBoxPostProcessing, 1, 0);
+
+            int row = 1;
+            if (compositor == null || !compositor.Available)
+            {
+                var unavailable = new Label
+                {
+                    Text = "Post processing is unavailable on this OpenGL context.",
+                    AutoSize = true,
+                    Dock = DockStyle.Fill
+                };
+                table.SetColumnSpan(unavailable, 2);
+                table.Controls.Add(unavailable, 0, row++);
+                checkBoxPostProcessing.Enabled = false;
+            }
+            else
+            {
+                checkBoxPostProcessing.Checked = compositor.Enabled;
+                var heading = new Label { Text = "Passes", AutoSize = true, Font = new System.Drawing.Font(Font, System.Drawing.FontStyle.Bold) };
+                table.SetColumnSpan(heading, 2);
+                table.Controls.Add(heading, 0, row++);
+
+                foreach (PostProcessPass pass in compositor.Passes)
+                {
+                    var checkBox = new CheckBox
+                    {
+                        Text = pass.Name,
+                        Tag = pass,
+                        Checked = pass.Enabled,
+                        AutoSize = true,
+                        Dock = DockStyle.Fill
+                    };
+                    checkBox.CheckedChanged += PostPassCheckBox_CheckedChanged;
+                    table.SetColumnSpan(checkBox, 2);
+                    table.Controls.Add(checkBox, 0, row++);
+                }
+            }
+
+            checkBoxPostProcessing.CheckedChanged += PostProcessingGlobal_CheckedChanged;
+            page.Controls.Add(table);
+        }
+
+        private void PostProcessingGlobal_CheckedChanged(object sender, EventArgs e)
+        {
+            Compositor compositor = Program.Renderer?.Compositor;
+            if (compositor == null || !compositor.Available)
+            {
+                return;
+            }
+            compositor.Enabled = checkBoxPostProcessing.Checked;
+            Program.PreviewDirty = true;
+            TryPresentPreview();
+        }
+
+        private void PostPassCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            var checkBox = (CheckBox)sender;
+            var pass = checkBox.Tag as PostProcessPass;
+            if (pass == null)
+            {
+                return;
+            }
+            pass.Enabled = checkBox.Checked;
+            Program.PreviewDirty = true;
+            TryPresentPreview();
+        }
 
         private void FormOptions_FormClosed(object sender, FormClosedEventArgs e)
         {
@@ -412,7 +511,10 @@ namespace RouteViewer
                 {
                     return;
                 }
+                Program.Renderer.BeginFrame();
                 Program.Renderer.RenderScene(0.0);
+                Program.Renderer.EndFrame();
+                Program.Renderer.RenderOverlayUI(0.0);
                 Program.Renderer.GameWindow.SwapBuffers();
             }
             catch
