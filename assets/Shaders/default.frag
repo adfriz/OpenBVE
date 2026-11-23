@@ -222,10 +222,15 @@ float GetCascadeShadowFactorFiltered(int idx, vec4 posLightSpace, float bias, fl
     float activeBias = bias * (1.0 + slope * clamp(normalBias, 0.0, 1.5));
     float biasedDepth = projCoords.z - activeBias;
 
+    // PCF must filter the comparison results, never the depth values:
+    //   average(d < z) != average(d) < z
+    // The compute pass therefore copies raw caster depth (radius 0) and all filtering happens
+    // here, after each individual depth test - the same rule the hardware 4.1 path follows.
+    vec2 texelSize = 1.0 / vec2(textureSize(uShadowFilter0, 0));
+
     if (uShadowSmooth)
     {
         float radius = clamp(uShadowFilterRadius, SHADOW_MIN_RADIUS, SHADOW_MAX_RADIUS);
-        vec2 texelSize = 1.0 / vec2(textureSize(uShadowFilter0, 0));
         float phi = interleavedGradientNoise(gl_FragCoord.xy) * SHADOW_TWO_PI;
         float cosPhi = cos(phi);
         float sinPhi = sin(phi);
@@ -233,14 +238,18 @@ float GetCascadeShadowFactorFiltered(int idx, vec4 posLightSpace, float bias, fl
         for (int i = 0; i < 5; ++i)
         {
             vec2 offset = vogelDiskSample(i, cosPhi, sinPhi) * texelSize * radius * 2.0;
-            float storedDepth = SampleFilteredDepth(idx, projCoords.xy + offset);
-            shadow += biasedDepth <= storedDepth ? 1.0 : 0.0;
+            shadow += biasedDepth <= SampleFilteredDepth(idx, projCoords.xy + offset) ? 1.0 : 0.0;
         }
         return shadow * 0.2;
     }
 
-    float storedDepth = SampleFilteredDepth(idx, projCoords.xy);
-    return biasedDepth <= storedDepth ? 1.0 : 0.0;
+    // Sharp path: tight 4-tap grid, identical to the hardware PCF path in GetCascadeShadowFactor.
+    float shadow = 0.0;
+    shadow += biasedDepth <= SampleFilteredDepth(idx, projCoords.xy + vec2(-0.5, -0.5) * texelSize) ? 1.0 : 0.0;
+    shadow += biasedDepth <= SampleFilteredDepth(idx, projCoords.xy + vec2( 0.5, -0.5) * texelSize) ? 1.0 : 0.0;
+    shadow += biasedDepth <= SampleFilteredDepth(idx, projCoords.xy + vec2(-0.5,  0.5) * texelSize) ? 1.0 : 0.0;
+    shadow += biasedDepth <= SampleFilteredDepth(idx, projCoords.xy + vec2( 0.5,  0.5) * texelSize) ? 1.0 : 0.0;
+    return shadow * 0.25;
 }
 
 /// Helper to sample a cascade by index.
