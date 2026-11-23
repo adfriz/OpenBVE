@@ -15,6 +15,27 @@ namespace OpenBve
 {
 	internal static class Screen
 	{
+		/// <summary>
+		/// Creates the window at the highest GL version the driver accepts, falling back one
+		/// version at a time to the original constructor. Signature and behaviour of the legacy
+		/// path are unchanged.
+		/// </summary>
+		private static GameWindow CreateGameWindow(int width, int height, bool forwardCompatible)
+		{
+			GlCapabilities capabilities;
+			return GlCapabilities.CreateWindow((major, minor) =>
+			{
+				if (major == 0)
+				{
+					return forwardCompatible
+						? (GameWindow)new OpenBVEGame(width, height, Program.Renderer.GraphicsMode, GameWindowFlags.Default, GraphicsContextFlags.ForwardCompatible)
+						: new OpenBVEGame(width, height, Program.Renderer.GraphicsMode, GameWindowFlags.Default);
+				}
+				return new OpenBVEGame(width, height, Program.Renderer.GraphicsMode, GameWindowFlags.Default,
+					major, minor, forwardCompatible ? GraphicsContextFlags.ForwardCompatible : GraphicsContextFlags.Default);
+			}, out capabilities, message => Program.FileSystem.AppendToLogFile(message));
+		}
+
 		/// <summary>Initializes the default values of the screen.</summary>
 		internal static void Initialize()
 		{
@@ -44,21 +65,15 @@ namespace OpenBve
 								 * OS-X is a fickle beast
 								 * In order to get a functioning GL3 context, we appear to need to be running as 64-bit & explicitly specify the forwards compatible flag
 								 */
-								Program.Renderer.GameWindow = new OpenBVEGame(currentResolution.Width, currentResolution.Height, Program.Renderer.GraphicsMode,
-									GameWindowFlags.Default, GraphicsContextFlags.ForwardCompatible)
-								{
-									Visible = true,
-									WindowState = WindowState.Fullscreen
-								};
+								Program.Renderer.GameWindow = CreateGameWindow(currentResolution.Width, currentResolution.Height, true);
+								Program.Renderer.GameWindow.Visible = true;
+								Program.Renderer.GameWindow.WindowState = WindowState.Fullscreen;
 							}
 							else
 							{
-								Program.Renderer.GameWindow = new OpenBVEGame(currentResolution.Width, currentResolution.Height, Program.Renderer.GraphicsMode,
-									GameWindowFlags.Default)
-								{
-									Visible = true,
-									WindowState = WindowState.Fullscreen
-								};	
+								Program.Renderer.GameWindow = CreateGameWindow(currentResolution.Width, currentResolution.Height, false);
+								Program.Renderer.GameWindow.Visible = true;
+								Program.Renderer.GameWindow.WindowState = WindowState.Fullscreen;
 							}
 							
 							resolutionFound = true;
@@ -95,19 +110,15 @@ namespace OpenBve
 						 * OS-X is a fickle beast
 						 * In order to get a functioning GL3 context, we appear to need to be running as 64-bit & explicitly specify the forwards compatible flag
 						 */
-						Program.Renderer.GameWindow = new OpenBVEGame(Interface.CurrentOptions.WindowWidth,
-							Interface.CurrentOptions.WindowHeight, Program.Renderer.GraphicsMode, GameWindowFlags.Default, GraphicsContextFlags.ForwardCompatible)
-						{
-							Visible = true
-						};
+						Program.Renderer.GameWindow = CreateGameWindow(Interface.CurrentOptions.WindowWidth,
+							Interface.CurrentOptions.WindowHeight, true);
+						Program.Renderer.GameWindow.Visible = true;
 					}
 					else
 					{
-						Program.Renderer.GameWindow = new OpenBVEGame(Interface.CurrentOptions.WindowWidth,
-							Interface.CurrentOptions.WindowHeight, Program.Renderer.GraphicsMode, GameWindowFlags.Default)
-						{
-							Visible = true
-						};
+						Program.Renderer.GameWindow = CreateGameWindow(Interface.CurrentOptions.WindowWidth,
+							Interface.CurrentOptions.WindowHeight, false);
+						Program.Renderer.GameWindow.Visible = true;
 					}
 					
 				}

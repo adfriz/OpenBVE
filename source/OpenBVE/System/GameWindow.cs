@@ -71,7 +71,11 @@ namespace OpenBve
 			}
 		}
 
-		public OpenBVEGame(int width, int height, GraphicsMode currentGraphicsMode, GameWindowFlags @default, GraphicsContextFlags flags): base(width, height, currentGraphicsMode, Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"program","title"}), @default, DisplayDevice.Default, 3,3, flags)
+		public OpenBVEGame(int width, int height, GraphicsMode currentGraphicsMode, GameWindowFlags @default, GraphicsContextFlags flags): this(width, height, currentGraphicsMode, @default, 3, 3, flags)
+		{
+		}
+
+		public OpenBVEGame(int width, int height, GraphicsMode currentGraphicsMode, GameWindowFlags @default, int major, int minor, GraphicsContextFlags flags): base(width, height, currentGraphicsMode, Translations.GetInterfaceString(HostApplication.OpenBve, new[] {"program","title"}), @default, DisplayDevice.Default, major, minor, flags)
 		{
 			Program.FileSystem.AppendToLogFile("Creating game window with forwards-compatible context.");
 			if (Program.CurrentHost.Platform == HostPlatform.AppleOSX && IntPtr.Size != 4)

@@ -374,6 +374,10 @@ namespace LibRender2
 
 		public Dictionary<Texture, HashSet<Vector3>> CubesToDraw = new Dictionary<Texture, HashSet<Vector3>>();
 		
+
+		/// <summary>OpenGL capabilities of the active context, used to select feature paths.</summary>
+		public GlCapabilities Capabilities { get; private set; }
+
 		protected BaseRenderer(HostInterface CurrentHost, BaseOptions CurrentOptions, FileSystem FileSystem)
 		{
 			currentHost = CurrentHost;
@@ -400,6 +404,12 @@ namespace LibRender2
 		[HandleProcessCorruptedStateExceptions] //As some graphics cards crash really nastily if we request unsupported features
 		public virtual void Initialize()
 		{
+			// The context is current by this point, so this is the single place where the actual
+			// GL version is queried. On Apple, GL.GetString is known to upset some drivers, so only
+			// the integer version query is used there.
+			Capabilities = GlCapabilities.Detect(currentHost.Platform != HostPlatform.AppleOSX);
+			fileSystem?.AppendToLogFile("[GL] Active context: " + Capabilities);
+
 			try
 			{
 				if (DefaultShader == null)

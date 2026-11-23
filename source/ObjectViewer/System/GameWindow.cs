@@ -1,3 +1,4 @@
+using LibRender2;
 using LibRender2.Viewports;
 using ObjectViewer.Trains;
 using OpenBveApi;
@@ -22,7 +23,12 @@ namespace ObjectViewer
         }
 
         public ObjectViewer(int width, int height, GraphicsMode currentGraphicsMode, string windowTitle,
-            GameWindowFlags @default, GraphicsContextFlags flags) : base(width, height, currentGraphicsMode, windowTitle, @default, DisplayDevice.Default, 3, 3, flags)
+            GameWindowFlags @default, GraphicsContextFlags flags) : this(width, height, currentGraphicsMode, windowTitle, @default, 3, 3, flags)
+        {
+        }
+
+        public ObjectViewer(int width, int height, GraphicsMode currentGraphicsMode, string windowTitle,
+            GameWindowFlags @default, int major, int minor, GraphicsContextFlags flags) : base(width, height, currentGraphicsMode, windowTitle, @default, DisplayDevice.Default, major, minor, flags)
         {
             if (IsApple64)
             {
@@ -48,9 +54,19 @@ namespace ObjectViewer
         // OS-X needs an explicit GL3 forward-compatible context, otherwise it falls back to GL 2.1 and the 410 shaders fail
         public static ObjectViewer Create(int width, int height, GraphicsMode mode, string title)
         {
-            return IsApple64 || Interface.CurrentOptions.ForceForwardsCompatibleContext
-	            ? new ObjectViewer(width, height, mode, title, GameWindowFlags.Default, GraphicsContextFlags.ForwardCompatible)
-	            : new ObjectViewer(width, height, mode, title, GameWindowFlags.Default);
+            bool forwardCompatible = IsApple64 || Interface.CurrentOptions.ForceForwardsCompatibleContext;
+            GlCapabilities capabilities;
+            return (ObjectViewer)GlCapabilities.CreateWindow((major, minor) =>
+            {
+                if (major == 0)
+                {
+                    return forwardCompatible
+                        ? new ObjectViewer(width, height, mode, title, GameWindowFlags.Default, GraphicsContextFlags.ForwardCompatible)
+                        : new ObjectViewer(width, height, mode, title, GameWindowFlags.Default);
+                }
+                return new ObjectViewer(width, height, mode, title, GameWindowFlags.Default,
+                    major, minor, forwardCompatible ? GraphicsContextFlags.ForwardCompatible : GraphicsContextFlags.Default);
+            }, out capabilities, message => Program.FileSystem.AppendToLogFile(message));
         }
 
 		private double RenderRealTimeElapsed;
