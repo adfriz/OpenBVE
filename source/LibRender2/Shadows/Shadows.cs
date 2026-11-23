@@ -196,7 +196,12 @@ namespace LibRender2.ShadowMapping
 			{
 				renderer.dummyVao?.Bind();
 				filterShader.Activate();
-				filterShader.SetInt("uRadius", FilterRadius);
+				// The filter radius now follows the smooth-shadow setting instead of a fixed 3x3
+				// kernel. Capped at 2 texels: the fragment shader adds the wider Vogel penumbra.
+				int computeRadius = renderer.currentOptions.ShadowSmooth
+					? Math.Max(1, Math.Min(2, (int)Math.Round(ComputeEffectiveFilterRadius())))
+					: 0;
+				filterShader.SetInt("uRadius", computeRadius);
 				int groups = (Map.Resolution + 7) / 8;
 
 				for (int i = 0; i < Map.CascadeCount; i++)

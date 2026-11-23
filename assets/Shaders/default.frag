@@ -189,8 +189,20 @@ float GetCascadeShadowFactor(sampler2DShadow shadowMap, vec4 posLightSpace, floa
     }
 }
 
+/// Reads one of the compute-blurred cascade depth textures.
+float SampleFilteredDepth(int idx, vec2 uv)
+{
+    if (idx == 0) return texture(uShadowFilter0, uv).r;
+    if (idx == 1) return texture(uShadowFilter1, uv).r;
+    if (idx == 2) return texture(uShadowFilter2, uv).r;
+    if (idx == 3) return texture(uShadowFilter3, uv).r;
+    return 1.0;
+}
+
 /// Samples the GL 4.3 compute-blurred depth. The per-pixel bias (including the slope term)
 /// is still applied here, so shadow acne handling stays identical to the 4.1 path.
+/// Smooth mode uses the same Vogel disk as the hardware path; without it the single binary
+/// compare of a pre-blurred depth map produced hard, blocky edges and ignored the UI setting.
 float GetCascadeShadowFactorFiltered(int idx, vec4 posLightSpace, float bias, float normalBias)
 {
     vec3 projCoords = posLightSpace.xyz / posLightSpace.w;
@@ -210,13 +222,24 @@ float GetCascadeShadowFactorFiltered(int idx, vec4 posLightSpace, float bias, fl
     float activeBias = bias * (1.0 + slope * clamp(normalBias, 0.0, 1.5));
     float biasedDepth = projCoords.z - activeBias;
 
-    float storedDepth = 0.0;
-    if (idx == 0) storedDepth = texture(uShadowFilter0, projCoords.xy).r;
-    else if (idx == 1) storedDepth = texture(uShadowFilter1, projCoords.xy).r;
-    else if (idx == 2) storedDepth = texture(uShadowFilter2, projCoords.xy).r;
-    else if (idx == 3) storedDepth = texture(uShadowFilter3, projCoords.xy).r;
-    else return 1.0;
+    if (uShadowSmooth)
+    {
+        float radius = clamp(uShadowFilterRadius, SHADOW_MIN_RADIUS, SHADOW_MAX_RADIUS);
+        vec2 texelSize = 1.0 / vec2(textureSize(uShadowFilter0, 0));
+        float phi = interleavedGradientNoise(gl_FragCoord.xy) * SHADOW_TWO_PI;
+        float cosPhi = cos(phi);
+        float sinPhi = sin(phi);
+        float shadow = 0.0;
+        for (int i = 0; i < 5; ++i)
+        {
+            vec2 offset = vogelDiskSample(i, cosPhi, sinPhi) * texelSize * radius * 2.0;
+            float storedDepth = SampleFilteredDepth(idx, projCoords.xy + offset);
+            shadow += biasedDepth <= storedDepth ? 1.0 : 0.0;
+        }
+        return shadow * 0.2;
+    }
 
+    float storedDepth = SampleFilteredDepth(idx, projCoords.xy);
     return biasedDepth <= storedDepth ? 1.0 : 0.0;
 }
 
