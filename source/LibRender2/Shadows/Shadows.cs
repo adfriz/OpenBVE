@@ -197,12 +197,12 @@ namespace LibRender2.ShadowMapping
 				renderer.dummyVao?.Bind();
 				filterShader.Activate();
 				filterShader.SetInt("uRadius", FilterRadius);
-				GL.ActiveTexture(TextureUnit.Texture0);
 				int groups = (Map.Resolution + 7) / 8;
 
 				for (int i = 0; i < Map.CascadeCount; i++)
 				{
-					GL.BindTexture(TextureTarget.Texture2D, Map.DepthTextures[i]);
+					// uDepth samples unit 0; BindTextureUnit avoids disturbing the active unit.
+					TextureBinder.Bind(0, Map.DepthTextures[i]);
 					Map.BindFilteredForWriting(i, FilterImageUnit);
 					filterShader.Dispatch(groups, groups, 1);
 				}
@@ -379,8 +379,7 @@ namespace LibRender2.ShadowMapping
 				}
 				if (material.DaytimeTexture != null && renderer.currentHost.LoadTexture(ref material.DaytimeTexture, (OpenGlTextureWrapMode)(material.WrapMode ?? OpenGlTextureWrapMode.ClampClamp)))
 				{
-					GL.ActiveTexture(TextureUnit.Texture0);
-					GL.BindTexture(TextureTarget.Texture2D, material.DaytimeTexture.OpenGlTextures[(int)(material.WrapMode ?? OpenGlTextureWrapMode.ClampClamp)].Name);
+					TextureBinder.Bind(0, material.DaytimeTexture.OpenGlTextures[(int)(material.WrapMode ?? OpenGlTextureWrapMode.ClampClamp)].Name);
 					DepthShader.SetHasTexture(true);
 				}
 				else
@@ -434,12 +433,10 @@ namespace LibRender2.ShadowMapping
 				// even if shadow is disabled, to avoid "sampler collision" errors.
 				for (int i = 0; i < 4; i++)
 				{
-					GL.ActiveTexture(TextureUnit.Texture4 + i);
-					GL.BindTexture(TextureTarget.Texture2D, renderer.nullDepthMap);
-					GL.ActiveTexture(TextureUnit.Texture8 + i);
-					GL.BindTexture(TextureTarget.Texture2D, 0);
+					TextureBinder.Bind(4 + i, renderer.nullDepthMap);
+					TextureBinder.Bind(8 + i, 0);
 				}
-				GL.ActiveTexture(TextureUnit.Texture0);
+				TextureBinder.ResetActiveUnit();
 				return;
 			}
 
@@ -456,10 +453,9 @@ namespace LibRender2.ShadowMapping
 				// so the legacy sampler2DShadow uniforms must not reference them.
 				for (int i = 0; i < 4; i++)
 				{
-					GL.ActiveTexture(TextureUnit.Texture4 + i);
-					GL.BindTexture(TextureTarget.Texture2D, renderer.nullDepthMap);
+					TextureBinder.Bind(4 + i, renderer.nullDepthMap);
 				}
-				GL.ActiveTexture(TextureUnit.Texture0);
+				TextureBinder.ResetActiveUnit();
 				shader.SetShadowFiltered(true);
 				Map.BindFilteredForReading(TextureUnit.Texture8);
 			}
@@ -469,10 +465,9 @@ namespace LibRender2.ShadowMapping
 				shader.SetShadowFiltered(false);
 				for (int i = 0; i < 4; i++)
 				{
-					GL.ActiveTexture(TextureUnit.Texture8 + i);
-					GL.BindTexture(TextureTarget.Texture2D, 0);
+					TextureBinder.Bind(8 + i, 0);
 				}
-				GL.ActiveTexture(TextureUnit.Texture0);
+				TextureBinder.ResetActiveUnit();
 			}
 
 			int cascadeCount = Caster.CascadeCount;

@@ -424,6 +424,7 @@ namespace LibRender2
 			// the integer version query is used there.
 			Capabilities = GlCapabilities.Detect(currentHost.Platform != HostPlatform.AppleOSX);
 			fileSystem?.AppendToLogFile("[GL] Active context: " + Capabilities);
+			TextureBinder.Configure(Capabilities);
 
 			try
 			{

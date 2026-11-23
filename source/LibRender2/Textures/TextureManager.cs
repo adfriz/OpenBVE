@@ -371,8 +371,13 @@ namespace LibRender2.Textures
 					// If frame changed and GL texture already uploaded, update in-place via TexSubImage2D to avoid creating a lot of GL calls and per-frame alloc leak
 					if (oldFrame != texture.CurrentFrame && texture.OpenGlTextures[(int)wrap].Valid && handle.OpenGlTextures[(int)wrap].Valid)
 					{
-						// Reuse same GL name across frames, update existing texture
-						GL.BindTexture(TextureTarget.Texture2D, handle.OpenGlTextures[(int)wrap].Name);
+						// Reuse same GL name across frames, update existing texture. GL 4.5 DSA
+						// uploads straight to the texture; 4.1 keeps the legacy bind + TexSubImage.
+						int glTexture = handle.OpenGlTextures[(int)wrap].Name;
+						if (!TextureBinder.DirectStateAccess)
+						{
+							GL.BindTexture(TextureTarget.Texture2D, glTexture);
+						}
 						byte[] subBytes = texture.Bytes; // current frame's bytes (paletted or RGBA)
 						// For paletted, expand via reused static buffer to avoid per-frame new byte[] GC pressure. (I think this how web browser do frame discarding)
 						if (texture.PixelFormat == PixelFormat.Paletted)
@@ -399,7 +404,7 @@ namespace LibRender2.Textures
 									}
 
 									GL.PixelStore(PixelStoreParameter.UnpackAlignment, 1);
-									GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, texture.Width, texture.Height, OpenTK.Graphics.OpenGL.PixelFormat.Rgb, PixelType.UnsignedByte, pooled);
+									TextureBinder.SubImage2D(glTexture, texture.Width, texture.Height, OpenTK.Graphics.OpenGL.PixelFormat.Rgb, pooled);
 								}
 								else
 								{
@@ -414,12 +419,12 @@ namespace LibRender2.Textures
 									}
 
 									GL.PixelStore(PixelStoreParameter.UnpackAlignment, 4);
-									GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, texture.Width, texture.Height,
-										OpenTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, pooled);
+									TextureBinder.SubImage2D(glTexture, texture.Width, texture.Height,
+										OpenTK.Graphics.OpenGL.PixelFormat.Rgba, pooled);
 								}
 							}
 
-							GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+							TextureBinder.GenerateMipmap(glTexture);
 						}
 						else
 						{
@@ -427,20 +432,20 @@ namespace LibRender2.Textures
 							if (texture.PixelFormat == PixelFormat.RGBAlpha || texture.GetTransparencyType() != TextureTransparencyType.Opaque)
 							{
 								GL.PixelStore(PixelStoreParameter.UnpackAlignment, 4);
-								GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, texture.Width, texture.Height, OpenTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, subBytes);
+								TextureBinder.SubImage2D(glTexture, texture.Width, texture.Height, OpenTK.Graphics.OpenGL.PixelFormat.Rgba, subBytes);
 							}
 							else if (texture.PixelFormat == PixelFormat.RGB)
 							{
 								GL.PixelStore(PixelStoreParameter.UnpackAlignment, 1);
-								GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, texture.Width, texture.Height, OpenTK.Graphics.OpenGL.PixelFormat.Rgb, PixelType.UnsignedByte, subBytes);
+								TextureBinder.SubImage2D(glTexture, texture.Width, texture.Height, OpenTK.Graphics.OpenGL.PixelFormat.Rgb, subBytes);
 							}
 							else
 							{
 								GL.PixelStore(PixelStoreParameter.UnpackAlignment, 4);
-								GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, texture.Width, texture.Height, OpenTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, subBytes);
+								TextureBinder.SubImage2D(glTexture, texture.Width, texture.Height, OpenTK.Graphics.OpenGL.PixelFormat.Rgba, subBytes);
 							}
 
-							GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+							TextureBinder.GenerateMipmap(glTexture);
 						}
 
 						// Keep the stable handle in sync without swapping identity: the handle keeps

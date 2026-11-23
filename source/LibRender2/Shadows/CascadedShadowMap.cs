@@ -153,13 +153,8 @@ namespace LibRender2.ShadowMapping
         /// </summary>
         public void BindAllCascadesForReading(TextureUnit baseUnit)
         {
-            for (int i = 0; i < CascadeCount; i++)
-            {
-                GL.ActiveTexture(baseUnit + i);
-                GL.BindTexture(TextureTarget.Texture2D, DepthTextures[i]);
-            }
-            // Restore active texture to 0 so normal rendering isn't affected
-            GL.ActiveTexture(TextureUnit.Texture0);
+            // GL 4.5 DSA binds straight to each unit; the 4.1 fallback restores unit 0 afterwards.
+            TextureBinder.BindRange(baseUnit, DepthTextures, CascadeCount);
         }
 
         /// <summary>
@@ -191,11 +186,13 @@ namespace LibRender2.ShadowMapping
         {
             for (int i = 0; i < CascadeCount; i++)
             {
-                GL.BindTexture(TextureTarget.Texture2D, DepthTextures[i]);
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureCompareMode,
-                    (int)(enabled ? TextureCompareMode.CompareRefToTexture : TextureCompareMode.None));
+                TextureBinder.SetCompareMode(DepthTextures[i], enabled);
             }
-            GL.BindTexture(TextureTarget.Texture2D, 0);
+            if (!TextureBinder.DirectStateAccess)
+            {
+                GL.BindTexture(TextureTarget.Texture2D, 0);
+            }
+            TextureBinder.ResetActiveUnit();
         }
 
         /// <summary>Allocates the float textures that receive the compute-blurred depth.</summary>
@@ -250,12 +247,7 @@ namespace LibRender2.ShadowMapping
         /// <summary>Binds all blurred-depth textures sequentially from the given texture unit.</summary>
         public void BindFilteredForReading(TextureUnit baseUnit)
         {
-            for (int i = 0; i < CascadeCount; i++)
-            {
-                GL.ActiveTexture(baseUnit + i);
-                GL.BindTexture(TextureTarget.Texture2D, FilteredTextures[i]);
-            }
-            GL.ActiveTexture(TextureUnit.Texture0);
+            TextureBinder.BindRange(baseUnit, FilteredTextures, CascadeCount);
         }
 
         public void Dispose()
