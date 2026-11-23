@@ -32,6 +32,14 @@ namespace LibRender2.ShadowMapping
 		private const int FilterImageUnit = 0;
 		private const int FilterRadius = 1;
 
+		/// <summary>
+		/// Manual PCF on a plain depth texture can only average binary comparisons, which gives
+		/// visibly quantized (coverage-like) edges. Hardware sampler2DShadow filters the comparison
+		/// results bilinearly, so it stays the shadow test until a prefilterable method (e.g. VSM)
+		/// is implemented. The compute path is kept here for that future work.
+		/// </summary>
+		private const bool UseComputeFilter = false;
+
 		/// <summary>Whether shadows are currently active.</summary>
 		public bool Enabled;
 		/// <summary>The current darkness of the shadows (0.0 to 1.0).</summary>
@@ -103,9 +111,8 @@ namespace LibRender2.ShadowMapping
 					DepthShader = new ShadowDepthShader(renderer, "shadow_depth", "shadow_depth", true);
 				}
 
-				// Select the implementation from the capabilities of the actual context. The GL 4.1
-				// depth/PCF path is the default; compute is only used after a successful canary.
-				bool supportsCompute = renderer.Capabilities != null && renderer.Capabilities.IsAtLeast(4, 3);
+				// Hardware PCF is the shadow test until a prefilterable method is validated.
+				bool supportsCompute = UseComputeFilter && renderer.Capabilities != null && renderer.Capabilities.IsAtLeast(4, 3);
 				if (!computeValidated)
 				{
 					computeAvailable = supportsCompute && ValidateComputePath();
