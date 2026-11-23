@@ -425,6 +425,7 @@ namespace LibRender2
 			Capabilities = GlCapabilities.Detect(currentHost.Platform != HostPlatform.AppleOSX);
 			fileSystem?.AppendToLogFile("[GL] Active context: " + Capabilities);
 			TextureBinder.Configure(Capabilities);
+			BufferSupport.Configure(Capabilities);
 
 			try
 			{

@@ -82,6 +82,7 @@
     <Compile Include="Objects\FaceState.cs" />
     <Compile Include="Objects\ObjectLibrary.cs" />
     <Compile Include="Objects\VisibilityUpdate.cs" />
+    <Compile Include="openGL\BufferSupport.cs" />
     <Compile Include="openGL\FrameBufferObject.cs" />
     <Compile Include="openGL\GlCapabilities.cs" />
     <Compile Include="openGL\IndexBufferObject.cs" />

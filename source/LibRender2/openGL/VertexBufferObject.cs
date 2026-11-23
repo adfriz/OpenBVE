@@ -9,11 +9,13 @@ namespace LibRender2
 	/// </summary>
 	public class VertexBufferObject : IDisposable
 	{
-		private readonly int handle;
+		private int handle;
 		private readonly LibRenderVertex[] vertexData;
 		private readonly BufferUsageHint drawType;
 		private bool disposed;
 		private readonly int vertexSize;
+		private IntPtr mapped;
+		private bool persistent;
 
 		/// <summary>
 		/// Constructor
@@ -42,14 +44,55 @@ namespace LibRender2
 
 		/// <summary>Copies the VertexData into the the VBO</summary>
 		/// <remarks>This method must be called before attempting to use the VBO</remarks>
-		internal void BufferData()
+		internal unsafe void BufferData()
 		{
+			int contentBytes = vertexData.Length * vertexSize;
+			int bytes = Math.Max(1, contentBytes);
+			if (BufferSupport.PersistentMapping && (drawType == BufferUsageHint.DynamicDraw || drawType == BufferUsageHint.StreamDraw))
+			{
+				GL.BindBuffer(BufferTarget.ArrayBuffer, handle);
+				GL.BufferStorage(BufferTarget.ArrayBuffer, bytes, IntPtr.Zero,
+					BufferStorageFlags.MapWriteBit | BufferStorageFlags.MapPersistentBit |
+					BufferStorageFlags.MapCoherentBit | BufferStorageFlags.DynamicStorageBit);
+				mapped = GL.MapBufferRange(BufferTarget.ArrayBuffer, IntPtr.Zero, bytes,
+					BufferAccessMask.MapWriteBit | BufferAccessMask.MapPersistentBit | BufferAccessMask.MapCoherentBit);
+				GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+				if (mapped != IntPtr.Zero)
+				{
+					persistent = true;
+					if (contentBytes > 0)
+					{
+						fixed (LibRenderVertex* source = vertexData)
+						{
+							System.Buffer.MemoryCopy(source, (void*)mapped, contentBytes, contentBytes);
+						}
+					}
+					return;
+				}
+				// Driver refused the mapping: the immutable store cannot be reused, so start over.
+				GL.DeleteBuffer(handle);
+				GL.GenBuffers(1, out handle);
+			}
 			GL.BufferData(BufferTarget.ArrayBuffer, new IntPtr(vertexData.Length * vertexSize), vertexData, drawType);
 		}
 
 		/// <summary>Updates the VertexData contained within the VBO</summary>
-		internal void BufferSubData(LibRenderVertex[] VertexData, int Offset = 0)
+		internal unsafe void BufferSubData(LibRenderVertex[] VertexData, int Offset = 0)
 		{
+			if (persistent)
+			{
+				// The mapped store is fixed-size; never write past its end.
+				if (VertexData.Length > vertexData.Length || Offset < 0 || VertexData.Length + Offset > vertexData.Length)
+				{
+					return;
+				}
+				int bytes = VertexData.Length * vertexSize;
+				fixed (LibRenderVertex* source = VertexData)
+				{
+					System.Buffer.MemoryCopy(source, (void*)(mapped + Offset * vertexSize), bytes, bytes);
+				}
+				return;
+			}
 			GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(Offset * vertexSize), new IntPtr(VertexData.Length * vertexSize), VertexData);
 		}
 
@@ -160,6 +203,14 @@ namespace LibRender2
 				return;
 			}
 
+			if (persistent)
+			{
+				GL.BindBuffer(BufferTarget.ArrayBuffer, handle);
+				GL.UnmapBuffer(BufferTarget.ArrayBuffer);
+				GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+				persistent = false;
+				mapped = IntPtr.Zero;
+			}
 			GL.DeleteBuffer(handle);
 			GC.SuppressFinalize(this);
 			disposed = true;
