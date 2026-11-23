@@ -9,6 +9,7 @@ namespace LibRender2
 		public static List<FrameBufferObject> Disposable = new List<FrameBufferObject>();
 
 		private readonly int handle;
+		private readonly Stack<int> previousFramebuffers = new Stack<int>();
 		private readonly Dictionary<int, I2dPixelArray> colorBuffers;
 		private I2dPixelArray depthBuffer;
 		private I2dPixelArray stencilBuffer;
@@ -24,6 +25,9 @@ namespace LibRender2
 
 		public void Bind()
 		{
+			int current;
+			GL.GetInteger(GetPName.FramebufferBinding, out current);
+			previousFramebuffers.Push(current);
 			GL.BindFramebuffer(FramebufferTarget.Framebuffer, handle);
 		}
 
@@ -110,9 +114,10 @@ namespace LibRender2
 			GL.DrawBuffers(Targets.Length, Targets);
 		}
 
+		/// <summary>Restores the framebuffer that was bound before <see cref="Bind"/>.</summary>
 		public void UnBind()
 		{
-			GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+			GL.BindFramebuffer(FramebufferTarget.Framebuffer, previousFramebuffers.Count > 0 ? previousFramebuffers.Pop() : 0);
 		}
 
 		public void BindBuffer(TargetBuffer Target, int Number = 0)

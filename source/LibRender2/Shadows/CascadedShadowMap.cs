@@ -18,21 +18,24 @@ namespace LibRender2.ShadowMapping
         /// <summary>Per-cascade shadow map resolutions (near cascades are sharper, far cascades cheaper).</summary>
         public int[] Resolutions { get; private set; }
 
+        /// <summary>The framebuffer that was bound before the shadow pass, restored on Unbind.</summary>
+        private int previousFramebuffer;
+
         /// <summary>Per-cascade FBO handles.</summary>
         public int[] FBOs { get; private set; }
 
         /// <summary>Per-cascade depth texture handles.</summary>
         public int[] DepthTextures { get; private set; }
 
-        /// <summary>
-        /// Creates cascaded shadow maps.
-        /// </summary>
         /// <summary>Per-cascade blurred-depth textures produced by the GL 4.3 compute path.</summary>
         public int[] FilteredTextures { get; private set; }
 
         /// <summary>Whether the compute filter textures have been allocated.</summary>
         public bool FilteringEnabled { get; private set; }
 
+        /// <summary>
+        /// Creates cascaded shadow maps.
+        /// </summary>
         /// <param name="cascadeCount">Number of cascades (typically 3 or 4).</param>
         /// <param name="resolution">Base resolution of the nearest cascade's depth texture.</param>
         /// <param name="autoResolution">Whether farther cascades use progressively lower resolutions.</param>
@@ -131,14 +134,17 @@ namespace LibRender2.ShadowMapping
         /// <summary>Binds a specific cascade's FBO for depth writing.</summary>
         public void BindCascadeForWriting(int cascadeIndex)
         {
+            // Remember the caller's framebuffer (the compositor's scene target, when active) so
+            // Unbind restores it rather than silently falling back to the window.
+            GL.GetInteger(GetPName.FramebufferBinding, out previousFramebuffer);
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, FBOs[cascadeIndex]);
             GL.Viewport(0, 0, Resolutions[cascadeIndex], Resolutions[cascadeIndex]);
         }
 
-        /// <summary>Unbinds shadow FBO.</summary>
+        /// <summary>Restores the framebuffer that was bound before the shadow pass.</summary>
         public void Unbind()
         {
-            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, previousFramebuffer);
         }
 
         /// <summary>

@@ -160,7 +160,9 @@ namespace RouteViewer
 	            if (Program.PreviewDirty)
 	            {
 		            Program.PreviewDirty = false;
+		            Program.Renderer.BeginFrame();
 		            Program.Renderer.RenderScene(PausedElapsed);
+		            Program.Renderer.EndFrame();
 		            TrySwapBuffers();
 	            }
 	            return;
@@ -178,7 +180,9 @@ namespace RouteViewer
 	            Program.Sounds.Update(TimeElapsed);
             }
             Program.Renderer.Lighting.UpdateLighting(Program.CurrentRoute.SecondsSinceMidnight, Program.CurrentRoute.LightDefinitions);
+            Program.Renderer.BeginFrame();
             Program.Renderer.RenderScene(TimeElapsed);
+            Program.Renderer.EndFrame();
             MessageManager.UpdateMessages(TimeElapsed);
             TrySwapBuffers();
             

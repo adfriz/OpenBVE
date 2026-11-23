@@ -133,7 +133,9 @@ namespace OpenBve
 				{
 					Thread.Sleep(10);
 				}
+				Program.Renderer.BeginFrame();
 				Program.Renderer.RenderScene(TimeElapsed, RealTimeElapsed);
+				Program.Renderer.EndFrame();
 				SwapBuffers();
 				if (MainLoop.Quit != QuitMode.ContinueGame)
 				{
@@ -270,7 +272,9 @@ namespace OpenBve
 			{
 				Program.Renderer.Lighting.UpdateLighting(Program.CurrentRoute.SecondsSinceMidnight, Program.CurrentRoute.LightDefinitions);
 			}
+			Program.Renderer.BeginFrame();
 			Program.Renderer.RenderScene(TimeElapsed, RealTimeElapsed);
+			Program.Renderer.EndFrame();
 			Program.Sounds.Update(TimeElapsed);
 			Program.Renderer.GameWindow.SwapBuffers();
 			Game.UpdateBlackBox();

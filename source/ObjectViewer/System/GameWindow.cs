@@ -311,7 +311,9 @@ namespace ObjectViewer
 				
             }
             Program.Renderer.Lighting.Initialize();
+            Program.Renderer.BeginFrame();
             Program.Renderer.RenderScene(timeElapsed);
+            Program.Renderer.EndFrame();
             SwapBuffers();
 
 			RenderRealTimeElapsed = 0.0;

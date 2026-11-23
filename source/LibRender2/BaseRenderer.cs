@@ -15,6 +15,7 @@ using LibRender2.Loadings;
 using LibRender2.MotionBlurs;
 using LibRender2.Objects;
 using LibRender2.Overlays;
+using LibRender2.PostProcessing;
 using LibRender2.Primitives;
 using LibRender2.Screens;
 using LibRender2.Shaders;
@@ -169,6 +170,20 @@ namespace LibRender2
 
 		/// <summary>Manages the Cascaded Shadow Mapping (CSM) system.</summary>
 		public Shadows Shadows;
+
+		/// <summary>Post-processing compositor for the scene frame (off by default).</summary>
+		public Compositor Compositor { get; private set; }
+
+		/// <summary>
+		/// Convenience switch for the internal colour format. SDR is the current/default mode;
+		/// HdrInternal renders the scene in 16-bit float and tone-maps it back down to SDR
+		/// (there is no HDR display output).
+		/// </summary>
+		public CompositorColorMode ColorMode
+		{
+			get { return Compositor == null ? CompositorColorMode.Sdr : Compositor.ColorMode; }
+			set { if (Compositor != null) Compositor.ColorMode = value; }
+		}
 
 		/// <summary>Whether shadows are enabled.</summary>
 		public bool ShadowsEnabled => Shadows?.Enabled ?? false;
@@ -359,6 +374,10 @@ namespace LibRender2
 		public GameWindow GameWindow;
 		/// <summary>The graphics mode in use</summary>
 		public GraphicsMode GraphicsMode;
+
+		/// <summary>OpenGL capabilities of the active context, used to select feature paths.</summary>
+		public GlCapabilities Capabilities { get; private set; }
+
 		public bool LoadLogo()
 		{
 			return currentHost.LoadTexture(ref _programLogo, OpenGlTextureWrapMode.ClampClamp);
@@ -374,10 +393,6 @@ namespace LibRender2
 
 		public Dictionary<Texture, HashSet<Vector3>> CubesToDraw = new Dictionary<Texture, HashSet<Vector3>>();
 		
-
-		/// <summary>OpenGL capabilities of the active context, used to select feature paths.</summary>
-		public GlCapabilities Capabilities { get; private set; }
-
 		protected BaseRenderer(HostInterface CurrentHost, BaseOptions CurrentOptions, FileSystem FileSystem)
 		{
 			currentHost = CurrentHost;
@@ -521,6 +536,9 @@ namespace LibRender2
 
 			Lighting.Initialize();
 			Shadows.Initialize();
+
+			Compositor = new Compositor(this);
+			Compositor.Initialize();
         }
 
 		/// <summary>
@@ -537,6 +555,8 @@ namespace LibRender2
 		/// <summary>Deinitializes the renderer</summary>
 		public void DeInitialize()
 		{
+			// Release GL objects while the context is still alive.
+			Compositor?.Dispose();
 			// Flush caches while the GL context is alive. Don't dispose GameWindow here: this runs from
 			// OnClosing inside Run(), and disposing it mid-loop throws ObjectDisposedException.
 			try
@@ -570,6 +590,18 @@ namespace LibRender2
 			VisibilityThreadShouldRun = false;
 		}
 		
+		/// <summary>Binds the compositor's offscreen target. Call before drawing the scene.</summary>
+		public void BeginFrame()
+		{
+			Compositor?.BeginFrame(Screen.Width, Screen.Height);
+		}
+
+		/// <summary>Runs the post-processing chain and presents to the window. Call before SwapBuffers.</summary>
+		public void EndFrame()
+		{
+			Compositor?.EndFrame();
+		}
+
 		/// <summary>Performs the CSM shadow depth rendering pass for all geometry.</summary>
 		protected void PerformCSMShadowPass() => Shadows.RenderPass();
 
