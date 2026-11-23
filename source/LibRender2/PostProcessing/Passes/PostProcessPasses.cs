@@ -68,27 +68,36 @@ namespace LibRender2.PostProcessing.Passes
 		}
 	}
 
-	/// <summary>Example effect pass, disabled by default. Demonstrates how effects chain.</summary>
-	public sealed class VignettePass : PostProcessPass
+	/// <summary>
+	/// Ready-made pass for any single full-screen shader. A new effect needs only a fragment shader
+	/// using the shared post.vert conventions (uniform sampler2D uSource, uniform float uStrength,
+	/// in vec2 vUv, out vec4 fragColor) and one registration line in Compositor.Initialize().
+	/// Override Execute() for effects that need extra uniforms or multiple draw calls.
+	/// </summary>
+	public class SimpleShaderPass : PostProcessPass, IDisposable
 	{
+		private readonly string shaderName;
 		private PostMaterial material;
 		private FullScreenQuad quad;
 
-		public override string Name => "Vignette";
+		public override string Name { get; }
 
-		/// <summary>Darkening amount at the corners (0..1).</summary>
-		public float Strength { get; set; } = 0.45f;
+		/// <summary>Value sent to the shader's uStrength uniform.</summary>
+		public float Strength { get; set; }
 
-		public VignettePass()
+		public SimpleShaderPass(string name, string shaderName, float strength = 0.0f, bool enabled = true)
 		{
-			Enabled = false;
+			Name = name;
+			this.shaderName = shaderName;
+			Strength = strength;
+			Enabled = enabled;
 		}
 
 		public override void Execute(BaseRenderer renderer, RenderTarget source)
 		{
 			if (material == null)
 			{
-				material = new PostMaterial(renderer, "post_vignette");
+				material = new PostMaterial(renderer, shaderName);
 				quad = new FullScreenQuad();
 			}
 			material.Activate(source.ColorTexture, Strength);
@@ -101,6 +110,14 @@ namespace LibRender2.PostProcessing.Passes
 			material = null;
 			quad?.Dispose();
 			quad = null;
+		}
+	}
+
+	/// <summary>Example effect pass, disabled by default. Demonstrates how effects chain.</summary>
+	public sealed class VignettePass : SimpleShaderPass
+	{
+		public VignettePass() : base("Vignette", "post_vignette", 0.45f, false)
+		{
 		}
 	}
 }

@@ -12,6 +12,10 @@ namespace LibRender2.PostProcessing
 	public abstract class PostProcessPass : IDisposable
 	{
 		public abstract string Name { get; }
+
+		/// <summary>Friendly label shown in options UI. Override for a nicer name than the shader id.</summary>
+		public virtual string DisplayName => Name;
+
 		public bool Enabled { get; set; } = true;
 		public abstract void Execute(BaseRenderer renderer, RenderTarget source);
 		public virtual void Resize(int width, int height)

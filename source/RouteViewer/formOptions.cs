@@ -180,7 +180,7 @@ namespace RouteViewer
                 {
                     var checkBox = new CheckBox
                     {
-                        Text = pass.Name,
+                        Text = pass.DisplayName,
                         Tag = pass,
                         Checked = pass.Enabled,
                         AutoSize = true,

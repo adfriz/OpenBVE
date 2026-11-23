@@ -109,6 +109,10 @@ namespace LibRender2.PostProcessing
 				{
 					throw new InvalidOperationException("Scene framebuffer is incomplete.");
 				}
+				// Adding an effect: add a post_*.frag asset, register it as an EmbeddedResource in
+				// LibRender2.csproj, then add one line here, e.g.:
+				//   passes.Add(new SimpleShaderPass("Brightness", "post_brightness", 0.25f));
+				// The RouteViewer F8 tab lists every registered pass automatically.
 				passes.Add(new VignettePass());
 				Available = true;
 				Enabled = false;
