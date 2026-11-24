@@ -178,9 +178,9 @@ namespace LibRender2
 		public Compositor Compositor { get; private set; }
 
 		/// <summary>
-		/// Convenience switch for the internal colour format. SDR is the current/default mode;
-		/// HdrInternal renders the scene in 16-bit float and tone-maps it back down to SDR
-		/// (there is no HDR display output).
+		/// Convenience switch for the internal colour format. HdrInternal is the default when
+		/// RGBA16F targets are available; it renders the scene in 16-bit float and tone-maps it
+		/// back down to SDR (there is no HDR display output). SDR remains a manual fallback.
 		/// </summary>
 		public CompositorColorMode ColorMode
 		{
@@ -316,6 +316,10 @@ namespace LibRender2
 		public OpenGlTexture LastBoundTexture;
 
 		internal Color32 lastColor;
+
+		/// <summary>Cached PBR tone-map ownership, so the uniform is only rewritten when it changes.</summary>
+		private Shader lastTonemapShader;
+		private bool lastTonemapInShader = true;
 
 		/// <summary>Holds the handle of the last VAO bound by openGL</summary>
 		public int lastVAO;
@@ -1799,6 +1803,13 @@ namespace LibRender2
 			
 			// lighting
 			shader.SetMaterialFlags(material.Flags);
+			bool tonemapInShader = Compositor == null || !Compositor.Enabled || Compositor.ColorMode != CompositorColorMode.HdrInternal;
+			if (!ReferenceEquals(shader, lastTonemapShader) || tonemapInShader != lastTonemapInShader)
+			{
+				lastTonemapShader = shader;
+				lastTonemapInShader = tonemapInShader;
+				shader.SetTonemapInShader(tonemapInShader);
+			}
 			if ((material.Flags & MaterialFlags.PBR) != 0)
 			{
 				// File-agnostic PBR factors (glTF, FBX, ... all land here via Material)

@@ -218,5 +218,6 @@ vec3 PBRLighting(vec3 albedoSrgb, float shadow)
 		}
 	}
 	vec3 linear = (Lo + analyticAmbient) * shadow * uBrightness + emissive;
-	return PBR_Output(linear);
+	// When the compositor owns tone mapping (internal HDR), hand it linear light.
+	return uTonemapInShader == 1 ? PBR_Output(linear) : linear;
 }

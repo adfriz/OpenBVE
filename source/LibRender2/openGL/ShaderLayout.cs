@@ -203,6 +203,9 @@ namespace LibRender2
 		/// </summary>
 		public short AlphaToCoverage = -1;
 
+		/// <summary>Handle of "uTonemapInShader" (1 when PBR must display-encode itself)</summary>
+		public short TonemapInShader = -1;
+
 		/// <summary>
 		/// The handle of "uLightSpaceMatrix0" within the shader
 		/// </summary>

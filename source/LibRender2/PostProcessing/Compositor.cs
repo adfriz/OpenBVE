@@ -242,6 +242,10 @@ namespace LibRender2.PostProcessing
 			height = Math.Max(1, renderer.Screen.Height);
 			HdrSupported = DetectHdrSupport();
 			renderer.fileSystem?.AppendToLogFile("[PostFX] Internal HDR targets " + (HdrSupported ? "available." : "unavailable - SDR only."));
+			// GLNext defaults to the internal-HDR pipeline when the driver can render RGBA16F.
+			// Manual SDR is still available through ColorMode; no buffers exist yet at this point.
+			colorMode = HdrSupported ? CompositorColorMode.HdrInternal : CompositorColorMode.Sdr;
+			renderer.fileSystem?.AppendToLogFile("[PostFX] Default colour mode: " + colorMode + ".");
 			try
 			{
 				EnsureSceneTarget();
@@ -318,7 +322,8 @@ namespace LibRender2.PostProcessing
 		/// <summary>Borrows one pooled target per intermediate chain step for this frame.</summary>
 		private void AcquireChainTargets()
 		{
-			int needed = Math.Max(0, ChainSteps() - 1);
+			// Every step writes to its own target; the final blit always goes straight to screen.
+			int needed = ChainSteps();
 			PostTargetDesc desc = new PostTargetDesc("chain", RenderTargetFormat.Sdr, PostTargetScale.Full);
 			while (buffers.Count - 1 < needed)
 			{
@@ -439,52 +444,28 @@ namespace LibRender2.PostProcessing
 				GL.Disable(EnableCap.DepthTest);
 				GL.Disable(EnableCap.CullFace);
 				GL.Disable(EnableCap.Blend);
-				int chainSteps = colorMode == CompositorColorMode.HdrInternal ? 1 : 0;
-				for (int i = 0; i < passes.Count; i++)
-				{
-					if (passes[i].Enabled)
-					{
-						chainSteps++;
-					}
-				}
-
 				int nextBuffer = 0;
 				RenderTarget current = buffers[nextBuffer++];
-				if (chainSteps == 0)
+				if (colorMode == CompositorColorMode.HdrInternal)
 				{
-					// No effects registered: blit the scene straight to the window.
-					BindScreen();
-					finalPass.Execute(renderer, current);
+					// Float scene -> display-linear SDR. gamma is encoded in the final blit.
+					BindChainTarget(false, ref nextBuffer, out RenderTarget destination);
+					toneMapPass.Execute(renderer, current);
+					current = destination;
 				}
-				else
+				for (int i = 0; i < passes.Count; i++)
 				{
-					int step = 0;
-					if (colorMode == CompositorColorMode.HdrInternal)
+					if (!passes[i].Enabled)
 					{
-						// Float scene -> tone-mapped SDR. Everything after this is 8-bit.
-						bool last = ++step == chainSteps;
-						BindChainTarget(last, ref nextBuffer, out RenderTarget destination);
-						toneMapPass.Execute(renderer, current);
-						if (!last)
-						{
-							current = destination;
-						}
+						continue;
 					}
-					for (int i = 0; i < passes.Count; i++)
-					{
-						if (!passes[i].Enabled)
-						{
-							continue;
-						}
-						bool last = ++step == chainSteps;
-						BindChainTarget(last, ref nextBuffer, out RenderTarget destination);
-						passes[i].Execute(renderer, current);
-						if (!last)
-						{
-							current = destination;
-						}
-					}
+					BindChainTarget(false, ref nextBuffer, out RenderTarget destination);
+					passes[i].Execute(renderer, current);
+					current = destination;
 				}
+				// Gamma correction is the very last step, after every effect (GPU Gems 3 ch.24).
+				finalPass.EncodeGamma = colorMode == CompositorColorMode.HdrInternal;
+				finalPass.Execute(renderer, current);
 			}
 			catch (Exception ex)
 			{

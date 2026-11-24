@@ -47,6 +47,8 @@ namespace LibRender2.PostProcessing.Passes
 	{
 		private PostMaterial material;
 		private FullScreenTriangle quad;
+		/// <summary>Encodes the final SDR image to display space. Only the final blit sets this.</summary>
+		internal bool EncodeGamma;
 
 		public override string Name => "Copy";
 
@@ -57,6 +59,7 @@ namespace LibRender2.PostProcessing.Passes
 				material = new PostMaterial(renderer, "post_copy");
 				quad = new FullScreenTriangle();
 			}
+			material.SetFloat("uEncodeGamma", EncodeGamma ? 1.0f : 0.0f);
 			material.Activate(source.ColorTexture, 0.0f);
 			quad.Draw();
 		}

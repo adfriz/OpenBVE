@@ -205,6 +205,7 @@ namespace LibRender2.Shaders
 				AtlasLocation = (short)GL.GetUniformLocation(Handle, "uAtlasLocation"),
 				AlphaFunction = (short)GL.GetUniformLocation(Handle, "uAlphaTest"),
 				AlphaToCoverage = (short)GL.GetUniformLocation(Handle, "uAlphaToCoverage"),
+				TonemapInShader = (short)GL.GetUniformLocation(Handle, "uTonemapInShader"),
 				LightSpaceMatrix0 = (short)GL.GetUniformLocation(Handle, "uLightSpaceMatrix0"),
 				LightSpaceMatrix1 = (short)GL.GetUniformLocation(Handle, "uLightSpaceMatrix1"),
 				LightSpaceMatrix2 = (short)GL.GetUniformLocation(Handle, "uLightSpaceMatrix2"),
@@ -449,6 +450,15 @@ namespace LibRender2.Shaders
 		public void SetCameraWorldPos(Vector3 position)
 		{
 			if (UniformLayout.CameraWorldPos >= 0) GL.ProgramUniform3(Handle, UniformLayout.CameraWorldPos, (float)position.X, (float)position.Y, (float)position.Z);
+		}
+
+		/// <summary>True when the PBR path must tone map itself because no compositor pass will.</summary>
+		public void SetTonemapInShader(bool enabled)
+		{
+			if (UniformLayout.TonemapInShader >= 0)
+			{
+				GL.ProgramUniform1(Handle, UniformLayout.TonemapInShader, enabled ? 1 : 0);
+			}
 		}
 
 		public override void SetFog(bool enabled)

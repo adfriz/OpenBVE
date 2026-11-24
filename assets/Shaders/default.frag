@@ -64,6 +64,8 @@ uniform float             uShadowNormalBias3;
 
 uniform vec2              uAlphaTest;
 uniform bool              uAlphaToCoverage;
+// 1 = no compositor tone map (SDR / post FX off), so PBR must display-encode itself.
+uniform int               uTonemapInShader;
 uniform sampler2D uTexture;
 
 // --- PBR metallic-roughness (glTF and friends), GLSL 410 / macOS 4.1 safe ---

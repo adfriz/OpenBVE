@@ -130,6 +130,7 @@ namespace OpenBveApi
 		Enabled,
 		Order,
 		Passes,
-		Tunings
+		Tunings,
+		Hdr
     }
 }

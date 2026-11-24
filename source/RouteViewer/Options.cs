@@ -25,6 +25,7 @@ namespace RouteViewer
 		// Post-processing chain state. Null arrays mean "not present in the cfg", so the
 		// compositor's registered defaults are kept instead of forcing an empty chain.
 		internal bool PostProcessingEnabled;
+		internal bool PostProcessingHdr = true;
 		internal string[] PostProcessingPassOrder;
 		internal string[] PostProcessingEnabledPasses;
 		internal Dictionary<string, float> PostProcessingTunings;
@@ -123,6 +124,7 @@ namespace RouteViewer
 				Builder.AppendLine();
 				Builder.AppendLine("[postProcessing]");
 				Builder.AppendLine("enabled = " + (PostProcessingEnabled ? "true" : "false"));
+				Builder.AppendLine("hdr = " + (PostProcessingHdr ? "true" : "false"));
 				Builder.AppendLine("order = " + string.Join(",", PostProcessingPassOrder ?? new string[0]));
 				Builder.AppendLine("passes = " + string.Join(",", PostProcessingEnabledPasses ?? new string[0]));
 				var tuningText = new List<string>();
@@ -261,6 +263,10 @@ namespace RouteViewer
 							{
 								Interface.CurrentOptions.PostProcessingEnabled = ppEnabled.Trim().Equals("true", StringComparison.OrdinalIgnoreCase) || ppEnabled.Trim() == "1";
 							}
+							if (block.GetValue(OptionsKey.Hdr, out string ppHdr))
+							{
+								Interface.CurrentOptions.PostProcessingHdr = ppHdr.Trim().Equals("true", StringComparison.OrdinalIgnoreCase) || ppHdr.Trim() == "1";
+							}
 							string[] order = null;
 							if (block.TryGetStringArray(OptionsKey.Order, ',', ref order))
 							{
@@ -306,6 +312,7 @@ namespace RouteViewer
 					return;
 				}
 				PostProcessingEnabled = compositor.Enabled;
+				PostProcessingHdr = compositor.ColorMode == CompositorColorMode.HdrInternal;
 				var order = new List<string>();
 				var enabled = new List<string>();
 				var tunings = new Dictionary<string, float>(StringComparer.Ordinal);
@@ -411,6 +418,9 @@ namespace RouteViewer
 						}
 					}
 				}
+				compositor.ColorMode = PostProcessingHdr && compositor.HdrSupported
+					? CompositorColorMode.HdrInternal
+					: CompositorColorMode.Sdr;
 				compositor.Enabled = PostProcessingEnabled;
 			}
 			catch

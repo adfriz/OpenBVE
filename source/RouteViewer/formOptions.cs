@@ -19,9 +19,10 @@ namespace RouteViewer
         private bool suppressSunEvents = false;
         private bool suppressShadowEvents = false;
         private CheckBox checkBoxPostProcessing;
+        private CheckBox checkBoxInternalHdr;
         private readonly List<PassUiRow> passRows = new List<PassUiRow>();
         private TableLayoutPanel postTable;
-        private const int PassStartRow = 2; // row 0 = global switch, row 1 = "Passes" heading
+        private const int PassStartRow = 3; // row 0 = global switch, row 1 = HDR mode, row 2 = "Passes" heading
 
         private sealed class PassUiRow
         {
@@ -168,9 +169,19 @@ namespace RouteViewer
             checkBoxPostProcessing = new CheckBox { AutoSize = true, Dock = DockStyle.Fill };
             table.Controls.Add(globalLabel, 0, 0);
             table.Controls.Add(checkBoxPostProcessing, 1, 0);
+
+            var hdrLabel = new Label
+            {
+                Text = "Internal HDR (float scene)",
+                AutoSize = true,
+                Dock = DockStyle.Fill
+            };
+            checkBoxInternalHdr = new CheckBox { AutoSize = true, Dock = DockStyle.Fill };
+            table.Controls.Add(hdrLabel, 0, 1);
+            table.Controls.Add(checkBoxInternalHdr, 1, 1);
             postTable = table;
 
-            int row = 1;
+            int row = 2;
             if (compositor == null || !compositor.Available)
             {
                 var unavailable = new Label
@@ -182,10 +193,13 @@ namespace RouteViewer
                 table.SetColumnSpan(unavailable, 2);
                 table.Controls.Add(unavailable, 0, row++);
                 checkBoxPostProcessing.Enabled = false;
+                checkBoxInternalHdr.Enabled = false;
             }
             else
             {
                 checkBoxPostProcessing.Checked = compositor.Enabled;
+                checkBoxInternalHdr.Checked = compositor.ColorMode == CompositorColorMode.HdrInternal;
+                checkBoxInternalHdr.Enabled = compositor.HdrSupported;
                 var heading = new Label { Text = "Passes", AutoSize = true, Font = new System.Drawing.Font(Font, System.Drawing.FontStyle.Bold) };
                 table.SetColumnSpan(heading, 2);
                 table.Controls.Add(heading, 0, row++);
@@ -199,6 +213,7 @@ namespace RouteViewer
             UpdatePostPassControls();
             RefreshPassRows();
             checkBoxPostProcessing.CheckedChanged += PostProcessingGlobal_CheckedChanged;
+            checkBoxInternalHdr.CheckedChanged += InternalHdr_CheckedChanged;
             page.Controls.Add(table);
         }
 
@@ -351,6 +366,20 @@ namespace RouteViewer
             }
             compositor.Enabled = checkBoxPostProcessing.Checked;
             UpdatePostPassControls();
+            Program.PreviewDirty = true;
+            TryPresentPreview();
+        }
+
+        private void InternalHdr_CheckedChanged(object sender, EventArgs e)
+        {
+            Compositor compositor = Program.Renderer?.Compositor;
+            if (compositor == null || !compositor.Available)
+            {
+                return;
+            }
+            compositor.ColorMode = checkBoxInternalHdr.Checked && compositor.HdrSupported
+                ? CompositorColorMode.HdrInternal
+                : CompositorColorMode.Sdr;
             Program.PreviewDirty = true;
             TryPresentPreview();
         }
