@@ -1,0 +1,131 @@
+#version 430 core
+// FidelityFX-style Single Pass Downsampler (SDR RGBA8 variant).
+// One dispatch generates the whole mip chain. Each work group reduces a 64x64
+// tile into mip levels 1..6 using LDS; a global atomic counter elects the last
+// group, which reduces those tile results into the remaining levels.
+// Wave operations are deliberately not used: they would require GL 4.5.
+// Requires GL 4.3 (compute, shared variables, atomics, coherent image stores).
+
+layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+
+uniform sampler2D uSource;
+uniform int uMipCount;
+uniform int uNumGroups;
+
+layout(rgba8, binding = 1) uniform coherent image2D uMip1;
+layout(rgba8, binding = 2) uniform coherent image2D uMip2;
+layout(rgba8, binding = 3) uniform coherent image2D uMip3;
+layout(rgba8, binding = 4) uniform coherent image2D uMip4;
+layout(rgba8, binding = 5) uniform coherent image2D uMip5;
+layout(rgba8, binding = 6) uniform coherent image2D uMip6;
+layout(rgba8, binding = 7) uniform coherent image2D uMip7;
+layout(rgba8, binding = 8) uniform coherent image2D uMip8;
+layout(rgba8, binding = 9) uniform coherent image2D uMip9;
+layout(rgba8, binding = 10) uniform coherent image2D uMip10;
+layout(rgba8, binding = 11) uniform coherent image2D uMip11;
+layout(rgba8, binding = 12) uniform coherent image2D uMip12;
+
+layout(binding = 0) uniform atomic_uint uCounter;
+
+shared vec4 partial[256];
+shared uint elected;
+
+vec4 Fetch(ivec2 p, ivec2 maxCoord)
+{
+	return texelFetch(uSource, clamp(p, ivec2(0), maxCoord), 0);
+}
+
+#define REDUCE_LEVEL(SRC, DST)                                                   \
+{                                                                                \
+	ivec2 srcSize = imageSize(SRC);                                              \
+	ivec2 halfSize = max(ivec2(1), srcSize / 2);                                 \
+	uint count = uint(halfSize.x * halfSize.y);                                  \
+	for (uint i = uint(gl_LocalInvocationIndex); i < count; i += 256u)            \
+	{                                                                            \
+		ivec2 c = ivec2(int(i) % halfSize.x, int(i) / halfSize.x);                \
+		ivec2 q = c * 2;                                                         \
+		vec4 v = 0.25 * (imageLoad(SRC, q) + imageLoad(SRC, q + ivec2(1, 0)) +   \
+		                imageLoad(SRC, q + ivec2(0, 1)) +                        \
+		                imageLoad(SRC, q + ivec2(1, 1)));                       \
+		imageStore(DST, min(c, imageSize(DST) - ivec2(1)), v);                   \
+	}                                                                            \
+	memoryBarrierImage();                                                        \
+	barrier();                                                                   \
+}
+
+void main()
+{
+	uint tid = gl_LocalInvocationIndex;
+	ivec2 xy = ivec2(int(tid % 16u), int(tid / 16u));
+	ivec2 base = ivec2(gl_WorkGroupID.xy) * 64;
+	ivec2 maxCoord = textureSize(uSource, 0) - ivec2(1);
+
+	// 256 threads cover the WHOLE 64x64 tile: each owns a 4x4 block. It emits four
+	// mip-1 pixels and one averaged mip-2 pixel in LDS. Reading only 32x32 here left
+	// holes in every mip and produced a visible 64px grid at large blur radii.
+	ivec2 p = base + xy * 4;
+	vec4 a = 0.25 * (Fetch(p, maxCoord) + Fetch(p + ivec2(1, 0), maxCoord) +
+	                 Fetch(p + ivec2(0, 1), maxCoord) + Fetch(p + ivec2(1, 1), maxCoord));
+	vec4 b = 0.25 * (Fetch(p + ivec2(2, 0), maxCoord) + Fetch(p + ivec2(3, 0), maxCoord) +
+	                 Fetch(p + ivec2(2, 1), maxCoord) + Fetch(p + ivec2(3, 1), maxCoord));
+	vec4 c = 0.25 * (Fetch(p + ivec2(0, 2), maxCoord) + Fetch(p + ivec2(1, 2), maxCoord) +
+	                 Fetch(p + ivec2(0, 3), maxCoord) + Fetch(p + ivec2(1, 3), maxCoord));
+	vec4 d = 0.25 * (Fetch(p + ivec2(2, 2), maxCoord) + Fetch(p + ivec2(3, 2), maxCoord) +
+	                 Fetch(p + ivec2(2, 3), maxCoord) + Fetch(p + ivec2(3, 3), maxCoord));
+	ivec2 m1 = base / 2 + xy * 2;
+	ivec2 lim1 = imageSize(uMip1) - ivec2(1);
+	imageStore(uMip1, min(m1, lim1), a);
+	imageStore(uMip1, min(m1 + ivec2(1, 0), lim1), b);
+	imageStore(uMip1, min(m1 + ivec2(0, 1), lim1), c);
+	imageStore(uMip1, min(m1 + ivec2(1, 1), lim1), d);
+	partial[tid] = 0.25 * (a + b + c + d); // 16x16 = mip 2
+	imageStore(uMip2, min(base / 4 + xy, imageSize(uMip2) - ivec2(1)), partial[tid]);
+	barrier();
+
+	// Fold the LDS buffer in place: mips 3..6 of this tile.
+	if ((xy.x & 1) == 0 && (xy.y & 1) == 0)
+	{
+		vec4 s = 0.25 * (partial[tid] + partial[tid + 1] + partial[tid + 16] + partial[tid + 17]);
+		partial[tid] = s;
+		imageStore(uMip3, min(base / 8 + xy / 2, imageSize(uMip3) - ivec2(1)), s);
+	}
+	barrier();
+
+	if ((xy.x & 3) == 0 && (xy.y & 3) == 0)
+	{
+		vec4 s = 0.25 * (partial[tid] + partial[tid + 2] + partial[tid + 32] + partial[tid + 34]);
+		partial[tid] = s;
+		imageStore(uMip4, min(base / 16 + xy / 4, imageSize(uMip4) - ivec2(1)), s);
+	}
+	barrier();
+
+	if ((xy.x & 7) == 0 && (xy.y & 7) == 0)
+	{
+		vec4 s = 0.25 * (partial[tid] + partial[tid + 4] + partial[tid + 64] + partial[tid + 68]);
+		partial[tid] = s;
+		imageStore(uMip5, min(base / 32 + xy / 8, imageSize(uMip5) - ivec2(1)), s);
+	}
+	barrier();
+
+	if (tid == 0u)
+	{
+		imageStore(uMip6, min(base / 64, imageSize(uMip6) - ivec2(1)), partial[0]);
+		elected = atomicCounterIncrement(uCounter);
+	}
+	barrier();
+
+	// Only one group remains to build levels 7 and up.
+	if (elected != uint(uNumGroups - 1))
+	{
+		return;
+	}
+	memoryBarrierImage();
+	barrier();
+
+	if (uMipCount >= 7) { REDUCE_LEVEL(uMip6, uMip7) }
+	if (uMipCount >= 8) { REDUCE_LEVEL(uMip7, uMip8) }
+	if (uMipCount >= 9) { REDUCE_LEVEL(uMip8, uMip9) }
+	if (uMipCount >= 10) { REDUCE_LEVEL(uMip9, uMip10) }
+	if (uMipCount >= 11) { REDUCE_LEVEL(uMip10, uMip11) }
+	if (uMipCount >= 12) { REDUCE_LEVEL(uMip11, uMip12) }
+}

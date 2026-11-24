@@ -104,6 +104,7 @@
     <Compile Include="PostProcessing\PostProcessPass.cs" />
     <Compile Include="PostProcessing\RenderTarget.cs" />
     <Compile Include="PostProcessing\RenderTargetPool.cs" />
+    <Compile Include="PostProcessing\SinglePassDownsampler.cs" />
     <Compile Include="Primitives\Button.cs" />
     <Compile Include="Primitives\Cube.cs" />
     <Compile Include="Primitives\GLControl.cs" />
@@ -154,6 +155,7 @@
     <EmbeddedResource Include="..\..\assets\Shaders\post_copy.frag" />
     <EmbeddedResource Include="..\..\assets\Shaders\post_dof.frag" />
     <EmbeddedResource Include="..\..\assets\Shaders\post_dof_composite.frag" />
+    <EmbeddedResource Include="..\..\assets\Shaders\post_spd.comp" />
     <EmbeddedResource Include="..\..\assets\Shaders\post_vignette.frag" />
     <EmbeddedResource Include="..\..\assets\Shaders\post_tonemap.frag" />
     <EmbeddedResource Include="..\..\assets\Shaders\rectangle.frag" />

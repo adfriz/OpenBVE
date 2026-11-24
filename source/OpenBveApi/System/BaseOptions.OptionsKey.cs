@@ -125,9 +125,11 @@ namespace OpenBveApi
 		ShowGround,
 		GroundHeight,
 		GroundColor,
-		// Post processing (RouteViewer)
-		PostProcessingEnabled,
-		PostProcessingOrder,
-		PostProcessingPasses
+		// Post processing (RouteViewer). Names must match the keys written to options_rv.cfg,
+		// otherwise ConfigFile rejects them and every setting falls back to its default.
+		Enabled,
+		Order,
+		Passes,
+		Tunings
     }
 }

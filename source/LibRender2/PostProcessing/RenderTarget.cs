@@ -101,6 +101,12 @@ namespace LibRender2.PostProcessing
 			ColorTexture = GL.GenTexture();
 			GL.BindTexture(TextureTarget.Texture2D, ColorTexture);
 			GL.TexImage2D(TextureTarget.Texture2D, 0, internalFormat, Width, Height, 0, pixelFormat, pixelType, IntPtr.Zero);
+			// Allocate every mip level up front. glGenerateMipmap used to do this implicitly,
+			// but the compute downsampler writes levels with imageStore and needs real storage.
+			if (Mipmaps)
+			{
+				AllocateMipStorage(internalFormat, pixelFormat, pixelType);
+			}
 			int minFilter = Mipmaps
 				? (nearest ? (int)TextureMinFilter.NearestMipmapLinear : (int)TextureMinFilter.LinearMipmapLinear)
 				: (nearest ? (int)TextureMinFilter.Nearest : (int)TextureMinFilter.Linear);
@@ -134,8 +140,10 @@ namespace LibRender2.PostProcessing
 				// A depth *texture* (rather than a renderbuffer) lets post effects read scene depth.
 				DepthTexture = GL.GenTexture();
 				GL.BindTexture(TextureTarget.Texture2D, DepthTexture);
-				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
-				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
+				// Linear depth sampling smooths the CoC ramp and removes per-pixel popping
+				// when the camera moves. It is still compared as a plain float (no shadow compare).
+				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
+				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
 				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
 				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
 				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureCompareMode, (int)TextureCompareMode.None);
@@ -147,6 +155,24 @@ namespace LibRender2.PostProcessing
 
 			GL.BindTexture(TextureTarget.Texture2D, 0);
 			GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+		}
+
+		/// <summary>Allocates mip storage level by level; works on the GL 4.1 baseline too.</summary>
+		private void AllocateMipStorage(PixelInternalFormat internalFormat,
+			OpenTK.Graphics.OpenGL.PixelFormat pixelFormat, PixelType pixelType)
+		{
+			int width = Width;
+			int height = Height;
+			int level = 1;
+			while (width > 1 || height > 1)
+			{
+				width = Math.Max(1, width / 2);
+				height = Math.Max(1, height / 2);
+				GL.TexImage2D(TextureTarget.Texture2D, level, internalFormat, width, height, 0,
+					pixelFormat, pixelType, IntPtr.Zero);
+				level++;
+			}
+			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMaxLevel, level - 1);
 		}
 
 		public bool IsComplete()

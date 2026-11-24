@@ -42,6 +42,7 @@ namespace LibRender2.PostProcessing
 		private int maxTextureUnits = -1;
 		private readonly CopyPass finalPass = new CopyPass();
 		private readonly ToneMapPass toneMapPass = new ToneMapPass();
+		private SinglePassDownsampler downsampler;
 		private CompositorColorMode colorMode = CompositorColorMode.Sdr;
 		private int width;
 		private int height;
@@ -79,6 +80,18 @@ namespace LibRender2.PostProcessing
 
 		/// <summary>Whether 16-bit float render targets are usable on this driver.</summary>
 		public bool HdrSupported { get; private set; }
+
+		/// <summary>
+		/// Builds the mip chain of an SDR RGBA8 target. Uses the GL 4.3 single-pass compute path
+		/// when available and glGenerateMipmap on the GL 4.1 baseline or after a driver failure.
+		/// </summary>
+		public void GenerateMipmaps(RenderTarget target)
+		{
+			downsampler?.Downsample(target);
+		}
+
+		/// <summary>True when mip chains are generated with the GL 4.3 compute path.</summary>
+		public bool ComputeDownsamplingAvailable => downsampler != null && downsampler.Available;
 
 		/// <summary>
 		/// Reserves consecutive texture units for a pass. Unit 0 is always the chain source and
@@ -242,6 +255,8 @@ namespace LibRender2.PostProcessing
 				// The RouteViewer F8 tab lists every registered pass automatically.
 				passes.Add(new VignettePass());
 				passes.Add(new DofPass());
+				downsampler?.Dispose();
+				downsampler = new SinglePassDownsampler(renderer);
 				Available = true;
 				Enabled = false;
 				renderer.fileSystem?.AppendToLogFile("[PostFX] Compositor ready (" + passes.Count + " registered pass(es), disabled by default).");
@@ -515,6 +530,8 @@ namespace LibRender2.PostProcessing
 			{
 				enabled = false;
 				Available = false;
+				downsampler?.Dispose();
+				downsampler = null;
 				DisposeBuffers();
 				for (int i = 0; i < passes.Count; i++)
 				{

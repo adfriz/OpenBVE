@@ -279,6 +279,27 @@ namespace RouteViewer
                         };
                         content.Controls.Add(check, 1, i);
                     }
+                    else if (tuning.Options != null)
+                    {
+                        var combo = new ComboBox
+                        {
+                            DropDownStyle = ComboBoxStyle.DropDownList,
+                            Dock = DockStyle.Fill
+                        };
+                        foreach (var option in tuning.Options)
+                        {
+                            combo.Items.Add(option);
+                        }
+                        combo.SelectedIndex = Math.Min(tuning.Options.Length - 1,
+                            Math.Max(0, (int)tuning.Get()));
+                        combo.SelectedIndexChanged += (sender2, e2) =>
+                        {
+                            tuning.Set(combo.SelectedIndex);
+                            Program.PreviewDirty = true;
+                            TryPresentPreview();
+                        };
+                        content.Controls.Add(combo, 1, i);
+                    }
                     else
                     {
                         var numeric = new SliderNumericUpDown

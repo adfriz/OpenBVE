@@ -115,6 +115,15 @@ namespace LibRender2.PostProcessing.Passes
 		}
 	}
 
+	/// <summary>Sample budget. Auto picks the count from CoC; the others fix it outright.</summary>
+	public enum DofQuality
+	{
+		Auto,
+		Low,
+		Medium,
+		High
+	}
+
 	/// <summary>
 	/// Depth of field with a golden-angle bokeh disk. The expensive gather runs at half
 	/// resolution and is composited over the full-resolution source; alpha carries coverage
@@ -124,6 +133,7 @@ namespace LibRender2.PostProcessing.Passes
 	{
 		private PostMaterial material;
 		private PostMaterial compositeMaterial;
+		private PostMaterial copyMaterial;
 		private FullScreenTriangle quad;
 		private RenderTarget halfTarget;
 		private int halfWidth;
@@ -133,9 +143,9 @@ namespace LibRender2.PostProcessing.Passes
 		private float focusRange = 120.0f;
 		private float aperture = 1.0f;
 		private float maxBlur = 8.0f;
-		private float nearBoost = 1.5f;
 		private float strength = 1.0f;
-		private bool halfResolution = false;
+		private bool halfResolution = true;
+		private DofQuality quality = DofQuality.Auto;
 
 		public override string Name => "DepthOfField";
 		public override string DisplayName => "Depth of Field";
@@ -160,11 +170,6 @@ namespace LibRender2.PostProcessing.Passes
 			get { return maxBlur; }
 			set { maxBlur = Math.Max(0.0f, value); }
 		}
-		public float NearBoost
-		{
-			get { return nearBoost; }
-			set { nearBoost = Math.Max(0.0f, value); }
-		}
 		public float Strength
 		{
 			get { return strength; }
@@ -178,6 +183,13 @@ namespace LibRender2.PostProcessing.Passes
 			set { halfResolution = value; }
 		}
 
+		/// <summary>Fixed tap budget or distance-driven selection (Auto).</summary>
+		public DofQuality Quality
+		{
+			get { return quality; }
+			set { quality = value; }
+		}
+
 		public DofPass()
 		{
 			Enabled = false;
@@ -189,8 +201,9 @@ namespace LibRender2.PostProcessing.Passes
 			new PostProcessTuning("Focus range", 1.0f, 500.0f, () => FocusRange, v => FocusRange = v),
 			new PostProcessTuning("Aperture", 0.0f, 4.0f, () => Aperture, v => Aperture = v),
 			new PostProcessTuning("Max blur (px)", 0.0f, 16.0f, () => MaxBlur, v => MaxBlur = v),
-			new PostProcessTuning("Near boost", 0.5f, 4.0f, () => NearBoost, v => NearBoost = v),
 			new PostProcessTuning("Strength", 0.0f, 1.0f, () => Strength, v => Strength = v),
+			new PostProcessTuning("Quality", new[] { "Auto", "Low (12 taps)", "Medium (24 taps)", "High (48 taps)" },
+				() => (int)Quality, v => Quality = (DofQuality)(int)v),
 			new PostProcessTuning("Half resolution", () => HalfResolution, v => HalfResolution = v)
 		};
 
@@ -208,14 +221,43 @@ namespace LibRender2.PostProcessing.Passes
 			}
 		}
 
-		private void SetUniforms(PostMaterial mat, BaseRenderer renderer, RenderTarget source)
+		/// <summary>
+		/// Copies the full-resolution scene into a pooled mipmapped target and builds its chain
+		/// through the compositor (single-pass compute on GL 4.3, glGenerateMipmap on 4.1).
+		/// The compositor already bound this pass's destination, so it is saved and restored.
+		/// </summary>
+		private RenderTarget PrepareMipSource(BaseRenderer renderer, RenderTarget source)
+		{
+			Compositor compositor = renderer.Compositor;
+			if (compositor == null || copyMaterial == null)
+			{
+				return null;
+			}
+			RenderTarget target = compositor.AcquireTarget(new PostTargetDesc("DOF mip source",
+				RenderTargetFormat.Sdr, PostTargetScale.Full, mipmaps: true));
+			int destinationFbo;
+			GL.GetInteger(GetPName.FramebufferBinding, out destinationFbo);
+			int[] viewport = new int[4];
+			GL.GetInteger(GetPName.Viewport, viewport);
+			target.Bind();
+			copyMaterial.Activate(source.ColorTexture, 0.0f);
+			quad.Draw();
+			GL.BindFramebuffer(FramebufferTarget.Framebuffer, destinationFbo);
+			GL.Viewport(viewport[0], viewport[1], viewport[2], viewport[3]);
+			compositor.GenerateMipmaps(target);
+			return target;
+		}
+
+		private void SetUniforms(PostMaterial mat, BaseRenderer renderer, RenderTarget source, int mipTexture)
 		{
 			mat.SetInt("uDepth", 1);
+			mat.SetInt("uSourceMip", 2);
+			mat.SetInt("uQuality", (int)Quality);
+			TextureBinder.Bind(2, mipTexture);
 			mat.SetFloat("uFocus", FocusDistance);
 			mat.SetFloat("uFocusRange", FocusRange);
 			mat.SetFloat("uAperture", Aperture);
 			mat.SetFloat("uMaxBlur", MaxBlur);
-			mat.SetFloat("uNearBoost", NearBoost);
 			mat.SetFloat("uNear", renderer.SceneNear);
 			mat.SetFloat("uFar", renderer.SceneFar);
 			mat.SetFloat("uTexelX", 1.0f / Math.Max(1, source.Width));
@@ -228,6 +270,7 @@ namespace LibRender2.PostProcessing.Passes
 			{
 				material = new PostMaterial(renderer, "post_dof");
 				compositeMaterial = new PostMaterial(renderer, "post_dof_composite");
+				copyMaterial = new PostMaterial(renderer, "post_copy");
 				quad = new FullScreenTriangle();
 			}
 			if (source == null)
@@ -239,6 +282,8 @@ namespace LibRender2.PostProcessing.Passes
 			{
 				return;
 			}
+			RenderTarget mipSource = PrepareMipSource(renderer, source);
+			int mipTexture = mipSource == null ? source.ColorTexture : mipSource.ColorTexture;
 
 			if (!HalfResolution)
 			{
@@ -246,7 +291,7 @@ namespace LibRender2.PostProcessing.Passes
 				material.Activate(source.ColorTexture, Strength);
 				TextureBinder.Bind(1, depthTexture);
 				material.SetFloat("uOutputCoc", 0.0f);
-				SetUniforms(material, renderer, source);
+				SetUniforms(material, renderer, source, mipTexture);
 				quad.Draw();
 				return;
 			}
@@ -267,7 +312,7 @@ namespace LibRender2.PostProcessing.Passes
 			TextureBinder.Bind(1, depthTexture);
 
 			material.SetFloat("uOutputCoc", 1.0f);
-			SetUniforms(material, renderer, source);
+			SetUniforms(material, renderer, source, mipTexture);
 			quad.Draw();
 
 			// 2) Upsample + composite at the destination's full resolution.
@@ -285,6 +330,8 @@ namespace LibRender2.PostProcessing.Passes
 			material = null;
 			compositeMaterial?.Dispose();
 			compositeMaterial = null;
+			copyMaterial?.Dispose();
+			copyMaterial = null;
 			halfTarget?.Dispose();
 			halfTarget = null;
 			quad?.Dispose();

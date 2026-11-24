@@ -8,7 +8,9 @@ namespace LibRender2.PostProcessing
 	{
 		Full,
 		Half,
-		Quarter
+		Quarter,
+		Eighth,
+		Sixteenth
 	}
 
 	/// <summary>
@@ -45,6 +47,8 @@ namespace LibRender2.PostProcessing
 			{
 				case PostTargetScale.Half: return Math.Max(1, (int)Math.Round(sceneWidth * 0.5f));
 				case PostTargetScale.Quarter: return Math.Max(1, (int)Math.Round(sceneWidth * 0.25f));
+				case PostTargetScale.Eighth: return Math.Max(1, (int)Math.Round(sceneWidth * 0.125f));
+				case PostTargetScale.Sixteenth: return Math.Max(1, (int)Math.Round(sceneWidth * 0.0625f));
 				default: return Math.Max(1, sceneWidth);
 			}
 		}
@@ -55,6 +59,8 @@ namespace LibRender2.PostProcessing
 			{
 				case PostTargetScale.Half: return Math.Max(1, (int)Math.Round(sceneHeight * 0.5f));
 				case PostTargetScale.Quarter: return Math.Max(1, (int)Math.Round(sceneHeight * 0.25f));
+				case PostTargetScale.Eighth: return Math.Max(1, (int)Math.Round(sceneHeight * 0.125f));
+				case PostTargetScale.Sixteenth: return Math.Max(1, (int)Math.Round(sceneHeight * 0.0625f));
 				default: return Math.Max(1, sceneHeight);
 			}
 		}
@@ -119,12 +125,16 @@ namespace LibRender2.PostProcessing
 			              new PostTargetDesc("half", RenderTargetFormat.Sdr, PostTargetScale.Half).Height(sceneHeight);
 			string quarter = new PostTargetDesc("quarter", RenderTargetFormat.Sdr, PostTargetScale.Quarter).Width(sceneWidth) + "x" +
 			                 new PostTargetDesc("quarter", RenderTargetFormat.Sdr, PostTargetScale.Quarter).Height(sceneHeight);
+			string eighth = new PostTargetDesc("eighth", RenderTargetFormat.Sdr, PostTargetScale.Eighth).Width(sceneWidth) + "x" +
+			                new PostTargetDesc("eighth", RenderTargetFormat.Sdr, PostTargetScale.Eighth).Height(sceneHeight);
+			string sixteenth = new PostTargetDesc("sixteenth", RenderTargetFormat.Sdr, PostTargetScale.Sixteenth).Width(sceneWidth) + "x" +
+			                   new PostTargetDesc("sixteenth", RenderTargetFormat.Sdr, PostTargetScale.Sixteenth).Height(sceneHeight);
 			List<string> dead = new List<string>();
 			foreach (KeyValuePair<string, Stack<RenderTarget>> entry in available)
 			{
 				// Key layout: "WxH|Format|flags". Format and flags do not affect the decision.
 				string size = entry.Key.Substring(0, entry.Key.IndexOf('|'));
-				if (size == full || size == half || size == quarter)
+				if (size == full || size == half || size == quarter || size == eighth || size == sixteenth)
 				{
 					continue;
 				}

@@ -27,6 +27,7 @@ namespace RouteViewer
 		internal bool PostProcessingEnabled;
 		internal string[] PostProcessingPassOrder;
 		internal string[] PostProcessingEnabledPasses;
+		internal Dictionary<string, float> PostProcessingTunings;
 
 		/// <summary>
 		/// The mode of optimization to be performed on an object
@@ -124,6 +125,15 @@ namespace RouteViewer
 				Builder.AppendLine("enabled = " + (PostProcessingEnabled ? "true" : "false"));
 				Builder.AppendLine("order = " + string.Join(",", PostProcessingPassOrder ?? new string[0]));
 				Builder.AppendLine("passes = " + string.Join(",", PostProcessingEnabledPasses ?? new string[0]));
+				var tuningText = new List<string>();
+				if (PostProcessingTunings != null)
+				{
+					foreach (var pair in PostProcessingTunings)
+					{
+						tuningText.Add(pair.Key + "=" + pair.Value.ToString(Culture));
+					}
+				}
+				Builder.AppendLine("tunings = " + string.Join(";", tuningText.ToArray()));
 				File.WriteAllText(fileName, Builder.ToString(), new System.Text.UTF8Encoding(true));
 			}
 			catch
@@ -247,19 +257,37 @@ namespace RouteViewer
 							}
 							break;
 					case OptionsSection.PostProcessing:
-							if (block.GetValue(OptionsKey.PostProcessingEnabled, out string ppEnabled))
+							if (block.GetValue(OptionsKey.Enabled, out string ppEnabled))
 							{
 								Interface.CurrentOptions.PostProcessingEnabled = ppEnabled.Trim().Equals("true", StringComparison.OrdinalIgnoreCase) || ppEnabled.Trim() == "1";
 							}
 							string[] order = null;
-							if (block.TryGetStringArray(OptionsKey.PostProcessingOrder, ',', ref order))
+							if (block.TryGetStringArray(OptionsKey.Order, ',', ref order))
 							{
 								Interface.CurrentOptions.PostProcessingPassOrder = order;
 							}
 							string[] enabledPasses = null;
-							if (block.TryGetStringArray(OptionsKey.PostProcessingPasses, ',', ref enabledPasses))
+							if (block.TryGetStringArray(OptionsKey.Passes, ',', ref enabledPasses))
 							{
 								Interface.CurrentOptions.PostProcessingEnabledPasses = enabledPasses;
+							}
+							if (block.GetValue(OptionsKey.Tunings, out string tuningText))
+							{
+								var tunings = new Dictionary<string, float>(StringComparer.Ordinal);
+								foreach (string entry in tuningText.Split(';'))
+								{
+									int equals = entry.IndexOf('=');
+									if (equals < 1)
+									{
+										continue;
+									}
+									float value;
+									if (float.TryParse(entry.Substring(equals + 1), NumberStyles.Float, CultureInfo.InvariantCulture, out value))
+									{
+										tunings[entry.Substring(0, equals)] = value;
+									}
+								}
+								Interface.CurrentOptions.PostProcessingTunings = tunings;
 							}
 							break;
 					}
@@ -280,6 +308,7 @@ namespace RouteViewer
 				PostProcessingEnabled = compositor.Enabled;
 				var order = new List<string>();
 				var enabled = new List<string>();
+				var tunings = new Dictionary<string, float>(StringComparer.Ordinal);
 				foreach (PostProcessPass pass in compositor.Passes)
 				{
 					order.Add(pass.Name);
@@ -287,9 +316,23 @@ namespace RouteViewer
 					{
 						enabled.Add(pass.Name);
 					}
+					IList<PostProcessTuning> passTunings = pass.Tunings;
+					if (passTunings == null)
+					{
+						continue;
+					}
+					foreach (PostProcessTuning tuning in passTunings)
+					{
+						float value = tuning.Get();
+						if (!float.IsNaN(value) && !float.IsInfinity(value))
+						{
+							tunings[pass.Name + "." + tuning.Name] = value;
+						}
+					}
 				}
 				PostProcessingPassOrder = order.ToArray();
 				PostProcessingEnabledPasses = enabled.ToArray();
+				PostProcessingTunings = tunings;
 			}
 			catch
 			{
@@ -342,6 +385,30 @@ namespace RouteViewer
 					foreach (PostProcessPass pass in compositor.Passes)
 					{
 						pass.Enabled = enabled.Contains(pass.Name);
+					}
+				}
+				if (PostProcessingTunings != null)
+				{
+					foreach (PostProcessPass pass in compositor.Passes)
+					{
+						IList<PostProcessTuning> passTunings = pass.Tunings;
+						if (passTunings == null)
+						{
+							continue;
+						}
+						foreach (PostProcessTuning tuning in passTunings)
+						{
+							float value;
+							if (!PostProcessingTunings.TryGetValue(pass.Name + "." + tuning.Name, out value))
+							{
+								continue;
+							}
+							if (float.IsNaN(value) || float.IsInfinity(value))
+							{
+								continue;
+							}
+							tuning.Set(Math.Min(tuning.Max, Math.Max(tuning.Min, value)));
+						}
 					}
 				}
 				compositor.Enabled = PostProcessingEnabled;

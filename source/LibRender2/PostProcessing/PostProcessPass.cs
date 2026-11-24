@@ -41,18 +41,26 @@ namespace LibRender2.PostProcessing
 		public Action<float> Set { get; }
 		/// <summary>True when the UI should show a checkbox instead of a numeric slider.</summary>
 		public bool IsBoolean { get; }
+		/// <summary>When set, the UI shows a dropdown of these names instead of a numeric slider.</summary>
+		public string[] Options { get; }
 
 		public PostProcessTuning(string name, float min, float max, Func<float> get, Action<float> set)
-			: this(name, min, max, get, set, false)
+			: this(name, min, max, get, set, false, null)
 		{
 		}
 
 		public PostProcessTuning(string name, Func<bool> get, Action<bool> set)
-			: this(name, 0.0f, 1.0f, () => get() ? 1.0f : 0.0f, v => set(v > 0.5f), true)
+			: this(name, 0.0f, 1.0f, () => get() ? 1.0f : 0.0f, v => set(v > 0.5f), true, null)
 		{
 		}
 
-		private PostProcessTuning(string name, float min, float max, Func<float> get, Action<float> set, bool isBoolean)
+		public PostProcessTuning(string name, string[] options, Func<float> get, Action<float> set)
+			: this(name, 0.0f, Math.Max(0, options.Length - 1), get, set, false, options)
+		{
+		}
+
+		private PostProcessTuning(string name, float min, float max, Func<float> get, Action<float> set,
+			bool isBoolean, string[] options)
 		{
 			Name = name;
 			Min = min;
@@ -60,6 +68,7 @@ namespace LibRender2.PostProcessing
 			Get = get;
 			Set = set;
 			IsBoolean = isBoolean;
+			Options = options;
 		}
 	}
 
