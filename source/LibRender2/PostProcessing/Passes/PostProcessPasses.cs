@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using OpenTK.Graphics.OpenGL;
 
@@ -191,7 +191,7 @@ namespace LibRender2.PostProcessing.Passes
 			new PostProcessTuning("Max blur (px)", 0.0f, 16.0f, () => MaxBlur, v => MaxBlur = v),
 			new PostProcessTuning("Near boost", 0.5f, 4.0f, () => NearBoost, v => NearBoost = v),
 			new PostProcessTuning("Strength", 0.0f, 1.0f, () => Strength, v => Strength = v),
-			new PostProcessTuning("Half resolution", 0.0f, 1.0f, () => HalfResolution ? 1.0f : 0.0f, v => HalfResolution = v > 0.5f)
+			new PostProcessTuning("Half resolution", () => HalfResolution, v => HalfResolution = v)
 		};
 
 		private void EnsureHalfTarget(RenderTarget source)

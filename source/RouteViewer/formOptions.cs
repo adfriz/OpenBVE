@@ -262,23 +262,42 @@ namespace RouteViewer
                 {
                     var tuning = tunings[i];
                     var label = new Label { Text = tuning.Name + ":", AutoSize = true, Dock = DockStyle.Fill };
-                    var numeric = new SliderNumericUpDown
-                    {
-                        Minimum = (decimal)tuning.Min,
-                        Maximum = (decimal)tuning.Max,
-                        DecimalPlaces = 2,
-                        Increment = Math.Max(0.01m, (decimal)(tuning.Max - tuning.Min) / 100m),
-                        Dock = DockStyle.Fill,
-                        Value = (decimal)Math.Min(tuning.Max, Math.Max(tuning.Min, tuning.Get()))
-                    };
-                    numeric.ValueChanged += (sender2, e2) =>
-                    {
-                        tuning.Set((float)numeric.Value);
-                        Program.PreviewDirty = true;
-                        TryPresentPreview();
-                    };
                     content.Controls.Add(label, 0, i);
-                    content.Controls.Add(numeric, 1, i);
+                    if (tuning.IsBoolean)
+                    {
+                        var check = new CheckBox
+                        {
+                            Checked = tuning.Get() > 0.5f,
+                            AutoSize = true,
+                            Dock = DockStyle.Fill
+                        };
+                        check.CheckedChanged += (sender2, e2) =>
+                        {
+                            tuning.Set(check.Checked ? 1.0f : 0.0f);
+                            Program.PreviewDirty = true;
+                            TryPresentPreview();
+                        };
+                        content.Controls.Add(check, 1, i);
+                    }
+                    else
+                    {
+                        var numeric = new SliderNumericUpDown
+                        {
+                            Minimum = (decimal)tuning.Min,
+                            Maximum = (decimal)tuning.Max,
+                            DecimalPlaces = 2,
+                            Increment = Math.Max(0.01m, (decimal)(tuning.Max - tuning.Min) / 100m),
+                            Dock = DockStyle.Fill,
+                            Value = (decimal)Math.Min(tuning.Max, Math.Max(tuning.Min, tuning.Get()))
+                        };
+                        numeric.ValueChanged += (sender2, e2) =>
+                        {
+                            tuning.Set((float)numeric.Value);
+                            Program.PreviewDirty = true;
+                            TryPresentPreview();
+                        };
+                        content.Controls.Add(numeric, 1, i);
+                    }
                 }
             }
 

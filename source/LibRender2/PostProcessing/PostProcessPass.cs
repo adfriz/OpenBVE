@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using LibRender2.Shaders;
+using OpenTK;
 using OpenTK.Graphics.OpenGL;
 
 namespace LibRender2.PostProcessing
@@ -30,7 +31,7 @@ namespace LibRender2.PostProcessing
 		public virtual IList<PostProcessTuning> Tunings => null;
 	}
 
-	/// <summary>One slider-able parameter of a post-processing pass.</summary>
+	/// <summary>One user-tuneable parameter of a post-processing pass.</summary>
 	public sealed class PostProcessTuning
 	{
 		public string Name { get; }
@@ -38,14 +39,27 @@ namespace LibRender2.PostProcessing
 		public float Max { get; }
 		public Func<float> Get { get; }
 		public Action<float> Set { get; }
+		/// <summary>True when the UI should show a checkbox instead of a numeric slider.</summary>
+		public bool IsBoolean { get; }
 
 		public PostProcessTuning(string name, float min, float max, Func<float> get, Action<float> set)
+			: this(name, min, max, get, set, false)
+		{
+		}
+
+		public PostProcessTuning(string name, Func<bool> get, Action<bool> set)
+			: this(name, 0.0f, 1.0f, () => get() ? 1.0f : 0.0f, v => set(v > 0.5f), true)
+		{
+		}
+
+		private PostProcessTuning(string name, float min, float max, Func<float> get, Action<float> set, bool isBoolean)
 		{
 			Name = name;
 			Min = min;
 			Max = max;
 			Get = get;
 			Set = set;
+			IsBoolean = isBoolean;
 		}
 	}
 
@@ -86,6 +100,52 @@ namespace LibRender2.PostProcessing
 			if (location != -1)
 			{
 				GL.ProgramUniform1(shader.Handle, location, value);
+			}
+		}
+
+		internal void SetFloatArray(string name, float[] values)
+		{
+			int location = Location(name);
+			if (location != -1 && values != null && values.Length > 0)
+			{
+				GL.ProgramUniform1(shader.Handle, location, values.Length, values);
+			}
+		}
+
+		internal void SetVec2(string name, Vector2 value)
+		{
+			int location = Location(name);
+			if (location != -1)
+			{
+				GL.ProgramUniform2(shader.Handle, location, value.X, value.Y);
+			}
+		}
+
+		internal void SetVec3(string name, Vector3 value)
+		{
+			int location = Location(name);
+			if (location != -1)
+			{
+				GL.ProgramUniform3(shader.Handle, location, value.X, value.Y, value.Z);
+			}
+		}
+
+		internal void SetVec4(string name, Vector4 value)
+		{
+			int location = Location(name);
+			if (location != -1)
+			{
+				GL.ProgramUniform4(shader.Handle, location, value.X, value.Y, value.Z, value.W);
+			}
+		}
+
+		/// <summary>Sets a mat4 uniform, e.g. a previous-frame view-projection for temporal effects.</summary>
+		internal void SetMatrix4(string name, ref Matrix4 value)
+		{
+			int location = Location(name);
+			if (location != -1)
+			{
+				GL.ProgramUniformMatrix4(shader.Handle, location, false, ref value);
 			}
 		}
 

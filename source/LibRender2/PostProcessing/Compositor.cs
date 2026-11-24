@@ -22,9 +22,24 @@ namespace LibRender2.PostProcessing
 	/// </summary>
 	public sealed class Compositor : IDisposable
 	{
+		/// <summary>A target created by a pass, with the scale used to keep it in sync with the window.</summary>
+		private sealed class OwnedTarget
+		{
+			public RenderTarget Target;
+			public float ScaleX;
+			public float ScaleY;
+		}
+
 		private readonly BaseRenderer renderer;
 		private readonly List<PostProcessPass> passes = new List<PostProcessPass>();
 		private readonly List<RenderTarget> buffers = new List<RenderTarget>();
+		private readonly RenderTargetPool pool = new RenderTargetPool();
+		private readonly List<RenderTarget> frameTargets = new List<RenderTarget>();
+		private readonly List<PostHistory> histories = new List<PostHistory>();
+		private readonly List<OwnedTarget> ownedTargets = new List<OwnedTarget>();
+		private int frameNumber;
+		private int nextTextureUnit = 2;
+		private int maxTextureUnits = -1;
 		private readonly CopyPass finalPass = new CopyPass();
 		private readonly ToneMapPass toneMapPass = new ToneMapPass();
 		private CompositorColorMode colorMode = CompositorColorMode.Sdr;
@@ -51,11 +66,120 @@ namespace LibRender2.PostProcessing
 		/// <summary>The ordered pass chain. Insert plugins/effects here.</summary>
 		public IList<PostProcessPass> Passes => passes;
 
+		/// <summary>Texture unit reserved for the pass chain's source texture.</summary>
+		public const int SourceTextureUnit = 0;
+		/// <summary>Texture unit conventionally used for the scene depth texture.</summary>
+		public const int DepthTextureUnit = 1;
+
 		/// <summary>Depth texture of the scene target, readable by effects such as depth of field.</summary>
 		public int SceneDepthTexture => buffers.Count > 0 ? buffers[0].DepthTexture : 0;
 
+		/// <summary>Frame counter used by temporal effects when advancing their history.</summary>
+		public int FrameNumber => frameNumber;
+
 		/// <summary>Whether 16-bit float render targets are usable on this driver.</summary>
 		public bool HdrSupported { get; private set; }
+
+		/// <summary>
+		/// Reserves consecutive texture units for a pass. Unit 0 is always the chain source and
+		/// unit 1 is conventionally depth; this hands out units 2 and up so multi-input effects
+		/// cannot silently overwrite each other's samplers.
+		/// </summary>
+		public int ReserveTextureUnits(int count)
+		{
+			if (count < 1)
+			{
+				return SourceTextureUnit;
+			}
+			if (maxTextureUnits < 0)
+			{
+				int value;
+				GL.GetInteger(GetPName.MaxTextureImageUnits, out value);
+				maxTextureUnits = value > 0 ? value : 8;
+			}
+			if (nextTextureUnit + count > maxTextureUnits)
+			{
+				renderer.fileSystem?.AppendToLogFile("[PostFX] Texture units exhausted; reusing depth unit.");
+				return DepthTextureUnit;
+			}
+			int first = nextTextureUnit;
+			nextTextureUnit += count;
+			return first;
+		}
+
+		/// <summary>
+		/// Creates a render target owned by the compositor. It is resized with the window using
+		/// the given scale and disposed with the compositor, so passes only need to keep the handle.
+		/// </summary>
+		public RenderTarget CreateTarget(float scaleX, float scaleY, RenderTargetFormat format = RenderTargetFormat.Sdr,
+			bool withDepth = false, bool mipmaps = false, bool nearest = false)
+		{
+			scaleX = Math.Max(0.01f, scaleX);
+			scaleY = Math.Max(0.01f, scaleY);
+			RenderTarget target = new RenderTarget(Scaled(scaleX, width), Scaled(scaleY, height), withDepth, format, mipmaps, nearest);
+			ownedTargets.Add(new OwnedTarget { Target = target, ScaleX = scaleX, ScaleY = scaleY });
+			return target;
+		}
+
+		/// <summary>Releases a target previously returned by <see cref="CreateTarget"/>.</summary>
+		public void ReleaseTarget(RenderTarget target)
+		{
+			if (target == null)
+			{
+				return;
+			}
+			for (int i = ownedTargets.Count - 1; i >= 0; i--)
+			{
+				if (ownedTargets[i].Target == target)
+				{
+					ownedTargets.RemoveAt(i);
+					break;
+				}
+			}
+			target.Dispose();
+		}
+
+		/// <summary>
+		/// Borrows a target from the shared pool for the current frame. It is returned
+		/// automatically at the end of <see cref="EndFrame"/>, so a pass must not keep it
+		/// across frames. Use <see cref="CreateTarget"/> for persistent targets.
+		/// </summary>
+		public RenderTarget AcquireTarget(PostTargetDesc desc)
+		{
+			RenderTarget target = pool.Acquire(desc, width, height);
+			frameTargets.Add(target);
+			return target;
+		}
+
+		/// <summary>
+		/// Gets a persistent two-target history for a temporal effect. The compositor advances
+		/// and resizes it each frame; the pass writes <see cref="PostHistory.Current"/> and calls
+		/// <see cref="PostHistory.MarkWritten"/> after a successful resolve.
+		/// </summary>
+		public PostHistory GetHistory(PostTargetDesc desc)
+		{
+			PostHistory history = new PostHistory(pool, desc, width, height);
+			histories.Add(history);
+			return history;
+		}
+
+		private int Scaled(float scale, int extent)
+		{
+			return Math.Max(1, (int)Math.Round(extent * scale));
+		}
+
+		private int ChainSteps()
+		{
+			int steps = colorMode == CompositorColorMode.HdrInternal ? 1 : 0;
+			for (int i = 0; i < passes.Count; i++)
+			{
+				if (passes[i].Enabled)
+				{
+					steps++;
+				}
+			}
+			return steps;
+		}
 
 		/// <summary>
 		/// Switches between the current SDR pipeline and internal HDR. Switching is a no-op
@@ -107,7 +231,7 @@ namespace LibRender2.PostProcessing
 			renderer.fileSystem?.AppendToLogFile("[PostFX] Internal HDR targets " + (HdrSupported ? "available." : "unavailable - SDR only."));
 			try
 			{
-				EnsureBuffers();
+				EnsureSceneTarget();
 				if (buffers[0] == null || !buffers[0].IsComplete())
 				{
 					throw new InvalidOperationException("Scene framebuffer is incomplete.");
@@ -157,30 +281,58 @@ namespace LibRender2.PostProcessing
 			}
 		}
 
-		/// <summary>Allocates the scene target plus one target per active chain step.</summary>
-		private void EnsureBuffers()
+		/// <summary>The scene target is persistent; only intermediate targets are pooled.</summary>
+		private void EnsureSceneTarget()
 		{
-			// The scene target is always needed. Every chain step except the last needs an
-			// intermediate target; the last step writes straight to the window.
-			int chainSteps = colorMode == CompositorColorMode.HdrInternal ? 1 : 0;
-			for (int i = 0; i < passes.Count; i++)
+			bool hdr = colorMode == CompositorColorMode.HdrInternal;
+			if (buffers.Count == 0)
 			{
-				if (passes[i].Enabled)
-				{
-					chainSteps++;
-				}
+				buffers.Add(new RenderTarget(width, height, true, hdr));
 			}
-			int needed = Math.Max(1, chainSteps);
-			while (buffers.Count < needed)
+			else if (buffers[0].Hdr != hdr)
 			{
-				bool isScene = buffers.Count == 0;
-				buffers.Add(new RenderTarget(width, height, isScene,
-					isScene && colorMode == CompositorColorMode.HdrInternal));
+				buffers[0].Dispose();
+				buffers[0] = new RenderTarget(width, height, true, hdr);
 			}
-			for (int i = 0; i < buffers.Count; i++)
+			else
 			{
-				buffers[i].Resize(width, height);
+				buffers[0].Resize(width, height);
 			}
+		}
+
+		/// <summary>Borrows one pooled target per intermediate chain step for this frame.</summary>
+		private void AcquireChainTargets()
+		{
+			int needed = Math.Max(0, ChainSteps() - 1);
+			PostTargetDesc desc = new PostTargetDesc("chain", RenderTargetFormat.Sdr, PostTargetScale.Full);
+			while (buffers.Count - 1 < needed)
+			{
+				buffers.Add(pool.Acquire(desc, width, height));
+			}
+			while (buffers.Count - 1 > needed)
+			{
+				RenderTarget extra = buffers[buffers.Count - 1];
+				buffers.RemoveAt(buffers.Count - 1);
+				pool.Release(extra);
+			}
+		}
+
+		/// <summary>Returns every per-frame target to the pool.</summary>
+		private void ReleaseFrameTargets()
+		{
+			for (int i = 1; i < buffers.Count; i++)
+			{
+				pool.Release(buffers[i]);
+			}
+			if (buffers.Count > 1)
+			{
+				buffers.RemoveRange(1, buffers.Count - 1);
+			}
+			for (int i = 0; i < frameTargets.Count; i++)
+			{
+				pool.Release(frameTargets[i]);
+			}
+			frameTargets.Clear();
 		}
 
 		/// <summary>Binds the offscreen scene target. Call before the scene is drawn.</summary>
@@ -190,25 +342,42 @@ namespace LibRender2.PostProcessing
 			{
 				return;
 			}
-			// Rebuild after a colour-mode switch or a change in the enabled pass set.
-			EnsureBuffers();
+			// A previous frame might have ended early; never hand out the same target twice.
+			ReleaseFrameTargets();
+			EnsureSceneTarget();
 			if (frameWidth != width || frameHeight != height)
 			{
 				width = frameWidth;
 				height = frameHeight;
-				EnsureBuffers();
+				EnsureSceneTarget();
 				for (int i = 0; i < passes.Count; i++)
 				{
 					passes[i].Resize(width, height);
 				}
+				for (int i = 0; i < ownedTargets.Count; i++)
+				{
+					OwnedTarget owned = ownedTargets[i];
+					owned.Target.Resize(Scaled(owned.ScaleX, width), Scaled(owned.ScaleY, height));
+				}
+				for (int i = 0; i < histories.Count; i++)
+				{
+					histories[i].Resize(width, height);
+				}
+				pool.Trim(width, height);
 			}
+			frameNumber++;
+			for (int i = 0; i < histories.Count; i++)
+			{
+				histories[i].Advance(frameNumber);
+			}
+			AcquireChainTargets();
 			buffers[0].Bind();
 			if (!loggedFrame)
 			{
 				loggedFrame = true;
 				renderer.fileSystem?.AppendToLogFile("[PostFX] Scene target FBO=" + buffers[0].Framebuffer +
 					" texture=" + buffers[0].ColorTexture + " targets=" + buffers.Count +
-					" err=" + GL.GetError());
+					" pooled=" + frameTargets.Count + " err=" + GL.GetError());
 			}
 		}
 
@@ -249,8 +418,6 @@ namespace LibRender2.PostProcessing
 			bool blend = GL.IsEnabled(EnableCap.Blend);
 			try
 			{
-				// Passes may have been enabled/disabled since the last frame.
-				EnsureBuffers();
 				// Full-screen passes must not inherit scene depth/cull/blend state: a depth test
 				// against a target without a depth attachment, or SrcAlpha blending against an
 				// empty destination, silently turns the chain black.
@@ -311,7 +478,9 @@ namespace LibRender2.PostProcessing
 			}
 			finally
 			{
+				ReleaseFrameTargets();
 				GL.BindVertexArray(0);
+				TextureBinder.ResetActiveUnit();
 				GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
 				GL.Viewport(0, 0, width, height);
 				if (depthTest) GL.Enable(EnableCap.DepthTest); else GL.Disable(EnableCap.DepthTest);
@@ -324,11 +493,20 @@ namespace LibRender2.PostProcessing
 
 		private void DisposeBuffers()
 		{
-			for (int i = 0; i < buffers.Count; i++)
+			if (buffers.Count > 0)
 			{
-				buffers[i].Dispose();
+				buffers[0].Dispose();
+			}
+			for (int i = 1; i < buffers.Count; i++)
+			{
+				pool.Release(buffers[i]);
 			}
 			buffers.Clear();
+			for (int i = 0; i < frameTargets.Count; i++)
+			{
+				pool.Release(frameTargets[i]);
+			}
+			frameTargets.Clear();
 		}
 
 		public void Dispose()
@@ -343,6 +521,17 @@ namespace LibRender2.PostProcessing
 					passes[i].Dispose();
 				}
 				passes.Clear();
+				for (int i = 0; i < ownedTargets.Count; i++)
+				{
+					ownedTargets[i].Target.Dispose();
+				}
+				ownedTargets.Clear();
+				for (int i = 0; i < histories.Count; i++)
+				{
+					histories[i].Dispose();
+				}
+				histories.Clear();
+				pool.Dispose();
 				toneMapPass.Dispose();
 				finalPass.Dispose();
 				disposed = true;

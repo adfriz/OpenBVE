@@ -103,6 +103,7 @@
     <Compile Include="PostProcessing\Passes\PostProcessPasses.cs" />
     <Compile Include="PostProcessing\PostProcessPass.cs" />
     <Compile Include="PostProcessing\RenderTarget.cs" />
+    <Compile Include="PostProcessing\RenderTargetPool.cs" />
     <Compile Include="Primitives\Button.cs" />
     <Compile Include="Primitives\Cube.cs" />
     <Compile Include="Primitives\GLControl.cs" />
