@@ -152,58 +152,39 @@ namespace Plugin {
 		private byte[] GetRawBitmapData(Bitmap bitmap, out int width, out int height)
 		{
 			Rectangle rect = new Rectangle(0, 0, bitmap.Width, bitmap.Height);
-			/* 
-			 * If the bitmap format is not already 32-bit BGRA,
-			 * then convert it to 32-bit BGRA.
-			 */
+			// Caller owns bitmap; only converted is disposed.
+			Bitmap source = bitmap;
+			Bitmap converted = null;
 			if (bitmap.PixelFormat != PixelFormat.Format32bppArgb) {
-				Bitmap compatibleBitmap = new Bitmap(bitmap.Width, bitmap.Height, PixelFormat.Format32bppArgb);
-				Graphics graphics = Graphics.FromImage(compatibleBitmap);
-				graphics.DrawImage(bitmap, rect, rect, GraphicsUnit.Pixel);
-				graphics.Dispose();
-				bitmap.Dispose();
-				bitmap = compatibleBitmap;
+				converted = new Bitmap(bitmap.Width, bitmap.Height, PixelFormat.Format32bppArgb);
+				using (Graphics graphics = Graphics.FromImage(converted))
+					graphics.DrawImage(bitmap, rect, rect, GraphicsUnit.Pixel);
+				source = converted;
 			}
-			/*
-			 * Extract the raw bitmap data.
-			 */
-			BitmapData data = bitmap.LockBits(rect, ImageLockMode.ReadOnly, bitmap.PixelFormat);
-			if (data.Stride == 4 * data.Width) {
-				/*
-				 * Copy the data from the bitmap
-				 * to the array in BGRA format.
-				 */
-				byte[] raw = new byte[data.Stride * data.Height];
-				System.Runtime.InteropServices.Marshal.Copy(data.Scan0, raw, 0, data.Stride * data.Height);
-				bitmap.UnlockBits(data);
-				width = bitmap.Width;
-				height = bitmap.Height;
-				
-				/*
-				 * Change the byte order from BGRA to RGBA.
-				 */
-				for (int i = 0; i < raw.Length; i += 4) {
-					byte temp = raw[i];
-					raw[i] = raw[i + 2];
-					raw[i + 2] = temp;
+			BitmapData data = source.LockBits(rect, ImageLockMode.ReadOnly, source.PixelFormat);
+			try {
+				if (data.Stride != 4 * data.Width) {
+					CurrentHost.ReportProblem(ProblemType.InvalidOperation, "Invalid stride encountered.");
+					width = 0;
+					height = 0;
+					return null;
 				}
-
+				byte[] raw = new byte[data.Stride * data.Height];
+				System.Runtime.InteropServices.Marshal.Copy(data.Scan0, raw, 0, raw.Length);
+				width = source.Width;
+				height = source.Height;
+				for (int i = 0; i < raw.Length; i += 4) { // BGRA -> RGBA
+					byte t = raw[i];
+					raw[i] = raw[i + 2];
+					raw[i + 2] = t;
+				}
 				return raw;
 			}
-
-			/*
-			 * The stride is invalid. This indicates that the
-			 * CLI either does not implement the conversion to
-			 * 32-bit BGRA correctly, or that the CLI has
-			 * applied additional padding that we do not
-			 * support.
-			 */
-			bitmap.UnlockBits(data);
-			bitmap.Dispose();
-			CurrentHost.ReportProblem(ProblemType.InvalidOperation, "Invalid stride encountered.");
-			width = 0;
-			height = 0;
-			return null;
+			finally {
+				source.UnlockBits(data);
+				if (converted != null)
+					converted.Dispose();
+			}
 		}
 		
 	}
