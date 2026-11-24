@@ -126,14 +126,29 @@ namespace OpenBveApi.Objects
 			unchecked
 			{
 				// ReSharper disable NonReadonlyMemberInGetHashCode
-				var hashCode = Coordinates.X.GetHashCode();
-				hashCode = (hashCode * 397) ^ Coordinates.Y.GetHashCode();
-				hashCode = (hashCode * 397) ^ Coordinates.Z.GetHashCode();
-				hashCode = (hashCode * 397) ^ TextureCoordinates.X.GetHashCode();
-				hashCode = (hashCode * 397) ^ TextureCoordinates.Y.GetHashCode();
-				hashCode = (hashCode * 397) ^ LightMapCoordinates.X.GetHashCode();
-				hashCode = (hashCode * 397) ^ LightMapCoordinates.Y.GetHashCode();
-				return hashCode;
+				long bx = System.BitConverter.DoubleToInt64Bits(Coordinates.X);
+				if (bx == unchecked((long)0x8000000000000000)) bx = 0;
+				long by = System.BitConverter.DoubleToInt64Bits(Coordinates.Y);
+				if (by == unchecked((long)0x8000000000000000)) by = 0;
+				long bz = System.BitConverter.DoubleToInt64Bits(Coordinates.Z);
+				if (bz == unchecked((long)0x8000000000000000)) bz = 0;
+				long tu = System.BitConverter.DoubleToInt64Bits(TextureCoordinates.X);
+				if (tu == unchecked((long)0x8000000000000000)) tu = 0;
+				long tv = System.BitConverter.DoubleToInt64Bits(TextureCoordinates.Y);
+				if (tv == unchecked((long)0x8000000000000000)) tv = 0;
+				long lu = System.BitConverter.DoubleToInt64Bits(LightMapCoordinates.X);
+				if (lu == unchecked((long)0x8000000000000000)) lu = 0;
+				long lv = System.BitConverter.DoubleToInt64Bits(LightMapCoordinates.Y);
+				if (lv == unchecked((long)0x8000000000000000)) lv = 0;
+				int hash = (int)(bx ^ (bx >> 32));
+				hash = (hash * 397) ^ (int)(by ^ (by >> 32));
+				hash = (hash * 397) ^ (int)(bz ^ (bz >> 32));
+				hash = (hash * 397) ^ (int)(tu ^ (tu >> 32));
+				hash = (hash * 397) ^ (int)(tv ^ (tv >> 32));
+				hash = (hash * 397) ^ (int)(lu ^ (lu >> 32));
+				hash = (hash * 397) ^ (int)(lv ^ (lv >> 32));
+				hash = (hash * 397) ^ GetType().GetHashCode();
+				return hash;
 			}
 		}
 	}
