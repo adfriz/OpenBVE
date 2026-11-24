@@ -73,28 +73,34 @@ uniform sampler2D uTexture;
 // Smith visibility (exact) + Schlick Fresnel. Nadrin/PBR (MIT, (c) Michal Siejak)
 // as the original structural reference; split-sum env uses the Karis UE4
 // analytic BRDF (no LUT texture) and a Filament quadratic LOD.
-uniform float     uPBRMetallic;
-uniform float     uPBRRoughness;
-uniform vec3      uPBREmissive;
+// Per-face PBR material, one std140 block. On GL 4.4+ this buffer is persistently
+// mapped, so a face update is a memcpy. The two vec3s are padded to 16-byte offsets.
+// The binding point is set from Shader.cs (uPBRMaterial -> 2).
+layout(std140) uniform uPBRMaterial
+{
+	float uPbrMetallic;
+	float uPbrRoughness;
+	float uPbrNormalScale;
+	float uPbrOcclusionStrength;
+	float uPbrSpecular;       // KHR_materials_specular weight
+	float uPbrTransmission;   // thin-glass factor
+	float uPbrIor;            // KHR_materials_ior
+	float uPbrMapMask;        // bit mask of present maps (integer stored as float)
+	vec3  uPbrEmissive;       // linear emissive colour
+	vec3  uPbrSpecularColor;  // linear F0, may exceed 1
+};
 uniform sampler2D uNormalMap;
 uniform sampler2D uOcclusionMap;
 uniform sampler2D uEmissiveMap;
 uniform sampler2D uMetallicRoughnessMap; // ARM: R occlusion, G roughness, B metallic
 uniform sampler2D uSpecularMap; // KHR_materials_specular: specular factor in alpha
 uniform sampler2D uSpecularColorMap; // KHR_materials_specular: F0 color in sRGB RGB
-uniform int       uPBRMaps; // bit0 normal, bit1 occlusion, bit2 emissive, bit3 metallic-roughness, bit4 specular, bit5 specular-color
-uniform float     uPBRNormalScale;
-uniform float     uPBROcclusionStrength;
-uniform float     uPBRSpecular; // KHR_materials_specular weight 0-1
-uniform vec3      uPBRSpecularColor; // KHR_materials_specular F0 color, linear (may exceed 1)
-uniform float     uPBRIor; // KHR_materials_ior (1.5 when unset, air outside at 1.0)
 // Image-based lighting: one shipped equirect HDR, mipmaps stand in for a prefilter.
 // uHasEnv 0 = analytic sun only; 1 = analytic + env (split-sum with analytic BRDF).
 uniform sampler2D uEnvMap;
 uniform float     uEnvMaxLod;
 uniform int       uHasEnv;
 uniform vec3      uCameraWorldPos;
-uniform float     uPBRTransmission; // thin-glass factor 0-1 (KHR_materials_transmission approx)
 
 struct Light
 {

@@ -90,17 +90,17 @@ vec3 PBRLighting(vec3 albedoSrgb, float shadow)
 {
 	vec3 albedo = pow(albedoSrgb, vec3(2.2));
 	vec3 N = normalize(vNormal);
-	if ((uPBRMaps & 1) != 0)
+	if ((int(uPbrMapMask) & 1) != 0)
 	{
-		N = PBRMappedNormal(oViewPos.xyz, N, oUv, uPBRNormalScale);
+		N = PBRMappedNormal(oViewPos.xyz, N, oUv, uPbrNormalScale);
 	}
 	vec3 V = normalize(-oViewPos.xyz);
 	vec3 L = normalize(uLight.position);
 	vec3 H = normalize(V + L);
-	float roughness = clamp(uPBRRoughness, 0.04, 1.0);
-	float metallic = clamp(uPBRMetallic, 0.0, 1.0);
+	float roughness = clamp(uPbrRoughness, 0.04, 1.0);
+	float metallic = clamp(uPbrMetallic, 0.0, 1.0);
 	float armOcclusion = 1.0;
-	if ((uPBRMaps & 8) != 0)
+	if ((int(uPbrMapMask) & 8) != 0)
 	{
 		// glTF metallicRoughnessTexture: factors multiply the sampled channels
 		vec3 arm = texture(uMetallicRoughnessMap, oUv).rgb;
@@ -116,18 +116,18 @@ vec3 PBRLighting(vec3 albedoSrgb, float shadow)
 		// KHR_materials_specular + KHR_materials_ior: F0 = min(f0_ior * specColor, 1) * spec.
 		// f0_ior = ((ior - 1) / (ior + 1))^2 (outside air at 1.0; 1.5 gives 0.04).
 		// ior 0 (spec-gloss conversion) yields f0 1, handing full control to specColor.
-		float spec = clamp(uPBRSpecular, 0.0, 1.0);
-		vec3 specColor = uPBRSpecularColor;
-		if ((uPBRMaps & 32) != 0)
+		float spec = clamp(uPbrSpecular, 0.0, 1.0);
+		vec3 specColor = uPbrSpecularColor;
+		if ((int(uPbrMapMask) & 32) != 0)
 		{
 			specColor *= pow(texture(uSpecularColorMap, oUv).rgb, vec3(2.2));
 		}
-		if ((uPBRMaps & 16) != 0)
+		if ((int(uPbrMapMask) & 16) != 0)
 		{
 			spec *= texture(uSpecularMap, oUv).a;
 			spec = clamp(spec, 0.0, 1.0);
 		}
-		float ior = max(uPBRIor, 0.0);
+		float ior = max(uPbrIor, 0.0);
 		float f0ior = ((ior - 1.0) / (ior + 1.0));
 		f0ior *= f0ior;
 		vec3 F0dielectric = min(f0ior * specColor, vec3(1.0)) * spec;
@@ -139,7 +139,7 @@ vec3 PBRLighting(vec3 albedoSrgb, float shadow)
 	// D and V below both take alpha, the env LOD/BRDF below take perceptual.
 	float perceptualRoughness = roughness;
 	float alpha = roughness * roughness;
-	float glassTrans = clamp(uPBRTransmission, 0.0, 1.0);
+	float glassTrans = clamp(uPbrTransmission, 0.0, 1.0);
 	float NdotL = max(dot(N, L), 0.0);
 	float NdotV = max(dot(N, V), 0.0);
 	float NDF = PBR_D_GGX(max(dot(N, H), 0.0), alpha);
@@ -161,13 +161,13 @@ vec3 PBRLighting(vec3 albedoSrgb, float shadow)
 		Lo += NDF * Vis * F * uLight.diffuse * NdotL;
 	}
 	float occlusion = armOcclusion;
-	if ((uPBRMaps & 2) != 0)
+	if ((int(uPbrMapMask) & 2) != 0)
 	{
-		occlusion = mix(1.0, texture(uOcclusionMap, oUv).r, clamp(uPBROcclusionStrength, 0.0, 1.0));
+		occlusion = mix(1.0, texture(uOcclusionMap, oUv).r, clamp(uPbrOcclusionStrength, 0.0, 1.0));
 	}
 	vec3 analyticAmbient = uLight.ambient * albedo * occlusion * (1.0 - metallic) * (1.0 - glassTrans);
-	vec3 emissive = pow(uPBREmissive, vec3(2.2));
-	if ((uPBRMaps & 4) != 0)
+	vec3 emissive = pow(uPbrEmissive, vec3(2.2));
+	if ((int(uPbrMapMask) & 4) != 0)
 	{
 		emissive *= pow(texture(uEmissiveMap, oUv).rgb, vec3(2.2));
 	}
@@ -178,12 +178,12 @@ vec3 PBRLighting(vec3 albedoSrgb, float shadow)
 		// No env diffuse (that would double the sun), no analytic/env double sun:
 		// metals are all-reflection, dielectrics add a tight sun glint on top.
 		vec3 Nw = normalize(vWorldNormal);
-		if ((uPBRMaps & 1) != 0)
+		if ((int(uPbrMapMask) & 1) != 0)
 		{
 			// Same TBN-free mapping as the analytic path, but in world space:
 			// the IBL reflection/refraction lobes must follow the bump detail.
 			// The geometric normal alone smears the whole env into one sheet.
-			Nw = PBRMappedNormal(vWorldPos, Nw, oUv, uPBRNormalScale);
+			Nw = PBRMappedNormal(vWorldPos, Nw, oUv, uPbrNormalScale);
 		}
 		// vWorldPos is camera-relative (the engine bakes -camera into the model
 		// matrix), so the camera sits at the ORIGIN here: V = -P. Using the

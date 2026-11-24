@@ -583,6 +583,8 @@ namespace LibRender2
 		{
 			// Release GL objects while the context is still alive.
 			Compositor?.Dispose();
+			pbrMaterialBuffer?.Dispose();
+			pbrMaterialBuffer = null;
 			UniformBufferStore.DisposeAll();
 			// Flush caches while the GL context is alive. Don't dispose GameWindow here: this runs from
 			// OnClosing inside Run(), and disposing it mid-loop throws ObjectDisposedException.
@@ -1469,6 +1471,12 @@ namespace LibRender2
 		/// <summary>Whether the environment upload has been attempted (success or failure)</summary>
 		private bool environmentAttempted;
 
+		/// <summary>AZDO PBR material block: persistent on GL 4.4+, BufferSubData on GL 4.1.</summary>
+		private PersistentUniformBuffer pbrMaterialBuffer;
+		// std140: 8 scalars at 0..7, padding 8..11, emissive vec3 at 12..14,
+		// padding 15, specular vec3 at 16..18, padding 19.
+		private readonly float[] pbrMaterialData = new float[20];
+
 		/// <summary>Embedded HDR environments offered to PBR (resource names, same order as <see cref="IblEnvironmentNames"/>)</summary>
 		public static readonly string[] IblEnvironmentResources =
 		{
@@ -1544,22 +1552,34 @@ namespace LibRender2
 		/// <returns>True when a real texture was bound</returns>
 		private bool BindPBRTexture(Texture texture, TextureUnit unit, OpenGlTextureWrapMode? wrapMode)
 		{
-			GL.ActiveTexture(unit);
-			try
+			// TextureBinder uses glBindTextureUnit on GL 4.5+ and ActiveTexture+BindTexture on 4.1,
+			// so the active unit is left alone on the fast path. It is reset once after the batch.
+			int unitIndex = (int)unit - (int)TextureUnit.Texture0;
+			// On GL 4.1 LoadTextureInternal may bind the uploaded texture; make sure that
+			// happens on the PBR unit rather than clobbering the albedo sampler on unit 0.
+			if (!TextureBinder.DirectStateAccess)
 			{
-				if (texture != null && currentHost.LoadTexture(ref texture, (OpenGlTextureWrapMode)wrapMode))
-				{
-					GL.BindTexture(TextureTarget.Texture2D, texture.OpenGlTextures[(int)wrapMode].Name);
-					return true;
-				}
-				currentHost.LoadTexture(ref whitePixel, OpenGlTextureWrapMode.ClampClamp);
-				GL.BindTexture(TextureTarget.Texture2D, whitePixel.OpenGlTextures[(int)OpenGlTextureWrapMode.ClampClamp].Name);
-				return false;
+				GL.ActiveTexture(unit);
 			}
-			finally
+			if (texture != null && currentHost.LoadTexture(ref texture, (OpenGlTextureWrapMode)wrapMode))
 			{
-				GL.ActiveTexture(TextureUnit.Texture0);
+				TextureBinder.Bind(unitIndex, texture.OpenGlTextures[(int)wrapMode].Name);
+				return true;
 			}
+			currentHost.LoadTexture(ref whitePixel, OpenGlTextureWrapMode.ClampClamp);
+			TextureBinder.Bind(unitIndex, whitePixel.OpenGlTextures[(int)OpenGlTextureWrapMode.ClampClamp].Name);
+			return false;
+		}
+
+		/// <summary>Creates the shared PBR material UBO and pins it to binding point 2.</summary>
+		private void EnsurePbrMaterialBuffer()
+		{
+			if (pbrMaterialBuffer != null)
+			{
+				return;
+			}
+			pbrMaterialBuffer = new PersistentUniformBuffer(Capabilities, pbrMaterialData.Length * sizeof(float), BufferTarget.UniformBuffer);
+			GL.BindBufferBase(BufferTarget.UniformBuffer, 2, pbrMaterialBuffer.Handle);
 		}
 
 		/// <summary>
@@ -1810,15 +1830,6 @@ namespace LibRender2
 				lastTonemapInShader = tonemapInShader;
 				shader.SetTonemapInShader(tonemapInShader);
 			}
-			if ((material.Flags & MaterialFlags.PBR) != 0)
-			{
-				// File-agnostic PBR factors (glTF, FBX, ... all land here via Material)
-				shader.SetPBRFactors(material.MetallicFactor, material.RoughnessFactor);
-				shader.SetPBREmissive(material.EmissiveColor);
-				shader.SetPBRScales(material.NormalScale, material.OcclusionStrength);
-				shader.SetPBRTransmission(material.TransmissionFactor);
-				shader.SetPBRSpecular(material.SpecularFactor, material.SpecularColorFactor, material.Ior);
-			}
 			if (OptionLighting)
 			{
 				if (material.Color != lastColor)
@@ -1898,26 +1909,48 @@ namespace LibRender2
 				{
 					shader.DisableTexturing();
 				}
-				// PBR detail maps on units 1-3 + 8/10/11 (missing map = white pixel = neutral)
-				if ((material.Flags & MaterialFlags.PBR) != 0 && OptionLighting)
+				// PBR detail maps on units 1-3 + 8/10/11 (missing map = white pixel = neutral).
+				// All per-face factors go through one UBO: persistent memcpy on GL 4.4+,
+				// BufferSubData on GL 4.1. No glProgramUniform calls per face.
+				if ((material.Flags & MaterialFlags.PBR) != 0)
 				{
 					int pbrMaps = 0;
-					if (BindPBRTexture(material.NormalTexture, TextureUnit.Texture1, material.WrapMode)) pbrMaps |= 1;
-					if (BindPBRTexture(material.OcclusionTexture, TextureUnit.Texture2, material.WrapMode)) pbrMaps |= 2;
-					if (BindPBRTexture(material.EmissiveTexture, TextureUnit.Texture3, material.WrapMode)) pbrMaps |= 4;
-					if (BindPBRTexture(material.MetallicRoughnessTexture, TextureUnit.Texture8, material.WrapMode)) pbrMaps |= 8;
-					if (BindPBRTexture(material.SpecularTexture, TextureUnit.Texture10, material.WrapMode)) pbrMaps |= 16;
-					if (BindPBRTexture(material.SpecularColorTexture, TextureUnit.Texture11, material.WrapMode)) pbrMaps |= 32;
-					shader.SetPBRMaps(pbrMaps);
-					EnsureIblEnvironment(shader);
-					if (IblEnvironment != null && IblEnvironment.IsReady)
+					if (OptionLighting)
 					{
-						IblEnvironment.Bind(TextureUnit.Texture9);
-						shader.SetCameraWorldPos(Camera.AbsolutePosition);
-						// uCurrentViewMatrix is otherwise only uploaded for shadows:
-						// the IBL world reconstruction needs the real per-frame view.
-						shader.SetCurrentViewMatrix(CurrentViewMatrix);
+						if (BindPBRTexture(material.NormalTexture, TextureUnit.Texture1, material.WrapMode)) pbrMaps |= 1;
+						if (BindPBRTexture(material.OcclusionTexture, TextureUnit.Texture2, material.WrapMode)) pbrMaps |= 2;
+						if (BindPBRTexture(material.EmissiveTexture, TextureUnit.Texture3, material.WrapMode)) pbrMaps |= 4;
+						if (BindPBRTexture(material.MetallicRoughnessTexture, TextureUnit.Texture8, material.WrapMode)) pbrMaps |= 8;
+						if (BindPBRTexture(material.SpecularTexture, TextureUnit.Texture10, material.WrapMode)) pbrMaps |= 16;
+						if (BindPBRTexture(material.SpecularColorTexture, TextureUnit.Texture11, material.WrapMode)) pbrMaps |= 32;
+						EnsureIblEnvironment(shader);
+						if (IblEnvironment != null && IblEnvironment.IsReady)
+						{
+							IblEnvironment.Bind(TextureUnit.Texture9);
+							shader.SetCameraWorldPos(Camera.AbsolutePosition);
+							// uCurrentViewMatrix is otherwise only uploaded for shadows:
+							// the IBL world reconstruction needs the real per-frame view.
+							shader.SetCurrentViewMatrix(CurrentViewMatrix);
+						}
+						TextureBinder.ResetActiveUnit();
 					}
+					EnsurePbrMaterialBuffer();
+					float[] data = pbrMaterialData;
+					data[0] = material.MetallicFactor;
+					data[1] = material.RoughnessFactor;
+					data[2] = material.NormalScale;
+					data[3] = material.OcclusionStrength;
+					data[4] = material.SpecularFactor;
+					data[5] = material.TransmissionFactor;
+					data[6] = material.Ior;
+					data[7] = pbrMaps;
+					data[12] = material.EmissiveColor.R / 255.0f;
+					data[13] = material.EmissiveColor.G / 255.0f;
+					data[14] = material.EmissiveColor.B / 255.0f;
+					data[16] = (float)material.SpecularColorFactor.X;
+					data[17] = (float)material.SpecularColorFactor.Y;
+					data[18] = (float)material.SpecularColorFactor.Z;
+					pbrMaterialBuffer.Upload(data);
 				}
 				// Calculate the brightness of the poly to render
 				float factor;

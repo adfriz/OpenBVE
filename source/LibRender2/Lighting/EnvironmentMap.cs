@@ -260,9 +260,8 @@ namespace LibRender2.Lightings
 		public void Bind(TextureUnit unit)
 		{
 			if (textureName == 0) return;
-			GL.ActiveTexture(unit);
-			GL.BindTexture(TextureTarget.Texture2D, textureName);
-			GL.ActiveTexture(TextureUnit.Texture0);
+			TextureBinder.Bind((int)unit - (int)TextureUnit.Texture0, textureName);
+			TextureBinder.ResetActiveUnit();
 		}
 
 		/// <summary>Releases the GL texture</summary>

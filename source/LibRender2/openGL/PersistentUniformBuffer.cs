@@ -82,6 +82,31 @@ namespace LibRender2
 			GL.BindBuffer(target, 0);
 		}
 
+		/// <summary>Uploads raw floats, used by the PBR material block (one memcpy on GL 4.4+).</summary>
+		public unsafe void Upload(float[] values)
+		{
+			if (values == null || values.Length == 0)
+			{
+				return;
+			}
+			int bytes = values.Length * sizeof(float);
+			if (bytes > Capacity)
+			{
+				throw new InvalidOperationException("Uniform buffer is too small for the supplied data.");
+			}
+			if (persistent)
+			{
+				fixed (float* source = values)
+				{
+					System.Buffer.MemoryCopy(source, (void*)mapped, bytes, bytes);
+				}
+				return;
+			}
+			GL.BindBuffer(target, Handle);
+			GL.BufferSubData(target, IntPtr.Zero, bytes, values);
+			GL.BindBuffer(target, 0);
+		}
+
 		public void Dispose()
 		{
 			if (!disposed)

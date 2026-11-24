@@ -115,6 +115,13 @@ namespace LibRender2.Shaders
 			{
 				GL.UniformBlockBinding(Handle, instanceMatrixBlockIndex, 1);
 			}
+			// PBR material factors are batched into one UBO; binding 2 keeps them clear of
+			// animation matrices (0) and instance matrices (1).
+			int pbrMaterialBlockIndex = GL.GetUniformBlockIndex(Handle, "uPBRMaterial");
+			if (pbrMaterialBlockIndex != -1)
+			{
+				GL.UniformBlockBinding(Handle, pbrMaterialBlockIndex, 2);
+			}
 			uLightSpaceMatrixLocations = new[] { uLightSpaceMatrix0Location, uLightSpaceMatrix1Location, uLightSpaceMatrix2Location, uLightSpaceMatrix3Location };
 			uShadowMapLocations = new[] { uShadowMap0Location1, uShadowMap1Location1, uShadowMap2Location1, uShadowMap3Location1 };
 			uShadowFilterLocations = new[] { uShadowFilter0Location, uShadowFilter1Location, uShadowFilter2Location, uShadowFilter3Location };
