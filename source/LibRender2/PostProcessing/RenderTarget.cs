@@ -11,6 +11,8 @@ namespace LibRender2.PostProcessing
 	{
 		public int Framebuffer { get; private set; }
 		public int ColorTexture { get; private set; }
+		/// <summary>Depth attachment as a texture, so effects such as DOF can sample scene depth.</summary>
+		public int DepthTexture { get; private set; }
 		public int Width { get; private set; }
 		public int Height { get; private set; }
 		public bool HasDepth { get; private set; }
@@ -18,7 +20,6 @@ namespace LibRender2.PostProcessing
 		/// <summary>True when the colour attachment is a 16-bit float (internal HDR) target.</summary>
 		public bool Hdr { get; private set; }
 
-		private int depthRenderbuffer;
 		private bool disposed;
 
 		public RenderTarget(int width, int height, bool withDepth = false, bool hdr = false)
@@ -60,12 +61,18 @@ namespace LibRender2.PostProcessing
 
 			if (HasDepth)
 			{
-				depthRenderbuffer = GL.GenRenderbuffer();
-				GL.BindRenderbuffer(RenderbufferTarget.Renderbuffer, depthRenderbuffer);
-				GL.RenderbufferStorage(RenderbufferTarget.Renderbuffer, RenderbufferStorage.DepthComponent24, Width, Height);
-				GL.FramebufferRenderbuffer(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment,
-					RenderbufferTarget.Renderbuffer, depthRenderbuffer);
-				GL.BindRenderbuffer(RenderbufferTarget.Renderbuffer, 0);
+				// A depth *texture* (rather than a renderbuffer) lets post effects read scene depth.
+				DepthTexture = GL.GenTexture();
+				GL.BindTexture(TextureTarget.Texture2D, DepthTexture);
+				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
+				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
+				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
+				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
+				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureCompareMode, (int)TextureCompareMode.None);
+				GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent24, Width, Height, 0,
+					PixelFormat.DepthComponent, PixelType.UnsignedInt, IntPtr.Zero);
+				GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment,
+					TextureTarget.Texture2D, DepthTexture, 0);
 			}
 
 			GL.BindTexture(TextureTarget.Texture2D, 0);
@@ -107,10 +114,10 @@ namespace LibRender2.PostProcessing
 				GL.DeleteTexture(ColorTexture);
 				ColorTexture = 0;
 			}
-			if (depthRenderbuffer != 0)
+			if (DepthTexture != 0)
 			{
-				GL.DeleteRenderbuffer(depthRenderbuffer);
-				depthRenderbuffer = 0;
+				GL.DeleteTexture(DepthTexture);
+				DepthTexture = 0;
 			}
 			if (Framebuffer != 0)
 			{

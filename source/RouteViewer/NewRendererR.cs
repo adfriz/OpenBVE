@@ -57,6 +57,10 @@ namespace RouteViewer
 		{
 			base.Initialize();
 
+			// The compositor registers its passes in base.Initialize(), so restore the
+			// saved order and switch state now, before the F8 dialog reads the chain.
+			Interface.CurrentOptions.ApplyPostProcessingToCompositor();
+
 			string Folder = Path.CombineDirectory(Program.FileSystem.GetDataFolder(), "RouteViewer");
 			TextureManager.RegisterTexture(Path.CombineFile(Folder, "background.png"), out BackgroundChangeTexture);
 			TextureManager.RegisterTexture(Path.CombineFile(Folder, "brightness.png"), out BrightnessChangeTexture);

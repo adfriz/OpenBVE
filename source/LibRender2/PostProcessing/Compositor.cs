@@ -51,6 +51,9 @@ namespace LibRender2.PostProcessing
 		/// <summary>The ordered pass chain. Insert plugins/effects here.</summary>
 		public IList<PostProcessPass> Passes => passes;
 
+		/// <summary>Depth texture of the scene target, readable by effects such as depth of field.</summary>
+		public int SceneDepthTexture => buffers.Count > 0 ? buffers[0].DepthTexture : 0;
+
 		/// <summary>Whether 16-bit float render targets are usable on this driver.</summary>
 		public bool HdrSupported { get; private set; }
 
@@ -114,6 +117,7 @@ namespace LibRender2.PostProcessing
 				//   passes.Add(new SimpleShaderPass("Brightness", "post_brightness", 0.25f));
 				// The RouteViewer F8 tab lists every registered pass automatically.
 				passes.Add(new VignettePass());
+				passes.Add(new DofPass());
 				Available = true;
 				Enabled = false;
 				renderer.fileSystem?.AppendToLogFile("[PostFX] Compositor ready (" + passes.Count + " registered pass(es), disabled by default).");
@@ -156,14 +160,17 @@ namespace LibRender2.PostProcessing
 		/// <summary>Allocates the scene target plus one target per active chain step.</summary>
 		private void EnsureBuffers()
 		{
-			int needed = 1 + (colorMode == CompositorColorMode.HdrInternal ? 1 : 0);
+			// The scene target is always needed. Every chain step except the last needs an
+			// intermediate target; the last step writes straight to the window.
+			int chainSteps = colorMode == CompositorColorMode.HdrInternal ? 1 : 0;
 			for (int i = 0; i < passes.Count; i++)
 			{
 				if (passes[i].Enabled)
 				{
-					needed++;
+					chainSteps++;
 				}
 			}
+			int needed = Math.Max(1, chainSteps);
 			while (buffers.Count < needed)
 			{
 				bool isScene = buffers.Count == 0;
@@ -205,6 +212,30 @@ namespace LibRender2.PostProcessing
 			}
 		}
 
+		private void BindScreen()
+		{
+			GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+			GL.Viewport(0, 0, width, height);
+		}
+
+		/// <summary>
+		/// Binds an intermediate target for all but the final chain step. The final step goes
+		/// straight to the window, so enabling one effect costs one draw call, not pass + blit.
+		/// </summary>
+		private void BindChainTarget(bool last, ref int nextBuffer, out RenderTarget destination)
+		{
+			if (last)
+			{
+				BindScreen();
+				destination = null;
+			}
+			else
+			{
+				destination = buffers[nextBuffer++];
+				destination.Bind();
+			}
+		}
+
 		/// <summary>Runs the pass chain and presents the result to the default framebuffer.</summary>
 		public void EndFrame()
 		{
@@ -226,34 +257,52 @@ namespace LibRender2.PostProcessing
 				GL.Disable(EnableCap.DepthTest);
 				GL.Disable(EnableCap.CullFace);
 				GL.Disable(EnableCap.Blend);
-				int nextBuffer = 0;
-				RenderTarget current = buffers[nextBuffer++];
-				if (colorMode == CompositorColorMode.HdrInternal)
-				{
-					// Float scene -> tone-mapped 8-bit target. Everything after this is SDR.
-					RenderTarget destination = buffers[nextBuffer++];
-					destination.Bind();
-					toneMapPass.Execute(renderer, current);
-					current = destination;
-				}
+				int chainSteps = colorMode == CompositorColorMode.HdrInternal ? 1 : 0;
 				for (int i = 0; i < passes.Count; i++)
 				{
-					if (!passes[i].Enabled)
+					if (passes[i].Enabled)
 					{
-						continue;
+						chainSteps++;
 					}
-					RenderTarget destination = buffers[nextBuffer++];
-					destination.Bind();
-					passes[i].Execute(renderer, current);
-					current = destination;
 				}
 
-				GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
-				GL.Viewport(0, 0, width, height);
-				GL.Disable(EnableCap.DepthTest);
-				GL.Disable(EnableCap.CullFace);
-				GL.Disable(EnableCap.Blend);
-				finalPass.Execute(renderer, current);
+				int nextBuffer = 0;
+				RenderTarget current = buffers[nextBuffer++];
+				if (chainSteps == 0)
+				{
+					// No effects registered: blit the scene straight to the window.
+					BindScreen();
+					finalPass.Execute(renderer, current);
+				}
+				else
+				{
+					int step = 0;
+					if (colorMode == CompositorColorMode.HdrInternal)
+					{
+						// Float scene -> tone-mapped SDR. Everything after this is 8-bit.
+						bool last = ++step == chainSteps;
+						BindChainTarget(last, ref nextBuffer, out RenderTarget destination);
+						toneMapPass.Execute(renderer, current);
+						if (!last)
+						{
+							current = destination;
+						}
+					}
+					for (int i = 0; i < passes.Count; i++)
+					{
+						if (!passes[i].Enabled)
+						{
+							continue;
+						}
+						bool last = ++step == chainSteps;
+						BindChainTarget(last, ref nextBuffer, out RenderTarget destination);
+						passes[i].Execute(renderer, current);
+						if (!last)
+						{
+							current = destination;
+						}
+					}
+				}
 			}
 			catch (Exception ex)
 			{

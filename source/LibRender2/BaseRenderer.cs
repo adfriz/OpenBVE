@@ -378,6 +378,10 @@ namespace LibRender2
 		/// <summary>OpenGL capabilities of the active context, used to select feature paths.</summary>
 		public GlCapabilities Capabilities { get; private set; }
 
+		/// <summary>Projection depth range of the current scene, used to linearise depth in post effects.</summary>
+		public float SceneNear { get; private set; }
+		public float SceneFar { get; private set; }
+
 		public bool LoadLogo()
 		{
 			return currentHost.LoadTexture(ref _programLogo, OpenGlTextureWrapMode.ClampClamp);
@@ -1197,6 +1201,8 @@ namespace LibRender2
 			Screen.AspectRatio = Screen.Width / (double)Screen.Height;
 			Camera.HorizontalViewingAngle = 2.0 * Math.Atan(Math.Tan(0.5 * Camera.VerticalViewingAngle) * Screen.AspectRatio);
 			double nearClip = Math.Max(0.01, currentOptions.NearClipBase);
+			SceneNear = (float)nearClip;
+			SceneFar = (float)currentOptions.ViewingDistance;
 			CurrentProjectionMatrix = Matrix4D.CreatePerspectiveFieldOfView(Camera.VerticalViewingAngle, Screen.AspectRatio, nearClip, currentOptions.ViewingDistance);
 		}
 

@@ -44,6 +44,8 @@
 		/// <summary>Contains touch control options</summary>
 		Touch = 18,
 		/// <summary>Contains loading related options</summary>
-		Loading = 19
+		Loading = 19,
+		/// <summary>Contains post-processing chain options</summary>
+		PostProcessing = 20
 	}
 }

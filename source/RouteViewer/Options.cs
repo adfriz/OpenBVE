@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Windows.Forms;
 using Formats.OpenBve;
+using LibRender2.PostProcessing;
 using OpenBveApi;
 using Path = OpenBveApi.Path;
 
@@ -19,6 +21,12 @@ namespace RouteViewer
 		internal bool LoadingBackground;
 		internal string RouteSearchDirectory;
 		internal int FPSLimit;
+
+		// Post-processing chain state. Null arrays mean "not present in the cfg", so the
+		// compositor's registered defaults are kept instead of forcing an empty chain.
+		internal bool PostProcessingEnabled;
+		internal string[] PostProcessingPassOrder;
+		internal string[] PostProcessingEnabledPasses;
 
 		/// <summary>
 		/// The mode of optimization to be performed on an object
@@ -58,6 +66,9 @@ namespace RouteViewer
 		{
 			try
 			{
+				// Save is called from both the OK button and the window-close handler, so the
+				// live compositor state must be pulled in here rather than at one call site.
+				SyncPostProcessingFromCompositor();
 				CultureInfo Culture = CultureInfo.InvariantCulture;
 				System.Text.StringBuilder Builder = new System.Text.StringBuilder();
 				Builder.AppendLine("; Options");
@@ -108,6 +119,11 @@ namespace RouteViewer
 			Builder.AppendLine();
 			Builder.AppendLine("[Folders]");
 				Builder.AppendLine($"routesearch = {RouteSearchDirectory}");
+				Builder.AppendLine();
+				Builder.AppendLine("[postProcessing]");
+				Builder.AppendLine("enabled = " + (PostProcessingEnabled ? "true" : "false"));
+				Builder.AppendLine("order = " + string.Join(",", PostProcessingPassOrder ?? new string[0]));
+				Builder.AppendLine("passes = " + string.Join(",", PostProcessingEnabledPasses ?? new string[0]));
 				File.WriteAllText(fileName, Builder.ToString(), new System.Text.UTF8Encoding(true));
 			}
 			catch
@@ -230,8 +246,109 @@ namespace RouteViewer
 								Interface.CurrentOptions.RouteSearchDirectory = folder;
 							}
 							break;
+					case OptionsSection.PostProcessing:
+							if (block.GetValue(OptionsKey.PostProcessingEnabled, out string ppEnabled))
+							{
+								Interface.CurrentOptions.PostProcessingEnabled = ppEnabled.Trim().Equals("true", StringComparison.OrdinalIgnoreCase) || ppEnabled.Trim() == "1";
+							}
+							string[] order = null;
+							if (block.TryGetStringArray(OptionsKey.PostProcessingOrder, ',', ref order))
+							{
+								Interface.CurrentOptions.PostProcessingPassOrder = order;
+							}
+							string[] enabledPasses = null;
+							if (block.TryGetStringArray(OptionsKey.PostProcessingPasses, ',', ref enabledPasses))
+							{
+								Interface.CurrentOptions.PostProcessingEnabledPasses = enabledPasses;
+							}
+							break;
 					}
 				}
+			}
+		}
+
+		/// <summary>Copies the live post-processing chain into this options instance before saving.</summary>
+		internal void SyncPostProcessingFromCompositor()
+		{
+			try
+			{
+				Compositor compositor = Program.Renderer?.Compositor;
+				if (compositor == null || !compositor.Available)
+				{
+					return;
+				}
+				PostProcessingEnabled = compositor.Enabled;
+				var order = new List<string>();
+				var enabled = new List<string>();
+				foreach (PostProcessPass pass in compositor.Passes)
+				{
+					order.Add(pass.Name);
+					if (pass.Enabled)
+					{
+						enabled.Add(pass.Name);
+					}
+				}
+				PostProcessingPassOrder = order.ToArray();
+				PostProcessingEnabledPasses = enabled.ToArray();
+			}
+			catch
+			{
+				// Never let a shutdown-time options write fail because of the renderer.
+			}
+		}
+
+		/// <summary>Applies the saved chain after the compositor has registered its passes.</summary>
+		internal void ApplyPostProcessingToCompositor()
+		{
+			try
+			{
+				Compositor compositor = Program.Renderer?.Compositor;
+				if (compositor == null || !compositor.Available)
+				{
+					return;
+				}
+				if (PostProcessingPassOrder != null && PostProcessingPassOrder.Length > 0)
+				{
+					var byName = new Dictionary<string, PostProcessPass>(StringComparer.OrdinalIgnoreCase);
+					foreach (PostProcessPass pass in compositor.Passes)
+					{
+						byName[pass.Name] = pass;
+					}
+					var ordered = new List<PostProcessPass>();
+					foreach (string name in PostProcessingPassOrder)
+					{
+						if (!string.IsNullOrEmpty(name) && byName.TryGetValue(name, out PostProcessPass pass) && !ordered.Contains(pass))
+						{
+							ordered.Add(pass);
+						}
+					}
+					// Passes added by a newer build but absent from the cfg go to the end.
+					foreach (PostProcessPass pass in compositor.Passes)
+					{
+						if (!ordered.Contains(pass))
+						{
+							ordered.Add(pass);
+						}
+					}
+					compositor.Passes.Clear();
+					for (int i = 0; i < ordered.Count; i++)
+					{
+						compositor.Passes.Add(ordered[i]);
+					}
+				}
+				if (PostProcessingEnabledPasses != null)
+				{
+					var enabled = new HashSet<string>(PostProcessingEnabledPasses, StringComparer.OrdinalIgnoreCase);
+					foreach (PostProcessPass pass in compositor.Passes)
+					{
+						pass.Enabled = enabled.Contains(pass.Name);
+					}
+				}
+				compositor.Enabled = PostProcessingEnabled;
+			}
+			catch
+			{
+				// Keep the registered defaults if a stored chain is malformed.
 			}
 		}
 	}

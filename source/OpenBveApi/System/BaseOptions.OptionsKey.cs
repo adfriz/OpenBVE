@@ -124,6 +124,10 @@ namespace OpenBveApi
 		// Object Viewer ground plane
 		ShowGround,
 		GroundHeight,
-		GroundColor
+		GroundColor,
+		// Post processing (RouteViewer)
+		PostProcessingEnabled,
+		PostProcessingOrder,
+		PostProcessingPasses
     }
 }

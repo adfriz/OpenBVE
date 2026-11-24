@@ -151,6 +151,8 @@
     <EmbeddedResource Include="..\..\assets\Shaders\picking.frag" />
     <EmbeddedResource Include="..\..\assets\Shaders\post.vert" />
     <EmbeddedResource Include="..\..\assets\Shaders\post_copy.frag" />
+    <EmbeddedResource Include="..\..\assets\Shaders\post_dof.frag" />
+    <EmbeddedResource Include="..\..\assets\Shaders\post_dof_composite.frag" />
     <EmbeddedResource Include="..\..\assets\Shaders\post_vignette.frag" />
     <EmbeddedResource Include="..\..\assets\Shaders\post_tonemap.frag" />
     <EmbeddedResource Include="..\..\assets\Shaders\rectangle.frag" />

@@ -6,7 +6,9 @@ using OpenBveApi.Interface;
 using OpenBveApi.Objects;
 using OpenTK.Graphics;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.Drawing;
 using System.Windows.Forms;
 using OpenBveApi.Math;
 
@@ -17,6 +19,17 @@ namespace RouteViewer
         private bool suppressSunEvents = false;
         private bool suppressShadowEvents = false;
         private CheckBox checkBoxPostProcessing;
+        private readonly List<PassUiRow> passRows = new List<PassUiRow>();
+        private TableLayoutPanel postTable;
+        private const int PassStartRow = 2; // row 0 = global switch, row 1 = "Passes" heading
+
+        private sealed class PassUiRow
+        {
+            public PostProcessPass Pass;
+            public System.Windows.Forms.Control Header;
+            public System.Windows.Forms.Control Content;
+            public PassReorderSpinner Spinner;
+        }
 
         public FormOptions()
         {
@@ -155,6 +168,7 @@ namespace RouteViewer
             checkBoxPostProcessing = new CheckBox { AutoSize = true, Dock = DockStyle.Fill };
             table.Controls.Add(globalLabel, 0, 0);
             table.Controls.Add(checkBoxPostProcessing, 1, 0);
+            postTable = table;
 
             int row = 1;
             if (compositor == null || !compositor.Available)
@@ -178,22 +192,114 @@ namespace RouteViewer
 
                 foreach (PostProcessPass pass in compositor.Passes)
                 {
-                    var checkBox = new CheckBox
-                    {
-                        Text = pass.DisplayName,
-                        Tag = pass,
-                        Checked = pass.Enabled,
-                        AutoSize = true,
-                        Dock = DockStyle.Fill
-                    };
-                    checkBox.CheckedChanged += PostPassCheckBox_CheckedChanged;
-                    table.SetColumnSpan(checkBox, 2);
-                    table.Controls.Add(checkBox, 0, row++);
+                    AddPassGroup(table, pass, ref row);
                 }
             }
 
+            UpdatePostPassControls();
+            RefreshPassRows();
             checkBoxPostProcessing.CheckedChanged += PostProcessingGlobal_CheckedChanged;
             page.Controls.Add(table);
+        }
+
+        /// <summary>
+        /// Adds one collapsible pass group: a header with an expand arrow and the enable
+        /// checkbox, followed by an indented panel holding that pass's tuning sliders.
+        /// </summary>
+        private void AddPassGroup(TableLayoutPanel table, PostProcessPass pass, ref int row)
+        {
+            var header = new FlowLayoutPanel
+            {
+                AutoSize = true,
+                Dock = DockStyle.Top,
+                WrapContents = false,
+                Margin = new Padding(0, 4, 0, 0)
+            };
+            var toggle = new Button
+            {
+                Text = "▸",
+                Width = 24,
+                Height = 20,
+                Margin = new Padding(0, 0, 4, 0)
+            };
+            var checkBox = new CheckBox
+            {
+                Text = pass.DisplayName,
+                Tag = pass,
+                Checked = pass.Enabled,
+                AutoSize = true,
+                Margin = new Padding(2, 2, 0, 0)
+            };
+            checkBox.CheckedChanged += PostPassCheckBox_CheckedChanged;
+            var spinner = new PassReorderSpinner { Margin = new Padding(0, 0, 4, 0) };
+            header.Controls.Add(spinner);
+            header.Controls.Add(toggle);
+            header.Controls.Add(checkBox);
+            table.SetColumnSpan(header, 2);
+            table.Controls.Add(header, 0, row++);
+
+            var content = new TableLayoutPanel
+            {
+                AutoSize = true,
+                Dock = DockStyle.Top,
+                ColumnCount = 2,
+                Padding = new Padding(28, 0, 0, 4),
+                Visible = false
+            };
+            content.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));
+            content.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40F));
+
+            var tunings = pass.Tunings;
+            if (tunings == null || tunings.Count == 0)
+            {
+                var empty = new Label { Text = "No settings", AutoSize = true, Dock = DockStyle.Fill };
+                content.SetColumnSpan(empty, 2);
+                content.Controls.Add(empty, 0, 0);
+            }
+            else
+            {
+                for (int i = 0; i < tunings.Count; i++)
+                {
+                    var tuning = tunings[i];
+                    var label = new Label { Text = tuning.Name + ":", AutoSize = true, Dock = DockStyle.Fill };
+                    var numeric = new SliderNumericUpDown
+                    {
+                        Minimum = (decimal)tuning.Min,
+                        Maximum = (decimal)tuning.Max,
+                        DecimalPlaces = 2,
+                        Increment = Math.Max(0.01m, (decimal)(tuning.Max - tuning.Min) / 100m),
+                        Dock = DockStyle.Fill,
+                        Value = (decimal)Math.Min(tuning.Max, Math.Max(tuning.Min, tuning.Get()))
+                    };
+                    numeric.ValueChanged += (sender2, e2) =>
+                    {
+                        tuning.Set((float)numeric.Value);
+                        Program.PreviewDirty = true;
+                        TryPresentPreview();
+                    };
+                    content.Controls.Add(label, 0, i);
+                    content.Controls.Add(numeric, 1, i);
+                }
+            }
+
+            toggle.Click += (sender2, e2) =>
+            {
+                content.Visible = !content.Visible;
+                toggle.Text = content.Visible ? "▾" : "▸";
+            };
+            table.SetColumnSpan(content, 2);
+            table.Controls.Add(content, 0, row++);
+
+            // Keep the UI row together with the pass it represents, so reordering moves both.
+            var uiRow = new PassUiRow
+            {
+                Pass = pass,
+                Header = header,
+                Content = content,
+                Spinner = spinner
+            };
+            spinner.Reorder += direction => MovePass(uiRow, direction);
+            passRows.Add(uiRow);
         }
 
         private void PostProcessingGlobal_CheckedChanged(object sender, EventArgs e)
@@ -204,6 +310,7 @@ namespace RouteViewer
                 return;
             }
             compositor.Enabled = checkBoxPostProcessing.Checked;
+            UpdatePostPassControls();
             Program.PreviewDirty = true;
             TryPresentPreview();
         }
@@ -219,6 +326,59 @@ namespace RouteViewer
             pass.Enabled = checkBox.Checked;
             Program.PreviewDirty = true;
             TryPresentPreview();
+        }
+
+        /// <summary>Swaps a pass with its neighbour in both the compositor chain and the dialog rows.</summary>
+        private void MovePass(PassUiRow row, int direction)
+        {
+            int index = passRows.IndexOf(row);
+            int target = index + direction;
+            if (index < 0 || target < 0 || target >= passRows.Count)
+            {
+                return;
+            }
+            Compositor compositor = Program.Renderer?.Compositor;
+            if (compositor == null || !compositor.Available)
+            {
+                return;
+            }
+
+            passRows[index] = passRows[target];
+            passRows[target] = row;
+
+            IList<PostProcessPass> chain = compositor.Passes;
+            PostProcessPass moved = chain[index];
+            chain[index] = chain[target];
+            chain[target] = moved;
+
+            RefreshPassRows();
+            Program.PreviewDirty = true;
+            TryPresentPreview();
+        }
+
+        private void RefreshPassRows()
+        {
+            for (int i = 0; i < passRows.Count; i++)
+            {
+                PassUiRow row = passRows[i];
+                postTable.SetRow(row.Header, PassStartRow + i * 2);
+                postTable.SetRow(row.Content, PassStartRow + i * 2 + 1);
+                row.Spinner.CanMoveUp = i > 0;
+                row.Spinner.CanMoveDown = i < passRows.Count - 1;
+                row.Spinner.Invalidate();
+            }
+            postTable.PerformLayout();
+        }
+
+        /// <summary>When the global switch is off, the whole pass list is inactive and greyed out.</summary>
+        private void UpdatePostPassControls()
+        {
+            bool enabled = checkBoxPostProcessing != null && checkBoxPostProcessing.Checked;
+            foreach (PassUiRow row in passRows)
+            {
+                row.Header.Enabled = enabled;
+                row.Content.Enabled = enabled;
+            }
         }
 
         private void FormOptions_FormClosed(object sender, FormClosedEventArgs e)
@@ -783,4 +943,162 @@ namespace RouteViewer
 			
 	    }
     }
+
+	/// <summary>
+	/// Compact up/down pair drawn like the spinner buttons of a NumericUpDown: one narrow
+	/// control where the top half moves a pass up and the bottom half moves it down.
+	/// </summary>
+	internal sealed class PassReorderSpinner : System.Windows.Forms.Control
+	{
+		internal event Action<int> Reorder; // -1 = up, +1 = down
+
+		internal bool CanMoveUp { get; set; } = true;
+		internal bool CanMoveDown { get; set; } = true;
+
+		private int hover;
+
+		internal PassReorderSpinner()
+		{
+			SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer, true);
+			Width = 16;
+			Height = 20;
+		}
+
+		private int DirectionAt(int y)
+		{
+			return y < Height / 2 ? -1 : 1;
+		}
+
+		private bool Available(int direction)
+		{
+			return Enabled && (direction < 0 ? CanMoveUp : CanMoveDown);
+		}
+
+		protected override void OnMouseDown(MouseEventArgs e)
+		{
+			int direction = DirectionAt(e.Y);
+			if (Available(direction))
+			{
+				Reorder?.Invoke(direction);
+			}
+			base.OnMouseDown(e);
+		}
+
+		protected override void OnMouseMove(MouseEventArgs e)
+		{
+			int direction = DirectionAt(e.Y);
+			if (direction != hover)
+			{
+				hover = direction;
+				Invalidate();
+			}
+			base.OnMouseMove(e);
+		}
+
+		protected override void OnMouseLeave(EventArgs e)
+		{
+			hover = 0;
+			Invalidate();
+			base.OnMouseLeave(e);
+		}
+
+		protected override void OnPaint(PaintEventArgs e)
+		{
+			Graphics g = e.Graphics;
+			int half = Height / 2;
+			g.Clear(BackColor);
+			if (hover == -1 && Available(-1))
+			{
+				g.FillRectangle(SystemBrushes.ControlLight, 0, 0, Width, half);
+			}
+			if (hover == 1 && Available(1))
+			{
+				g.FillRectangle(SystemBrushes.ControlLight, 0, half, Width, Height - half);
+			}
+			using (Pen up = new Pen(Available(-1) ? SystemColors.ControlText : SystemColors.GrayText))
+			using (Pen down = new Pen(Available(1) ? SystemColors.ControlText : SystemColors.GrayText))
+			{
+				int cx = Width / 2;
+				DrawArrow(g, up, cx, 5, true);
+				DrawArrow(g, down, cx, half + 5, false);
+			}
+			base.OnPaint(e);
+		}
+
+		private static void DrawArrow(Graphics g, Pen pen, int cx, int cy, bool up)
+		{
+			if (up)
+			{
+				g.DrawLine(pen, cx - 3, cy + 1, cx, cy - 2);
+				g.DrawLine(pen, cx, cy - 2, cx + 3, cy + 1);
+				g.DrawLine(pen, cx - 3, cy + 1, cx + 3, cy + 1);
+			}
+			else
+			{
+				g.DrawLine(pen, cx - 3, cy - 1, cx, cy + 2);
+				g.DrawLine(pen, cx, cy + 2, cx + 3, cy - 1);
+				g.DrawLine(pen, cx - 3, cy - 1, cx + 3, cy - 1);
+			}
+		}
+	}
+
+	/// <summary>
+	/// A NumericUpDown whose value field can be scrubbed by clicking and dragging, like the
+	/// numeric fields in Adobe Premiere. Typing and the arrow buttons still work normally.
+	/// </summary>
+	internal sealed class SliderNumericUpDown : NumericUpDown
+	{
+		private bool dragging;
+		private int startX;
+		private int startY;
+		private decimal startValue;
+		private decimal perPixel;
+
+		private bool IsSpinnerButton(Point point)
+		{
+			// Leave the up/down arrow area to the base control.
+			return point.X > ClientSize.Width - SystemInformation.VerticalScrollBarWidth;
+		}
+
+		protected override void OnMouseDown(MouseEventArgs e)
+		{
+			if (e.Button == MouseButtons.Left && !IsSpinnerButton(e.Location))
+			{
+				dragging = true;
+				startX = e.X;
+				startY = e.Y;
+				startValue = Value;
+				perPixel = (Maximum - Minimum) / 200m;
+				if (perPixel < Increment)
+				{
+					perPixel = Increment;
+				}
+				Capture = true;
+				Cursor = Cursors.SizeWE;
+			}
+			base.OnMouseDown(e);
+		}
+
+		protected override void OnMouseMove(MouseEventArgs e)
+		{
+			if (dragging)
+			{
+				// Horizontal drag increases the value; vertical drag (up) also increases it.
+				decimal delta = ((e.X - startX) - (e.Y - startY)) * perPixel;
+				Value = Math.Min(Maximum, Math.Max(Minimum, startValue + delta));
+			}
+			base.OnMouseMove(e);
+		}
+
+		protected override void OnMouseUp(MouseEventArgs e)
+		{
+			if (dragging)
+			{
+				dragging = false;
+				Capture = false;
+				Cursor = Cursors.Default;
+			}
+			base.OnMouseUp(e);
+		}
+	}
 }

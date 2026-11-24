@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using LibRender2.Shaders;
 using OpenTK.Graphics.OpenGL;
 
@@ -24,16 +25,69 @@ namespace LibRender2.PostProcessing
 		public virtual void Dispose()
 		{
 		}
+
+		/// <summary>User-tuneable parameters exposed by this pass in the options UI. Null means none.</summary>
+		public virtual IList<PostProcessTuning> Tunings => null;
+	}
+
+	/// <summary>One slider-able parameter of a post-processing pass.</summary>
+	public sealed class PostProcessTuning
+	{
+		public string Name { get; }
+		public float Min { get; }
+		public float Max { get; }
+		public Func<float> Get { get; }
+		public Action<float> Set { get; }
+
+		public PostProcessTuning(string name, float min, float max, Func<float> get, Action<float> set)
+		{
+			Name = name;
+			Min = min;
+			Max = max;
+			Get = get;
+			Set = set;
+		}
 	}
 
 	/// <summary>A single post-processing program using the shared full-screen vertex shader.</summary>
 	internal sealed class PostMaterial : IDisposable
 	{
 		private readonly AbstractShader shader;
+		private readonly Dictionary<string, int> extraLocations = new Dictionary<string, int>();
 		private int sourceLocation = -1;
 		private int strengthLocation = -1;
 		private int exposureLocation = -1;
 		private bool disposed;
+
+		private int Location(string name)
+		{
+			if (!extraLocations.TryGetValue(name, out int location))
+			{
+				location = GL.GetUniformLocation(shader.Handle, name);
+				extraLocations.Add(name, location);
+			}
+			return location;
+		}
+
+		/// <summary>Sets an extra float uniform on the material's program.</summary>
+		internal void SetFloat(string name, float value)
+		{
+			int location = Location(name);
+			if (location != -1)
+			{
+				GL.ProgramUniform1(shader.Handle, location, value);
+			}
+		}
+
+		/// <summary>Sets an extra integer uniform (e.g. a sampler unit) on the material's program.</summary>
+		internal void SetInt(string name, int value)
+		{
+			int location = Location(name);
+			if (location != -1)
+			{
+				GL.ProgramUniform1(shader.Handle, location, value);
+			}
+		}
 
 		internal PostMaterial(BaseRenderer renderer, string fragmentName)
 		{
@@ -46,8 +100,7 @@ namespace LibRender2.PostProcessing
 		internal void Activate(int sourceTexture, float strength, float exposure = 1.0f)
 		{
 			GL.UseProgram(shader.Handle);
-			GL.ActiveTexture(TextureUnit.Texture0);
-			GL.BindTexture(TextureTarget.Texture2D, sourceTexture);
+			TextureBinder.Bind(0, sourceTexture);
 			if (sourceLocation != -1)
 			{
 				GL.Uniform1(sourceLocation, 0);
@@ -74,12 +127,12 @@ namespace LibRender2.PostProcessing
 	}
 
 	/// <summary>A buffer-free full-screen triangle generated from gl_VertexID.</summary>
-	internal sealed class FullScreenQuad : IDisposable
+	internal sealed class FullScreenTriangle : IDisposable
 	{
 		private int vao;
 		private bool disposed;
 
-		internal FullScreenQuad()
+		internal FullScreenTriangle()
 		{
 			GL.GenVertexArrays(1, out vao);
 		}
