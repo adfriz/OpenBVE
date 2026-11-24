@@ -23,7 +23,10 @@ namespace OpenBveApi.Objects
 		NoShadow = 32,
 		/// <summary>The material has a separate specular light color</summary>
 		Specular = 64,
+		/// <summary>The material uses PBR metallic-roughness shading (pbr shaders)</summary>
+		PBR = 128,
 		/// <summary>The transparent color is used only if this file is a BMP</summary>
-		TransparentColorBmp = 128
+		/// <remarks>Kept on its own bit: the PBR branch used 128 here, which now belongs to <see cref="PBR"/> (shader bit 128).</remarks>
+		TransparentColorBmp = 256
 	}
 }

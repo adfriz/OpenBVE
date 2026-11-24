@@ -211,7 +211,27 @@ namespace LibRender2.Shaders
 				ShadowMap0 = (short)GL.GetUniformLocation(Handle, "uShadowMap0"),
 				ShadowMap1 = (short)GL.GetUniformLocation(Handle, "uShadowMap1"),
 				ShadowMap2 = (short)GL.GetUniformLocation(Handle, "uShadowMap2"),
-				CurrentViewMatrix = (short)GL.GetUniformLocation(Handle, "uCurrentViewMatrix")
+				CurrentViewMatrix = (short)GL.GetUniformLocation(Handle, "uCurrentViewMatrix"),
+				PBRMetallic = (short)GL.GetUniformLocation(Handle, "uPBRMetallic"),
+				PBRRoughness = (short)GL.GetUniformLocation(Handle, "uPBRRoughness"),
+				PBREmissive = (short)GL.GetUniformLocation(Handle, "uPBREmissive"),
+				NormalMap = (short)GL.GetUniformLocation(Handle, "uNormalMap"),
+				OcclusionMap = (short)GL.GetUniformLocation(Handle, "uOcclusionMap"),
+				EmissiveMap = (short)GL.GetUniformLocation(Handle, "uEmissiveMap"),
+				MetallicRoughnessMap = (short)GL.GetUniformLocation(Handle, "uMetallicRoughnessMap"),
+				PBRMaps = (short)GL.GetUniformLocation(Handle, "uPBRMaps"),
+				PBRNormalScale = (short)GL.GetUniformLocation(Handle, "uPBRNormalScale"),
+				PBROcclusionStrength = (short)GL.GetUniformLocation(Handle, "uPBROcclusionStrength"),
+				EnvMap = (short)GL.GetUniformLocation(Handle, "uEnvMap"),
+				EnvMaxLod = (short)GL.GetUniformLocation(Handle, "uEnvMaxLod"),
+				HasEnv = (short)GL.GetUniformLocation(Handle, "uHasEnv"),
+				CameraWorldPos = (short)GL.GetUniformLocation(Handle, "uCameraWorldPos"),
+				PBRTransmission = (short)GL.GetUniformLocation(Handle, "uPBRTransmission"),
+				PBRIor = (short)GL.GetUniformLocation(Handle, "uPBRIor"),
+				PBRSpecular = (short)GL.GetUniformLocation(Handle, "uPBRSpecular"),
+				PBRSpecularColor = (short)GL.GetUniformLocation(Handle, "uPBRSpecularColor"),
+				SpecularMap = (short)GL.GetUniformLocation(Handle, "uSpecularMap"),
+				SpecularColorMap = (short)GL.GetUniformLocation(Handle, "uSpecularColorMap")
 			};
 		}
 
@@ -363,6 +383,72 @@ namespace LibRender2.Shaders
 		public void SetMaterialFlags(MaterialFlags Flags)
 		{
 			GL.ProgramUniform1(Handle, UniformLayout.MaterialFlags, (int)Flags);
+		}
+
+		/// <summary>Binds the PBR map samplers to fixed texture units (call once after init)</summary>
+		public void SetPBRMapUnits(int normalUnit, int occlusionUnit, int emissiveUnit, int armUnit, int specularUnit, int specularColorUnit)
+		{
+			if (UniformLayout.NormalMap >= 0) GL.ProgramUniform1(Handle, UniformLayout.NormalMap, normalUnit);
+			if (UniformLayout.OcclusionMap >= 0) GL.ProgramUniform1(Handle, UniformLayout.OcclusionMap, occlusionUnit);
+			if (UniformLayout.EmissiveMap >= 0) GL.ProgramUniform1(Handle, UniformLayout.EmissiveMap, emissiveUnit);
+			if (UniformLayout.MetallicRoughnessMap >= 0) GL.ProgramUniform1(Handle, UniformLayout.MetallicRoughnessMap, armUnit);
+			if (UniformLayout.SpecularMap >= 0) GL.ProgramUniform1(Handle, UniformLayout.SpecularMap, specularUnit);
+			if (UniformLayout.SpecularColorMap >= 0) GL.ProgramUniform1(Handle, UniformLayout.SpecularColorMap, specularColorUnit);
+		}
+
+		public void SetPBRFactors(float metallic, float roughness)
+		{
+			if (UniformLayout.PBRMetallic >= 0) GL.ProgramUniform1(Handle, UniformLayout.PBRMetallic, metallic);
+			if (UniformLayout.PBRRoughness >= 0) GL.ProgramUniform1(Handle, UniformLayout.PBRRoughness, roughness);
+		}
+
+		public void SetPBRTransmission(float transmission)
+		{
+			if (UniformLayout.PBRTransmission >= 0) GL.ProgramUniform1(Handle, UniformLayout.PBRTransmission, transmission);
+		}
+
+		public void SetPBRSpecular(float specularFactor, Vector3 specularColorFactor, float ior)
+		{
+			if (UniformLayout.PBRSpecular >= 0) GL.ProgramUniform1(Handle, UniformLayout.PBRSpecular, specularFactor);
+			if (UniformLayout.PBRSpecularColor >= 0) GL.ProgramUniform3(Handle, UniformLayout.PBRSpecularColor, (float)specularColorFactor.X, (float)specularColorFactor.Y, (float)specularColorFactor.Z);
+			if (UniformLayout.PBRIor >= 0) GL.ProgramUniform1(Handle, UniformLayout.PBRIor, ior);
+		}
+
+		public void SetPBREmissive(Color32 emissive)
+		{
+			if (UniformLayout.PBREmissive >= 0) GL.ProgramUniform3(Handle, UniformLayout.PBREmissive, emissive.R / 255.0f, emissive.G / 255.0f, emissive.B / 255.0f);
+		}
+
+		public void SetPBRMaps(int mapMask)
+		{
+			if (UniformLayout.PBRMaps >= 0) GL.ProgramUniform1(Handle, UniformLayout.PBRMaps, mapMask);
+		}
+
+		public void SetPBRScales(float normalScale, float occlusionStrength)
+		{
+			if (UniformLayout.PBRNormalScale >= 0) GL.ProgramUniform1(Handle, UniformLayout.PBRNormalScale, normalScale);
+			if (UniformLayout.PBROcclusionStrength >= 0) GL.ProgramUniform1(Handle, UniformLayout.PBROcclusionStrength, occlusionStrength);
+		}
+
+		/// <summary>Binds the environment sampler to its unit (call once after init)</summary>
+		public void SetEnvMapUnit(int unit)
+		{
+			if (UniformLayout.EnvMap >= 0) GL.ProgramUniform1(Handle, UniformLayout.EnvMap, unit);
+		}
+
+		public void SetEnvMaxLod(float maxLod)
+		{
+			if (UniformLayout.EnvMaxLod >= 0) GL.ProgramUniform1(Handle, UniformLayout.EnvMaxLod, maxLod);
+		}
+
+		public void SetHasEnv(bool hasEnv)
+		{
+			if (UniformLayout.HasEnv >= 0) GL.ProgramUniform1(Handle, UniformLayout.HasEnv, hasEnv ? 1 : 0);
+		}
+
+		public void SetCameraWorldPos(Vector3 position)
+		{
+			if (UniformLayout.CameraWorldPos >= 0) GL.ProgramUniform3(Handle, UniformLayout.CameraWorldPos, (float)position.X, (float)position.Y, (float)position.Z);
 		}
 
 		public override void SetFog(bool enabled)

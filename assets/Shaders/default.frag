@@ -66,6 +66,34 @@ uniform vec2              uAlphaTest;
 uniform bool              uAlphaToCoverage;
 uniform sampler2D uTexture;
 
+// --- PBR metallic-roughness (glTF and friends), GLSL 410 / macOS 4.1 safe ---
+// BRDF after Filament (google/filament, Apache 2.0): GGX NDF + height-correlated
+// Smith visibility (exact) + Schlick Fresnel. Nadrin/PBR (MIT, (c) Michal Siejak)
+// as the original structural reference; split-sum env uses the Karis UE4
+// analytic BRDF (no LUT texture) and a Filament quadratic LOD.
+uniform float     uPBRMetallic;
+uniform float     uPBRRoughness;
+uniform vec3      uPBREmissive;
+uniform sampler2D uNormalMap;
+uniform sampler2D uOcclusionMap;
+uniform sampler2D uEmissiveMap;
+uniform sampler2D uMetallicRoughnessMap; // ARM: R occlusion, G roughness, B metallic
+uniform sampler2D uSpecularMap; // KHR_materials_specular: specular factor in alpha
+uniform sampler2D uSpecularColorMap; // KHR_materials_specular: F0 color in sRGB RGB
+uniform int       uPBRMaps; // bit0 normal, bit1 occlusion, bit2 emissive, bit3 metallic-roughness, bit4 specular, bit5 specular-color
+uniform float     uPBRNormalScale;
+uniform float     uPBROcclusionStrength;
+uniform float     uPBRSpecular; // KHR_materials_specular weight 0-1
+uniform vec3      uPBRSpecularColor; // KHR_materials_specular F0 color, linear (may exceed 1)
+uniform float     uPBRIor; // KHR_materials_ior (1.5 when unset, air outside at 1.0)
+// Image-based lighting: one shipped equirect HDR, mipmaps stand in for a prefilter.
+// uHasEnv 0 = analytic sun only; 1 = analytic + env (split-sum with analytic BRDF).
+uniform sampler2D uEnvMap;
+uniform float     uEnvMaxLod;
+uniform int       uHasEnv;
+uniform vec3      uCameraWorldPos;
+uniform float     uPBRTransmission; // thin-glass factor 0-1 (KHR_materials_transmission approx)
+
 struct Light
 {
 	vec3 position;
@@ -78,6 +106,8 @@ uniform Light uLight;
 
 // Inputs from vertex shader
 in vec3  vNormal;
+in vec3  vWorldPos;
+in vec3  vWorldNormal;
 in vec4  vPosLightSpace0;
 in vec4  vPosLightSpace1;
 in vec4  vPosLightSpace2;
@@ -332,6 +362,9 @@ float CalculateShadowFactor()
     return mix(1.0, shadow, uShadowStrength);
 }
 
+#include "tonemap/tonemap.glsl"
+#include "pbr.glsl"
+
 void main(void)
 {
 	vec4 finalColor;
@@ -345,9 +378,10 @@ void main(void)
 		finalColor = vec4(oColor.rgb, 1.0) * vec4(texture(uTexture, oUv).xyz, 1.0);
 	}
 
-	if((uMaterialFlags & 1) == 0 && (uMaterialFlags & 4) == 0)
+	if((uMaterialFlags & 1) == 0 && (uMaterialFlags & 4) == 0 && (uMaterialFlags & 128) == 0)
 	{
 		//Material is not emissive and lighting is enabled, so multiply by brightness
+		//(PBR applies brightness itself inside PBRLighting - doing it here would darken twice)
 		finalColor.rgb *= uBrightness;
 	}
 	
@@ -417,7 +451,13 @@ void main(void)
 	 */
 	float shadow = CalculateShadowFactor();
 	
-	if ((uMaterialFlags & 1) == 0 && (uMaterialFlags & 4) == 0)
+	if ((uMaterialFlags & 128) != 0 && (uMaterialFlags & 4) == 0)
+	{
+		// PBR metallic-roughness path (file-agnostic: glTF, FBX, ...). Lighting is
+		// computed per-fragment here; oLightResult (per-vertex Blinn-Phong) is ignored.
+		finalColor.rgb = PBRLighting(finalColor.rgb, shadow);
+	}
+	else if ((uMaterialFlags & 1) == 0 && (uMaterialFlags & 4) == 0)
 	{
 		// Material is not emissive, apply shadow to the light factor
 		finalColor.rgb *= (oLightResult.rgb * shadow);

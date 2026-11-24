@@ -163,6 +163,9 @@ namespace LibRender2
 
 		public Shader DefaultShader;
 
+		/// <summary>Image-based lighting environment (one shipped HDR). Null when unavailable.</summary>
+		public EnvironmentMap IblEnvironment;
+
 		/// <summary>Shader used by the rail path overlay, created on first use.</summary>
 		public LineShader LineShader;
 		/// <summary>Set if the rail path shader could not be created, to avoid retrying every frame.</summary>
@@ -441,6 +444,19 @@ namespace LibRender2
 				DefaultShader.SetMaterialAmbient(Color32.White);
 				DefaultShader.SetMaterialDiffuse(Color32.White);
 				DefaultShader.SetMaterialSpecular(Color32.White);
+				// PBR map samplers live on fixed units (0 is albedo, 4-7 shadows, 9 env)
+				DefaultShader.SetPBRMapUnits(1, 2, 3, 8, 10, 11);
+				DefaultShader.SetEnvMapUnit(9);
+				// Environment uploads lazily on the first PBR face: no PBR on screen,
+				// no HDR decode, no VRAM spent.
+				try
+				{
+					DefaultShader.SetHasEnv(false);
+				}
+				catch
+				{
+					// ignored
+				}
 				lastColor = Color32.White;
 				DefaultShader.Deactivate();
 				dummyVao = new VertexArrayObject();
@@ -1446,6 +1462,102 @@ namespace LibRender2
 		private Matrix4D lastModelViewMatrix;
 		private bool sendToShader;
 
+		/// <summary>Whether the environment upload has been attempted (success or failure)</summary>
+		private bool environmentAttempted;
+
+		/// <summary>Embedded HDR environments offered to PBR (resource names, same order as <see cref="IblEnvironmentNames"/>)</summary>
+		public static readonly string[] IblEnvironmentResources =
+		{
+			"LibRender2.pine_picnic_1k.hdr",
+			"LibRender2.studio_small_08_1k.hdr",
+		};
+
+		/// <summary>Display names for the embedded HDR environments (ObjectViewer lighting tab)</summary>
+		public static readonly string[] IblEnvironmentNames =
+		{
+			"Pine Picnic (outdoor)",
+			"Studio Small (indoor)",
+		};
+
+		/// <summary>Selected embedded HDR environment (index into <see cref="IblEnvironmentResources"/>). Session state, not persisted.</summary>
+		public int IblEnvironmentIndex;
+
+		/// <summary>Switches the IBL environment. The old GL texture is released and the new HDR loads lazily on the next PBR face.</summary>
+		/// <remarks>Must be called from the UI thread: the GL work is marshalled to the render thread. Never throws.</remarks>
+		/// <param name="index">Index into <see cref="IblEnvironmentResources"/></param>
+		public void SwitchEnvironment(int index)
+		{
+			if (index < 0 || index >= IblEnvironmentResources.Length) return;
+			if (index == IblEnvironmentIndex && IblEnvironment != null && IblEnvironment.IsReady) return;
+			try
+			{
+				RunInRenderThread(() =>
+				{
+					IblEnvironmentIndex = index;
+					if (IblEnvironment != null)
+					{
+						IblEnvironment.Dispose();
+						IblEnvironment = null;
+					}
+					environmentAttempted = false;
+				}, 2000);
+			}
+			catch
+			{
+				// Best-effort: worst case the old environment stays live
+			}
+		}
+
+		/// <summary>Loads the selected HDR environment on first PBR use, then never again</summary>
+		/// <remarks>Soft-fails to analytic-sun-only: IBL is garnish, never load-bearing.</remarks>
+		private void EnsureIblEnvironment(Shader shader)
+		{
+			if (environmentAttempted) return;
+			environmentAttempted = true;
+			try
+			{
+				int index = IblEnvironmentIndex;
+				if (index < 0 || index >= IblEnvironmentResources.Length) index = 0;
+				Assembly assembly = Assembly.GetExecutingAssembly();
+				using (Stream stream = assembly.GetManifestResourceStream(IblEnvironmentResources[index]))
+				{
+					if (stream == null) return;
+					IblEnvironment = EnvironmentMap.TryLoad(stream);
+				}
+				if (IblEnvironment != null && IblEnvironment.IsReady)
+				{
+					shader.SetEnvMaxLod(IblEnvironment.MaxLod);
+					shader.SetHasEnv(true);
+				}
+			}
+			catch
+			{
+				IblEnvironment = null;
+			}
+		}
+
+		/// <summary>Binds a PBR detail texture to a fixed unit, or white when absent (neutral for the BRDF)</summary>
+		/// <returns>True when a real texture was bound</returns>
+		private bool BindPBRTexture(Texture texture, TextureUnit unit, OpenGlTextureWrapMode? wrapMode)
+		{
+			GL.ActiveTexture(unit);
+			try
+			{
+				if (texture != null && currentHost.LoadTexture(ref texture, (OpenGlTextureWrapMode)wrapMode))
+				{
+					GL.BindTexture(TextureTarget.Texture2D, texture.OpenGlTextures[(int)wrapMode].Name);
+					return true;
+				}
+				currentHost.LoadTexture(ref whitePixel, OpenGlTextureWrapMode.ClampClamp);
+				GL.BindTexture(TextureTarget.Texture2D, whitePixel.OpenGlTextures[(int)OpenGlTextureWrapMode.ClampClamp].Name);
+				return false;
+			}
+			finally
+			{
+				GL.ActiveTexture(TextureUnit.Texture0);
+			}
+		}
+
 		/// <summary>
 		/// Controls the batching of alpha (blended) faces:
 		/// 0 - every alpha face is drawn individually,
@@ -1687,6 +1799,15 @@ namespace LibRender2
 			
 			// lighting
 			shader.SetMaterialFlags(material.Flags);
+			if ((material.Flags & MaterialFlags.PBR) != 0)
+			{
+				// File-agnostic PBR factors (glTF, FBX, ... all land here via Material)
+				shader.SetPBRFactors(material.MetallicFactor, material.RoughnessFactor);
+				shader.SetPBREmissive(material.EmissiveColor);
+				shader.SetPBRScales(material.NormalScale, material.OcclusionStrength);
+				shader.SetPBRTransmission(material.TransmissionFactor);
+				shader.SetPBRSpecular(material.SpecularFactor, material.SpecularColorFactor, material.Ior);
+			}
 			if (OptionLighting)
 			{
 				if (material.Color != lastColor)
@@ -1765,6 +1886,27 @@ namespace LibRender2
 				else
 				{
 					shader.DisableTexturing();
+				}
+				// PBR detail maps on units 1-3 + 8/10/11 (missing map = white pixel = neutral)
+				if ((material.Flags & MaterialFlags.PBR) != 0 && OptionLighting)
+				{
+					int pbrMaps = 0;
+					if (BindPBRTexture(material.NormalTexture, TextureUnit.Texture1, material.WrapMode)) pbrMaps |= 1;
+					if (BindPBRTexture(material.OcclusionTexture, TextureUnit.Texture2, material.WrapMode)) pbrMaps |= 2;
+					if (BindPBRTexture(material.EmissiveTexture, TextureUnit.Texture3, material.WrapMode)) pbrMaps |= 4;
+					if (BindPBRTexture(material.MetallicRoughnessTexture, TextureUnit.Texture8, material.WrapMode)) pbrMaps |= 8;
+					if (BindPBRTexture(material.SpecularTexture, TextureUnit.Texture10, material.WrapMode)) pbrMaps |= 16;
+					if (BindPBRTexture(material.SpecularColorTexture, TextureUnit.Texture11, material.WrapMode)) pbrMaps |= 32;
+					shader.SetPBRMaps(pbrMaps);
+					EnsureIblEnvironment(shader);
+					if (IblEnvironment != null && IblEnvironment.IsReady)
+					{
+						IblEnvironment.Bind(TextureUnit.Texture9);
+						shader.SetCameraWorldPos(Camera.AbsolutePosition);
+						// uCurrentViewMatrix is otherwise only uploaded for shadows:
+						// the IBL world reconstruction needs the real per-frame view.
+						shader.SetCurrentViewMatrix(CurrentViewMatrix);
+					}
 				}
 				// Calculate the brightness of the poly to render
 				float factor;
@@ -1888,9 +2030,16 @@ namespace LibRender2
 					shader.SetIsLight(false);
 					shader.SetMaterialAmbient(Color32.White);
 					shader.SetMaterialFlags(MaterialFlags.Emissive);
+					/*
+					 * This draw runs inside the per-face loop, so it inherits whatever alpha test
+					 * the current pass set up. Drop the test for the overlay draw and restore it
+					 * immediately afterwards, otherwise the fully opaque overlay can be discarded.
+					 */
+					UnsetAlphaFunc();
 					normalsVao.Bind();
 					lastVAO = normalsVao.handle;
 					normalsVao.DrawArrays(PrimitiveType.Lines, 0, normalsMesh.Vertices.Length > 0 ? normalsMesh.Faces.Sum(f => f.Vertices.Length) * 2 : 0);
+					RestoreAlphaFunc();
 					shader.SetIsLight(OptionLighting);
 					shader.SetMaterialFlags(material.Flags);
 					shader.SetMaterialAmbient(material.Color);

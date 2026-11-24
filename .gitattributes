@@ -25,4 +25,6 @@
 *.pdf binary
 *.bin binary
 *.dat binary
+*.hdr binary
+*.exr binary
 *.tgz binary

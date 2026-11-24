@@ -167,6 +167,69 @@ namespace OpenBveApi.Objects
 					Object.Mesh.Materials[mm + i].BlendMode = Materials[i].BlendMode;
 					Object.Mesh.Materials[mm + i].GlowAttenuationData = Materials[i].GlowAttenuationData;
 					Object.Mesh.Materials[mm + i].WrapMode = Materials[i].WrapMode;
+					// PBR metallic-roughness model (file-agnostic: any plugin can fill these)
+					Object.Mesh.Materials[mm + i].MetallicFactor = Materials[i].MetallicFactor;
+					Object.Mesh.Materials[mm + i].RoughnessFactor = Materials[i].RoughnessFactor;
+					Object.Mesh.Materials[mm + i].NormalScale = Materials[i].NormalScale;
+					Object.Mesh.Materials[mm + i].OcclusionStrength = Materials[i].OcclusionStrength;
+					if (!string.IsNullOrWhiteSpace(Materials[i].NormalTexture))
+					{
+						currentHost.RegisterTexture(Materials[i].NormalTexture, parameters, out Texture tnormal);
+						Object.Mesh.Materials[mm + i].NormalTexture = tnormal;
+					}
+					else
+					{
+						Object.Mesh.Materials[mm + i].NormalTexture = null;
+					}
+					if (!string.IsNullOrWhiteSpace(Materials[i].OcclusionTexture))
+					{
+						currentHost.RegisterTexture(Materials[i].OcclusionTexture, parameters, out Texture tocc);
+						Object.Mesh.Materials[mm + i].OcclusionTexture = tocc;
+					}
+					else
+					{
+						Object.Mesh.Materials[mm + i].OcclusionTexture = null;
+					}
+					if (!string.IsNullOrWhiteSpace(Materials[i].EmissiveTexture))
+					{
+						currentHost.RegisterTexture(Materials[i].EmissiveTexture, parameters, out Texture temissive);
+						Object.Mesh.Materials[mm + i].EmissiveTexture = temissive;
+					}
+					else
+					{
+						Object.Mesh.Materials[mm + i].EmissiveTexture = null;
+					}
+					if (!string.IsNullOrWhiteSpace(Materials[i].MetallicRoughnessTexture))
+					{
+						currentHost.RegisterTexture(Materials[i].MetallicRoughnessTexture, parameters, out Texture tarm);
+						Object.Mesh.Materials[mm + i].MetallicRoughnessTexture = tarm;
+					}
+					else
+					{
+						Object.Mesh.Materials[mm + i].MetallicRoughnessTexture = null;
+					}
+					Object.Mesh.Materials[mm + i].TransmissionFactor = Materials[i].TransmissionFactor;
+					Object.Mesh.Materials[mm + i].SpecularFactor = Materials[i].SpecularFactor;
+					Object.Mesh.Materials[mm + i].SpecularColorFactor = Materials[i].SpecularColorFactor;
+					Object.Mesh.Materials[mm + i].Ior = Materials[i].Ior;
+					if (!string.IsNullOrWhiteSpace(Materials[i].SpecularTexture))
+					{
+						currentHost.RegisterTexture(Materials[i].SpecularTexture, parameters, out Texture tspec);
+						Object.Mesh.Materials[mm + i].SpecularTexture = tspec;
+					}
+					else
+					{
+						Object.Mesh.Materials[mm + i].SpecularTexture = null;
+					}
+					if (!string.IsNullOrWhiteSpace(Materials[i].SpecularColorTexture))
+					{
+						currentHost.RegisterTexture(Materials[i].SpecularColorTexture, parameters, out Texture tspecColor);
+						Object.Mesh.Materials[mm + i].SpecularColorTexture = tspecColor;
+					}
+					else
+					{
+						Object.Mesh.Materials[mm + i].SpecularColorTexture = null;
+					}
 				}
 			}
 		}

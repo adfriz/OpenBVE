@@ -1,7 +1,9 @@
+using System;
 using LibRender2.Shaders;
 using OpenBveApi.Colors;
 using OpenBveApi.Graphics;
 using OpenBveApi.Hosts;
+using OpenBveApi.Interface;
 using OpenBveApi.Math;
 using OpenBveApi.Textures;
 using OpenTK.Graphics.OpenGL;
@@ -20,13 +22,38 @@ namespace LibRender2.Text
 			try
 			{
 				Shader = new Shader(renderer, "text", "rectangle", true);
-            }
-			catch
+			}
+			catch (Exception e)
 			{
-				//
+				/*
+				 * Previously this catch was empty, which left Shader null and turned the very
+				 * next line into a NullReferenceException from deep inside renderer startup,
+				 * hiding the actual cause. Report it and carry on without a text shader- the
+				 * overlay is non-essential, so degrading is better than taking the renderer down.
+				 * NOTE: renderer / currentHost may themselves be partially constructed here,
+				 * so never dereference them blindly from inside the handler.
+				 */
+				try
+				{
+					renderer?.currentHost?.AddMessage(MessageType.Error, false,
+						$"Initializing the text shader failed, on-screen text will be unavailable: {e.Message}");
+				}
+				catch
+				{
+					// Reporting must never take the renderer down
+				}
+				return;
 			}
 
+			if (renderer?.Screen == null)
+			{
+				return;
+			}
 			Matrix4D.CreateOrthographicOffCenter(0.0f, renderer.Screen.Width, renderer.Screen.Height, 0.0f, -1.0f, 1.0f, out Matrix4D ProjectionMatrix);
+			if (Shader == null)
+			{
+				return;
+			}
 			Shader.Activate();
 			Shader.SetCurrentProjectionMatrix(ProjectionMatrix);
 			Shader.SetCurrentModelViewMatrix(Matrix4D.Identity);
@@ -34,6 +61,10 @@ namespace LibRender2.Text
 
 		public void Update()
 		{
+			if (Shader == null || renderer?.Screen == null)
+			{
+				return;
+			}
 			Matrix4D.CreateOrthographicOffCenter(0.0f, renderer.Screen.Width, renderer.Screen.Height, 0.0f, -1.0f, 1.0f, out Matrix4D ProjectionMatrix);
 			Shader.Activate();
 			Shader.SetCurrentProjectionMatrix(ProjectionMatrix);

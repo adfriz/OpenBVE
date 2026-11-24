@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Windows.Forms;
+using LibRender2;
 using LibRender2.Viewports;
 using ObjectViewer.Graphics;
 using OpenBveApi;
@@ -18,6 +19,11 @@ namespace ObjectViewer
 		private bool suppressSunEvents = false;
 		private bool suppressShadowEvents = false;
 		private bool committed = false;
+
+		// IBL environment is session state in the renderer; mirror the last chosen
+		// index here so reopening the dialog reflects the live preview selection.
+		private static int selectedEnvironment;
+		private int initialEnvironment;
 
 		// Snapshot of the live (memory) sun + shadow state at dialog open.
 		// The dialog mutates options live for realtime preview (.cfg is only
@@ -97,6 +103,13 @@ namespace ObjectViewer
 			else if (Interface.CurrentOptions.ShadowFilterRadius < 2.0) comboBoxShadowFilterRadius.SelectedIndex = 1;
 			else comboBoxShadowFilterRadius.SelectedIndex = 2;
 
+			// PBR environment (IBL) selection; items come from the renderer's catalog
+			comboBoxEnvironment.Items.Clear();
+			comboBoxEnvironment.Items.AddRange(BaseRenderer.IblEnvironmentNames);
+			int environmentIndex = selectedEnvironment;
+			if (environmentIndex < 0 || environmentIndex >= comboBoxEnvironment.Items.Count) environmentIndex = 0;
+			comboBoxEnvironment.SelectedIndex = environmentIndex;
+			comboBoxEnvironment.SelectedIndexChanged += comboBoxEnvironment_SelectedIndexChanged;
 
 			// Initialize sun direction sliders from current light position
 			InitializeSunSliders();
@@ -154,6 +167,7 @@ namespace ObjectViewer
 			initialShadowAutoCascadeResolution = Interface.CurrentOptions.ShadowAutoCascadeResolution;
 			initialShadowSmooth = Interface.CurrentOptions.ShadowSmooth;
 			initialShadowFilterRadius = Interface.CurrentOptions.ShadowFilterRadius;
+			initialEnvironment = selectedEnvironment;
 			initialShowGround = Interface.CurrentOptions.ShowGround;
 			initialGroundHeight = Interface.CurrentOptions.GroundHeight;
 			initialGroundColor = Interface.CurrentOptions.GroundColor;
@@ -182,6 +196,18 @@ namespace ObjectViewer
 			Interface.CurrentOptions.ShadowAutoCascadeResolution = initialShadowAutoCascadeResolution;
 			Interface.CurrentOptions.ShadowSmooth = initialShadowSmooth;
 			Interface.CurrentOptions.ShadowFilterRadius = initialShadowFilterRadius;
+			selectedEnvironment = initialEnvironment;
+			try
+			{
+				if (Program.Renderer != null)
+				{
+					Program.Renderer.SwitchEnvironment(initialEnvironment);
+				}
+			}
+			catch
+			{
+				// Best-effort
+			}
 			Interface.CurrentOptions.ShowGround = initialShowGround;
 			Interface.CurrentOptions.GroundHeight = initialGroundHeight;
 			Interface.CurrentOptions.GroundColor = initialGroundColor;
@@ -339,6 +365,23 @@ namespace ObjectViewer
 			checkBoxShadowFilterCascades.CheckedChanged += ShadowValue_Changed;
 			checkBoxShadowSmooth.CheckedChanged += ShadowSmooth_Changed;
 			comboBoxShadowFilterRadius.SelectedIndexChanged += ShadowFilter_Changed;
+		}
+
+		/// <summary>Live-switches the PBR environment. The renderer reloads the HDR on the render thread; visible on the next PBR face.</summary>
+		private void comboBoxEnvironment_SelectedIndexChanged(object sender, EventArgs e)
+		{
+			try
+			{
+				if (Program.Renderer != null && comboBoxEnvironment.SelectedIndex >= 0)
+				{
+					selectedEnvironment = comboBoxEnvironment.SelectedIndex;
+					Program.Renderer.SwitchEnvironment(selectedEnvironment);
+				}
+			}
+			catch
+			{
+				// Best-effort; the dialog stays open
+			}
 		}
 
 		private void ShadowMapSetting_Changed(object sender, EventArgs e)

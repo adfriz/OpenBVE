@@ -6,6 +6,8 @@
 		/// <summary>Original parser</summary>
 		Original = 0,
 		/// <summary>C# port of Assimp</summary>
-		Assimp = 1
+		Assimp = 1,
+		/// <summary>Self-contained parser (NewObjParser)</summary>
+		NewObjParser = 2
 	}
 }

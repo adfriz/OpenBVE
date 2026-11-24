@@ -237,5 +237,27 @@ namespace LibRender2
 		/// The handle of "uCurrentViewMatrix" within the shader
 		/// </summary>
 		public short CurrentViewMatrix = -1;
+
+		/// <summary>Handles for the PBR metallic-roughness path (-1 when the program has no PBR path)</summary>
+		public short PBRMetallic = -1;
+		public short PBRRoughness = -1;
+		public short PBREmissive = -1;
+		public short NormalMap = -1;
+		public short OcclusionMap = -1;
+		public short EmissiveMap = -1;
+		public short MetallicRoughnessMap = -1;
+		public short PBRMaps = -1;
+		public short PBRNormalScale = -1;
+		public short PBROcclusionStrength = -1;
+		public short EnvMap = -1;
+		public short EnvMaxLod = -1;
+		public short HasEnv = -1;
+		public short CameraWorldPos = -1;
+		public short PBRTransmission = -1;
+		public short PBRIor = -1;
+		public short PBRSpecular = -1;
+		public short PBRSpecularColor = -1;
+		public short SpecularMap = -1;
+		public short SpecularColorMap = -1;
 	}
 }
