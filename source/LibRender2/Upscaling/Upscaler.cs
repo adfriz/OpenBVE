@@ -26,7 +26,6 @@ using OpenBveApi;
 using OpenBveApi.Graphics;
 using OpenBveApi.Hosts;
 using OpenBveApi.Interface;
-using OpenTK;
 using OpenTK.Graphics.OpenGL;
 using System;
 using System.IO;
@@ -109,12 +108,55 @@ namespace LibRender2.Upscaling
                 /// <summary>Whether rendering is currently taking place inside the low-resolution scene phase</summary>
                 internal bool ScenePhaseActive { get; private set; }
 
-                /// <summary>The number of MSAA samples of the default framebuffer (0 = none)</summary>
-                private readonly int msaaSamples;
+                /// <summary>MSAA samples of the window; dropped to zero if the multisample target cannot be created</summary>
+                private int msaaSamples;
+
+                // Framebuffer and viewport of the pass which rendered before us. Normally the
+                // default framebuffer, but the compositor's offscreen target when post FX is on.
+                private int previousFramebuffer;
+                private readonly int[] previousViewport = new int[4];
+                private bool havePreviousTarget;
+
+                // Uniforms only depend on these values, so identical frames skip every write.
+                private struct UniformConfig : IEquatable<UniformConfig>
+                {
+                        public UpscalerMode Mode;
+                        public int SceneWidth;
+                        public int SceneHeight;
+                        public int WindowWidth;
+                        public int WindowHeight;
+                        public float Sharpness;
+
+                        public bool Equals(UniformConfig other)
+                        {
+                                return Mode == other.Mode && SceneWidth == other.SceneWidth && SceneHeight == other.SceneHeight &&
+                                       WindowWidth == other.WindowWidth && WindowHeight == other.WindowHeight && Sharpness == other.Sharpness;
+                        }
+
+                        public override bool Equals(object obj)
+                        {
+                                return obj is UniformConfig && Equals((UniformConfig)obj);
+                        }
+
+                        public override int GetHashCode()
+                        {
+                                return Mode.GetHashCode() ^ SceneWidth ^ (SceneHeight << 11) ^ (WindowWidth << 22) ^ WindowHeight ^ Sharpness.GetHashCode();
+                        }
+                }
+
+                // Mode Off is never configured, so the default value never matches a real frame.
+                private UniformConfig uploadedUniforms;
 
                 public Upscaler(BaseRenderer renderer)
                 {
                         this.renderer = renderer;
+                        // No framebuffer objects means no low-resolution scene target; leave
+                        // Available false so the renderers keep drawing straight to the window.
+                        if (renderer.Capabilities == null || !renderer.Capabilities.IsAtLeast(3, 0))
+                        {
+                                renderer.currentHost?.AddMessage(MessageType.Warning, false, "Spatial upscaling needs OpenGL 3.0; using native resolution.");
+                                return;
+                        }
                         Available = true;
                         try
                         {
@@ -165,6 +207,12 @@ namespace LibRender2.Upscaling
                         int windowW = renderer.Screen.Width;
                         int windowH = renderer.Screen.Height;
 
+                        // Save the caller's target. When post processing is enabled this is the
+                        // compositor's offscreen texture, and the upscaled scene must go there.
+                        havePreviousTarget = true;
+                        GL.GetInteger(GetPName.FramebufferBinding, out previousFramebuffer);
+                        GL.GetInteger(GetPName.Viewport, previousViewport);
+
                         ComputeSceneSize(windowW, windowH, out int sceneW, out int sceneH);
 
                         UpscalerMode mode = Mode;
@@ -206,6 +254,7 @@ namespace LibRender2.Upscaling
                                         Failed = true;
                                         GL.GetError();
                                         DisposeGlObjects();
+                                        RestoreCallerTarget(windowW, windowH);
                                         return;
                                 }
                         }
@@ -248,8 +297,23 @@ namespace LibRender2.Upscaling
                         GL.Viewport(0, 0, configuredSceneW, configuredSceneH);
                 }
 
+                /// <summary>Restores the framebuffer and viewport which were active before the low-resolution pass</summary>
+                private void RestoreCallerTarget(int windowW, int windowH)
+                {
+                        GL.BindFramebuffer(FramebufferTarget.Framebuffer, havePreviousTarget ? previousFramebuffer : 0);
+                        if (havePreviousTarget && previousViewport[2] > 0 && previousViewport[3] > 0)
+                        {
+                                GL.Viewport(previousViewport[0], previousViewport[1], previousViewport[2], previousViewport[3]);
+                        }
+                        else
+                        {
+                                GL.Viewport(0, 0, windowW, windowH);
+                        }
+                        havePreviousTarget = false;
+                }
+
                 /// <summary>
-                /// Resolves and upscales the low-resolution scene to the default framebuffer,
+                /// Resolves and upscales the low-resolution scene to the target of the previous pass,
                 /// then restores the native viewport. Call after the world rendering, before
                 /// any HUD / overlay / menu rendering.
                 /// </summary>
@@ -274,9 +338,8 @@ namespace LibRender2.Upscaling
                                         ClearBufferMask.ColorBufferBit, BlitFramebufferFilter.Nearest);
                         }
 
-                        // 2. Upscale + sharpen to the default framebuffer
-                        GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
-                        GL.Viewport(0, 0, windowW, windowH);
+                        // 2. Upscale + sharpen into the previous target (window or post FX scene)
+                        RestoreCallerTarget(windowW, windowH);
 
                         // Save blend factors and set clean raster state for the fullscreen pass
                         BlendingFactor srcFactor = renderer.GetBlendSrcFactor();
@@ -304,74 +367,102 @@ namespace LibRender2.Upscaling
 
                         renderer.dummyVao.Bind();
 
-                        GL.ActiveTexture(TextureUnit.Texture0);
-                        GL.BindTexture(TextureTarget.Texture2D, sceneTexture);
-
-                        // Uniforms
-                        float scaleX = (float)(configuredSceneW / (double)windowW);
-                        float scaleY = (float)(configuredSceneH / (double)windowH);
-
-                        if (configuredMode == UpscalerMode.Fsr1)
+                        // GL 4.5+ binds straight to a texture unit; older contexts fall back to
+                        // ActiveTexture + BindTexture. The NIS coefficient bank is on unit 1.
+                        TextureBinder.Bind(0, sceneTexture);
+                        if (configuredMode == UpscalerMode.Nis)
                         {
-                                float sharpness = (float)Math.Min(1.0, Math.Max(0.0, renderer.currentOptions.UpscalerSharpnessFsr));
-                                GL.Uniform1(uSrcLoc, 0);
-                                GL.Uniform4(uEasuCon0Loc, new Vector4(scaleX, scaleY, 0.5f * scaleX - 0.5f, 0.5f * scaleY - 0.5f));
-                                GL.Uniform2(uTexelStepLoc, new Vector2(1.0f / configuredSceneW, 1.0f / configuredSceneH));
-                                GL.Uniform2(uDstResInvLoc, new Vector2(1.0f / windowW, 1.0f / windowH));
-                                GL.Uniform1(uSharpnessLoc, sharpness);
+                                TextureBinder.Bind(1, nisCoefTexture);
                         }
-                        else if (configuredMode == UpscalerMode.Nis)
+
+                        // Every uniform below depends only on these values. Re-sending the same
+                        // values each frame is pure driver overhead, so upload them on change.
+                        float sharpness;
+                        switch (configuredMode)
                         {
-                                // NVIDIA Image Scaling: config constants per NVScalerUpdateConfig (SDR mode)
-                                double sharpness = Math.Min(1.0, Math.Max(0.0, renderer.currentOptions.UpscalerSharpnessNis));
-                                double sharpenSlider = sharpness - 0.5;
-                                double maxScale = sharpenSlider >= 0.0 ? 1.25 : 1.75;
-                                double minScale = sharpenSlider >= 0.0 ? 1.25 : 1.0;
-                                double limitScale = sharpenSlider >= 0.0 ? 1.25 : 1.0;
-
-                                const double kDetectRatio = 2 * 1127.0 / 1024.0;
-                                const double kDetectThres = 64.0 / 1024.0;
-                                const double kMinContrastRatio = 2.0;
-                                const double kMaxContrastRatio = 10.0;
-                                const double kSharpStartY = 0.45;
-                                const double kSharpEndY = 0.9;
-                                double kSharpStrengthMin = Math.Max(0.0, 0.4 + sharpenSlider * minScale * 1.2);
-                                double kSharpStrengthMax = 1.6 + sharpenSlider * maxScale * 1.8;
-                                double kSharpLimitMin = Math.Max(0.1, 0.14 + sharpenSlider * limitScale * 0.32);
-                                double kSharpLimitMax = 0.5 + sharpenSlider * limitScale * 0.6;
-                                double kRatioNorm = 1.0 / (kMaxContrastRatio - kMinContrastRatio);
-                                double kSharpScaleY = 1.0 / (kSharpEndY - kSharpStartY);
-                                double kSharpStrengthScale = kSharpStrengthMax - kSharpStrengthMin;
-                                double kSharpLimitScale = kSharpLimitMax - kSharpLimitMin;
-
-                                // Coefficient texture with the 64x6 filter banks (unit 1)
-                                GL.ActiveTexture(TextureUnit.Texture1);
-                                GL.BindTexture(TextureTarget.Texture2D, nisCoefTexture);
-                                GL.Uniform1(uCoefLoc, 1);
-
-                                GL.Uniform1(uSrcLoc, 0);
-                                GL.Uniform4(uNisCfg0Loc, new Vector4((float)kDetectRatio, (float)kDetectThres, (float)kMinContrastRatio, (float)kRatioNorm));
-                                GL.Uniform4(uNisCfg1Loc, new Vector4(1.0f, (float)(1.0 / 255.0), (float)kSharpStartY, (float)kSharpScaleY));
-                                GL.Uniform4(uNisCfg2Loc, new Vector4((float)kSharpStrengthMin, (float)kSharpStrengthScale, (float)kSharpLimitMin, (float)kSharpLimitScale));
-                                GL.Uniform4(uNisCfg3Loc, new Vector4(scaleX, scaleY, (float)(1.0 / configuredSceneW), (float)(1.0 / configuredSceneH)));
+                                case UpscalerMode.Fsr1:
+                                        sharpness = (float)Math.Min(1.0, Math.Max(0.0, renderer.currentOptions.UpscalerSharpnessFsr));
+                                        break;
+                                case UpscalerMode.Nis:
+                                        sharpness = (float)Math.Min(1.0, Math.Max(0.0, renderer.currentOptions.UpscalerSharpnessNis));
+                                        break;
+                                default:
+                                        sharpness = (float)Math.Min(1.0, Math.Max(0.0, renderer.currentOptions.UpscalerSharpnessSgsr));
+                                        break;
                         }
-                        else
+
+                        UniformConfig config = new UniformConfig
                         {
-                                // Qualcomm SGSR v1 (mobile + edge direction variant)
-                                double sharpness = Math.Min(1.0, Math.Max(0.0, renderer.currentOptions.UpscalerSharpnessSgsr));
-                                GL.Uniform1(uSrcLoc, 0);
-                                GL.Uniform2(uInputSizeLoc, new Vector2(configuredSceneW, configuredSceneH));
-                                GL.Uniform2(uTexelStepLoc, new Vector2(1.0f / configuredSceneW, 1.0f / configuredSceneH));
-                                GL.Uniform1(uEdgeSharpnessLoc, (float)(1.0 + sharpness));
+                                Mode = configuredMode,
+                                SceneWidth = configuredSceneW,
+                                SceneHeight = configuredSceneH,
+                                WindowWidth = windowW,
+                                WindowHeight = windowH,
+                                Sharpness = sharpness
+                        };
+                        if (!uploadedUniforms.Equals(config))
+                        {
+                                uploadedUniforms = config;
+                                float scaleX = (float)(configuredSceneW / (double)windowW);
+                                float scaleY = (float)(configuredSceneH / (double)windowH);
+
+                                if (configuredMode == UpscalerMode.Fsr1)
+                                {
+                                        GL.ProgramUniform1(programHandle, uSrcLoc, 0);
+                                        GL.ProgramUniform4(programHandle, uEasuCon0Loc, scaleX, scaleY, 0.5f * scaleX - 0.5f, 0.5f * scaleY - 0.5f);
+                                        GL.ProgramUniform2(programHandle, uTexelStepLoc, 1.0f / configuredSceneW, 1.0f / configuredSceneH);
+                                        GL.ProgramUniform2(programHandle, uDstResInvLoc, 1.0f / windowW, 1.0f / windowH);
+                                        GL.ProgramUniform1(programHandle, uSharpnessLoc, sharpness);
+                                }
+                                else if (configuredMode == UpscalerMode.Nis)
+                                {
+                                        // NVIDIA Image Scaling: config constants per NVScalerUpdateConfig (SDR mode)
+                                        double sharpenSlider = sharpness - 0.5;
+                                        double maxScale = sharpenSlider >= 0.0 ? 1.25 : 1.75;
+                                        double minScale = sharpenSlider >= 0.0 ? 1.25 : 1.0;
+                                        double limitScale = sharpenSlider >= 0.0 ? 1.25 : 1.0;
+
+                                        const double kDetectRatio = 2 * 1127.0 / 1024.0;
+                                        const double kDetectThres = 64.0 / 1024.0;
+                                        const double kMinContrastRatio = 2.0;
+                                        const double kMaxContrastRatio = 10.0;
+                                        const double kSharpStartY = 0.45;
+                                        const double kSharpEndY = 0.9;
+                                        double kSharpStrengthMin = Math.Max(0.0, 0.4 + sharpenSlider * minScale * 1.2);
+                                        double kSharpStrengthMax = 1.6 + sharpenSlider * maxScale * 1.8;
+                                        double kSharpLimitMin = Math.Max(0.1, 0.14 + sharpenSlider * limitScale * 0.32);
+                                        double kSharpLimitMax = 0.5 + sharpenSlider * limitScale * 0.6;
+                                        double kRatioNorm = 1.0 / (kMaxContrastRatio - kMinContrastRatio);
+                                        double kSharpScaleY = 1.0 / (kSharpEndY - kSharpStartY);
+                                        double kSharpStrengthScale = kSharpStrengthMax - kSharpStrengthMin;
+                                        double kSharpLimitScale = kSharpLimitMax - kSharpLimitMin;
+
+                                        GL.ProgramUniform1(programHandle, uCoefLoc, 1);
+                                        GL.ProgramUniform1(programHandle, uSrcLoc, 0);
+                                        GL.ProgramUniform4(programHandle, uNisCfg0Loc, (float)kDetectRatio, (float)kDetectThres, (float)kMinContrastRatio, (float)kRatioNorm);
+                                        GL.ProgramUniform4(programHandle, uNisCfg1Loc, 1.0f, (float)(1.0 / 255.0), (float)kSharpStartY, (float)kSharpScaleY);
+                                        GL.ProgramUniform4(programHandle, uNisCfg2Loc, (float)kSharpStrengthMin, (float)kSharpStrengthScale, (float)kSharpLimitMin, (float)kSharpLimitScale);
+                                        GL.ProgramUniform4(programHandle, uNisCfg3Loc, scaleX, scaleY, 1.0f / configuredSceneW, 1.0f / configuredSceneH);
+                                }
+                                else
+                                {
+                                        // Qualcomm SGSR v1 (mobile + edge direction variant)
+                                        GL.ProgramUniform1(programHandle, uSrcLoc, 0);
+                                        GL.ProgramUniform2(programHandle, uInputSizeLoc, (float)configuredSceneW, (float)configuredSceneH);
+                                        GL.ProgramUniform2(programHandle, uTexelStepLoc, 1.0f / configuredSceneW, 1.0f / configuredSceneH);
+                                        GL.ProgramUniform1(programHandle, uEdgeSharpnessLoc, 1.0f + sharpness);
+                                }
                         }
 
                         GL.DrawArrays(PrimitiveType.Triangles, 0, 3);
 
                         // 3. Restore state for the native-resolution overlay pass
-                        GL.BindTexture(TextureTarget.Texture2D, 0);
-                        GL.ActiveTexture(TextureUnit.Texture1);
-                        GL.BindTexture(TextureTarget.Texture2D, 0);
-                        GL.ActiveTexture(TextureUnit.Texture0);
+                        TextureBinder.Bind(0, 0);
+                        if (configuredMode == UpscalerMode.Nis)
+                        {
+                                TextureBinder.Bind(1, 0);
+                        }
+                        TextureBinder.ResetActiveUnit();
                         GL.UseProgram(0);
                         renderer.LastBoundTexture = null;
                         renderer.lastVAO = -1;
@@ -563,11 +654,37 @@ namespace LibRender2.Upscaling
 
                                 if (GL.CheckFramebufferStatus(FramebufferTarget.Framebuffer) != FramebufferErrorCode.FramebufferComplete)
                                 {
-                                        throw new Exception("MSAA scene framebuffer is incomplete: " + GL.CheckFramebufferStatus(FramebufferTarget.Framebuffer));
+                                        // Some drivers refuse multisampled depth/stencil renderbuffers.
+                                        // Lose MSAA for this upscaler rather than losing upscaling.
+                                        DeleteMsaaTargets();
+                                        msaaSamples = 0;
+                                        GL.BindFramebuffer(FramebufferTarget.Framebuffer, sceneFbo);
+                                        renderer.currentHost?.AddMessage(MessageType.Warning, false,
+                                                "Multisampled upscaler target unavailable; using the non-MSAA path.");
                                 }
                         }
 
                         GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+                }
+
+                /// <summary>Deletes only the multisampled scene targets</summary>
+                private void DeleteMsaaTargets()
+                {
+                        if (msaaFbo != 0)
+                        {
+                                GL.DeleteFramebuffer(msaaFbo);
+                                msaaFbo = 0;
+                        }
+                        if (msaaColorRbo != 0)
+                        {
+                                GL.DeleteRenderbuffer(msaaColorRbo);
+                                msaaColorRbo = 0;
+                        }
+                        if (msaaDepthRbo != 0)
+                        {
+                                GL.DeleteRenderbuffer(msaaDepthRbo);
+                                msaaDepthRbo = 0;
+                        }
                 }
 
                 /// <summary>Deletes all GL objects owned by this upscaler</summary>
@@ -588,21 +705,7 @@ namespace LibRender2.Upscaling
                                 GL.DeleteRenderbuffer(sceneDepthRbo);
                                 sceneDepthRbo = 0;
                         }
-                        if (msaaFbo != 0)
-                        {
-                                GL.DeleteFramebuffer(msaaFbo);
-                                msaaFbo = 0;
-                        }
-                        if (msaaColorRbo != 0)
-                        {
-                                GL.DeleteRenderbuffer(msaaColorRbo);
-                                msaaColorRbo = 0;
-                        }
-                        if (msaaDepthRbo != 0)
-                        {
-                                GL.DeleteRenderbuffer(msaaDepthRbo);
-                                msaaDepthRbo = 0;
-                        }
+                        DeleteMsaaTargets();
                         if (sceneTexture != 0)
                         {
                                 GL.DeleteTexture(sceneTexture);
@@ -613,6 +716,8 @@ namespace LibRender2.Upscaling
                                 GL.DeleteTexture(nisCoefTexture);
                                 nisCoefTexture = 0;
                         }
+                        uploadedUniforms = default(UniformConfig);
+                        havePreviousTarget = false;
                 }
 
                 /// <summary>Releases all GL resources</summary>
