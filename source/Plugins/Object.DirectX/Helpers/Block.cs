@@ -114,27 +114,39 @@ namespace OpenBve.Formats.DirectX
 			currentPosition = 0;
 		}
 
-		public TextualBlock(string text, TemplateID token)
+		public TextualBlock(string text, TemplateID token) : this(text, token, false)
 		{
-			StringBuilder sb = new StringBuilder();
-			for (int i = 0; i < text.Length; i++)
+		}
+
+		/// <summary>
+		/// Creates a block over text. Sub-blocks are slices of an already normalised parent, so they can
+		/// skip the per-block StringBuilder copy entirely (the AZDO-style "normalise once, read many" path).
+		/// </summary>
+		private TextualBlock(string text, TemplateID token, bool alreadyNormalised)
+		{
+			if (alreadyNormalised)
 			{
-				//Convert multiple whitespace chars to single
-				//whilst building new string
-				if (!char.IsWhiteSpace(text[i]))
-				{
-					sb.Append(text[i]);
-				}
-				else
-				{
-					if (char.IsWhiteSpace(text[i + 1]))
-					{
-						continue;
-					}
-					sb.Append(' ');
-				}
+				myText = text;
 			}
-			myText = sb.ToString();
+			else
+			{
+				StringBuilder sb = new StringBuilder(text.Length);
+				bool previousWhitespace = false;
+				for (int i = 0; i < text.Length; i++)
+				{
+					if (char.IsWhiteSpace(text[i]))
+					{
+						if (!previousWhitespace) sb.Append(' ');
+						previousWhitespace = true;
+					}
+					else
+					{
+						sb.Append(text[i]);
+						previousWhitespace = false;
+					}
+				}
+				myText = sb.ToString();
+			}
 			Token = token;
 			currentPosition = 0;
 			Label = string.Empty;
@@ -267,7 +279,7 @@ namespace OpenBve.Formats.DirectX
 					currentPosition++;
 					if (level == 0)
 					{
-						return new TextualBlock(myText.Substring(startPosition, currentPosition - startPosition).Trim(), currentToken);
+						return CreateSubBlock(startPosition, currentPosition, currentToken);
 					}
 
 					level--;
@@ -347,7 +359,7 @@ namespace OpenBve.Formats.DirectX
 					currentPosition++;
 					if (level == 0)
 					{
-						return new TextualBlock(myText.Substring(startPosition, currentPosition - startPosition).Trim(), currentToken);
+						return CreateSubBlock(startPosition, currentPosition, currentToken);
 					}
 
 					level--;
@@ -426,7 +438,7 @@ namespace OpenBve.Formats.DirectX
 						{
 							return null;
 						}
-						return new TextualBlock(myText.Substring(startPosition, currentPosition - startPosition).Trim(), currentToken);
+						return CreateSubBlock(startPosition, currentPosition, currentToken);
 					}
 
 					level--;
@@ -440,19 +452,133 @@ namespace OpenBve.Formats.DirectX
 		}
 
 
+		/// <summary>Slices a sub-block out of the parent text with one allocation: the parent is already normalised.</summary>
+		private TextualBlock CreateSubBlock(int start, int end, TemplateID token)
+		{
+			while (start < end && char.IsWhiteSpace(myText[start])) start++;
+			while (end > start && char.IsWhiteSpace(myText[end - 1])) end--;
+			return new TextualBlock(myText.Substring(start, end - start), token, true);
+		}
+
+		/// <summary>Locates the next token in-place, so numeric reads need no Substring allocation.</summary>
+		private bool TryGetTokenBounds(out int tokenStart, out int tokenLength)
+		{
+			tokenStart = 0;
+			tokenLength = 0;
+			if (currentPosition >= myText.Length)
+			{
+				return false;
+			}
+			startPosition = currentPosition;
+			while (currentPosition < myText.Length &&
+			       (char.IsWhiteSpace(myText[currentPosition]) || myText[currentPosition] == ';' || myText[currentPosition] == ','))
+			{
+				currentPosition++;
+			}
+			if (currentPosition >= myText.Length)
+			{
+				return false;
+			}
+			tokenStart = currentPosition;
+			switch (myText[currentPosition])
+			{
+				case '"':
+					currentPosition++;
+					while (currentPosition < myText.Length && myText[currentPosition] != '"') currentPosition++;
+					tokenStart++;
+					if (currentPosition < myText.Length) currentPosition++;
+					break;
+				case '<':
+					currentPosition++;
+					while (currentPosition < myText.Length && myText[currentPosition] != '>') currentPosition++;
+					tokenStart++;
+					if (currentPosition < myText.Length) currentPosition++;
+					break;
+				default:
+					while (currentPosition < myText.Length &&
+					       (char.IsDigit(myText[currentPosition]) || myText[currentPosition] == '.' ||
+					        myText[currentPosition] == '+' || myText[currentPosition] == '-'))
+					{
+						currentPosition++;
+					}
+					break;
+			}
+			tokenLength = currentPosition - tokenStart;
+			return true;
+		}
+
+		/// <summary>
+		/// Fast path for the numeric tokens the X format actually contains (sign, digits, optional fraction).
+		/// Anything unusual falls back to the original framework parser, so behaviour is unchanged.
+		/// </summary>
+		private static bool TryParseFastNumber(string text, int start, int length, out double number)
+		{
+			number = 0.0;
+			if (length <= 0) return false;
+			int i = start;
+			int end = start + length;
+			bool negative = false;
+			if (text[i] == '+' || text[i] == '-')
+			{
+				negative = text[i] == '-';
+				i++;
+			}
+			if (i == end) return false;
+			double value = 0.0;
+			bool anyDigit = false;
+			while (i < end && text[i] >= '0' && text[i] <= '9')
+			{
+				value = value * 10.0 + (text[i] - '0');
+				anyDigit = true;
+				i++;
+			}
+			if (i < end && text[i] == '.')
+			{
+				i++;
+				double scale = 0.1;
+				while (i < end && text[i] >= '0' && text[i] <= '9')
+				{
+					value += (text[i] - '0') * scale;
+					scale *= 0.1;
+					anyDigit = true;
+					i++;
+				}
+			}
+			if (!anyDigit || i != end) return false;
+			number = negative ? -value : value;
+			return true;
+		}
+
+		private static bool IsIntegerToken(string text, int start, int length)
+		{
+			for (int i = start; i < start + length; i++)
+			{
+				if (text[i] == '.') return false;
+			}
+			return true;
+		}
+
 		private int startPosition;
 
 		public override int ReadInt()
 		{
-			startPosition = currentPosition;
-			string s = getNextValue();
-			if (char.IsWhiteSpace(myText[currentPosition]))
+			if (!TryGetTokenBounds(out int start, out int length))
 			{
-				while (char.IsWhiteSpace(myText[currentPosition]))
+				throw new Exception("Unable to parse an integer in block " + Token);
+			}
+			if (currentPosition < myText.Length && char.IsWhiteSpace(myText[currentPosition]))
+			{
+				while (currentPosition < myText.Length && char.IsWhiteSpace(myText[currentPosition]))
 				{
 					currentPosition++;
 				}
 			}
+			if (IsIntegerToken(myText, start, length) && TryParseFastNumber(myText, start, length, out double d) &&
+			    d >= -2147483648.0 && d <= 2147483647.0 && d == Math.Truncate(d))
+			{
+				return (int)d;
+			}
+			string s = myText.Substring(start, length);
 			if (int.TryParse(s, NumberStyles.Number, CultureInfo.InvariantCulture, out int val))
 			{
 				return val;
@@ -462,15 +588,23 @@ namespace OpenBve.Formats.DirectX
 
 		public override ushort ReadUInt16()
 		{
-			startPosition = currentPosition;
-			string s = getNextValue();
-			if (char.IsWhiteSpace(myText[currentPosition]))
+			if (!TryGetTokenBounds(out int start, out int length))
 			{
-				while (char.IsWhiteSpace(myText[currentPosition]))
+				throw new Exception("Unable to parse an integer in block " + Token);
+			}
+			if (currentPosition < myText.Length && char.IsWhiteSpace(myText[currentPosition]))
+			{
+				while (currentPosition < myText.Length && char.IsWhiteSpace(myText[currentPosition]))
 				{
 					currentPosition++;
 				}
 			}
+			if (IsIntegerToken(myText, start, length) && TryParseFastNumber(myText, start, length, out double d) &&
+			    d >= 0.0 && d <= 65535.0 && d == Math.Truncate(d))
+			{
+				return (ushort)d;
+			}
+			string s = myText.Substring(start, length);
 			if (int.TryParse(s, NumberStyles.Number, CultureInfo.InvariantCulture, out int val))
 			{
 				return (ushort) val;
@@ -480,15 +614,23 @@ namespace OpenBve.Formats.DirectX
 
 		public override uint ReadDword()
 		{
-			startPosition = currentPosition;
-			string s = getNextValue();
-			if (char.IsWhiteSpace(myText[currentPosition]))
+			if (!TryGetTokenBounds(out int start, out int length))
 			{
-				while (char.IsWhiteSpace(myText[currentPosition]))
+				throw new Exception("Unable to parse an integer in block " + Token);
+			}
+			if (currentPosition < myText.Length && char.IsWhiteSpace(myText[currentPosition]))
+			{
+				while (currentPosition < myText.Length && char.IsWhiteSpace(myText[currentPosition]))
 				{
 					currentPosition++;
 				}
 			}
+			if (IsIntegerToken(myText, start, length) && TryParseFastNumber(myText, start, length, out double d) &&
+			    d >= 0.0 && d <= 4294967295.0 && d == Math.Truncate(d))
+			{
+				return (uint)d;
+			}
+			string s = myText.Substring(start, length);
 			if (uint.TryParse(s, NumberStyles.Number, CultureInfo.InvariantCulture, out uint val))
 			{
 				return val;
@@ -498,9 +640,16 @@ namespace OpenBve.Formats.DirectX
 
 		public override float ReadSingle()
 		{
-			startPosition = currentPosition;
-			string s = getNextValue();
+			if (!TryGetTokenBounds(out int start, out int length))
+			{
+				throw new Exception("Unable to parse a float in block " + Token);
+			}
 			currentPosition++;
+			if (TryParseFastNumber(myText, start, length, out double d))
+			{
+				return (float)d;
+			}
+			string s = myText.Substring(start, length);
 			if (float.TryParse(s, NumberStyles.Number | NumberStyles.AllowExponent, CultureInfo.InvariantCulture, out float val))
 			{
 				return val;

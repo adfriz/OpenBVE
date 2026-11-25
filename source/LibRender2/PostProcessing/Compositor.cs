@@ -464,7 +464,11 @@ namespace LibRender2.PostProcessing
 					current = destination;
 				}
 				// Gamma correction is the very last step, after every effect (GPU Gems 3 ch.24).
+				// The final blit must target the default framebuffer: otherwise it samples the
+				// very texture that is still attached to the bound FBO (undefined, flickers),
+				// and the screen is never presented. Restored after 31cb908c5 dropped it.
 				finalPass.EncodeGamma = colorMode == CompositorColorMode.HdrInternal;
+				BindScreen();
 				finalPass.Execute(renderer, current);
 			}
 			catch (Exception ex)

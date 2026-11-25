@@ -83,32 +83,15 @@ namespace Plugin
 			// supported floating point format
 			if (Data[8] == 116 && Data[9] == 120 && Data[10] == 116 && Data[11] == 32)
 			{
-				// textual flavor
-				string[] Lines = File.ReadAllLines(fileName, encoding);
-				// strip away comments
-				bool Quote = false;
-				for (int i = 0; i < Lines.Length; i++) {
-					for (int j = 0; j < Lines[i].Length; j++) {
-						if (Lines[i][j] == '"') Quote = !Quote;
-						if (!Quote) {
-							if (Lines[i][j] == '#' || j < Lines[i].Length - 1 && Lines[i].Substring(j, 2) == "//") {
-								Lines[i] = Lines[i].Substring(0, j);
-								break;
-							}
-						}
-					}
-					//Convert runs of whitespace to single - avoid slow LINQ
-					string[] parts = Lines[i].Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-					Lines[i] = string.Join(" ", parts);
+				// textual flavor: decode the bytes we already read instead of hitting the disk a second
+				// time, then strip comments, collapse whitespace and drop the header in a single pass.
+				string text;
+				using (var stream = new MemoryStream(Data, false))
+				using (var reader = new StreamReader(stream, encoding, true))
+				{
+					text = reader.ReadToEnd();
 				}
-				StringBuilder Builder = new StringBuilder();
-				for (int i = 0; i < Lines.Length; i++) {
-					Builder.Append(Lines[i]);
-					Builder.Append(' ');
-				}
-				string Content = Builder.ToString();
-				Content = Content.Substring(17).Trim();
-				return parser.LoadTextualX(Content);
+				return parser.LoadTextualX(NormaliseTextualX(text, 17));
 			}
 
 			byte[] newData;
@@ -125,7 +108,7 @@ namespace Plugin
 				// compressed textual flavor
 				newData = MSZip.Decompress(Data);
 				string Text = encoding.GetString(newData);
-				return parser.LoadTextualX(Text);
+				return parser.LoadTextualX(NormaliseTextualX(Text, 0));
 			}
 
 			if (Data[8] == 98 && Data[9] == 122 && Data[10] == 105 && Data[11] == 112)
@@ -141,9 +124,55 @@ namespace Plugin
 			return null;
 		}
 		
+		/// <summary>
+		/// Single-pass normalisation for textual X: comments are removed, runs of whitespace become one
+		/// space and the fixed header is skipped. The old code did a per-line Split/Join followed by four
+		/// full-string Replace calls; this produces one string with one StringBuilder.
+		/// </summary>
+		private static string NormaliseTextualX(string text, int skipHeader)
+		{
+			var builder = new StringBuilder(text.Length);
+			bool quoted = false;
+			bool lastWasSpace = true;
+			for (int i = 0; i < text.Length; i++)
+			{
+				char c = text[i];
+				if (!quoted && (c == '#' || (c == '/' && i + 1 < text.Length && text[i + 1] == '/')))
+				{
+					// Comment: discard to the end of the line.
+					while (i + 1 < text.Length && text[i + 1] != '\r' && text[i + 1] != '\n') i++;
+					continue;
+				}
+				if (c == '"')
+				{
+					quoted = !quoted;
+				}
+				if (char.IsWhiteSpace(c))
+				{
+					if (!lastWasSpace && builder.Length > 0)
+					{
+						builder.Append(' ');
+						lastWasSpace = true;
+					}
+					continue;
+				}
+				builder.Append(c);
+				lastWasSpace = false;
+			}
+			if (builder.Length > 0 && builder[builder.Length - 1] == ' ')
+			{
+				builder.Length--;
+			}
+			string result = builder.ToString();
+			if (skipHeader > 0)
+			{
+				result = result.Substring(Math.Min(skipHeader, result.Length)).Trim();
+			}
+			return result;
+		}
+
 		private StaticObject LoadTextualX(string Text)
 		{
-			Text = Text.Replace("\r\n", " ").Replace("\n", " ").Replace("\r", " ").Replace("\t", " ").Trim();
 			StaticObject obj = new StaticObject(Plugin.CurrentHost);
 			MeshBuilder builder = new MeshBuilder(Plugin.CurrentHost);
 			Material material = new Material();

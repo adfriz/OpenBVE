@@ -216,15 +216,21 @@ namespace Formats.OpenBve
 
 			for (int i = 0; i < Lines.Count; i++)
 			{
-				// as we're splitting on whitespace (B3D) perform trim first to get rid of any leading whitespace
-				int semiColon = Lines[i].IndexOf(';');
-				if (semiColon != -1)
+				// Strip the trailing comment and trim in one pass: the old code allocated a Substring and
+				// then a second Trim string for every line, even when neither was needed.
+				string line = Lines[i];
+				int semiColon = line.IndexOf(';');
+				int start = 0;
+				int end = semiColon != -1 ? semiColon : line.Length;
+				while (start < end && char.IsWhiteSpace(line[start])) start++;
+				while (end > start && char.IsWhiteSpace(line[end - 1])) end--;
+				if (start != 0 || end != line.Length)
 				{
-					Lines[i] = Lines[i].Substring(0, semiColon);
+					line = line.Substring(start, end - start);
+					Lines[i] = line;
 				}
-				Lines[i] = Lines[i].Trim();
 
-				string[] splitLine = IsB3D ? Lines[i].Split(Array.Empty<char>(), 2) : Lines[i].Split(',');
+				string[] splitLine = IsB3D ? line.Split(Array.Empty<char>(), 2) : line.Split(',');
 				
 				if (!IsB3D)
 				{
@@ -270,8 +276,16 @@ namespace Formats.OpenBve
 
 				if (IsB3D)
 				{
-					// B3D bracket enclosed section names
-					command = command.Split(']')[0].TrimStart('[');
+					// B3D bracket enclosed section names: find the ']' and the leading '[' by index
+					// instead of allocating a Split array plus a TrimStart string per line.
+					int closeBracket = command.IndexOf(']');
+					int commandEnd = closeBracket >= 0 ? closeBracket : command.Length;
+					int commandStart = 0;
+					while (commandStart < commandEnd && command[commandStart] == '[') commandStart++;
+					if (commandStart != 0 || commandEnd != command.Length)
+					{
+						command = command.Substring(commandStart, commandEnd - commandStart);
+					}
 				}
 
 				if(EnumCache<T1>.TryParse(command, out T1 section))
@@ -312,19 +326,14 @@ namespace Formats.OpenBve
 					}
 					else
 					{
-						splitLine = splitLine.Skip(1).ToArray();
+						// Copy the values directly instead of LINQ Skip(1).ToArray(), which allocated
+						// both an iterator and a second array for every single command line.
+						string[] values = new string[Math.Max(0, splitLine.Length - 1)];
+						Array.Copy(splitLine, 1, values, 0, values.Length);
+						splitLine = values;
 					}
 
-					for (int idx = splitLine.Length - 1; idx >= 0; idx--)
-					{
-						if (!string.IsNullOrWhiteSpace(splitLine[idx]))
-						{
-							// remove empty entries at end
-							idx++;
-							Array.Resize(ref splitLine, idx);
-							break;
-						}
-					}
+					splitLine = TrimTrailingEmpty(splitLine);
 					
 					currentSection.Values.Enqueue(new ValueTuple<int, string, T2, string[]>(i, command, key, splitLine));
 				}
@@ -334,6 +343,23 @@ namespace Formats.OpenBve
 			{
 				subBlocks.Enqueue(currentSection);
 			}
+		}
+
+		/// <summary>Removes empty entries at the end of a values array, preserving the original all-empty behaviour.</summary>
+		private static string[] TrimTrailingEmpty(string[] values)
+		{
+			for (int i = values.Length - 1; i >= 0; i--)
+			{
+				if (!string.IsNullOrWhiteSpace(values[i]))
+				{
+					if (i + 1 != values.Length)
+					{
+						Array.Resize(ref values, i + 1);
+					}
+					break;
+				}
+			}
+			return values;
 		}
 	}
 	
@@ -389,7 +415,7 @@ namespace Formats.OpenBve
 				 * Limit it to just these two for the minute to try
 				 * and keep things clean.
 				 */
-				if (!NumberFormats.TryParseIntVb6(value[i], out parsedValues[i]))
+				if (!Vb6Numbers.TryParseInt(value[i], out parsedValues[i]))
 				{
 					if (enableHacks && (i == 0 || value[i].ToLowerInvariant() == "o"))
 					{
@@ -422,7 +448,7 @@ namespace Formats.OpenBve
 			parsedValues = new double[value.Length];
 			for (int i = 0; i < Math.Min(value.Length, neededValues); i++)
 			{
-				if (!NumberFormats.TryParseDoubleVb6(value[i], out parsedValues[i]) && !string.IsNullOrWhiteSpace(value[i])) // n.b. empty value is accepted (maps to zero), e.g. Neustadt tram routes
+				if (!Vb6Numbers.TryParseDouble(value[i], out parsedValues[i]) && !string.IsNullOrWhiteSpace(value[i])) // n.b. empty value is accepted (maps to zero), e.g. Neustadt tram routes
 				{
 					currentHost.AddMessage(MessageType.Error, false, "The value at array index " + i + " is not a valid double in " + CurrentCommand + " at line " + CurrentLine + " in file " + FileName);
 					Array.Resize(ref parsedValues, i);
@@ -444,19 +470,19 @@ namespace Formats.OpenBve
 				return false;
 			}
 
-			if (value.Length >= 1 && !string.IsNullOrWhiteSpace(value[0]) && !NumberFormats.TryParseByteVb6(value[0], out r))
+			if (value.Length >= 1 && !string.IsNullOrWhiteSpace(value[0]) && !Vb6Numbers.TryParseByte(value[0], out r))
 			{
 				currentHost.AddMessage(MessageType.Error, false, "Invalid value for Red in " + CurrentCommand + " at line " + CurrentLine + " in file " + FileName);
 			}
-			if (value.Length >= 2 && !string.IsNullOrWhiteSpace(value[1]) && !NumberFormats.TryParseByteVb6(value[1], out g))
+			if (value.Length >= 2 && !string.IsNullOrWhiteSpace(value[1]) && !Vb6Numbers.TryParseByte(value[1], out g))
 			{
 				currentHost.AddMessage(MessageType.Error, false, "Invalid value for Green in " + CurrentCommand + " at line " + CurrentLine + " in file " + FileName);
 			}
-			if (value.Length >= 3 && !string.IsNullOrWhiteSpace(value[2]) && !NumberFormats.TryParseByteVb6(value[2], out b))
+			if (value.Length >= 3 && !string.IsNullOrWhiteSpace(value[2]) && !Vb6Numbers.TryParseByte(value[2], out b))
 			{
 				currentHost.AddMessage(MessageType.Error, false, "Invalid value for Blue in " + CurrentCommand + " at line " + CurrentLine + " in file " + FileName);
 			}
-			if (value.Length >= 4 && !string.IsNullOrWhiteSpace(value[3]) && !NumberFormats.TryParseByteVb6(value[3], out a))
+			if (value.Length >= 4 && !string.IsNullOrWhiteSpace(value[3]) && !Vb6Numbers.TryParseByte(value[3], out a))
 			{
 				currentHost.AddMessage(MessageType.Error, false, "Invalid value for Alpha in " + CurrentCommand + " at line " + CurrentLine + " in file " + FileName);
 				a = 255; // special-case
@@ -549,7 +575,7 @@ namespace Formats.OpenBve
 			hasLightMap = false;
 			coordinates = Vector2.Null;
 			lightMapCoordinates = Vector2.Null;
-			if (value.Length >= 1 && !string.IsNullOrWhiteSpace(value[0]) && !NumberFormats.TryParseIntVb6(value[0], out index))
+			if (value.Length >= 1 && !string.IsNullOrWhiteSpace(value[0]) && !Vb6Numbers.TryParseInt(value[0], out index))
 			{
 				currentHost.AddMessage(MessageType.Error, false, "Vertex index was invalid for " + CurrentCommand + " at line " + CurrentLine + " in file " + FileName);
 				return false;
@@ -634,7 +660,7 @@ namespace Formats.OpenBve
 		private Vector2 GetVector2(string[] values, int startingIndex, T2 key, int line)
 		{
 			Vector2 v = Vector2.Null;
-			if (values.Length >= startingIndex + 1 && !NumberFormats.TryParseDoubleVb6(values[startingIndex], out v.X))
+			if (values.Length >= startingIndex + 1 && !Vb6Numbers.TryParseDouble(values[startingIndex], out v.X))
 			{
 				if (string.IsNullOrWhiteSpace(values[startingIndex]))
 				{
@@ -646,7 +672,7 @@ namespace Formats.OpenBve
 				}
 			}
 
-			if (values.Length >= startingIndex + 2 && !NumberFormats.TryParseDoubleVb6(values[startingIndex + 1], out v.Y))
+			if (values.Length >= startingIndex + 2 && !Vb6Numbers.TryParseDouble(values[startingIndex + 1], out v.Y))
 			{
 				if (string.IsNullOrWhiteSpace(values[startingIndex + 1]))
 				{
@@ -678,7 +704,7 @@ namespace Formats.OpenBve
 		private Vector3 GetVector3(string[] values, int startingIndex, T2 key, int line)
 		{
 			Vector3 v = Vector3.Zero;
-			if (values.Length >= startingIndex + 1 && !string.IsNullOrWhiteSpace(values[startingIndex]) && !NumberFormats.TryParseDoubleVb6(values[startingIndex], out v.X))
+			if (values.Length >= startingIndex + 1 && !string.IsNullOrWhiteSpace(values[startingIndex]) && !Vb6Numbers.TryParseDouble(values[startingIndex], out v.X))
 			{
 				if (string.IsNullOrWhiteSpace(values[startingIndex]))
 				{
@@ -690,7 +716,7 @@ namespace Formats.OpenBve
 				}
 			}
 
-			if (values.Length >= startingIndex + 2 && !string.IsNullOrWhiteSpace(values[startingIndex + 1]) && !NumberFormats.TryParseDoubleVb6(values[startingIndex + 1], out v.Y))
+			if (values.Length >= startingIndex + 2 && !string.IsNullOrWhiteSpace(values[startingIndex + 1]) && !Vb6Numbers.TryParseDouble(values[startingIndex + 1], out v.Y))
 			{
 				if (string.IsNullOrWhiteSpace(values[startingIndex + 1]))
 				{
@@ -702,7 +728,7 @@ namespace Formats.OpenBve
 				}
 			}
 
-			if (values.Length >= startingIndex + 3 && !string.IsNullOrWhiteSpace(values[startingIndex + 2]) && !NumberFormats.TryParseDoubleVb6(values[startingIndex + 2], out v.Z))
+			if (values.Length >= startingIndex + 3 && !string.IsNullOrWhiteSpace(values[startingIndex + 2]) && !Vb6Numbers.TryParseDouble(values[startingIndex + 2], out v.Z))
 			{
 				if (string.IsNullOrWhiteSpace(values[startingIndex + 2]))
 				{
@@ -725,7 +751,7 @@ namespace Formats.OpenBve
 			shearDirection = GetVector3(value, 0, (T2)(object)CSVB3DKey.ShearDirection, CurrentLine);
 			shearStress = GetVector3(value, 3, (T2)(object)CSVB3DKey.ShearStress, CurrentLine);
 
-			if (value.Length >= 7 && !NumberFormats.TryParseDoubleVb6(value[6], out shearRatio))
+			if (value.Length >= 7 && !Vb6Numbers.TryParseDouble(value[6], out shearRatio))
 			{
 				currentHost.AddMessage(MessageType.Error, false, "ShearRatio was invalid for " + CurrentCommand + " at line " + CurrentLine + " in file " + FileName);
 				shearRatio = 0;
@@ -753,7 +779,7 @@ namespace Formats.OpenBve
 		public override bool GetNextBool(out bool booleanValue)
 		{
 			string[] value = Dequeue();
-			if (value.Length >= 1 ||  !NumberFormats.TryParseIntVb6(value[0], out int i))
+			if (value.Length >= 1 ||  !Vb6Numbers.TryParseInt(value[0], out int i))
 			{
 				currentHost.AddMessage(MessageType.Error, false, "Invalid value for " + CurrentCommand + " at line " + CurrentLine + " in file " + FileName);
 				booleanValue = false;
