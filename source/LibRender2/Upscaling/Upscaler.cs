@@ -513,26 +513,76 @@ namespace LibRender2.Upscaling
 
                         string vertexSource = LoadShaderResource("fullscreen.vert");
 
-                        programHandle = GL.CreateProgram();
-
-                        int vertexShader = CompileShader(ShaderType.VertexShader, vertexSource);
-                        int fragmentShader = CompileShader(ShaderType.FragmentShader, fragmentSource);
-                        GL.AttachShader(programHandle, vertexShader);
-                        GL.AttachShader(programHandle, fragmentShader);
-                        GL.BindFragDataLocation(programHandle, 0, "fragColor");
-                        GL.LinkProgram(programHandle);
-                        GL.GetProgram(programHandle, GetProgramParameterName.LinkStatus, out int success);
-                        GL.DeleteShader(vertexShader);
-                        GL.DeleteShader(fragmentShader);
-                        if (success == 0)
+                        if (mode == UpscalerMode.Sgsr1 && renderer.Capabilities != null && renderer.Capabilities.IsAtLeast(4, 0))
                         {
-                                string infoLog = GL.GetProgramInfoLog(programHandle);
-                                throw new Exception("Shader link error: " + infoLog);
+                                // GL 4.0+ gathers four texels per instruction. The same shader
+                                // keeps its twelve plain fetches for older contexts, and a
+                                // failed compile here falls back to that portable variant.
+                                string gatherSource = fragmentSource.Replace("#version 330 core",
+                                        "#version 460 core\n#define SGSR_GATHER_PATH 1");
+                                string gatherVertex = vertexSource.Replace("#version 330 core", "#version 460 core");
+                                try
+                                {
+                                        programHandle = BuildProgram(gatherVertex, gatherSource);
+                                        CacheUniformLocations();
+                                        return;
+                                }
+                                catch (Exception ex)
+                                {
+                                        renderer.currentHost?.AddMessage(MessageType.Warning, false,
+                                                "SGSR gather path unavailable, using the portable shader: " + ex.Message);
+                                        GL.GetError();
+                                }
                         }
 
-                        // Cache uniform locations once (queried per frame is wasteful).
+                        programHandle = BuildProgram(vertexSource, fragmentSource);
+                        CacheUniformLocations();
+                }
+
+                /// <summary>Compiles and links a shader pair into a new program</summary>
+                private int BuildProgram(string vertexSource, string fragmentSource)
+                {
+                        int program = GL.CreateProgram();
+                        int vertexShader = 0;
+                        int fragmentShader = 0;
+                        try
+                        {
+                                vertexShader = CompileShader(ShaderType.VertexShader, vertexSource);
+                                fragmentShader = CompileShader(ShaderType.FragmentShader, fragmentSource);
+                                GL.AttachShader(program, vertexShader);
+                                GL.AttachShader(program, fragmentShader);
+                                GL.BindFragDataLocation(program, 0, "fragColor");
+                                GL.LinkProgram(program);
+                                GL.GetProgram(program, GetProgramParameterName.LinkStatus, out int success);
+                                if (success == 0)
+                                {
+                                        throw new Exception("Shader link error: " + GL.GetProgramInfoLog(program));
+                                }
+                                return program;
+                        }
+                        catch
+                        {
+                                GL.DeleteProgram(program);
+                                throw;
+                        }
+                        finally
+                        {
+                                if (vertexShader != 0)
+                                {
+                                        GL.DeleteShader(vertexShader);
+                                }
+                                if (fragmentShader != 0)
+                                {
+                                        GL.DeleteShader(fragmentShader);
+                                }
+                        }
+                }
+
+                /// <summary>Caches the locations of the uniforms used by the active upscaler program</summary>
+                private void CacheUniformLocations()
+                {
                         // Uniforms that do not exist in the active program return -1,
-                        // which GL.Uniform* silently ignores.
+                        // which GL.ProgramUniform* silently ignores.
                         uSrcLoc = GL.GetUniformLocation(programHandle, "uSrc");
                         uCoefLoc = GL.GetUniformLocation(programHandle, "uCoef");
                         uEasuCon0Loc = GL.GetUniformLocation(programHandle, "uEasuCon0");

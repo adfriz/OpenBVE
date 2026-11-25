@@ -49,6 +49,10 @@
 //   this code path with "#define UseEdgeDirection" (shipped commented-out;
 //   Qualcomm's documentation recommends the edge-direction path for quality),
 //   so the define is fixed on here - it is the variant's namesake.
+// - When SGSR_GATHER_PATH is defined, four 2x2 textureGather quads (GL 4.0+)
+//   supply the same twelve luma taps instead of twelve individual texture()
+//   fetches. The texel values and order are identical; the host falls back to
+//   this portable version when gather compilation is unavailable.
 //---------------------------------------------------------------------------------
 
 #version 330 core
@@ -75,6 +79,20 @@ float fetchY(ivec2 texel)
 {
         return getY(texture(uSrc, (vec2(texel) + 0.5) * uTexelStep).rgb);
 }
+
+#ifdef SGSR_GATHER_PATH
+// GL 4.0+ gathers four texels per instruction. The 2x2 block starting at 'base'
+// maps to the vector as: x=(0,1), y=(1,1), z=(1,0), w=(0,0). Rebuilding luma
+// from the three gathered channels keeps the luma filter of the portable path.
+vec4 gatherY(ivec2 base)
+{
+        vec2 uv = (vec2(base) + 0.5) * uTexelStep;
+        vec4 r = textureGather(uSrc, uv, 0);
+        vec4 g = textureGather(uSrc, uv, 1);
+        vec4 b = textureGather(uSrc, uv, 2);
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+#endif
 
 // Approximate two-lobe Lanczos window over squared distance, official math
 float fastLanczos2(float x)
@@ -118,11 +136,24 @@ void main()
         vec2 pl = imgCoord - imgCoordPixel;
         ivec2 p = ivec2(imgCoordPixel);
 
-        // The center 2x2 quad of input texels around the resolve position
+        // The center 2x2 quad of input texels around the resolve position.
+#ifdef SGSR_GATHER_PATH
+        // Four overlapping 2x2 gathers cover the same twelve texels. Their
+        // component order is x=(0,1), y=(1,1), z=(1,0), w=(0,0) from the base.
+        vec4 gLeft  = gatherY(p + ivec2(-1,  0));
+        vec4 gRight = gatherY(p + ivec2( 1,  0));
+        vec4 gDown  = gatherY(p + ivec2( 0, -1));
+        vec4 gUp    = gatherY(p + ivec2( 0,  1));
+        float q00 = gLeft.z;   // (px,     py)
+        float q01 = gLeft.y;   // (px,     py + 1)
+        float q10 = gRight.w;  // (px + 1, py)
+        float q11 = gRight.x;  // (px + 1, py + 1)
+#else
         float q00 = fetchY(p);                    // (px,     py)
         float q01 = fetchY(p + ivec2(0, 1));      // (px,     py + 1)
         float q10 = fetchY(p + ivec2(1, 0));      // (px + 1, py)
         float q11 = fetchY(p + ivec2(1, 1));      // (px + 1, py + 1)
+#endif
 
         // Edge vote on the vertical center pair, official math (luma channel)
         float edgeVote = abs(q01 - q00) + abs(yc - q00) + abs(yc - q01);
@@ -138,6 +169,16 @@ void main()
                 float leftZ = q00 - mean;
                 float rightX = q11 - mean;
                 float rightW = q10 - mean;
+#ifdef SGSR_GATHER_PATH
+                float leftX = gLeft.x - mean;
+                float leftW = gLeft.w - mean;
+                float rightY = gRight.y - mean;
+                float rightZ = gRight.z - mean;
+                float upDownX = gDown.w - mean;
+                float upDownY = gDown.z - mean;
+                float upDownZ = gUp.y - mean;
+                float upDownW = gUp.x - mean;
+#else
                 float leftX = fetchY(p + ivec2(-1, 1)) - mean;
                 float leftW = fetchY(p + ivec2(-1, 0)) - mean;
                 float rightY = fetchY(p + ivec2(2, 1)) - mean;
@@ -146,6 +187,7 @@ void main()
                 float upDownY = fetchY(p + ivec2(1, -1)) - mean;
                 float upDownZ = fetchY(p + ivec2(1, 2)) - mean;
                 float upDownW = fetchY(p + ivec2(0, 2)) - mean;
+#endif
 
                 float sum = (abs(leftX) + abs(leftY) + abs(leftZ) + abs(leftW)) +
                         (abs(rightX) + abs(rightY) + abs(rightZ) + abs(rightW)) +
