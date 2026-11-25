@@ -26,6 +26,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using OpenBveApi;
 using OpenBveApi.Interface;
@@ -42,7 +43,8 @@ namespace Route.Bve5
 			internal string Key;
 			internal string FilePath;
 		}
-		private static void LoadStructureList(string FileName, bool PreviewOnly, string StructureListPath, RouteData RouteData)
+		private static void LoadStructureList(string FileName, bool PreviewOnly, string StructureListPath, RouteData RouteData,
+			double progressStart = 0.15, double progressEnd = 0.60)
 		{
 			RouteData.Objects = new ObjectDictionary();
 
@@ -131,7 +133,7 @@ namespace Route.Bve5
 			}
 			// Pass 2: decode the (deduplicated) object files in parallel, then commit per key
 			// in file order with the old loop's semantics (failed loads still store null).
-			LoadAndCommitStructureEntries(RouteData, entries);
+			LoadAndCommitStructureEntries(RouteData, entries, progressStart, progressEnd);
 		}
 
 		/// <summary>Computes worker count from machine capability, reserving one thread for the loading screen on small machines.</summary>
@@ -146,7 +148,8 @@ namespace Route.Bve5
 		}
 
 		/// <summary>Decodes pending structure objects in parallel, then commits them per key in file order.</summary>
-		private static void LoadAndCommitStructureEntries(RouteData routeData, List<PendingStructureEntry> entries)
+		private static void LoadAndCommitStructureEntries(RouteData routeData, List<PendingStructureEntry> entries,
+			double progressStart, double progressEnd)
 		{
 			int n = entries.Count;
 			if (n == 0 || plugin.Cancel)
@@ -172,12 +175,20 @@ namespace Route.Bve5
 			int m = uniquePaths.Count;
 			UnifiedObject[] prototypes = new UnifiedObject[m];
 			int dop = ComputeStructureLoadDop();
+			int loaded = 0;
+			double progressSpan = progressEnd - progressStart;
+			// Loading thousands of meshes/textures is the slowest stage, and previously moved no
+			// progress at all. Report after every object so the bar advances while it is busy.
+			Action reportProgress = () => Interlocked.Exchange(ref plugin.CurrentProgress,
+				progressStart + progressSpan * Volatile.Read(ref loaded) / Math.Max(1, m));
 
 			if (dop <= 1 || m < 2)
 			{
 				for (int u = 0; u < m && !plugin.Cancel; u++)
 				{
 					prototypes[u] = LoadSingleStructure(uniquePaths[u]);
+					Interlocked.Increment(ref loaded);
+					reportProgress();
 				}
 			}
 			else
@@ -192,6 +203,8 @@ namespace Route.Bve5
 						return;
 					}
 					prototypes[u] = LoadSingleStructure(uniquePaths[u]);
+					Interlocked.Increment(ref loaded);
+					reportProgress();
 				});
 			}
 

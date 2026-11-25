@@ -189,7 +189,7 @@ namespace Route.Bve5
 					}
 
 					// save distance of current block idx
-					double dist = RouteData.sortedBlocks.ElementAt(i).Key;
+					double dist = RouteData.sortedBlocks.Keys[i];
 
 					if (StartBlock != i)
 					{
@@ -235,7 +235,7 @@ namespace Route.Bve5
 					}
 
 					// save distance of current block idx
-					double dist = RouteData.sortedBlocks.ElementAt(i).Key;
+					double dist = RouteData.sortedBlocks.Keys[i];
 
 					if (StartBlock != i)
 					{
@@ -374,7 +374,7 @@ namespace Route.Bve5
 					}
 
 					// save distance of current block idx
-					double dist = RouteData.sortedBlocks.ElementAt(i).Key;
+					double dist = RouteData.sortedBlocks.Keys[i];
 
 					if (StartBlock != i)
 					{
@@ -416,7 +416,7 @@ namespace Route.Bve5
 					}
 
 					// save distance of current block idx
-					double dist = RouteData.sortedBlocks.ElementAt(i).Key;
+					double dist = RouteData.sortedBlocks.Keys[i];
 
 					if (StartBlock != i)
 					{
@@ -817,7 +817,7 @@ namespace Route.Bve5
 						}
 					}
 
-					double dist = RouteData.sortedBlocks.ElementAt(i).Key;
+					double dist = RouteData.sortedBlocks.Keys[i];
 
 					if (StartBlock != i)
 					{

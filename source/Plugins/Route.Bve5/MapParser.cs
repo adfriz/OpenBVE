@@ -24,10 +24,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using Bve5_Parsing;
 using Bve5_Parsing.MapGrammar;
 using Bve5_Parsing.MapGrammar.EvaluateData;
@@ -228,6 +230,16 @@ namespace Route.Bve5
 			}
 		}
 
+		private static void LogStage(Stopwatch watch, string stage)
+		{
+			try
+			{
+				Plugin.FileSystem.AppendToLogFile("[BVE5] " + stage + ": " + watch.ElapsedMilliseconds + " ms");
+			}
+			catch { }
+			watch.Restart();
+		}
+
 		private static void ParseMap(string FileName, bool PreviewOnly)
 		{
 			if (string.IsNullOrEmpty(FileName))
@@ -239,26 +251,32 @@ namespace Route.Bve5
 				throw new Exception("The BVE5 route map file: " + FileName + " was not found");
 			}
 
+			Stopwatch stageWatch = Stopwatch.StartNew();
 			MapParser Parser = new MapParser(FileName, true);
 			MapData RootData = Parser.Parse();
+			LogStage(stageWatch, "map grammar");
+			Interlocked.Exchange(ref plugin.CurrentProgress, 0.05);
 
-			System.Threading.Thread.Sleep(1);
+			System.Threading.Thread.Yield();
 			if (plugin.Cancel) return;
 
 
-			System.Threading.Thread.Sleep(1);
+			System.Threading.Thread.Yield();
 			if (plugin.Cancel) return;
 
 			ConvertToBlock(FileName, PreviewOnly, RootData, out RouteData RouteData);
+			LogStage(stageWatch, "lists and objects");
 
-			System.Threading.Thread.Sleep(1);
+			System.Threading.Thread.Yield();
 			if (plugin.Cancel) return;
 
 			ApplyRouteData(FileName, PreviewOnly, RouteData);
+			LogStage(stageWatch, "apply route data");
 		}
 
 		private static void ConvertToBlock(string FileName, bool PreviewOnly, MapData ParseData, out RouteData RouteData)
 		{
+			Stopwatch stageWatch = Stopwatch.StartNew();
 			RouteData = new RouteData(ParseData.TrackKeys);
 			RouteData.FindOrAddBlock(0);
 			RouteData.Blocks[0].Fog = new Fog(0, 1, Color24.Grey, 0, false);
@@ -269,37 +287,57 @@ namespace Route.Bve5
 				return;
 			}
 
+			// Report the otherwise silent stages so the loading bar keeps moving while the
+			// route's objects and textures are being decoded. ApplyRouteData takes over at 0.6667.
+			int stationCount = Math.Max(1, ParseData.StationListPaths.Count);
+			int stationIndex = 0;
 			foreach (string path in ParseData.StationListPaths)
 			{
 				LoadStationList(FileName, path, RouteData);
+				Interlocked.Exchange(ref plugin.CurrentProgress, 0.05 + 0.07 * ++stationIndex / stationCount);
 			}
 
+			LogStage(stageWatch, "  station lists");
+
+			int structureCount = Math.Max(1, ParseData.StructureListPaths.Count);
+			int structureIndex = 0;
 			foreach (string path in ParseData.StructureListPaths)
 			{
-				LoadStructureList(FileName, PreviewOnly, path, RouteData);
+				double start = 0.15 + 0.45 * structureIndex / structureCount;
+				double end = 0.15 + 0.45 * ++structureIndex / structureCount;
+				LoadStructureList(FileName, PreviewOnly, path, RouteData, start, end);
 			}
 			
+			LogStage(stageWatch, "  structure lists");
+
 			foreach (string path in ParseData.SignalListPaths)
 			{
 				LoadSignalList(FileName, PreviewOnly, path, RouteData);
 			}
+			LogStage(stageWatch, "  signal lists");
+			Interlocked.Exchange(ref plugin.CurrentProgress, 0.62);
 
 			foreach (string path in ParseData.SoundListPaths)
 			{
 				LoadSoundList(FileName, PreviewOnly, path, RouteData);
 			}
+			Interlocked.Exchange(ref plugin.CurrentProgress, 0.64);
+
+			LogStage(stageWatch, "  sound lists");
 
 			foreach (string path in ParseData.Sound3DListPaths)
 			{
 				LoadSound3DList(FileName, PreviewOnly, path, RouteData);
 			}
+			LogStage(stageWatch, "  3D sound lists");
+			Interlocked.Exchange(ref plugin.CurrentProgress, 0.66);
 			
 			if (Plugin.CurrentOptions.EnableBve5ScriptedTrain)
 			{
 				LoadScriptedTrain(FileName, PreviewOnly, ParseData, RouteData);
 			}
 
-			System.Threading.Thread.Sleep(1);
+			System.Threading.Thread.Yield();
 			if (plugin.Cancel) return;
 			RouteData.Backgrounds = new ObjectDictionary();
 
@@ -314,9 +352,11 @@ namespace Route.Bve5
 			 */
 
 			ConvertData(ParseData, RouteData, PreviewOnly);
+			LogStage(stageWatch, "  convert data");
 			ConvertTrack(RouteData);
+			LogStage(stageWatch, "  convert track");
 			
-			System.Threading.Thread.Sleep(1);
+			System.Threading.Thread.Yield();
 			if (plugin.Cancel) return;
 
 			ConfirmCurve(RouteData.Blocks);
@@ -331,6 +371,7 @@ namespace Route.Bve5
 			ConfirmIrregularity(PreviewOnly, RouteData);
 			ConfirmAdhesion(PreviewOnly, RouteData);
 			ConfirmFlangeNoise(PreviewOnly, ParseData, RouteData);
+			LogStage(stageWatch, "  confirm components");
 		}
 
 		private static void ConvertData(MapData parseData, RouteData routeData, bool previewOnly)
