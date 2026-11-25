@@ -1489,7 +1489,7 @@ namespace LibRender2
 		/// <summary>Whether the environment upload has been attempted (success or failure)</summary>
 		private bool environmentAttempted;
 
-		/// <summary>AZDO PBR material block: persistent on GL 4.4+, BufferSubData on GL 4.1.</summary>
+		/// <summary>Uniform buffer for PBR material data: persistent on GL 4.4+, BufferSubData on GL 4.1.</summary>
 		private PersistentUniformBuffer pbrMaterialBuffer;
 		// std140: 8 scalars at 0..7, padding 8..11, emissive vec3 at 12..14,
 		// padding 15, specular vec3 at 16..18, padding 19.
@@ -1611,14 +1611,6 @@ namespace LibRender2
 		public int OpaqueDrawCalls;
 		/// <summary>The number of primitive batches (draw calls) issued for alpha faces by the alpha pass of the current frame</summary>
 		public int AlphaDrawCalls;
-		/// <summary>Redundant shader uniform writes skipped by the per-shader uniform cache</summary>
-		public static int StateChangesSkipped;
-		/// <summary>Per-call instrumentation for the instanced alpha path (AZDO verification)</summary>
-		private static Stopwatch alphaPassWatch;
-		private static int alphaPassCalls;
-		private static long alphaPassTicks;
-		private static int alphaPassFaces;
-		private static int alphaPassSkipped;
 		/// <summary>The total number of draw calls issued by all shadow cascades of the current frame</summary>
 		public int ShadowDrawCalls;
 		/// <summary>Shadow draw calls issued through the per-object fallback path</summary>
@@ -1652,8 +1644,7 @@ namespace LibRender2
 		private readonly Dictionary<Mesh, HashSet<int>> alphaBatchedFaceIndices = new Dictionary<Mesh, HashSet<int>>();
 		private readonly List<FaceState> alphaFallbackFaces = new List<FaceState>();
 		private readonly List<AlphaBatch> alphaSortedBatches = new List<AlphaBatch>();
-		// AZDO: pooled batch objects and their instance buffers are reused across frames, so a
-		// steady-state alpha pass performs no allocations at all.
+		// Batch objects and their instance buffers are reused across frames.
 		private readonly List<AlphaBatch> alphaBatchPool = new List<AlphaBatch>();
 		private int alphaBatchPoolUsed;
 
@@ -3081,37 +3072,6 @@ namespace LibRender2
 		/// themselves ordered back to front.
 		/// </remarks>
 		public void RenderAlphaFaces(List<FaceState> alphaFaces, bool opaqueCutoutPass = false, bool qualityBlendPass = false)
-		{
-			if (alphaPassWatch == null)
-			{
-				alphaPassWatch = Stopwatch.StartNew();
-			}
-			else
-			{
-				alphaPassWatch.Restart();
-			}
-			int skippedBefore = StateChangesSkipped;
-			RenderAlphaFacesCore(alphaFaces, opaqueCutoutPass, qualityBlendPass);
-			alphaPassTicks += alphaPassWatch.ElapsedTicks;
-			alphaPassFaces += alphaFaces == null ? 0 : alphaFaces.Count;
-			alphaPassSkipped += StateChangesSkipped - skippedBefore;
-			if (++alphaPassCalls % 120 == 0)
-			{
-				try
-				{
-					fileSystem?.AppendToLogFile("[AZDO] alpha pass: calls=" + alphaPassCalls +
-						" avg=" + (alphaPassTicks / (double)TimeSpan.TicksPerMillisecond / alphaPassCalls).ToString("F3") + "ms" +
-						" faces/call=" + (alphaPassFaces / alphaPassCalls) +
-						" skipped/call=" + (alphaPassSkipped / alphaPassCalls));
-				}
-				catch
-				{
-					// Diagnostics must never affect rendering
-				}
-			}
-		}
-
-		private void RenderAlphaFacesCore(List<FaceState> alphaFaces, bool opaqueCutoutPass, bool qualityBlendPass)
 		{
 			if (alphaFaces == null || alphaFaces.Count == 0)
 			{

@@ -327,7 +327,6 @@ namespace LibRender2.Shaders
 		{
 			if (textureMatrixCached && TextureMatrix == lastTextureMatrix)
 			{
-				SkipUniform();
 				return;
 			}
 			textureMatrixCached = true;
@@ -389,7 +388,6 @@ namespace LibRender2.Shaders
 		{
 			if (emissionCached && MaterialEmission == lastEmission)
 			{
-				SkipUniform();
 				return;
 			}
 			emissionCached = true;
@@ -401,7 +399,6 @@ namespace LibRender2.Shaders
 		{
 			if (materialShininess == lastShininess)
 			{
-				SkipUniform();
 				return;
 			}
 			lastShininess = materialShininess;
@@ -412,7 +409,6 @@ namespace LibRender2.Shaders
 		{
 			if (Flags == lastMaterialFlags)
 			{
-				SkipUniform();
 				return;
 			}
 			lastMaterialFlags = Flags;
@@ -498,7 +494,6 @@ namespace LibRender2.Shaders
 		{
 			if (lastFogEnabled == enabled)
 			{
-				SkipUniform();
 				return;
 			}
 			lastFogEnabled = enabled;
@@ -534,8 +529,7 @@ namespace LibRender2.Shaders
 		}
 
 		private float lastBrightness;
-		// AZDO: shader uniforms are per-program state, so a cache on the Shader instance lets us
-		// drop redundant ProgramUniform calls instead of paying a driver round trip per face.
+		// Uniforms are per-program state, so avoid re-sending values which have not changed.
 		private float lastOpacity = float.NaN;
 		private float lastShininess = float.NaN;
 		private MaterialFlags lastMaterialFlags = (MaterialFlags)(-1);
@@ -547,16 +541,10 @@ namespace LibRender2.Shaders
 		private bool textureMatrixCached;
 		private Matrix4D lastTextureMatrix;
 
-		private static void SkipUniform()
-		{
-			BaseRenderer.StateChangesSkipped++;
-		}
-
 		public void SetBrightness(float brightness)
 		{
 			if(brightness == lastBrightness)
 			{
-				SkipUniform();
 				return;
 			}
 			lastBrightness = brightness;
@@ -567,7 +555,6 @@ namespace LibRender2.Shaders
 		{
 			if (opacity == lastOpacity)
 			{
-				SkipUniform();
 				return;
 			}
 			lastOpacity = opacity;
@@ -608,7 +595,6 @@ namespace LibRender2.Shaders
 		{
 			if ((int)alphaFunction == lastAlphaFunction && alphaComparison == lastAlphaComparison)
 			{
-				SkipUniform();
 				return;
 			}
 			lastAlphaFunction = (int)alphaFunction;

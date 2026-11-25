@@ -120,7 +120,7 @@ namespace OpenBve.Formats.DirectX
 
 		/// <summary>
 		/// Creates a block over text. Sub-blocks are slices of an already normalised parent, so they can
-		/// skip the per-block StringBuilder copy entirely (the AZDO-style "normalise once, read many" path).
+		/// skip the per-block StringBuilder copy entirely.
 		/// </summary>
 		private TextualBlock(string text, TemplateID token, bool alreadyNormalised)
 		{

@@ -22,7 +22,6 @@
 //(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 //SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-using System.Diagnostics;
 using OpenBveApi.Colors;
 using OpenBveApi.FunctionScripting;
 using OpenBveApi.Hosts;
@@ -39,6 +38,7 @@ using RouteManager2.SignalManager;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Route.Bve5
@@ -72,7 +72,6 @@ namespace Route.Bve5
 
 		private static void ApplyRouteData(string FileName, bool PreviewOnly, RouteData Data)
 		{
-			Stopwatch stageWatch = Stopwatch.StartNew();
 			Plugin.CurrentOptions.UnitOfSpeed = "km/h";
 			Plugin.CurrentOptions.SpeedConversionFactor = 0.0;
 
@@ -158,19 +157,15 @@ namespace Route.Bve5
 			// process blocks
 			double progressFactor = Data.Blocks.Count == 0 ? 0.5 : 0.5 / Data.Blocks.Count;
 			List<SpanJob> deferredSpans = new List<SpanJob>();
-			Stopwatch sectionWatch = Stopwatch.StartNew();
-			long freeTicks = 0, crackTicks = 0, signalTicks = 0, setupTicks = 0, eventsTicks = 0, tailTicks = 0, railTicks = 0;
 			for (int i = 0; i < Data.Blocks.Count; i++)
 			{
 				plugin.CurrentProgress = 0.6667 + i * progressFactor;
 				if ((i & 15) == 0)
 				{
-					System.Threading.Thread.Yield();
+					Thread.Yield();
 					if (plugin.Cancel) return;
 				}
 
-				tailTicks += sectionWatch.ElapsedTicks;
-				sectionWatch.Restart();
 				double StartingDistance = Data.Blocks[i].StartingDistance;
 				double EndingDistance = i < Data.Blocks.Count - 1 ? Data.Blocks[i + 1].StartingDistance : StartingDistance + InterpolateInterval;
 				double BlockInterval = EndingDistance - StartingDistance;
@@ -207,8 +202,6 @@ namespace Route.Bve5
 					Plugin.CurrentRoute.Tracks[j].Elements[n].Events = new List<GeneralEvent>();
 				}
 
-				setupTicks += sectionWatch.ElapsedTicks;
-				sectionWatch.Restart();
 				// background
 				if (!PreviewOnly)
 				{
@@ -341,15 +334,12 @@ namespace Route.Bve5
 					}
 				}
 
-				eventsTicks += sectionWatch.ElapsedTicks;
-				sectionWatch.Restart();
 				// rail-aligned objects
 				if (!PreviewOnly)
 				{
 					for (int j = 0; j < Data.Blocks[i].Rails.Count; j++)
 					{
 						// free objects (repeaters are queued separately)
-						sectionWatch.Restart();
 						string railKey = Data.Blocks[i].Rails.ElementAt(j).Key;
 						if (Data.Blocks[i].FreeObjects.ContainsKey(railKey))
 						{
@@ -376,9 +366,7 @@ namespace Route.Bve5
 							}
 						}
 
-						freeTicks += sectionWatch.ElapsedTicks;
 						// cracks
-						sectionWatch.Restart();
 						for (int k = 0; k < Data.Blocks[i].Cracks.Count; k++)
 						{
 							if (Data.Blocks[i].Cracks[k].PrimaryRail == railKey)
@@ -426,9 +414,7 @@ namespace Route.Bve5
 							}
 						}
 
-						crackTicks += sectionWatch.ElapsedTicks;
 						// signals
-						sectionWatch.Restart();
 						if (Data.Blocks[i].Signals.Length > j && Data.Blocks[i].Signals[j] != null)
 						{
 							for (int k = 0; k < Data.Blocks[i].Signals[j].Count; k++)
@@ -490,8 +476,6 @@ namespace Route.Bve5
 					}
 				}
 
-				signalTicks += sectionWatch.ElapsedTicks;
-				sectionWatch.Restart();
 				// turn
 				if (Data.Blocks[i].Turn != 0.0)
 				{
@@ -528,7 +512,6 @@ namespace Route.Bve5
 					Direction2.Rotate(-a);
 					Direction2.Rotate(-Math.Atan(Turn2));
 					CalcTransformation(CurveRadius2, Pitch2, BlockInterval2, ref Direction2, out _, out _, out _);
-					sectionWatch.Restart();
 
 					for (int j = 1; j < Data.TrackKeyList.Count; j++)
 					{
@@ -560,8 +543,6 @@ namespace Route.Bve5
 					}
 				}
 
-				railTicks += sectionWatch.ElapsedTicks;
-				sectionWatch.Restart();
 				// world sounds
 				for (int k = 0; k < Data.Blocks[i].SoundEvents.Count; k++)
 				{
@@ -575,15 +556,6 @@ namespace Route.Bve5
 				Direction.Rotate(-a);
 			}
 
-			try
-			{
-				Plugin.FileSystem.AppendToLogFile("[BVE5]   blocks detail: free=" + (freeTicks / TimeSpan.TicksPerMillisecond) +
-					"ms cracks=" + (crackTicks / TimeSpan.TicksPerMillisecond) + "ms signals=" + (signalTicks / TimeSpan.TicksPerMillisecond) +
-					"ms setup=" + (setupTicks / TimeSpan.TicksPerMillisecond) + "ms events=" + (eventsTicks / TimeSpan.TicksPerMillisecond) +
-					"ms tail=" + (tailTicks / TimeSpan.TicksPerMillisecond) + "ms rails=" + (railTicks / TimeSpan.TicksPerMillisecond) + "ms");
-			}
-			catch { }
-			LogStage(stageWatch, "  blocks");
 			// transponders
 			if (!PreviewOnly)
 			{
@@ -606,7 +578,6 @@ namespace Route.Bve5
 				}
 			}
 
-			LogStage(stageWatch, "  transponders");
 			// insert station end events
 			for (int i = 0; i < Plugin.CurrentRoute.Stations.Length; i++)
 			{
@@ -712,14 +683,12 @@ namespace Route.Bve5
 				Plugin.CurrentRoute.Tracks[0].Elements[n].Events.Add(new TrackEndEvent(Plugin.CurrentHost, InterpolateInterval));
 			}
 
-			LogStage(stageWatch, "  stations and track finalize");
 			// cant
 			if (!PreviewOnly)
 			{
 				ComputeCantTangents();
 			}
 
-			LogStage(stageWatch, "  cant");
 			// Spans go last via TrackFollower: the track must exist first so they
 			// walk the real alignment instead of one block's guess, as in BveTs.
 			if (!PreviewOnly && (deferredSpans.Count != 0 || Data.Repeaters.Count != 0))
@@ -730,7 +699,7 @@ namespace Route.Bve5
 					plugin.CurrentProgress = 0.95 + i * (0.05 / Math.Max(1, Data.Repeaters.Count));
 					if ((i & 15) == 0)
 					{
-						System.Threading.Thread.Yield();
+						Thread.Yield();
 						if (plugin.Cancel) return;
 					}
 
@@ -739,7 +708,6 @@ namespace Route.Bve5
 					PlaceSpans(Data, jobs);
 				}
 			}
-			LogStage(stageWatch, "  spans");
 		}
 
 		/// <summary>One spanning object to place: a repeater instance or a deferred structure.</summary>

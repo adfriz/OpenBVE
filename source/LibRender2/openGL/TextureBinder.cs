@@ -3,7 +3,7 @@ using OpenTK.Graphics.OpenGL;
 namespace LibRender2
 {
 	/// <summary>
-	/// AZDO helper for sampler setup. On GL 4.5+ textures are bound with <see cref="GL.BindTextureUnit"/>,
+	/// Helper for sampler setup. On GL 4.5+ textures are bound with <see cref="GL.BindTextureUnit"/>,
 	/// which targets a unit directly and leaves the global active-texture unit alone. On GL 4.1 the
 	/// legacy ActiveTexture + BindTexture pair is used, so behaviour is identical on old contexts.
 	/// Configured once from the detected capabilities in BaseRenderer.Initialize().

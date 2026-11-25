@@ -8,9 +8,8 @@ using OpenTK.Graphics.OpenGL;
 namespace LibRender2
 {
 	/// <summary>
-	/// AZDO-style uniform buffer: on GL 4.4+ the store is allocated with BufferStorage and mapped
-	/// persistently once, so per-frame animation matrix updates are a memcpy with no buffer bind
-	/// or reallocation. On GL 4.1 it falls back to BufferData/BufferSubData with identical behaviour.
+	/// Uniform buffer which is mapped once on GL 4.4+, so per-frame updates are a memcpy with no
+	/// buffer bind or reallocation. On GL 4.1 it falls back to BufferData/BufferSubData.
 	/// </summary>
 	public sealed class PersistentUniformBuffer : IDisposable
 	{
@@ -21,7 +20,6 @@ namespace LibRender2
 
 		public int Handle { get; private set; }
 		public int Capacity { get; private set; }
-		public bool IsPersistent => persistent;
 
 		internal PersistentUniformBuffer(GlCapabilities capabilities, int capacityBytes, BufferTarget target)
 		{
@@ -58,7 +56,7 @@ namespace LibRender2
 			}
 		}
 
-		public unsafe void Upload(Matrix4[] matrices)
+		internal unsafe void Upload(Matrix4[] matrices)
 		{
 			if (matrices == null || matrices.Length == 0)
 			{
@@ -129,7 +127,7 @@ namespace LibRender2
 	{
 		private static readonly Dictionary<int, PersistentUniformBuffer> buffers = new Dictionary<int, PersistentUniformBuffer>();
 
-		public static PersistentUniformBuffer Upload(BaseRenderer renderer, ObjectState state, Matrix4[] matrices)
+		public static void Upload(BaseRenderer renderer, ObjectState state, Matrix4[] matrices)
 		{
 			int bytes = matrices.Length * Marshal.SizeOf(typeof(Matrix4));
 			PersistentUniformBuffer buffer = null;
@@ -145,7 +143,6 @@ namespace LibRender2
 				buffers[buffer.Handle] = buffer;
 			}
 			buffer.Upload(matrices);
-			return buffer;
 		}
 
 		public static void DisposeAll()
