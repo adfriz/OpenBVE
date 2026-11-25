@@ -32,6 +32,8 @@ namespace LibRender2.Objects
 			public double[] Distances = new double[0];
 			public double[] Facings = new double[0];
 			public int[] Order = new int[0];
+			// The sorted result is reused as well, so a steady-state frame allocates no list here.
+			public readonly List<FaceState> Sorted = new List<FaceState>();
 			public readonly IComparer<int> Compare;
 
 			public PolygonSortScratch()
@@ -327,8 +329,11 @@ namespace LibRender2.Objects
 		{
 			if (overlay)
 			{
+				// The sort writes into its scratch list, which must not be the same list used as
+				// its input, so copy the result back into the overlay list afterwards.
 				List<FaceState> sorted = GetSortedPolygons(myOverlayAlphaFaces.AsReadOnly(), overlaySortScratch);
-				myOverlayAlphaFaces = sorted;
+				myOverlayAlphaFaces.Clear();
+				myOverlayAlphaFaces.AddRange(sorted);
 				OverlayAlphaFaces = myOverlayAlphaFaces.AsReadOnly();
 				return OverlayAlphaFaces.ToList();
 			}
@@ -403,7 +408,8 @@ namespace LibRender2.Objects
 				order[i] = i;
 			}
 			Array.Sort(order, 0, count, scratch.Compare);
-			List<FaceState> result = new List<FaceState>(count);
+			List<FaceState> result = scratch.Sorted;
+			result.Clear();
 			for (int i = 0; i < count; i++)
 			{
 				result.Add(faces[order[i]]);

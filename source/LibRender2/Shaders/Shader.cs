@@ -325,6 +325,13 @@ namespace LibRender2.Shaders
 		/// <param name="TextureMatrix"></param>
 		public void SetCurrentTextureMatrix(Matrix4D TextureMatrix)
 		{
+			if (textureMatrixCached && TextureMatrix == lastTextureMatrix)
+			{
+				SkipUniform();
+				return;
+			}
+			textureMatrixCached = true;
+			lastTextureMatrix = TextureMatrix;
 			Matrix4 matrix = ConvertToMatrix4(TextureMatrix);
 			GL.ProgramUniformMatrix4(Handle, UniformLayout.CurrentTextureMatrix, false, ref matrix);
 		}
@@ -380,16 +387,35 @@ namespace LibRender2.Shaders
 		// Accepts Color32 for API consistency, but only sends RGB (vec3) to the GLSL shader
 		public void SetMaterialEmission(Color32 MaterialEmission)
 		{
+			if (emissionCached && MaterialEmission == lastEmission)
+			{
+				SkipUniform();
+				return;
+			}
+			emissionCached = true;
+			lastEmission = MaterialEmission;
 			GL.ProgramUniform3(Handle, UniformLayout.MaterialEmission, MaterialEmission.R / 255.0f, MaterialEmission.G / 255.0f, MaterialEmission.B / 255.0f);
 		}
 
 		public void SetMaterialShininess(float materialShininess)
 		{
+			if (materialShininess == lastShininess)
+			{
+				SkipUniform();
+				return;
+			}
+			lastShininess = materialShininess;
 			GL.ProgramUniform1(Handle, UniformLayout.MaterialShininess, materialShininess);
 		}
 
 		public void SetMaterialFlags(MaterialFlags Flags)
 		{
+			if (Flags == lastMaterialFlags)
+			{
+				SkipUniform();
+				return;
+			}
+			lastMaterialFlags = Flags;
 			GL.ProgramUniform1(Handle, UniformLayout.MaterialFlags, (int)Flags);
 		}
 
@@ -470,6 +496,12 @@ namespace LibRender2.Shaders
 
 		public override void SetFog(bool enabled)
 		{
+			if (lastFogEnabled == enabled)
+			{
+				SkipUniform();
+				return;
+			}
+			lastFogEnabled = enabled;
 			GL.ProgramUniform1(Handle, UniformLayout.IsFog, enabled ? 1 : 0);
 		}
 
@@ -502,11 +534,29 @@ namespace LibRender2.Shaders
 		}
 
 		private float lastBrightness;
+		// AZDO: shader uniforms are per-program state, so a cache on the Shader instance lets us
+		// drop redundant ProgramUniform calls instead of paying a driver round trip per face.
+		private float lastOpacity = float.NaN;
+		private float lastShininess = float.NaN;
+		private MaterialFlags lastMaterialFlags = (MaterialFlags)(-1);
+		private Color32 lastEmission;
+		private bool emissionCached;
+		private bool? lastFogEnabled;
+		private int lastAlphaFunction = -1;
+		private float lastAlphaComparison;
+		private bool textureMatrixCached;
+		private Matrix4D lastTextureMatrix;
+
+		private static void SkipUniform()
+		{
+			BaseRenderer.StateChangesSkipped++;
+		}
 
 		public void SetBrightness(float brightness)
 		{
 			if(brightness == lastBrightness)
 			{
+				SkipUniform();
 				return;
 			}
 			lastBrightness = brightness;
@@ -515,6 +565,12 @@ namespace LibRender2.Shaders
 
 		public void SetOpacity(float opacity)
 		{
+			if (opacity == lastOpacity)
+			{
+				SkipUniform();
+				return;
+			}
+			lastOpacity = opacity;
 			GL.ProgramUniform1(Handle, UniformLayout.Opacity, opacity);
 		}
 
@@ -550,15 +606,21 @@ namespace LibRender2.Shaders
 
 		public override void SetAlphaFunction(AlphaFunction alphaFunction, float alphaComparison)
 		{
-			GL.ProgramUniform2(Handle, UniformLayout.AlphaFunction, (int)alphaFunction, alphaComparison);
-			
+			if ((int)alphaFunction == lastAlphaFunction && alphaComparison == lastAlphaComparison)
+			{
+				SkipUniform();
+				return;
+			}
+			lastAlphaFunction = (int)alphaFunction;
+			lastAlphaComparison = alphaComparison;
+			GL.ProgramUniform2(Handle, UniformLayout.AlphaFunction, lastAlphaFunction, alphaComparison);
 		}
 
 		public override void SetAlphaTest(bool enabled)
 		{
 			if (!enabled)
 			{
-				GL.ProgramUniform2(Handle, UniformLayout.AlphaFunction, (int)AlphaFunction.Never, 1.0f);
+				SetAlphaFunction(AlphaFunction.Never, 1.0f);
 			}
 		}
 

@@ -295,6 +295,33 @@ namespace LibRender2
 
 		private BlendingFactor blendDestFactor;
 
+		/// <summary>Sets the GL blend state for an instanced face without touching the caller's saved state</summary>
+		private void ApplyBlendState(bool enabled, BlendingFactor src, BlendingFactor dst)
+		{
+			if (enabled)
+			{
+				GL.Enable(EnableCap.Blend);
+				GL.BlendFunc(src, dst);
+			}
+			else
+			{
+				GL.Disable(EnableCap.Blend);
+			}
+		}
+
+		/// <summary>Enables or disables back-face culling for an instanced face</summary>
+		private void ApplyCullFace(bool enabled)
+		{
+			if (enabled)
+			{
+				GL.Enable(EnableCap.CullFace);
+			}
+			else
+			{
+				GL.Disable(EnableCap.CullFace);
+			}
+		}
+
 		/// <summary>Whether Alpha Testing is enabled in openGL</summary>
 		private bool alphaTestEnabled;
 
@@ -532,7 +559,7 @@ namespace LibRender2
 				GL.Hint(HintTarget.PolygonSmoothHint, HintMode.Fastest);
 			}
 
-			GL.Enable(EnableCap.CullFace);
+			ApplyCullFace(true);
 			GL.CullFace(CullFaceMode.Front);
 			GL.Disable(EnableCap.Dither);
 
@@ -686,7 +713,7 @@ namespace LibRender2
 		/// </summary>
 		public virtual void ResetOpenGlState()
 		{
-			GL.Enable(EnableCap.CullFace);
+			ApplyCullFace(true);
 			GL.CullFace(CullFaceMode.Front);
 			SetBlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 			UnsetBlendFunc();
@@ -1290,27 +1317,18 @@ namespace LibRender2
 			blendEnabled = true;
 			blendSrcFactor = srcFactor;
 			blendDestFactor = destFactor;
-			GL.Enable(EnableCap.Blend);
-			GL.BlendFunc(srcFactor, destFactor);
+			ApplyBlendState(true, srcFactor, destFactor);
 		}
 
 		public void UnsetBlendFunc()
 		{
 			blendEnabled = false;
-			GL.Disable(EnableCap.Blend);
+			ApplyBlendState(false, blendSrcFactor, blendDestFactor);
 		}
 
 		public void RestoreBlendFunc()
 		{
-			if (blendEnabled)
-			{
-				GL.Enable(EnableCap.Blend);
-				GL.BlendFunc(blendSrcFactor, blendDestFactor);
-			}
-			else
-			{
-				GL.Disable(EnableCap.Blend);
-			}
+			ApplyBlendState(blendEnabled, blendSrcFactor, blendDestFactor);
 		}
 
 		/// <summary>Specifies the OpenGL alpha function to perform</summary>
@@ -1593,6 +1611,14 @@ namespace LibRender2
 		public int OpaqueDrawCalls;
 		/// <summary>The number of primitive batches (draw calls) issued for alpha faces by the alpha pass of the current frame</summary>
 		public int AlphaDrawCalls;
+		/// <summary>Redundant shader uniform writes skipped by the per-shader uniform cache</summary>
+		public static int StateChangesSkipped;
+		/// <summary>Per-call instrumentation for the instanced alpha path (AZDO verification)</summary>
+		private static Stopwatch alphaPassWatch;
+		private static int alphaPassCalls;
+		private static long alphaPassTicks;
+		private static int alphaPassFaces;
+		private static int alphaPassSkipped;
 		/// <summary>The total number of draw calls issued by all shadow cascades of the current frame</summary>
 		public int ShadowDrawCalls;
 		/// <summary>Shadow draw calls issued through the per-object fallback path</summary>
@@ -1626,6 +1652,10 @@ namespace LibRender2
 		private readonly Dictionary<Mesh, HashSet<int>> alphaBatchedFaceIndices = new Dictionary<Mesh, HashSet<int>>();
 		private readonly List<FaceState> alphaFallbackFaces = new List<FaceState>();
 		private readonly List<AlphaBatch> alphaSortedBatches = new List<AlphaBatch>();
+		// AZDO: pooled batch objects and their instance buffers are reused across frames, so a
+		// steady-state alpha pass performs no allocations at all.
+		private readonly List<AlphaBatch> alphaBatchPool = new List<AlphaBatch>();
+		private int alphaBatchPoolUsed;
 
 		private readonly Dictionary<Mesh, List<ObjectState>> shadowInstancesByMesh = new Dictionary<Mesh, List<ObjectState>>();
 		private readonly Dictionary<Mesh, HashSet<ObjectState>> shadowSeenByMesh = new Dictionary<Mesh, HashSet<ObjectState>>();
@@ -1786,17 +1816,7 @@ namespace LibRender2
 				lastVAO = VAO.handle;
 			}
 
-			if (!OptionBackFaceCulling || (face.Flags & FaceFlags.Face2Mask) != 0)
-			{
-				GL.Disable(EnableCap.CullFace);
-			}
-			else if (OptionBackFaceCulling)
-			{
-				if ((face.Flags & FaceFlags.Face2Mask) == 0)
-				{
-					GL.Enable(EnableCap.CullFace);
-				}
-			}
+			ApplyCullFace(OptionBackFaceCulling && (face.Flags & FaceFlags.Face2Mask) == 0);
 
 			// model matricies
 			if (state.Matricies != null && state.Matricies.Length > 0 && state != lastObjectState)
@@ -2522,14 +2542,7 @@ namespace LibRender2
 
 							if (OptionBackFaceCulling)
 							{
-								if ((range.Flags & FaceFlags.Face2Mask) != 0)
-								{
-									GL.Disable(EnableCap.CullFace);
-								}
-								else
-								{
-									GL.Enable(EnableCap.CullFace);
-								}
+								ApplyCullFace((range.Flags & FaceFlags.Face2Mask) == 0);
 							}
 
 							if (material.DaytimeTexture != null && currentHost.LoadTexture(ref material.DaytimeTexture, (OpenGlTextureWrapMode)(material.WrapMode ?? OpenGlTextureWrapMode.ClampClamp)))
@@ -2647,14 +2660,7 @@ namespace LibRender2
 
 					if (OptionBackFaceCulling)
 					{
-						if ((range.Flags & FaceFlags.Face2Mask) != 0)
-						{
-							GL.Disable(EnableCap.CullFace);
-						}
-						else
-						{
-							GL.Enable(EnableCap.CullFace);
-						}
+						ApplyCullFace((range.Flags & FaceFlags.Face2Mask) == 0);
 					}
 
 					vao.Draw(GetPrimitiveType(range.Flags), range.Start, range.Count);
@@ -2906,14 +2912,7 @@ namespace LibRender2
 				lastVAO = VAO.handle;
 			}
 
-			if (!OptionBackFaceCulling || (face.Flags & FaceFlags.Face2Mask) != 0)
-			{
-				GL.Disable(EnableCap.CullFace);
-			}
-			else if ((face.Flags & FaceFlags.Face2Mask) == 0)
-			{
-				GL.Enable(EnableCap.CullFace);
-			}
+			ApplyCullFace(OptionBackFaceCulling && (face.Flags & FaceFlags.Face2Mask) == 0);
 
 			// lighting
 			shader.SetMaterialFlags(material.Flags);
@@ -2991,8 +2990,7 @@ namespace LibRender2
 				if (material.BlendMode == MeshMaterialBlendMode.Additive)
 				{
 					factor = 1.0f;
-					GL.Enable(EnableCap.Blend);
-					GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.One);
+					ApplyBlendState(true, BlendingFactor.SrcAlpha, BlendingFactor.One);
 					shader.SetFog(false);
 				}
 				else if (material.NighttimeTexture == null || material.NighttimeTexture == material.DaytimeTexture)
@@ -3052,6 +3050,10 @@ namespace LibRender2
 			public Mesh Mesh;
 			/// <summary>The distinct instances (placed objects) to draw, ordered from the farthest to the nearest</summary>
 			public ObjectState[] Instances;
+			/// <summary>Number of valid entries in <see cref="Instances"/></summary>
+			public int InstanceCount;
+			/// <summary>Reusable sort key buffer for <see cref="Instances"/></summary>
+			public double[] Distances;
 			/// <summary>The distinct faces of the mesh which are to be drawn</summary>
 			public List<MeshFace> Faces;
 			/// <summary>The distance of the nearest instance from the camera, used to order the batches themselves</summary>
@@ -3079,6 +3081,37 @@ namespace LibRender2
 		/// themselves ordered back to front.
 		/// </remarks>
 		public void RenderAlphaFaces(List<FaceState> alphaFaces, bool opaqueCutoutPass = false, bool qualityBlendPass = false)
+		{
+			if (alphaPassWatch == null)
+			{
+				alphaPassWatch = Stopwatch.StartNew();
+			}
+			else
+			{
+				alphaPassWatch.Restart();
+			}
+			int skippedBefore = StateChangesSkipped;
+			RenderAlphaFacesCore(alphaFaces, opaqueCutoutPass, qualityBlendPass);
+			alphaPassTicks += alphaPassWatch.ElapsedTicks;
+			alphaPassFaces += alphaFaces == null ? 0 : alphaFaces.Count;
+			alphaPassSkipped += StateChangesSkipped - skippedBefore;
+			if (++alphaPassCalls % 120 == 0)
+			{
+				try
+				{
+					fileSystem?.AppendToLogFile("[AZDO] alpha pass: calls=" + alphaPassCalls +
+						" avg=" + (alphaPassTicks / (double)TimeSpan.TicksPerMillisecond / alphaPassCalls).ToString("F3") + "ms" +
+						" faces/call=" + (alphaPassFaces / alphaPassCalls) +
+						" skipped/call=" + (alphaPassSkipped / alphaPassCalls));
+				}
+				catch
+				{
+					// Diagnostics must never affect rendering
+				}
+			}
+		}
+
+		private void RenderAlphaFacesCore(List<FaceState> alphaFaces, bool opaqueCutoutPass, bool qualityBlendPass)
 		{
 			if (alphaFaces == null || alphaFaces.Count == 0)
 			{
@@ -3151,7 +3184,8 @@ namespace LibRender2
 			double cameraY = Camera.AbsolutePosition.Y;
 			double cameraZ = Camera.AbsolutePosition.Z;
 			alphaBatchesByMesh.Clear();
-			alphaBatchedFaceIndices.Clear();
+			alphaBatchPoolUsed = 0;
+			ClearValues(alphaBatchedFaceIndices);
 			alphaFallbackFaces.Clear();
 			Dictionary<Mesh, AlphaBatch> batchesByMesh = alphaBatchesByMesh;
 			Dictionary<Mesh, HashSet<int>> batchedFaceIndices = alphaBatchedFaceIndices;
@@ -3184,16 +3218,35 @@ namespace LibRender2
 				if (!batchesByMesh.TryGetValue(mesh, out AlphaBatch batch))
 				{
 					// Build the ordered instance list for this mesh- instance order within a single draw call is
-					// the order in which the GPU blends the instances, so the farthest must come first
-					ObjectState[] batchInstances = instances.ToArray();
-					double[] distances = new double[batchInstances.Length];
+					// the order in which the GPU blends the instances, so the farthest must come first.
+					// The batch and both arrays come from the per-renderer pool and only grow when necessary.
+					if (alphaBatchPoolUsed == alphaBatchPool.Count)
+					{
+						alphaBatchPool.Add(new AlphaBatch { Faces = new List<MeshFace>() });
+					}
+					batch = alphaBatchPool[alphaBatchPoolUsed++];
+					int instanceCount = instances.Count;
+					if (batch.Instances == null || batch.Instances.Length < instanceCount)
+					{
+						batch.Instances = new ObjectState[instanceCount];
+					}
+					if (batch.Distances == null || batch.Distances.Length < instanceCount)
+					{
+						batch.Distances = new double[instanceCount];
+					}
+					batch.InstanceCount = instanceCount;
+					batch.Faces.Clear();
+					ObjectState[] batchInstances = batch.Instances;
+					double[] distances = batch.Distances;
 					double nearest = double.MaxValue;
 
-					for (int i = 0; i < batchInstances.Length; i++)
+					for (int i = 0; i < instanceCount; i++)
 					{
-						double dx = batchInstances[i].WorldPosition.X - cameraX;
-						double dy = batchInstances[i].WorldPosition.Y - cameraY;
-						double dz = batchInstances[i].WorldPosition.Z - cameraZ;
+						ObjectState instance = instances[i];
+						batchInstances[i] = instance;
+						double dx = instance.WorldPosition.X - cameraX;
+						double dy = instance.WorldPosition.Y - cameraY;
+						double dz = instance.WorldPosition.Z - cameraZ;
 						double d = dx * dx + dy * dy + dz * dz;
 						distances[i] = d;
 
@@ -3203,19 +3256,16 @@ namespace LibRender2
 						}
 					}
 
-					Array.Sort(distances, batchInstances);
-					Array.Reverse(batchInstances);
+					Array.Sort(distances, batchInstances, 0, instanceCount);
+					Array.Reverse(batchInstances, 0, instanceCount);
 
-					batch = new AlphaBatch
-					{
-						Mesh = mesh,
-						Instances = batchInstances,
-						Faces = new List<MeshFace>(),
-						NearestDistance = nearest
-					};
-
+					batch.Mesh = mesh;
+					batch.NearestDistance = nearest;
 					batchesByMesh.Add(mesh, batch);
-					batchedFaceIndices.Add(mesh, new HashSet<int>());
+					if (!batchedFaceIndices.ContainsKey(mesh))
+					{
+						batchedFaceIndices.Add(mesh, new HashSet<int>());
+					}
 				}
 
 				if (batchedFaceIndices[mesh].Add(face.Face.IboStartIndex))
@@ -3273,9 +3323,9 @@ namespace LibRender2
 					AlphaBatch batch = sortedBatches[i];
 					byte daytimeNighttimeBlend = blendByMesh[batch.Mesh];
 
-					for (int start = 0; start < batch.Instances.Length; start += MaxInstancesPerBatch)
+					for (int start = 0; start < batch.InstanceCount; start += MaxInstancesPerBatch)
 					{
-						int count = Math.Min(MaxInstancesPerBatch, batch.Instances.Length - start);
+						int count = Math.Min(MaxInstancesPerBatch, batch.InstanceCount - start);
 						UploadInstanceMatrices(batch.Instances, start, count);
 
 						foreach (MeshFace face in batch.Faces)
