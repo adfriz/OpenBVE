@@ -29,7 +29,10 @@ namespace Texture.Dds {
 		/// <returns>Whether the plugin can load the specified texture.</returns>
 		public override bool CanLoadTexture(string path)
 		{
-			if (File.Exists(path)) {
+			// Go straight to the open: File.Exists followed by FileStream was two metadata
+			// lookups per file, and a failed open is already handled by the catch below.
+			try
+			{
 				using (Stream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
 				{
 					using (BinaryReader reader = new BinaryReader(fileStream))
@@ -39,15 +42,14 @@ namespace Texture.Dds {
 							return false;
 						}
 						byte[] signature = reader.ReadBytes(4);
-						if (!(signature[0] == 'D' && signature[1] == 'D' && signature[2] == 'S' && signature[3] == ' '))
-						{
-							return false;
-						}
-						return true;
+						return signature[0] == 'D' && signature[1] == 'D' && signature[2] == 'S' && signature[3] == ' ';
 					}
 				}
 			}
-			return false;
+			catch
+			{
+				return false;
+			}
 		}
 
 		/// <summary>Loads the specified texture.</summary>

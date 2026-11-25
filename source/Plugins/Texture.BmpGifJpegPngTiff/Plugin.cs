@@ -1,3 +1,4 @@
+using System;
 using System.Drawing;
 using System.IO;
 using OpenBveApi;
@@ -75,45 +76,56 @@ namespace Plugin {
 		/// <param name="path">The path to the file or folder that contains the texture.</param>
 		/// <returns>Whether the plugin can load the specified texture.</returns>
 		public override bool CanLoadTexture(string path) {
-			if (File.Exists(path)) {
-				if (FileFormats.IsNautilusFile(path))
+			try
+			{
+				// One open for both the Nautilus check and the signature sniff. The old code opened
+				// the file twice here (FileFormats.IsNautilusFile + this stream), which matters with
+				// thousands of textures per route.
+				using (FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
 				{
-					return false;
-				}
-				using (FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read)) {
-					using (BinaryReader reader = new BinaryReader(stream)) {
-						if (stream.Length < 8)
-						{
-							return false;
-						}
-						uint identifier1 = reader.ReadUInt32();
-						uint identifier2 = reader.ReadUInt32();
-						if ((identifier1 & 0xFFFF) == 0x4D42) {
-							/* BMP */
-							return true;
-						}
+					if (stream.Length < 8)
+					{
+						return false;
+					}
+					byte[] header = new byte[16];
+					int read = stream.Read(header, 0, header.Length);
+					if (stream.Length >= 32 && read >= 16 &&
+					    BitConverter.ToUInt32(header, 0) == 0x554c544eu && BitConverter.ToUInt32(header, 4) == 0x4d524453u &&
+					    BitConverter.ToUInt32(header, 8) == 0x14131211u && BitConverter.ToUInt32(header, 12) == 0x00811919u)
+					{
+						return false;
+					}
+					uint identifier1 = BitConverter.ToUInt32(header, 0);
+					uint identifier2 = BitConverter.ToUInt32(header, 4);
+					if ((identifier1 & 0xFFFF) == 0x4D42) {
+						/* BMP */
+						return true;
+					}
 
-						if (identifier1 == 0x38464947 & ((identifier2 & 0xFFFF) == 0x6137 | (identifier2 & 0xFFFF) == 0x6139)) {
-							/* GIF */
-							return true;
-						}
+					if (identifier1 == 0x38464947 & ((identifier2 & 0xFFFF) == 0x6137 | (identifier2 & 0xFFFF) == 0x6139)) {
+						/* GIF */
+						return true;
+					}
 
-						if (identifier1 == 0xE0FFD8FF | identifier1 == 0xE1FFD8FF) {
-							/* JPEG */
-							return true;
-						}
+					if (identifier1 == 0xE0FFD8FF | identifier1 == 0xE1FFD8FF) {
+						/* JPEG */
+						return true;
+					}
 
-						if (identifier1 == 0x474E5089 & identifier2 == 0x0A1A0A0D) {
-							/* PNG */
-							return true;
-						}
+					if (identifier1 == 0x474E5089 & identifier2 == 0x0A1A0A0D) {
+						/* PNG */
+						return true;
+					}
 
-						if (identifier1 == 0x002A4949 | identifier1 == 0x2A004D4D) {
-							/* TIFF */
-							return true;
-						}
+					if (identifier1 == 0x002A4949 | identifier1 == 0x2A004D4D) {
+						/* TIFF */
+						return true;
 					}
 				}
+			}
+			catch
+			{
+				return false;
 			}
 			return false;
 		}

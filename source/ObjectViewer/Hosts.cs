@@ -113,7 +113,9 @@ namespace ObjectViewer {
 
 		private bool LoadTextureInternal(string path, TextureParameters parameters, out Texture texture) {
 			if (File.Exists(path) || Directory.Exists(path)) {
-				for (int i = 0; i < Program.CurrentHost.Plugins.Length; i++) {
+				int[] pluginOrder = OrderedTexturePlugins(path, Program.CurrentHost.Plugins);
+				for (int p = 0; p < pluginOrder.Length; p++) {
+					int i = pluginOrder[p];
 					if (Program.CurrentHost.Plugins[i].Texture != null) {
 						try {
 							if (Program.CurrentHost.Plugins[i].Texture.CanLoadTexture(path)) {
