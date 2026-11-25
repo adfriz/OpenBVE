@@ -417,7 +417,7 @@ namespace LibRender2
 		public float SceneNear { get; private set; }
 		public float SceneFar { get; private set; }
 
-		/// <summary>The spatial upscaler (FSR 1.0 / NIS / SGSR), dormant when set to Off</summary>
+		/// <summary>The spatial upscaler (FSR 1.0 / SGSR v1), dormant when set to Off</summary>
 		public Upscaler Upscaler;
 		public bool LoadLogo()
 		{

@@ -104,7 +104,7 @@ namespace RouteViewer
 
 
             // Upscaling
-            comboBoxUpscaler.SelectedIndex = (int) Interface.CurrentOptions.UpscalerMode;
+            comboBoxUpscaler.SelectedIndex = UpscalerUi.IndexOf(Interface.CurrentOptions.UpscalerMode);
             PopulateUpscalerQuality();
             UpdateUpscalerSharpnessFromOptions();
             checkBoxUpscalerDenoise.Checked = Interface.CurrentOptions.UpscalerDenoise;
@@ -1060,19 +1060,9 @@ namespace RouteViewer
 
         private void UpdateUpscalerSharpnessFromOptions()
         {
-            double sharpness;
-            switch (Interface.CurrentOptions.UpscalerMode)
-            {
-                case UpscalerMode.Nis:
-                    sharpness = Interface.CurrentOptions.UpscalerSharpnessNis;
-                    break;
-                case UpscalerMode.Sgsr1:
-                    sharpness = Interface.CurrentOptions.UpscalerSharpnessSgsr;
-                    break;
-                default:
-                    sharpness = Interface.CurrentOptions.UpscalerSharpnessFsr;
-                    break;
-            }
+            double sharpness = Interface.CurrentOptions.UpscalerMode == UpscalerMode.Sgsr1
+                ? Interface.CurrentOptions.UpscalerSharpnessSgsr
+                : Interface.CurrentOptions.UpscalerSharpnessFsr;
             suppressUpscalerEvents = true;
             trackBarUpscalerSharpness.Value = Math.Max(trackBarUpscalerSharpness.Minimum, Math.Min(trackBarUpscalerSharpness.Maximum, (int)Math.Round(sharpness * 100.0)));
             suppressUpscalerEvents = false;
@@ -1091,7 +1081,7 @@ namespace RouteViewer
             {
                 return;
             }
-            Interface.CurrentOptions.UpscalerMode = (UpscalerMode)comboBoxUpscaler.SelectedIndex;
+            Interface.CurrentOptions.UpscalerMode = UpscalerUi.ModeAt(comboBoxUpscaler.SelectedIndex);
             PopulateUpscalerQuality();
             UpdateUpscalerSharpnessFromOptions();
         }
@@ -1116,11 +1106,7 @@ namespace RouteViewer
             }
             labelUpscalerSharpnessValue.Text = trackBarUpscalerSharpness.Value + "%";
             double sharpness = trackBarUpscalerSharpness.Value / 100.0;
-            if (Interface.CurrentOptions.UpscalerMode == UpscalerMode.Nis)
-            {
-                Interface.CurrentOptions.UpscalerSharpnessNis = sharpness;
-            }
-            else if (Interface.CurrentOptions.UpscalerMode == UpscalerMode.Sgsr1)
+            if (Interface.CurrentOptions.UpscalerMode == UpscalerMode.Sgsr1)
             {
                 Interface.CurrentOptions.UpscalerSharpnessSgsr = sharpness;
             }

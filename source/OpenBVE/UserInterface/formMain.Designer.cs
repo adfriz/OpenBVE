@@ -3080,9 +3080,8 @@ namespace OpenBve {
             this.comboboxUpscaler.FormattingEnabled = true;
             this.comboboxUpscaler.Items.AddRange(new object[] {
             "Off",
-            "AMD FSR 1.0",
-            "NVIDIA NIS",
-            "Qualcomm SGSR v1"});
+            "Qualcomm SGSR v1",
+            "AMD FSR 1.0"});
             this.comboboxUpscaler.Location = new System.Drawing.Point(150, 23);
             this.comboboxUpscaler.Name = "comboboxUpscaler";
             this.comboboxUpscaler.Size = new System.Drawing.Size(160, 21);

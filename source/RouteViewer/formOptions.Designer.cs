@@ -555,9 +555,8 @@ namespace RouteViewer
             this.comboBoxUpscaler.FormattingEnabled = true;
             this.comboBoxUpscaler.Items.AddRange(new object[] {
             "Off",
-            "AMD FSR 1.0",
-            "NVIDIA NIS",
-            "Qualcomm SGSR v1"});
+            "Qualcomm SGSR v1",
+            "AMD FSR 1.0"});
             this.comboBoxUpscaler.Name = "comboBoxUpscaler";
             // 
             // labelUpscaler

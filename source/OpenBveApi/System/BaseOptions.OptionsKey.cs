@@ -136,7 +136,6 @@ namespace OpenBveApi
 		UpscalerMode,
 		UpscalerQuality,
 		UpscalerSharpnessFsr,
-		UpscalerSharpnessNis,
 		UpscalerSharpnessSgsr,
 		UpscalerDenoise
     }

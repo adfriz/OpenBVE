@@ -328,7 +328,6 @@ namespace OpenBve
 				Builder.AppendLine("upscalermode = " + (int)UpscalerMode);
 				Builder.AppendLine("upscalerquality = " + (int)UpscalerQuality);
 				Builder.AppendLine("upscalersharpnessfsr = " + UpscalerSharpnessFsr.ToString("0.00", Culture));
-				Builder.AppendLine("upscalersharpnessnis = " + UpscalerSharpnessNis.ToString("0.00", Culture));
 				Builder.AppendLine("upscalersharpnesssgsr = " + UpscalerSharpnessSgsr.ToString("0.00", Culture));
 				Builder.AppendLine("upscalerdenoise = " + (UpscalerDenoise ? "true" : "false"));
 				Builder.AppendLine();
@@ -567,6 +566,10 @@ namespace OpenBve
 							// Upscaler
 							if (block.GetValue(OptionsKey.UpscalerMode, out int upscalerMode))
 							{
+								if (upscalerMode == 3)
+								{
+									upscalerMode = (int)UpscalerMode.Sgsr1; // old SGSR id before NIS was removed
+								}
 								if (upscalerMode >= 0 && Enum.IsDefined(typeof(UpscalerMode), upscalerMode))
 								{
 									CurrentOptions.UpscalerMode = (UpscalerMode)upscalerMode;
@@ -582,9 +585,6 @@ namespace OpenBve
 							block.TryGetValue(OptionsKey.UpscalerSharpnessFsr, ref CurrentOptions.UpscalerSharpnessFsr);
 							if (CurrentOptions.UpscalerSharpnessFsr < 0.0) CurrentOptions.UpscalerSharpnessFsr = 0.0;
 							if (CurrentOptions.UpscalerSharpnessFsr > 1.0) CurrentOptions.UpscalerSharpnessFsr = 1.0;
-							block.TryGetValue(OptionsKey.UpscalerSharpnessNis, ref CurrentOptions.UpscalerSharpnessNis);
-							if (CurrentOptions.UpscalerSharpnessNis < 0.0) CurrentOptions.UpscalerSharpnessNis = 0.0;
-							if (CurrentOptions.UpscalerSharpnessNis > 1.0) CurrentOptions.UpscalerSharpnessNis = 1.0;
 							block.TryGetValue(OptionsKey.UpscalerSharpnessSgsr, ref CurrentOptions.UpscalerSharpnessSgsr);
 							if (CurrentOptions.UpscalerSharpnessSgsr < 0.0) CurrentOptions.UpscalerSharpnessSgsr = 0.0;
 							if (CurrentOptions.UpscalerSharpnessSgsr > 1.0) CurrentOptions.UpscalerSharpnessSgsr = 1.0;

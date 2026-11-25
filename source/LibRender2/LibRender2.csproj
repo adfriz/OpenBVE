@@ -124,7 +124,6 @@
     <Compile Include="Shaders\LineShader.cs" />
     <Compile Include="Shaders\ComputeShader.cs" />
     <Compile Include="Shaders\Shader.cs" />
-    <Compile Include="Upscaling\NisCoefficients.cs" />
     <Compile Include="Upscaling\Upscaler.cs" />
     <Compile Include="Shaders\ShadowDepthShader.cs" />
     <Compile Include="Smoke\Particle.cs" />
@@ -175,7 +174,6 @@
     <EmbeddedResource Include="..\..\assets\Environments\studio_small_08_1k.hdr" />
     <EmbeddedResource Include="..\..\assets\Shaders\fullscreen.vert" />
     <EmbeddedResource Include="..\..\assets\Shaders\fsr1.frag" />
-    <EmbeddedResource Include="..\..\assets\Shaders\nis.frag" />
     <EmbeddedResource Include="..\..\assets\Shaders\sgsr1.frag" />
   </ItemGroup>
   <ItemGroup>

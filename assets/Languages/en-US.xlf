@@ -1180,9 +1180,6 @@
 					<trans-unit id="upscaler_mode_fsr1">
 						<source>AMD FSR 1.0</source>
 					</trans-unit>
-					<trans-unit id="upscaler_mode_nis">
-						<source>NVIDIA NIS</source>
-					</trans-unit>
 					<trans-unit id="upscaler_mode_sgsr1">
 						<source>Qualcomm SGSR v1</source>
 					</trans-unit>
@@ -1191,9 +1188,6 @@
 					</trans-unit>
 					<trans-unit id="upscaler_quality_nativeaa">
 						<source>Native AA (100%)</source>
-					</trans-unit>
-					<trans-unit id="upscaler_quality_ultraqualityplus">
-						<source>Ultra Quality+ (85%)</source>
 					</trans-unit>
 					<trans-unit id="upscaler_quality_ultraquality">
 						<source>Ultra Quality (77%)</source>

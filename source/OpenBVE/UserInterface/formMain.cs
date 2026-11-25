@@ -517,7 +517,7 @@ namespace OpenBve {
 			// Setting the mode combobox populates the quality list with the
 			// vendor-recommended presets of the selected upscaler and syncs the
 			// sharpness slider (see comboboxUpscaler_SelectedIndexChanged)
-			comboboxUpscaler.SelectedIndex = (int)Interface.CurrentOptions.UpscalerMode;
+			comboboxUpscaler.SelectedIndex = UpscalerUi.IndexOf(Interface.CurrentOptions.UpscalerMode);
 			checkboxUpscalerDenoise.Checked = Interface.CurrentOptions.UpscalerDenoise;
 			// Enable/disable shadow sub-controls based on resolution setting
 			bool shadowEnabled = Interface.CurrentOptions.ShadowResolution != ShadowMapResolution.Off;
@@ -834,27 +834,22 @@ namespace OpenBve {
 			{
 				labelUpscalerInfo.Text = "Renders the world at a lower internal resolution and upscales it to the window. HUD and menus are always drawn at native resolution.";
 			}
-			if (comboboxUpscaler.Items.Count == 4)
+			if (comboboxUpscaler.Items.Count == 3)
 			{
 				comboboxUpscaler.Items[0] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "upscaler_mode_off" });
 				if (comboboxUpscaler.Items[0] as string == "upscaler_mode_off")
 				{
 					comboboxUpscaler.Items[0] = "Off";
 				}
-				comboboxUpscaler.Items[1] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "upscaler_mode_fsr1" });
-				if (comboboxUpscaler.Items[1] as string == "upscaler_mode_fsr1")
+				comboboxUpscaler.Items[1] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "upscaler_mode_sgsr1" });
+				if (comboboxUpscaler.Items[1] as string == "upscaler_mode_sgsr1")
 				{
-					comboboxUpscaler.Items[1] = "AMD FSR 1.0";
+					comboboxUpscaler.Items[1] = "Qualcomm SGSR v1";
 				}
-				comboboxUpscaler.Items[2] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "upscaler_mode_nis" });
-				if (comboboxUpscaler.Items[2] as string == "upscaler_mode_nis")
+				comboboxUpscaler.Items[2] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "upscaler_mode_fsr1" });
+				if (comboboxUpscaler.Items[2] as string == "upscaler_mode_fsr1")
 				{
-					comboboxUpscaler.Items[2] = "NVIDIA NIS";
-				}
-				comboboxUpscaler.Items[3] = Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "upscaler_mode_sgsr1" });
-				if (comboboxUpscaler.Items[3] as string == "upscaler_mode_sgsr1")
-				{
-					comboboxUpscaler.Items[3] = "Qualcomm SGSR v1";
+					comboboxUpscaler.Items[2] = "AMD FSR 1.0";
 				}
 			}
 			// The quality preset labels follow the naming of the selected upscaler's
@@ -1397,18 +1392,14 @@ namespace OpenBve {
 			// Upscaler
 			if (comboboxUpscaler.SelectedIndex >= 0)
 			{
-				Interface.CurrentOptions.UpscalerMode = (UpscalerMode)comboboxUpscaler.SelectedIndex;
+				Interface.CurrentOptions.UpscalerMode = UpscalerUi.ModeAt(comboboxUpscaler.SelectedIndex);
 			}
 			if (comboboxUpscalerQuality.SelectedIndex >= 0 && comboboxUpscalerQuality.SelectedIndex < upscalerQualityList.Length)
 			{
 				Interface.CurrentOptions.UpscalerQuality = upscalerQualityList[comboboxUpscalerQuality.SelectedIndex];
 			}
 			double upscalerSharpnessValue = trackbarUpscalerSharpness.Value / 100.0;
-			if (Interface.CurrentOptions.UpscalerMode == UpscalerMode.Nis)
-			{
-				Interface.CurrentOptions.UpscalerSharpnessNis = upscalerSharpnessValue;
-			}
-			else if (Interface.CurrentOptions.UpscalerMode == UpscalerMode.Sgsr1)
+			if (Interface.CurrentOptions.UpscalerMode == UpscalerMode.Sgsr1)
 			{
 				Interface.CurrentOptions.UpscalerSharpnessSgsr = upscalerSharpnessValue;
 			}

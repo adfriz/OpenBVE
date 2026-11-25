@@ -249,19 +249,14 @@ namespace OpenBve {
 
                 /// <summary>The stored sharpness value of the given upscaler mode</summary>
                 private double GetUpscalerSharpness(UpscalerMode mode) {
-                        switch (mode) {
-                                case UpscalerMode.Nis:
-                                        return Interface.CurrentOptions.UpscalerSharpnessNis;
-                                case UpscalerMode.Sgsr1:
-                                        return Interface.CurrentOptions.UpscalerSharpnessSgsr;
-                                default:
-                                        return Interface.CurrentOptions.UpscalerSharpnessFsr;
-                        }
+                        return mode == UpscalerMode.Sgsr1
+                                ? Interface.CurrentOptions.UpscalerSharpnessSgsr
+                                : Interface.CurrentOptions.UpscalerSharpnessFsr;
                 }
 
 		private void comboboxUpscaler_SelectedIndexChanged(object sender, EventArgs e) {
 			if (comboboxUpscaler.SelectedIndex < 0) return;
-			Interface.CurrentOptions.UpscalerMode = (UpscalerMode)comboboxUpscaler.SelectedIndex;
+			Interface.CurrentOptions.UpscalerMode = UpscalerUi.ModeAt(comboboxUpscaler.SelectedIndex);
 			UpscalerMode mode = Interface.CurrentOptions.UpscalerMode;
 			bool upscalerEnabled = mode != UpscalerMode.Off;
 			comboboxUpscalerQuality.Enabled = upscalerEnabled;
@@ -295,9 +290,7 @@ namespace OpenBve {
 		private void trackbarUpscalerSharpness_Scroll(object sender, EventArgs e) {
 			labelUpscalerSharpnessValue.Text = trackbarUpscalerSharpness.Value + @"%";
 			double sharpness = trackbarUpscalerSharpness.Value / 100.0;
-			if (Interface.CurrentOptions.UpscalerMode == UpscalerMode.Nis) {
-				Interface.CurrentOptions.UpscalerSharpnessNis = sharpness;
-			} else if (Interface.CurrentOptions.UpscalerMode == UpscalerMode.Sgsr1) {
+			if (Interface.CurrentOptions.UpscalerMode == UpscalerMode.Sgsr1) {
 				Interface.CurrentOptions.UpscalerSharpnessSgsr = sharpness;
 			} else {
 				Interface.CurrentOptions.UpscalerSharpnessFsr = sharpness;

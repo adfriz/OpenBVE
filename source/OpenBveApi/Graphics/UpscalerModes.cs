@@ -27,58 +27,46 @@ namespace OpenBveApi.Graphics
         /// <summary>The spatial upscaler applied to the 3D world rendering</summary>
         public enum UpscalerMode
         {
-                /// <summary>No upscaling - the world renders at native resolution (classic behavior)</summary>
+                /// <summary>No upscaling - the world renders at native resolution</summary>
                 Off = 0,
                 /// <summary>AMD FidelityFX Super Resolution 1.0 - fused EASU + RCAS single pass</summary>
                 Fsr1 = 1,
-                /// <summary>NVIDIA Image Scaling 1.0 - NVScaler directional scaling + adaptive sharpening</summary>
-                Nis = 2,
                 /// <summary>Qualcomm Snapdragon Game Super Resolution v1 - single pass edge-direction aware Lanczos upscaling</summary>
-                Sgsr1 = 3
+                Sgsr1 = 2
         }
 
         /// <summary>
         /// The internal render resolution (upscaler quality preset) as a percentage of
         /// the window size. The upscaler then produces the native resolution output.
-        /// The names and percentages follow the recommendations of the respective
-        /// upscaler vendors (AMD FSR, NVIDIA Image Scaling, Qualcomm SGSR).
+        /// The percentages follow the vendor-recommended FSR 1.0 presets.
         /// </summary>
         public enum UpscalerQuality
         {
-                /// <summary>50% internal resolution (2.0x upscale) - official AMD / NVIDIA preset</summary>
+                /// <summary>50% internal resolution (2.0x upscale)</summary>
                 Performance = 0,
-                /// <summary>59% internal resolution (1.7x upscale) - official AMD preset</summary>
+                /// <summary>59% internal resolution (1.7x upscale)</summary>
                 Balanced = 1,
-                /// <summary>67% internal resolution (1.5x upscale) - official AMD / NVIDIA preset</summary>
+                /// <summary>67% internal resolution (1.5x upscale)</summary>
                 Quality = 2,
-                /// <summary>100% internal resolution (1.0x, sharpening only) - official AMD "Native AA" preset</summary>
+                /// <summary>100% internal resolution (1.0x, sharpening only) - "Native AA"</summary>
                 NativeAA = 3,
-                /// <summary>77% internal resolution (1.3x upscale) - official AMD preset, also an NVIDIA option</summary>
+                /// <summary>77% internal resolution (1.3x upscale)</summary>
                 UltraQuality = 4,
-                /// <summary>85% internal resolution (1.18x upscale) - NVIDIA Image Scaling option</summary>
-                UltraQualityPlus = 5,
-                /// <summary>33% internal resolution (3.0x upscale) - official AMD preset</summary>
+                /// <summary>33% internal resolution (3.0x upscale)</summary>
                 UltraPerformance = 6
         }
 
         /// <summary>
         /// Vendor-recommended quality preset tables for each upscaler mode.
         ///
-        /// AMD FSR 1.0 official space modes (FidelityFX Super Resolution 1.0 whitepaper):
-        ///   Native AA 100%, Ultra Quality 77% (1.3x), Quality 67% (1.5x),
-        ///   Balanced 59% (1.7x), Performance 50% (2.0x), Ultra Performance 33% (3.0x).
-        ///
-        /// NVIDIA Image Scaling officially exposes these render percentages in the
-        /// NVIDIA App / GeForce Experience: 85%, 77%, 67%, 59%, 50% (2.0x maximum,
-        /// matching the algorithm's supported scale range).
-        ///
-        /// Qualcomm does not publish named presets for SGSR v1 (the algorithm supports
-        /// arbitrary ratios); the AMD FSR-style table is used for consistency.
+        /// FSR 1.0 presets: Native AA 100%, Ultra Quality 77% (1.3x), Quality 67%
+        /// (1.5x), Balanced 59% (1.7x), Performance 50% (2.0x), Ultra Performance
+        /// 33% (3.0x). SGSR v1 supports arbitrary ratios, so it uses the same list.
         /// </summary>
         public static class UpscalerPresets
         {
-                /// <summary>FSR 1.0 preset list, ordered from highest quality to highest performance</summary>
-                private static readonly UpscalerQuality[] Fsr1Presets =
+                /// <summary>Preset list ordered from highest quality to highest performance</summary>
+                private static readonly UpscalerQuality[] Presets =
                 {
                         UpscalerQuality.NativeAA,
                         UpscalerQuality.UltraQuality,
@@ -88,43 +76,10 @@ namespace OpenBveApi.Graphics
                         UpscalerQuality.UltraPerformance
                 };
 
-                /// <summary>NVIDIA Image Scaling preset list (NVIDIA App percentages), ordered from highest quality to highest performance</summary>
-                private static readonly UpscalerQuality[] NisPresets =
-                {
-                        UpscalerQuality.UltraQualityPlus,
-                        UpscalerQuality.UltraQuality,
-                        UpscalerQuality.Quality,
-                        UpscalerQuality.Balanced,
-                        UpscalerQuality.Performance
-                };
-
-                /// <summary>Qualcomm SGSR v1 preset list, ordered from highest quality to highest performance</summary>
-                private static readonly UpscalerQuality[] Sgsr1Presets =
-                {
-                        UpscalerQuality.NativeAA,
-                        UpscalerQuality.UltraQuality,
-                        UpscalerQuality.Quality,
-                        UpscalerQuality.Balanced,
-                        UpscalerQuality.Performance,
-                        UpscalerQuality.UltraPerformance
-                };
-
-                /// <summary>
-                /// Returns the vendor-recommended quality presets for the given upscaler mode.
-                /// The Off mode returns the generic FSR-style list so that menu entries always
-                /// have a non-empty selection (the value is unused while upscaling is off).
-                /// </summary>
+                /// <summary>Returns the shared quality preset list (both upscalers accept the same ratios)</summary>
                 public static UpscalerQuality[] GetQualities(UpscalerMode mode)
                 {
-                        switch (mode)
-                        {
-                                case UpscalerMode.Nis:
-                                        return NisPresets;
-                                case UpscalerMode.Sgsr1:
-                                        return Sgsr1Presets;
-                                default:
-                                        return Fsr1Presets;
-                        }
+                        return Presets;
                 }
 
                 /// <summary>Returns the preset labels (including percentages) for the given upscaler mode</summary>
@@ -144,7 +99,6 @@ namespace OpenBveApi.Graphics
                 {
                         switch (quality)
                         {
-                                case UpscalerQuality.UltraQualityPlus: return 0.85;
                                 case UpscalerQuality.UltraQuality: return 0.77;
                                 case UpscalerQuality.Quality: return 0.67;
                                 case UpscalerQuality.Balanced: return 0.59;
@@ -161,7 +115,6 @@ namespace OpenBveApi.Graphics
                         switch (quality)
                         {
                                 case UpscalerQuality.NativeAA: return "Native AA (100%)";
-                                case UpscalerQuality.UltraQualityPlus: return "Ultra Quality+ (85%)";
                                 case UpscalerQuality.UltraQuality: return "Ultra Quality (77%)";
                                 case UpscalerQuality.Quality: return "Quality (67%)";
                                 case UpscalerQuality.Balanced: return "Balanced (59%)";
@@ -177,7 +130,6 @@ namespace OpenBveApi.Graphics
                         switch (quality)
                         {
                                 case UpscalerQuality.NativeAA: return "Native AA";
-                                case UpscalerQuality.UltraQualityPlus: return "Ultra Quality+";
                                 case UpscalerQuality.UltraQuality: return "Ultra Quality";
                                 case UpscalerQuality.Quality: return "Quality";
                                 case UpscalerQuality.Balanced: return "Balanced";
@@ -187,11 +139,7 @@ namespace OpenBveApi.Graphics
                         }
                 }
 
-                /// <summary>
-                /// Snaps a quality preset to the nearest preset allowed by the given mode.
-                /// Used when switching upscalers, because some presets only exist for
-                /// some vendors (e.g. NVIDIA Image Scaling does not support 3.0x scaling).
-                /// </summary>
+                /// <summary>Snaps a quality preset to the nearest supported preset</summary>
                 public static UpscalerQuality SnapToMode(UpscalerMode mode, UpscalerQuality quality)
                 {
                         UpscalerQuality[] allowed = GetQualities(mode);
@@ -212,6 +160,32 @@ namespace OpenBveApi.Graphics
                                 }
                         }
                         return best;
+                }
+        }
+
+        /// <summary>
+        /// Maps the UI order to the saved mode values. SGSR is the first enabled
+        /// choice, so stepping past Off selects it rather than FSR 1.0.
+        /// </summary>
+        public static class UpscalerUi
+        {
+                private static readonly UpscalerMode[] Modes = { UpscalerMode.Off, UpscalerMode.Sgsr1, UpscalerMode.Fsr1 };
+
+                public static UpscalerMode ModeAt(int index)
+                {
+                        return index >= 0 && index < Modes.Length ? Modes[index] : UpscalerMode.Off;
+                }
+
+                public static int IndexOf(UpscalerMode mode)
+                {
+                        for (int i = 0; i < Modes.Length; i++)
+                        {
+                                if (Modes[i] == mode)
+                                {
+                                        return i;
+                                }
+                        }
+                        return 0;
                 }
         }
 }

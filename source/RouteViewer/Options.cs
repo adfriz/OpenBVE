@@ -111,7 +111,6 @@ namespace RouteViewer
 				Builder.AppendLine("upscalermode = " + (int)UpscalerMode);
 				Builder.AppendLine("upscalerquality = " + (int)UpscalerQuality);
 				Builder.AppendLine("upscalersharpnessfsr = " + UpscalerSharpnessFsr.ToString("0.00", Culture));
-				Builder.AppendLine("upscalersharpnessnis = " + UpscalerSharpnessNis.ToString("0.00", Culture));
 				Builder.AppendLine("upscalersharpnesssgsr = " + UpscalerSharpnessSgsr.ToString("0.00", Culture));
 				Builder.AppendLine("upscalerdenoise = " + (UpscalerDenoise ? "true" : "false"));
 				Builder.AppendLine();
@@ -246,6 +245,10 @@ namespace RouteViewer
 							// Upscaler
 							if (block.GetValue(OptionsKey.UpscalerMode, out int upscalerMode))
 							{
+								if (upscalerMode == 3)
+								{
+									upscalerMode = (int)UpscalerMode.Sgsr1; // old SGSR id before NIS was removed
+								}
 								if (upscalerMode >= 0 && Enum.IsDefined(typeof(UpscalerMode), upscalerMode))
 								{
 									Interface.CurrentOptions.UpscalerMode = (UpscalerMode)upscalerMode;
@@ -266,15 +269,6 @@ namespace RouteViewer
 							if (Interface.CurrentOptions.UpscalerSharpnessFsr > 1.0)
 							{
 								Interface.CurrentOptions.UpscalerSharpnessFsr = 1.0;
-							}
-							block.TryGetValue(OptionsKey.UpscalerSharpnessNis, ref Interface.CurrentOptions.UpscalerSharpnessNis);
-							if (Interface.CurrentOptions.UpscalerSharpnessNis < 0.0)
-							{
-								Interface.CurrentOptions.UpscalerSharpnessNis = 0.0;
-							}
-							if (Interface.CurrentOptions.UpscalerSharpnessNis > 1.0)
-							{
-								Interface.CurrentOptions.UpscalerSharpnessNis = 1.0;
 							}
 							block.TryGetValue(OptionsKey.UpscalerSharpnessSgsr, ref Interface.CurrentOptions.UpscalerSharpnessSgsr);
 							if (Interface.CurrentOptions.UpscalerSharpnessSgsr < 0.0)

@@ -173,7 +173,7 @@ namespace LibRender2.Menu
 					CurrentlySelectedOption = BaseMenu.CurrentOptions.ShadowFilterCascades ? 0 : 1;
 					return;
 				case OptionType.Upscaler:
-					CurrentlySelectedOption = (int)BaseMenu.CurrentOptions.UpscalerMode;
+					CurrentlySelectedOption = UpscalerUi.IndexOf(BaseMenu.CurrentOptions.UpscalerMode);
 					return;
 				case OptionType.UpscalerQuality:
 					// the entries follow the vendor-recommended preset list of the current mode
@@ -189,18 +189,9 @@ namespace LibRender2.Menu
 					break;
 				case OptionType.UpscalerSharpness:
 					double upscalerSharpness;
-					switch (BaseMenu.CurrentOptions.UpscalerMode)
-					{
-						case UpscalerMode.Nis:
-							upscalerSharpness = BaseMenu.CurrentOptions.UpscalerSharpnessNis;
-							break;
-						case UpscalerMode.Sgsr1:
-							upscalerSharpness = BaseMenu.CurrentOptions.UpscalerSharpnessSgsr;
-							break;
-						default:
-							upscalerSharpness = BaseMenu.CurrentOptions.UpscalerSharpnessFsr;
-							break;
-					}
+					upscalerSharpness = BaseMenu.CurrentOptions.UpscalerMode == UpscalerMode.Sgsr1
+						? BaseMenu.CurrentOptions.UpscalerSharpnessSgsr
+						: BaseMenu.CurrentOptions.UpscalerSharpnessFsr;
 					for (int i = 0; i < Entries.Length; i++)
 					{
 						double upscalerSharpnessEntry = double.Parse((string)entries[i], NumberStyles.Float, CultureInfo.InvariantCulture);
@@ -365,8 +356,7 @@ namespace LibRender2.Menu
 					BaseMenu.CurrentOptions.ShadowFilterCascades = !BaseMenu.CurrentOptions.ShadowFilterCascades;
 					break;
 				case OptionType.Upscaler:
-					BaseMenu.CurrentOptions.UpscalerMode = (UpscalerMode)CurrentlySelectedOption;
-					// snap the quality preset to the vendor-recommended list of the new mode
+					BaseMenu.CurrentOptions.UpscalerMode = UpscalerUi.ModeAt(CurrentlySelectedOption);
 					BaseMenu.CurrentOptions.UpscalerQuality = UpscalerPresets.SnapToMode(BaseMenu.CurrentOptions.UpscalerMode, BaseMenu.CurrentOptions.UpscalerQuality);
 					break;
 				case OptionType.UpscalerQuality:
@@ -378,11 +368,7 @@ namespace LibRender2.Menu
 					break;
 				case OptionType.UpscalerSharpness:
 					double upscalerSharpnessValue = double.Parse((string)CurrentOption, NumberStyles.Float, CultureInfo.InvariantCulture);
-					if (BaseMenu.CurrentOptions.UpscalerMode == UpscalerMode.Nis)
-					{
-						BaseMenu.CurrentOptions.UpscalerSharpnessNis = upscalerSharpnessValue;
-					}
-					else if (BaseMenu.CurrentOptions.UpscalerMode == UpscalerMode.Sgsr1)
+					if (BaseMenu.CurrentOptions.UpscalerMode == UpscalerMode.Sgsr1)
 					{
 						BaseMenu.CurrentOptions.UpscalerSharpnessSgsr = upscalerSharpnessValue;
 					}

@@ -35,8 +35,7 @@ using System.Text;
 namespace LibRender2.Upscaling
 {
         /// <summary>
-        /// Spatial upscaler framework (AMD FSR 1.0 fused EASU+RCAS / NVIDIA Image Scaling /
-        /// Qualcomm SGSR v1).
+        /// Spatial upscaler framework (AMD FSR 1.0 fused EASU+RCAS / Qualcomm SGSR v1).
         ///
         /// Pipeline (when active):
         ///   1. BeginScene(): the 3D world is rendered into a low-resolution framebuffer
@@ -66,17 +65,14 @@ namespace LibRender2.Upscaling
                 private int msaaFbo;
                 private int msaaColorRbo;
                 private int msaaDepthRbo;
-                private int nisCoefTexture;
 
                 // --- uniform locations (cached once per program) ---
                 private int uSrcLoc;
-                private int uCoefLoc;
                 private int uEasuCon0Loc;
                 private int uInputSizeLoc;
                 private int uTexelStepLoc;
                 private int uDstResInvLoc;
                 private int uSharpnessLoc;
-                private int uNisCfg0Loc, uNisCfg1Loc, uNisCfg2Loc, uNisCfg3Loc;
                 private int uEdgeSharpnessLoc;
 
                 // --- current configuration state ---
@@ -168,22 +164,11 @@ namespace LibRender2.Upscaling
                         }
                 }
 
-                /// <summary>
-                /// The internal render scale for the selected quality preset, snapped to the
-                /// vendor-recommended presets of the selected upscaler. NVIDIA Image Scaling
-                /// additionally clamps at 2.0x per axis (its official scale range).
-                /// </summary>
+                /// <summary>The internal render scale for the selected quality preset</summary>
                 private double GetEffectiveScale()
                 {
-                        UpscalerMode mode = Mode;
-                        UpscalerQuality quality = UpscalerPresets.SnapToMode(mode, renderer.currentOptions.UpscalerQuality);
-                        double scale = UpscalerPresets.GetRenderScale(quality);
-                        if (mode == UpscalerMode.Nis && scale < 0.5)
-                        {
-                                // NIS supports arbitrary phases only up to 2.0x per axis
-                                scale = 0.5;
-                        }
-                        return scale;
+                        UpscalerQuality quality = UpscalerPresets.SnapToMode(Mode, renderer.currentOptions.UpscalerQuality);
+                        return UpscalerPresets.GetRenderScale(quality);
                 }
 
                 /// <summary>
@@ -241,10 +226,6 @@ namespace LibRender2.Upscaling
                                 try
                                 {
                                         CreateProgram(mode, denoise);
-                                        if (mode == UpscalerMode.Nis)
-                                        {
-                                                CreateNisCoefficientTexture();
-                                        }
                                         CreateSceneTargets(sceneW, sceneH);
                                         Failed = false;
                                 }
@@ -368,12 +349,8 @@ namespace LibRender2.Upscaling
                         renderer.dummyVao.Bind();
 
                         // GL 4.5+ binds straight to a texture unit; older contexts fall back to
-                        // ActiveTexture + BindTexture. The NIS coefficient bank is on unit 1.
+                        // ActiveTexture + BindTexture.
                         TextureBinder.Bind(0, sceneTexture);
-                        if (configuredMode == UpscalerMode.Nis)
-                        {
-                                TextureBinder.Bind(1, nisCoefTexture);
-                        }
 
                         // Every uniform below depends only on these values. Re-sending the same
                         // values each frame is pure driver overhead, so upload them on change.
@@ -382,9 +359,6 @@ namespace LibRender2.Upscaling
                         {
                                 case UpscalerMode.Fsr1:
                                         sharpness = (float)Math.Min(1.0, Math.Max(0.0, renderer.currentOptions.UpscalerSharpnessFsr));
-                                        break;
-                                case UpscalerMode.Nis:
-                                        sharpness = (float)Math.Min(1.0, Math.Max(0.0, renderer.currentOptions.UpscalerSharpnessNis));
                                         break;
                                 default:
                                         sharpness = (float)Math.Min(1.0, Math.Max(0.0, renderer.currentOptions.UpscalerSharpnessSgsr));
@@ -414,36 +388,6 @@ namespace LibRender2.Upscaling
                                         GL.ProgramUniform2(programHandle, uDstResInvLoc, 1.0f / windowW, 1.0f / windowH);
                                         GL.ProgramUniform1(programHandle, uSharpnessLoc, sharpness);
                                 }
-                                else if (configuredMode == UpscalerMode.Nis)
-                                {
-                                        // NVIDIA Image Scaling: config constants per NVScalerUpdateConfig (SDR mode)
-                                        double sharpenSlider = sharpness - 0.5;
-                                        double maxScale = sharpenSlider >= 0.0 ? 1.25 : 1.75;
-                                        double minScale = sharpenSlider >= 0.0 ? 1.25 : 1.0;
-                                        double limitScale = sharpenSlider >= 0.0 ? 1.25 : 1.0;
-
-                                        const double kDetectRatio = 2 * 1127.0 / 1024.0;
-                                        const double kDetectThres = 64.0 / 1024.0;
-                                        const double kMinContrastRatio = 2.0;
-                                        const double kMaxContrastRatio = 10.0;
-                                        const double kSharpStartY = 0.45;
-                                        const double kSharpEndY = 0.9;
-                                        double kSharpStrengthMin = Math.Max(0.0, 0.4 + sharpenSlider * minScale * 1.2);
-                                        double kSharpStrengthMax = 1.6 + sharpenSlider * maxScale * 1.8;
-                                        double kSharpLimitMin = Math.Max(0.1, 0.14 + sharpenSlider * limitScale * 0.32);
-                                        double kSharpLimitMax = 0.5 + sharpenSlider * limitScale * 0.6;
-                                        double kRatioNorm = 1.0 / (kMaxContrastRatio - kMinContrastRatio);
-                                        double kSharpScaleY = 1.0 / (kSharpEndY - kSharpStartY);
-                                        double kSharpStrengthScale = kSharpStrengthMax - kSharpStrengthMin;
-                                        double kSharpLimitScale = kSharpLimitMax - kSharpLimitMin;
-
-                                        GL.ProgramUniform1(programHandle, uCoefLoc, 1);
-                                        GL.ProgramUniform1(programHandle, uSrcLoc, 0);
-                                        GL.ProgramUniform4(programHandle, uNisCfg0Loc, (float)kDetectRatio, (float)kDetectThres, (float)kMinContrastRatio, (float)kRatioNorm);
-                                        GL.ProgramUniform4(programHandle, uNisCfg1Loc, 1.0f, (float)(1.0 / 255.0), (float)kSharpStartY, (float)kSharpScaleY);
-                                        GL.ProgramUniform4(programHandle, uNisCfg2Loc, (float)kSharpStrengthMin, (float)kSharpStrengthScale, (float)kSharpLimitMin, (float)kSharpLimitScale);
-                                        GL.ProgramUniform4(programHandle, uNisCfg3Loc, scaleX, scaleY, 1.0f / configuredSceneW, 1.0f / configuredSceneH);
-                                }
                                 else
                                 {
                                         // Qualcomm SGSR v1 (mobile + edge direction variant)
@@ -458,10 +402,6 @@ namespace LibRender2.Upscaling
 
                         // 3. Restore state for the native-resolution overlay pass
                         TextureBinder.Bind(0, 0);
-                        if (configuredMode == UpscalerMode.Nis)
-                        {
-                                TextureBinder.Bind(1, 0);
-                        }
                         TextureBinder.ResetActiveUnit();
                         GL.UseProgram(0);
                         renderer.LastBoundTexture = null;
@@ -501,10 +441,6 @@ namespace LibRender2.Upscaling
                                                 }
                                         }
                                 }
-                        }
-                        else if (mode == UpscalerMode.Nis)
-                        {
-                                fragmentSource = LoadShaderResource("nis.frag");
                         }
                         else
                         {
@@ -584,44 +520,12 @@ namespace LibRender2.Upscaling
                         // Uniforms that do not exist in the active program return -1,
                         // which GL.ProgramUniform* silently ignores.
                         uSrcLoc = GL.GetUniformLocation(programHandle, "uSrc");
-                        uCoefLoc = GL.GetUniformLocation(programHandle, "uCoef");
                         uEasuCon0Loc = GL.GetUniformLocation(programHandle, "uEasuCon0");
                         uInputSizeLoc = GL.GetUniformLocation(programHandle, "uInputSize");
                         uTexelStepLoc = GL.GetUniformLocation(programHandle, "uTexelStep");
                         uDstResInvLoc = GL.GetUniformLocation(programHandle, "uDstResInv");
                         uSharpnessLoc = GL.GetUniformLocation(programHandle, "uSharpness");
-                        uNisCfg0Loc = GL.GetUniformLocation(programHandle, "uNisCfg0");
-                        uNisCfg1Loc = GL.GetUniformLocation(programHandle, "uNisCfg1");
-                        uNisCfg2Loc = GL.GetUniformLocation(programHandle, "uNisCfg2");
-                        uNisCfg3Loc = GL.GetUniformLocation(programHandle, "uNisCfg3");
                         uEdgeSharpnessLoc = GL.GetUniformLocation(programHandle, "uEdgeSharpness");
-                }
-
-                /// <summary>
-                /// Creates the RG32F 6x64 coefficient texture holding the NIS filter
-                /// banks. One texel (tap, phase) stores (coef_scale, coef_usm) together,
-                /// so the shader needs half the coefficient fetches of the official
-                /// two-texture layout. The bank values come from NisCoefficients.cs,
-                /// a readable transcription of the official NIS_Config.h tables.
-                /// Sampling a small cache-resident texture with texelFetch is the fast,
-                /// driver-independent way of doing dynamically indexed table lookups -
-                /// the official NIS SDK uses the same design.
-                /// </summary>
-                private void CreateNisCoefficientTexture()
-                {
-                        float[] data = NisCoefficients.CreateTextureData();
-
-                        GL.GenTextures(1, out nisCoefTexture);
-                        GL.BindTexture(TextureTarget.Texture2D, nisCoefTexture);
-                        GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rg32f,
-                                NisCoefficients.FilterSize, NisCoefficients.PhaseCount, 0,
-                                OpenTK.Graphics.OpenGL.PixelFormat.Rg, PixelType.Float, data);
-                        GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
-                        GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
-                        GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
-                        GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
-                        GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMaxLevel, 0);
-                        GL.BindTexture(TextureTarget.Texture2D, 0);
                 }
 
                 /// <summary>Opens an embedded resource of the LibRender2 assembly</summary>
@@ -760,11 +664,6 @@ namespace LibRender2.Upscaling
                         {
                                 GL.DeleteTexture(sceneTexture);
                                 sceneTexture = 0;
-                        }
-                        if (nisCoefTexture != 0)
-                        {
-                                GL.DeleteTexture(nisCoefTexture);
-                                nisCoefTexture = 0;
                         }
                         uploadedUniforms = default(UniformConfig);
                         havePreviousTarget = false;

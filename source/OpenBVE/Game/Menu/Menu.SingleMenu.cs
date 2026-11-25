@@ -251,7 +251,7 @@ namespace OpenBve
 							Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "shadows_resolution_ultra" })
 						});
 						Items[10] = new MenuOption(menu, OptionType.ShadowFilterCascades, "Per-cascade culling", new[] { "true", "false" });
-						Items[11] = new MenuOption(menu, OptionType.Upscaler, Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "upscaler_mode" }), new[] { "Off", "AMD FSR 1.0", "NVIDIA NIS", "Qualcomm SGSR v1" });
+						Items[11] = new MenuOption(menu, OptionType.Upscaler, Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "upscaler_mode" }), new[] { "Off", "Qualcomm SGSR v1", "AMD FSR 1.0" });
 						Items[12] = new MenuOption(menu, OptionType.UpscalerQuality, Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "upscaler_quality" }), UpscalerPresets.GetLabels(Interface.CurrentOptions.UpscalerMode));
 						Items[13] = new MenuOption(menu, OptionType.UpscalerSharpness, Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "upscaler_sharpness" }), new[] { "0", "0.2", "0.4", "0.6", "0.8", "1" });
 						Items[14] = new MenuOption(menu, OptionType.UpscalerDenoise, Translations.GetInterfaceString(HostApplication.OpenBve, new[] { "options", "upscaler_denoise" }), new[] { "true", "false" });
